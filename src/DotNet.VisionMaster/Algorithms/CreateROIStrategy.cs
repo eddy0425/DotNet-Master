@@ -1,10 +1,6 @@
-﻿using DotNet.HWindows;
-using HalconDotNet;
-using OpenCvSharp;
-using Sunny.UI;
-using System;
+﻿using HalconDotNet;
+using DotNet.HWindows;
 using System.Collections.Generic;
-using System.Windows.Forms;
 
 namespace DotNet.VisionMaster
 {

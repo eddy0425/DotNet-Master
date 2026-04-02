@@ -1,8 +1,7 @@
+using HalconDotNet;
+using DotNet.HWindows;
 using System;
 using System.Collections.Generic;
-using DotNet.HWindows;
-using HalconDotNet;
-
 
 namespace DotNet.VisionMaster
 {
