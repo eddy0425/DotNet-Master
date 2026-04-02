@@ -7,9 +7,6 @@ namespace DotNet.VisionMaster
 {
     public class LineFindingStrategy : ParaStrategyBase<LineFinding>
     {
-        char variable = '/';
-        char value = ';';
-
         public override string Name => "直线查找";
         public override void Init(DrawContext draw)
         {
@@ -17,7 +14,7 @@ namespace DotNet.VisionMaster
         }
         public override void Close(DrawContext draw)
         {
-            draw.RectangleEvent -= RectEvent;  //RemoveEvent
+            draw.RectangleEvent -= RectEvent;
         }
         private void RectEvent(object sender, DrawContext.DrawRectangleArgs e)
         {
@@ -34,35 +31,9 @@ namespace DotNet.VisionMaster
 
             try
             {
-                var imageSplit = inPara.ImageIn.Split(variable);
-                foreach (var strategy in strategys)
-                {
-                    if (strategy.Name == imageSplit[0])
-                    {
-                        var value = strategy.GetTreeNode(imageSplit[1]);
-                        break;
-                    }
-                }
-
-                var regionSplit = inPara.RegionIn.Split(variable);
-                foreach (var strategy in strategys)
-                {
-                    if (strategy.Name == regionSplit[0])
-                    {
-                        var value = strategy.GetTreeNode(regionSplit[1]);
-                        break;
-                    }
-                }
-
-                var coordSplit = inPara.CoordIn.Split(variable);
-                foreach (var strategy in strategys)
-                {
-                    if (strategy.Name == coordSplit[0])
-                    {
-                        var value = strategy.GetTreeNode(coordSplit[1]);
-                        break;
-                    }
-                }
+                var image = strategys.ResolveFrom(inPara.ImageIn);
+                var region = strategys.ResolveFrom(inPara.RegionIn);
+                var coord = strategys.ResolveFrom(inPara.CoordIn);
 
                 return true;
             }
@@ -78,6 +49,15 @@ namespace DotNet.VisionMaster
         }
         public override void GenTreeNode(TreeVisualizer tree)
         {
+            ClearResolvers();
+            RegisterOutput("直线", () => inPara.Line);
+            RegisterOutput("直线/起点", () => inPara.Line.start);
+            RegisterOutput("直线/起点/行", () => inPara.Line.start.Y);
+            RegisterOutput("直线/起点/列", () => inPara.Line.start.X);
+            RegisterOutput("直线/终点", () => inPara.Line.end);
+            RegisterOutput("直线/终点/行", () => inPara.Line.end.Y);
+            RegisterOutput("直线/终点/列", () => inPara.Line.end.X);
+
             tree.Branch(Name, branch => branch
                        .Node("直线", OutEnum.Line, line => line
                            .Branch("起点", pt => pt
@@ -91,20 +71,6 @@ namespace DotNet.VisionMaster
                        )
                        .CommonNodes()
                    );
-        }
-        public override object GetTreeNode(string tree)
-        {
-            switch (tree)
-            {
-                case "直线":
-                    return inPara.Line;
-                case "起点":
-                    return inPara.Line.start;
-                case "终点":
-                    return inPara.Line.end;
-                default:
-                    return null;
-            }
         }
         public override void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls)
         {

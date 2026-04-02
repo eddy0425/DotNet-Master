@@ -13,6 +13,14 @@ namespace DotNet.VisionMaster
         }
         public override void GenTreeNode(TreeVisualizer tree)
         {
+            ClearResolvers();
+            RegisterOutput("坐标系", () => inPara.Coord);
+            RegisterOutput("坐标系/原点", () => inPara.Coord.center);
+            RegisterOutput("坐标系/原点/行", () => inPara.Coord.Y);
+            RegisterOutput("坐标系/原点/列", () => inPara.Coord.X);
+            RegisterOutput("坐标系/角度", () => inPara.Coord.angle);
+            RegisterOutput("区域", () => inPara.HContext);
+
             tree.Branch(Name, branch => branch
                        .Node("坐标系", OutEnum.Coord, line => line
                            .Branch("原点", pt => pt
@@ -24,26 +32,6 @@ namespace DotNet.VisionMaster
                        .Node("区域", OutEnum.Region)
                        .CommonNodes()
                    );
-        }
-        public override object GetTreeNode(string tree)
-        {
-            switch (tree)
-            {
-                case "坐标系":
-                    return inPara.Coord;
-                case "原点":
-                    return inPara.Coord.center;
-                case "行":
-                    return inPara.Coord.Y;
-                case "列":
-                    return inPara.Coord.X;
-                case "角度":
-                    return inPara.Coord.angle;
-                case "区域":
-                    return inPara.HContext;
-                default:
-                    return null;
-            }
         }
         public override void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls)
         {
