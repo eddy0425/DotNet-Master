@@ -49,15 +49,6 @@ namespace DotNet.VisionMaster
         }
         public override void GenTreeNode(TreeVisualizer tree)
         {
-            ClearResolvers();
-            RegisterOutput("直线", () => inPara.Line);
-            RegisterOutput("直线/起点", () => inPara.Line.start);
-            RegisterOutput("直线/起点/行", () => inPara.Line.start.Y);
-            RegisterOutput("直线/起点/列", () => inPara.Line.start.X);
-            RegisterOutput("直线/终点", () => inPara.Line.end);
-            RegisterOutput("直线/终点/行", () => inPara.Line.end.Y);
-            RegisterOutput("直线/终点/列", () => inPara.Line.end.X);
-
             tree.Branch(Name, branch => branch
                        .Node("直线", OutEnum.Line, line => line
                            .Branch("起点", pt => pt
@@ -71,6 +62,16 @@ namespace DotNet.VisionMaster
                        )
                        .CommonNodes()
                    );
+
+            ClearResolvers();
+            RegisterOutput("直线", () => inPara.Line);
+            RegisterOutput("直线/起点", () => inPara.Line.start);
+            RegisterOutput("直线/起点/行", () => inPara.Line.start.Y);
+            RegisterOutput("直线/起点/列", () => inPara.Line.start.X);
+            RegisterOutput("直线/终点", () => inPara.Line.end);
+            RegisterOutput("直线/终点/行", () => inPara.Line.end.Y);
+            RegisterOutput("直线/终点/列", () => inPara.Line.end.X);
+
         }
         public override void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls)
         {
