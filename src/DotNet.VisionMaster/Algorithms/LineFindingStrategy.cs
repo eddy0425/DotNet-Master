@@ -1,0 +1,149 @@
+using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
+
+namespace DotNet.VisionMaster
+{
+    public class LineFindingStrategy : ParaStrategyBase<LineFinding>
+    {
+        public override string Name => "直线查找";
+
+        public override bool Fun_action()
+        {
+            throw new NotImplementedException();
+        }
+        public override void Init(DrawContext draw)
+        {
+            draw.RectangleEvent += RectangleEvent;
+        }
+        public override void Close(DrawContext draw)
+        {
+            draw.RectangleEvent -= RectangleEvent;  //RemoveEvent
+        }
+        private void RectangleEvent(object sender, DrawContext.DrawRectangleArgs e)
+        {
+            if (e.Name == Name)
+            {
+                inPara.HContext.Re2Point(e.TopLeft, e.BottomRight);
+                inPara.HContext.GenRegion();
+            }
+        }
+
+        public override void GenTreeNode(TreeVisualizer tree)
+        {
+            tree.Branch(Name, branch => branch
+                       .Node("直线", OutEnum.Line, line => line
+                           .Branch("起点", pt => pt
+                               .Node("行", OutEnum.Number)
+                               .Node("列", OutEnum.Number)
+                           )
+                           .Branch("终点", pt => pt
+                               .Node("行", OutEnum.Number)
+                               .Node("列", OutEnum.Number)
+                           )
+                       )
+                       .CommonNodes()
+                   );
+        }
+        public override void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls)
+        {
+            form.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Region, TabPageEnum.Display);
+
+            HObjContext hRegion = inPara.HContext;
+            VsControls.ShowComboBox(form, "cmb_Width", hRegion.Width.ToString(), false);
+            VsControls.ShowComboBox(form, "cmb_Height", hRegion.Height.ToString(), false);
+            VsControls.ShowComboBox(form, "cmb_TopLeft", $"{hRegion.TopLeft.X};{hRegion.TopLeft.Y}", false);
+            VsControls.ShowComboBox(form, "cmb_BottomRight", $"{hRegion.BottomRight.X};{hRegion.BottomRight.Y}", false);
+            VsControls.ShowComboBox(form, "cmb_Center", $"{hRegion.Center.X};{hRegion.Center.Y}", false);
+
+            VsControls.ShowLabel(form, "lbl_100", "图像来源");
+            VsControls.ShowComboBox(form, "cmb_100", inPara.ImageIn, false);
+            VsControls.ShowButton(form, "btn_100", true);
+
+            VsControls.ShowLabel(form, "lbl_101", "区域来源");
+            VsControls.ShowComboBox(form, "cmb_101", inPara.RegionIn, false);
+            VsControls.ShowButton(form, "btn_101", true);
+
+            VsControls.ShowLabel(form, "lbl_102", "过渡方向");
+            VsControls.ShowComboBoxList(form, "cmb_102", inPara.Transition, new[] { "由黑到白", "由白到黑", "全部" });
+            VsControls.ShowButton(form, "btn_102", false);
+
+            VsControls.ShowLabel(form, "lbl_103", "选择");
+            VsControls.ShowComboBoxList(form, "cmb_103", inPara.ContourType, new[] { "第一条边", "第二条边", "最后一条", "全部" });
+            VsControls.ShowButton(form, "btn_103", false);
+
+            VsControls.ShowLabel(form, "lbl_104", "滤波");
+            VsControls.ShowComboBoxDropDown(form, "cmb_104", inPara.Sigma.ToString(), new[] { "0", "1" });
+            VsControls.ShowButton(form, "btn_104", false);
+
+            VsControls.ShowLabel(form, "lbl_105", "阈值");
+            VsControls.ShowComboBoxDropDown(form, "cmb_105", inPara.Threshold.ToString(), new[] { "30", "50" });
+            VsControls.ShowButton(form, "btn_105", false);
+
+            VsControls.ShowLabel(form, "lbl_110", "步距");
+            VsControls.ShowComboBoxDropDown(form, "cmb_110", inPara.StepPace.ToString(), new[] { "2", "5", "10" });
+
+            VsControls.ShowLabel(form, "lbl_111", "步宽");
+            VsControls.ShowComboBoxDropDown(form, "cmb_111", inPara.StepWidth.ToString(), new[] { "2", "5", "10" });
+
+            VsControls.ShowLabel(form, "lbl_112", "最大偏差");
+            VsControls.ShowComboBoxDropDown(form, "cmb_112", inPara.MaxErr.ToString(), new[] { "1", "3", "5", "10" });
+        }
+        public override void SavePara(ParaForm form, Dictionary<string, VsControlModel> VsControls)
+        {
+            inPara.ImageIn = VsControls["cmb_100"].Text;
+            inPara.RegionIn = VsControls["cmb_101"].Text;
+            inPara.Transition = VsControls["cmb_102"].Text;
+            inPara.ContourType = VsControls["cmb_103"].Text;
+            inPara.Sigma = Convert.ToInt16(VsControls["cmb_104"].Text);
+            inPara.Threshold = Convert.ToInt16(VsControls["cmb_105"].Text);
+
+            inPara.StepPace = Convert.ToInt16(VsControls["cmb_110"].Text);
+            inPara.StepWidth = Convert.ToInt16(VsControls["cmb_111"].Text);
+            inPara.MaxErr = Convert.ToInt16(VsControls["cmb_112"].Text);
+        }
+        public override void DispROI(DisplayForm display)
+        {
+            display.SetDrawMode(Name, inPara.HContext, WinDrawType.DispRect);
+        }
+
+    }
+
+    public class LineFinding
+    {
+        /// <summary> 指令类型 </summary>
+        public readonly string Algorithm = "直线查找";
+
+        /// <summary> 图像来源 </summary>
+        public string ImageIn { set; get; } = "默认";
+
+        /// <summary> 区域来源 </summary>
+        public string RegionIn { set; get; } = "默认";
+
+        /// <summary> 区域 </summary>
+        public HObjContext HContext { set; get; } = new HObjContext();
+
+        /// <summary> 过渡方向 </summary>
+        public string Transition { set; get; }
+
+        /// <summary> 选择 </summary>
+        public string ContourType { set; get; }
+
+        /// <summary> 滤波 </summary>
+        public int Sigma { set; get; }
+
+        /// <summary>
+        /// 阈值 val = 0: 自动阈值, val > 0: 手动阈值, val = -1: 能量最强, val 小于 -1: 百分比阈值
+        /// </summary>
+        public int Threshold { set; get; }
+
+        /// <summary> 步距 </summary>
+        public int StepPace { set; get; }
+
+        /// <summary> 步宽 </summary>
+        public int StepWidth { set; get; }
+
+        /// <summary> 最大偏差 </summary>
+        public int MaxErr { set; get; }
+    }
+}

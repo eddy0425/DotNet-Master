@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日志文件大小管理机制</title>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #3498db;
+            margin-top: 25px;
+        }
+        .process-flow {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+        }
+        .code {
+            background-color: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: Consolas, monospace;
+            overflow-x: auto;
+        }
+        .note {
+            background-color: #fff8dc;
+            padding: 10px;
+            border-left: 4px solid #ffd700;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>日志文件大小管理机制</h1>
+        
+        <p>在日志系统中，当日志文件大小达到设定的大小限制时，会触发一系列处理流程以确保日志系统正常运行并合理利用磁盘空间。</p>
+        
+        <h2>1. 文件大小检测</h2>
+        <p>系统会在写入每条日志消息前检查当前日志文件大小是否已达到设定的最大值（默认为10MB）：</p>
+        <div class="code">
+            if (File.Exists(_currentFileName) && new FileInfo(_currentFileName).Length >= MaxFileSize)
+            {
+                CloseFile();
+            }
+        </div>
+        
+        <h2>2. 创建新文件</h2>
+        <p>当检测到当前文件需要关闭时（因为大小超限或日期变更），系统会：</p>
+        <ol>
+            <li>关闭当前日志文件</li>
+            <li>创建一个新的日志文件</li>
+        </ol>
+        
+        <div class="process-flow">
+            <h3>新文件命名规则</h3>
+            <p>新文件基于以下格式命名：</p>
+            <code>基础文件名_日期_序号.扩展名</code>
+            <p>例如：<code>应用日志_20230516_1.log</code></p>
+        </div>
+        
+        <p>系统会自动递增序号，直到找到不存在或未超过大小限制的文件名：</p>
+        <div class="code">
+            string dateStr = localDate.ToString("yyyyMMdd");
+            string baseFileNameWithDate = $"{BaseFileName}_{dateStr}";
+            
+            int sequenceNumber = 1;
+            string fileName;
+            
+            do {
+                fileName = Path.Combine(directory, $"{baseFileNameWithDate}_{sequenceNumber}{FileExtension}");
+                sequenceNumber++;
+            } while (File.Exists(fileName) && new FileInfo(fileName).Length >= MaxFileSize);
+        </div>
+        
+        <h2>3. 文件压缩（可选）</h2>
+        <p>如果启用了压缩功能，系统会在关闭日志文件后对其进行压缩：</p>
+        <div class="code">
+            if (enabledCompression && 
+                FileExtension.EndsWith(".gz", StringComparison.OrdinalIgnoreCase) && 
+                File.Exists(currentFileName))
+            {
+                CompressFileAsync(currentFileName);
+            }
+        </div>
+        
+        <div class="note">
+            <strong>注意：</strong> 压缩过程是异步进行的，不会阻塞主线程，确保日志记录操作可以继续进行。
+        </div>
+        
+        <h2>4. 旧文件清理</h2>
+        <p>在创建新文件后，系统会触发清理任务，该任务基于两个主要规则：</p>
+        
+        <h3>4.1 文件数量限制</h3>
+        <p>如果日志文件数量超过设定的最大数量（默认为10个），系统会删除最旧的文件：</p>
+        <div class="code">
+            var allFiles = Directory.GetFiles(directory, $"{BaseFileName}_*{FileExtension}")
+                .Select(f => new FileInfo(f))
+                .OrderByDescending(f => f.LastWriteTime)
+                .ToArray();
+                
+            if (allFiles.Length > MaxNumFiles)
+            {
+                for (int i = MaxNumFiles; i < allFiles.Length; i++)
+                {
+                    File.Delete(allFiles[i].FullName);
+                }
+            }
+        </div>
+        
+        <h3>4.2 文件保留期限</h3>
+        <p>系统会删除超过设定保留天数（默认为30天）的旧文件：</p>
+        <div class="code">
+            DateTime oldestAllowed = DateTime.Now.AddDays(-MaxDaysOld);
+            var oldFiles = Directory.GetFiles(directory, $"{BaseFileName}_*{FileExtension}")
+                .Select(f => new FileInfo(f))
+                .Where(f => f.LastWriteTime < oldestAllowed)
+                .ToArray();
+                
+            foreach (var file in oldFiles)
+            {
+                File.Delete(file.FullName);
+            }
+        </div>
+        
+        <h2>总结</h2>
+        <p>当日志文件达到设定大小后，系统会执行以下操作：</p>
+        <ol>
+            <li>关闭当前文件</li>
+            <li>根据命名规则创建新文件</li>
+            <li>如果启用了压缩，异步压缩旧文件</li>
+            <li>触发旧文件清理任务，根据数量和时间限制删除不需要的文件</li>
+        </ol>
+        
+        <div class="note">
+            <p>这种机制确保了：</p>
+            <ul>
+                <li>日志文件大小可控，便于查看和传输</li>
+                <li>通过压缩功能节省磁盘空间</li>
+                <li>自动清理旧文件，避免磁盘空间耗尽</li>
+                <li>整个过程对应用程序透明，不影响正常日志记录</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html> 

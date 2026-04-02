@@ -1,0 +1,78 @@
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Windows.Forms;
+
+namespace DotNet.VisionMaster
+{
+    public partial class Form1 : Form
+    {
+        DisplayForm _display = new DisplayForm();
+        ParaForm _formPara;
+        private readonly Dictionary<string, VsControlModel> _vsControls = new Dictionary<string, VsControlModel>();
+
+        private int _index;
+        /// <summary>
+        /// 当前算法策略（面向接口，可随时切换）
+        /// </summary>
+        private IParaStrategy _currentStrategy => _strategys[_index];
+        private List<IParaStrategy> _strategys = new List<IParaStrategy>();
+
+        public Form1()
+        {
+            InitializeComponent();
+
+            _display.FormBorderStyle = FormBorderStyle.None;     //无边框
+            _display.Dock = DockStyle.Fill;
+            _display.TopLevel = false;
+            _display.Show();
+            panel1.Controls.Add(_display);
+
+            _formPara = new ParaForm(_display);
+            _formPara.FormBorderStyle = FormBorderStyle.None;     //无边框
+            _formPara.Dock = DockStyle.Fill;
+            _formPara.TopLevel = false;
+            _formPara.Show();
+            panel2.Controls.Add(_formPara);
+
+            _strategys.Add(new CreateROIStrategy());
+            _strategys.Add(new ShapeMatchingStrategy());
+            _strategys.Add(new LineFindingStrategy());
+
+            for (int i = 0; i < _strategys.Count; i++)
+            {
+                _strategys[i].Init(_display.DrawContext);
+            }
+
+            LogFile logFile = new LogFile();
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            SwitchStrategy(0);
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            SwitchStrategy(1);
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            SwitchStrategy(2);
+        }
+
+        /// <summary>
+        /// 切换算法策略：解绑旧控件 → 清空 → 设置新策略 → 显示新参数
+        /// </summary>
+        private void SwitchStrategy(int index)
+        {
+            _index = index;
+            _vsControls.ClearAll(_formPara);
+            _formPara.SelectPara(_index, _strategys);
+            _currentStrategy.DispPara(_formPara, _vsControls);
+            _currentStrategy.DispROI(_display);
+        }
+
+    }
+}

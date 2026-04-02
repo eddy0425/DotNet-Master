@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogHelper - 异步日志清理机制介绍</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1, h2, h3 {
+            color: #0066cc;
+        }
+        .container {
+            background-color: white;
+            padding: 25px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: Consolas, monospace;
+            border-left: 4px solid #0066cc;
+        }
+        .feature {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f0f7ff;
+            border-left: 4px solid #0066cc;
+            border-radius: 3px;
+        }
+        .diagram {
+            text-align: center;
+            margin: 25px 0;
+        }
+        .code-comment {
+            color: #007800;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LogHelper - 异步日志清理机制介绍</h1>
+        
+        <h2>1. 概述</h2>
+        <p>LogHelper 是一个高效的日志管理库，其中包含了先进的异步日志清理机制，能够自动管理日志文件的生命周期，避免日志文件过多导致的磁盘空间占用问题。</p>
+        
+        <div class="feature">
+            <h3>核心功能:</h3>
+            <ul>
+                <li>基于时间的自动清理 - 删除超过指定天数的日志文件</li>
+                <li>基于数量的自动清理 - 保留最近的N个日志文件</li>
+                <li>异步处理 - 不阻塞主线程的日志写入操作</li>
+                <li>支持自动压缩归档</li>
+                <li>自适应的错误处理机制</li>
+            </ul>
+        </div>
+
+        <h2>2. 异步清理工作原理</h2>
+        
+        <p>在LogHelper的FileLogSink组件中，日志清理操作以异步方式执行，避免阻塞主线程的日志写入操作。清理过程会在以下情况触发：</p>
+        
+        <ol>
+            <li>当需要创建新的日志文件时（日期变更或文件大小超限）</li>
+            <li>系统会使用Task.Run()在后台线程执行清理操作</li>
+        </ol>
+
+        <div class="diagram">
+            <img src="data:image/png;base64,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" alt="日志清理流程图">
+        </div>
+
+        <h2>3. 主要特性详解</h2>
+
+        <h3>3.1 基于数量的清理</h3>
+        <div class="feature">
+            <p>通过设置<code>MaxNumFiles</code>属性，FileLogSink会保留最近的N个日志文件，删除更旧的文件。</p>
+            <pre>
+// 代码示例
+var fileLogSink = new FileLogSink(logPath, string.Empty, applicationName, ".log")
+{
+    <span class="code-comment">// 设置为保留最近的10个日志文件</span>
+    MaxNumFiles = 10
+};</pre>
+        </div>
+
+        <h3>3.2 基于时间的清理</h3>
+        <div class="feature">
+            <p>通过设置<code>MaxDaysOld</code>属性，可以删除早于指定天数的所有日志文件。</p>
+            <pre>
+// 代码示例
+var fileLogSink = new FileLogSink(logPath, string.Empty, applicationName, ".log")
+{
+    <span class="code-comment">// 删除超过30天的日志文件</span>
+    MaxDaysOld = 30
+};</pre>
+        </div>
+
+        <h3>3.3 自动压缩功能</h3>
+        <div class="feature">
+            <p>LogHelper支持自动将旧的日志文件通过GZip压缩，以节省磁盘空间。压缩操作也是异步执行的，不会影响主线程性能。</p>
+            <pre>
+// 代码示例
+var fileLogSink = new FileLogSink(logPath, string.Empty, applicationName, ".log.gz")
+{
+    <span class="code-comment">// 启用压缩</span>
+    EnableCompression = true,
+    <span class="code-comment">// 设置压缩缓冲区大小</span>
+    CompressionBufferSize = 81920 // 80KB
+};</pre>
+        </div>
+
+        <h2>4. 关键实现</h2>
+        <p>在FileLogSink中，异步清理机制的核心实现位于EnsureFileOpen和CleanupOldFiles方法中：</p>
+        
+        <pre>
+private void EnsureFileOpen(DateTime utcDateTime)
+{
+    try
+    {
+        // ...其他代码...
+        
+        // 如果没有打开文件，则创建新文件
+        if (_streamWriter == null)
+        {
+            OpenNewFile(localDate);
+            
+            // 在打开新文件后，触发清理操作
+            Task.Run(() => CleanupOldFiles());
+        }
+    }
+    catch (Exception ex)
+    {
+        // ...错误处理...
+    }
+}</pre>
+
+        <p>清理方法的实现：</p>
+        <pre>
+private void CleanupOldFiles()
+{
+    try
+    {
+        string directory = GetFullDirectory();
+        if (!Directory.Exists(directory)) return;
+
+        // 限制文件数量
+        if (MaxNumFiles > 0)
+        {
+            var allFiles = Directory.GetFiles(directory, $"{BaseFileName}_*{FileExtension}")
+                .Select(f => new FileInfo(f))
+                .OrderByDescending(f => f.LastWriteTime)
+                .ToArray();
+            
+            if (allFiles.Length > MaxNumFiles)
+            {
+                for (int i = MaxNumFiles; i < allFiles.Length; i++)
+                {
+                    try
+                    {
+                        File.Delete(allFiles[i].FullName);
+                    }
+                    catch (IOException)
+                    {
+                        // 文件可能被其他进程占用，忽略错误
+                    }
+                }
+            }
+        }
+
+        // 删除过期的文件
+        if (MaxDaysOld > 0)
+        {
+            DateTime oldestAllowed = DateTime.Now.AddDays(-MaxDaysOld);
+            var oldFiles = Directory.GetFiles(directory, $"{BaseFileName}_*{FileExtension}")
+                .Select(f => new FileInfo(f))
+                .Where(f => f.LastWriteTime < oldestAllowed)
+                .ToArray();
+            
+            foreach (var file in oldFiles)
+            {
+                try
+                {
+                    File.Delete(file.FullName);
+                }
+                catch (IOException)
+                {
+                    // 文件可能被其他进程占用，忽略错误
+                }
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        // 错误处理
+    }
+}</pre>
+
+        <h2>5. 使用示例</h2>
+        <pre>
+// 初始化LogHelper（包括异步清理机制）
+LogHelper.Initialize(
+    applicationName: "MyApplication", 
+    logDirectory: "Logs", 
+    enabledCategories: LogCategory.All, 
+    maxFileSize: 1024 * 1024, // 1MB 
+    maxDaysOld: 30, // 保留30天
+    logToConsole: true,
+    enableCompression: true);  // 启用压缩
+
+// 记录日志
+LogHelper.Info("MySource", "这是一条信息日志");
+LogHelper.Error("MySource", "这是一条错误日志");
+
+// 完成后关闭日志系统
+LogHelper.Shutdown();</pre>
+
+        <h2>6. 总结</h2>
+        <p>LogHelper的异步日志清理机制具有以下优势：</p>
+        <ul>
+            <li>无阻塞设计 - 清理操作在后台线程中执行，不影响主线程性能</li>
+            <li>多维度管理 - 同时支持基于时间和数量的清理策略</li>
+            <li>自动压缩 - 通过GZip压缩节省磁盘空间</li>
+            <li>错误容忍 - 具有健壮的错误处理机制，单个文件操作失败不会影响整体功能</li>
+            <li>实时触发 - 在创建新日志文件时自动触发清理，无需单独的调度任务</li>
+        </ul>
+        <p>通过这些机制，LogHelper能够有效地管理日志文件的生命周期，避免日志占用过多磁盘空间，同时保持高性能和可靠性。</p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,211 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{C3346B57-E924-4ABB-844B-36D99379C55A}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>DotNet.HWindows</RootNamespace>
+    <AssemblyName>DotNet.HWindows</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>x64</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="halcondotnet, Version=22.11.0.0, Culture=neutral, PublicKeyToken=4973bed59ddbf2b8, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\CvHalconDotNet.22.11.0\lib\net45\halcondotnet.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\DotNet\.dll\Newtonsoft.Json\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Extension\CvOperatorSet.cs" />
+    <Compile Include="enum\DrawForm.cs" />
+    <Compile Include="enum\ModelType.cs" />
+    <Compile Include="TransExpV2.cs" />
+    <Compile Include="WinDraw\WinDrawAction.cs" />
+    <Compile Include="WinDraw\WinDrawType.cs" />
+    <Compile Include="Extension\old\DoubleExtension.cs" />
+    <Compile Include="Extension\HWDisPlayExtension.cs" />
+    <Compile Include="Extension\HWindowExtension.cs" />
+    <Compile Include="Extension\RegionExtension.cs" />
+    <Compile Include="Font\HWindowFont2018.cs" />
+    <Compile Include="Font\HWindowFont2022.cs" />
+    <Compile Include="Font\HWindowFontBase.cs" />
+    <Compile Include="HWindows\HWindowFontFactory.cs" />
+    <Compile Include="Form_HWDisPlay.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form_HWDisPlay.Designer.cs">
+      <DependentUpon>Form_HWDisPlay.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form_ModelDisp.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form_ModelDisp.Designer.cs">
+      <DependentUpon>Form_ModelDisp.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form_ModelModify.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form_ModelModify.Designer.cs">
+      <DependentUpon>Form_ModelModify.cs</DependentUpon>
+    </Compile>
+    <Compile Include="HWindows\HWindowImage.cs" />
+    <Compile Include="HWindows\HWindowMouse.cs" />
+    <Compile Include="MainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MainForm.Designer.cs">
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Model\CvCircle.cs" />
+    <Compile Include="Model\CvCoord.cs" />
+    <Compile Include="Model\disp\DispArrow.cs" />
+    <Compile Include="Model\disp\DispDCircle.cs" />
+    <Compile Include="Model\disp\DispDCoord.cs" />
+    <Compile Include="Model\disp\DispDLine.cs" />
+    <Compile Include="Model\disp\DispDRegion.cs" />
+    <Compile Include="Model\disp\DispPoint2d.cs" />
+    <Compile Include="Model\disp\DispText.cs" />
+    <Compile Include="Model\CvLine.cs" />
+    <Compile Include="Model\CvRegion.cs" />
+    <Compile Include="Model\FindModel.cs" />
+    <Compile Include="Model\HColor.cs" />
+    <Compile Include="WinDraw\WinDrawModel.cs" />
+    <Compile Include="Model\ZoomImage.cs" />
+    <Compile Include="OpenCvSharp\DMatch.cs" />
+    <Compile Include="OpenCvSharp\KeyPoint.cs" />
+    <Compile Include="OpenCvSharp\MatType.cs" />
+    <Compile Include="OpenCvSharp\Point.cs" />
+    <Compile Include="OpenCvSharp\Point2d.cs" />
+    <Compile Include="OpenCvSharp\Point2f.cs" />
+    <Compile Include="OpenCvSharp\Point3d.cs" />
+    <Compile Include="OpenCvSharp\Point3f.cs" />
+    <Compile Include="OpenCvSharp\Point3i.cs" />
+    <Compile Include="OpenCvSharp\Range.cs" />
+    <Compile Include="OpenCvSharp\Rangef.cs" />
+    <Compile Include="OpenCvSharp\Rect.cs" />
+    <Compile Include="OpenCvSharp\Rect2d.cs" />
+    <Compile Include="OpenCvSharp\Rect2f.cs" />
+    <Compile Include="OpenCvSharp\RotatedRect.cs" />
+    <Compile Include="OpenCvSharp\Scalar.cs" />
+    <Compile Include="OpenCvSharp\Size.cs" />
+    <Compile Include="OpenCvSharp\Size2d.cs" />
+    <Compile Include="OpenCvSharp\Size2f.cs" />
+    <Compile Include="OpenCvSharp\TermCriteria.cs" />
+    <Compile Include="OpenCvSharp\Vec\IVec.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec2b.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec2d.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec2f.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec2i.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec2s.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec2w.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec3b.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec3d.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec3f.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec3i.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec3s.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec3w.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec4b.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec4d.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec4f.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec4i.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec4s.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec4w.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec6b.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec6d.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec6f.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec6i.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec6s.cs" />
+    <Compile Include="OpenCvSharp\Vec\Vec6w.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Serialize\JsonConvertHObject.cs" />
+    <Compile Include="Serialize\SerializeConvert.cs" />
+    <Compile Include="Template\FindModelInfo.cs" />
+    <Compile Include="Template\ModelInfo.cs" />
+    <Compile Include="Template\ModelResult.cs" />
+    <Compile Include="Template\ModelTypeExtension.cs" />
+    <EmbeddedResource Include="Form_HWDisPlay.resx">
+      <DependentUpon>Form_HWDisPlay.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form_ModelDisp.resx">
+      <DependentUpon>Form_ModelDisp.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form_ModelModify.resx">
+      <DependentUpon>Form_ModelModify.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MainForm.resx">
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DotNet.Extension\DotNet.Extension.csproj">
+      <Project>{2e83834e-3b47-49f2-a110-868b01ecfddd}</Project>
+      <Name>DotNet.Extension</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
