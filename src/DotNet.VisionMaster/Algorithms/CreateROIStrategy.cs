@@ -12,13 +12,13 @@ namespace DotNet.VisionMaster
         public override string Name => "创建ROI";
         public override void Init(DrawContext draw)
         {
-            draw.RectangleEvent += RectangleEvent;
+            draw.RectangleEvent += RectEvent;
         }
         public override void Close(DrawContext draw)
         {
-            draw.RectangleEvent -= RectangleEvent;  //RemoveEvent
+            draw.RectangleEvent -= RectEvent;  //RemoveEvent
         }
-        private void RectangleEvent(object sender, DrawContext.DrawRectangleArgs e)
+        private void RectEvent(object sender, DrawContext.DrawRectangleArgs e)
         {
             if (e.Name == Name)
             {
