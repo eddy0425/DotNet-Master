@@ -1,5 +1,7 @@
 ﻿using DotNet.HWindows;
 using HalconDotNet;
+using OpenCvSharp;
+using Sunny.UI;
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
@@ -8,11 +10,45 @@ namespace DotNet.VisionMaster
 {
     public class CreateROIStrategy : ParaStrategyBase<CreateROI>
     {
+        char variable = '/';
+        char value = ';';
+
         public override string Name => "创建ROI";
 
-        public override bool Fun_action()
+        public override bool Fun_action(DisplayForm display, List<IParaStrategy> strategys)
         {
-            throw new NotImplementedException();
+            HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
+            HObject imgReduce = new HObject(); HOperatorSet.GenEmptyObj(out imgReduce);
+
+            try
+            {
+                inPara.Coord = new CvCoord();
+                var coordSplit = inPara.CoordIn.Split(variable);
+                foreach (var strategy in strategys)
+                {
+                    if (strategy.Name == coordSplit[0])
+                    {
+                        var value = strategy.GetTreeNode(coordSplit[1]);
+                        break;
+                    }
+                }
+
+                var coord = inPara.Coord;
+                var hcontext = inPara.HContext;
+                hcontext.GenRegion();
+                inPara.Coord.center = hcontext.Center;
+                display.DispRegion(hcontext.HoRect);
+                return true;
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                regionGet.Dispose();
+                imgReduce.Dispose();
+            }
         }
         public override void Init(DrawContext draw)
         {
@@ -44,9 +80,33 @@ namespace DotNet.VisionMaster
                        .Node("区域", OutEnum.Region)
                    );
         }
+
+        public override object GetTreeNode(string tree)
+        {
+            switch (tree)
+            {
+                case "坐标系":
+                    return inPara.Coord;
+                case "原点":
+                    return inPara.Coord.center;
+                case "行":
+                    return inPara.Coord.Y;
+                case "列":
+                    return inPara.Coord.X;
+                case "角度":
+                    return inPara.Coord.angle;
+                case "区域":
+                    return inPara.HContext;
+                default:
+                    return null;
+            }
+        }
+
         public override void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls)
         {
             form.ShowTabs(TabPageEnum.Region, TabPageEnum.Display);
+
+            VsControls.ShowComboBox(form, "cmb_CoordIn", inPara.CoordIn.ToString(), false);
 
             HObjContext hRegion = inPara.HContext;
             VsControls.ShowComboBox(form, "cmb_Width", hRegion.Width.ToString(), false);
@@ -72,6 +132,9 @@ namespace DotNet.VisionMaster
 
         /// <summary> 跟随坐标 </summary>
         public string CoordIn { set; get; } = "默认";
+
+        /// <summary> 坐标系 </summary>
+        public CvCoord Coord { get; set; } = new CvCoord();
 
         /// <summary> 区域 </summary>
         public HObjContext HContext { set; get; } = new HObjContext();

@@ -12,11 +12,11 @@ namespace DotNet.VisionMaster
         void Init(DrawContext draw);
         void Close(DrawContext draw);
         void GenTreeNode(TreeVisualizer tree);
-        object GetTreeNode();
+        object GetTreeNode(string tree);
         void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls);
         void SavePara(ParaForm form, Dictionary<string, VsControlModel> VsControls);
         void DispROI(DisplayForm display);
-        bool Fun_action();
+        bool Fun_action(DisplayForm display, List<IParaStrategy> strategys);
     }
 
     /// <summary>
@@ -28,11 +28,11 @@ namespace DotNet.VisionMaster
         public T inPara { get; set; } = new T();
         public virtual void Init(DrawContext draw) { }
         public virtual void Close(DrawContext draw) { }
-        public virtual object GetTreeNode() { return null; }
+        public virtual object GetTreeNode(string tree) { return null; }
         public abstract void GenTreeNode(TreeVisualizer tree);
         public abstract void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls);
         public abstract void SavePara(ParaForm form, Dictionary<string, VsControlModel> VsControls);
         public virtual void DispROI(DisplayForm display) { }
-        public abstract bool Fun_action();
+        public abstract bool Fun_action(DisplayForm display, List<IParaStrategy> strategys);
     }
 }

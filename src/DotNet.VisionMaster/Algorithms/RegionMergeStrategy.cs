@@ -8,7 +8,7 @@ namespace DotNet.VisionMaster
     {
         public override string Name => "区域合并";
 
-        public override bool Fun_action()
+        public override bool Fun_action(DisplayForm display, List<IParaStrategy> strategys)
         {
             throw new NotImplementedException();
         }

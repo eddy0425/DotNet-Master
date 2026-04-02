@@ -782,6 +782,7 @@
             this.btn_setCoordIn.Size = new System.Drawing.Size(30, 20);
             this.btn_setCoordIn.TabIndex = 350;
             this.btn_setCoordIn.UseVisualStyleBackColor = false;
+            this.btn_setCoordIn.Click += new System.EventHandler(this.btn_setCoordIn_Click);
             // 
             // grb_Graph
             // 

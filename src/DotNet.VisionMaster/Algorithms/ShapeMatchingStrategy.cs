@@ -1,18 +1,64 @@
-using DotNet.HWindows;
-using HalconDotNet;
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
+using HalconDotNet;
 
 
 namespace DotNet.VisionMaster
 {
     public class ShapeMatchingStrategy : ParaStrategyBase<ShapeMatching>
     {
+        char variable = '/';
+        char value = ';';
+
         public override string Name => "形状匹配";
-        public override bool Fun_action()
+        public override bool Fun_action(DisplayForm display, List<IParaStrategy> strategys)
         {
-            throw new NotImplementedException();
+            HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
+            HObject imgReduce = new HObject(); HOperatorSet.GenEmptyObj(out imgReduce);
+
+            try
+            {
+                var imageSplit = inPara.ImageIn.Split(variable);
+                foreach (var strategy in strategys)
+                {
+                    if (strategy.Name == imageSplit[0])
+                    {
+                        var value = strategy.GetTreeNode(imageSplit[1]);
+                        break;
+                    }
+                }
+
+                var regionSplit = inPara.RegionIn.Split(variable);
+                foreach (var strategy in strategys)
+                {
+                    if (strategy.Name == regionSplit[0])
+                    {
+                        var value = strategy.GetTreeNode(regionSplit[1]);
+                        break;
+                    }
+                }
+
+                var coordSplit = inPara.CoordIn.Split(variable);
+                foreach (var strategy in strategys)
+                {
+                    if (strategy.Name == coordSplit[0])
+                    {
+                        var value = strategy.GetTreeNode(coordSplit[1]);
+                        break;
+                    }
+                }
+
+                return true;
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                regionGet.Dispose();
+                imgReduce.Dispose();
+            }
         }
         public override void Init(DrawContext draw)
         {
@@ -54,6 +100,8 @@ namespace DotNet.VisionMaster
             VsControls.ShowComboBox(form, "cmb_BottomRight", $"{hRegion.BottomRight.X};{hRegion.BottomRight.Y}", false);
             VsControls.ShowComboBox(form, "cmb_Center", $"{hRegion.Center.X};{hRegion.Center.Y}", false);
 
+            VsControls.ShowComboBox(form, "cmb_CoordIn", inPara.CoordIn.ToString(), false);
+
             //基本参数
             VsControls.ShowLabel(form, "lbl_100", "图像来源");
             VsControls.ShowComboBox(form, "cmb_100", inPara.ImageIn.ToString(), false);
@@ -88,6 +136,7 @@ namespace DotNet.VisionMaster
         public override void SavePara(ParaForm form, Dictionary<string, VsControlModel> VsControls)
         {
             //基本参数
+            inPara.CoordIn = VsControls["cmb_CoordIn"].Text;
             inPara.ImageIn = VsControls["cmb_100"].Text;
             inPara.RegionIn = VsControls["cmb_101"].Text;
             inPara.AngleStart = Convert.ToDouble(VsControls["cmb_102"].Text);
@@ -115,6 +164,9 @@ namespace DotNet.VisionMaster
 
         /// <summary> 区域来源 </summary>
         public string RegionIn { set; get; } = "默认";
+
+        /// <summary> 跟随坐标 </summary>
+        public string CoordIn { set; get; } = "默认";
 
         /// <summary> 区域 </summary>
         public HObjContext HContext { set; get; } = new HObjContext();

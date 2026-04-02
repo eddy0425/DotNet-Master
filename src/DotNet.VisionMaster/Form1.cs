@@ -7,7 +7,7 @@ namespace DotNet.VisionMaster
 {
     public partial class Form1 : Form
     {
-        DisplayForm _display = new DisplayForm();
+        DisplayForm _display;
         ParaForm _formPara;
         private readonly Dictionary<string, VsControlModel> _vsControls = new Dictionary<string, VsControlModel>();
 
@@ -22,6 +22,7 @@ namespace DotNet.VisionMaster
         {
             InitializeComponent();
 
+            _display = new DisplayForm();
             _display.FormBorderStyle = FormBorderStyle.None;     //无边框
             _display.Dock = DockStyle.Fill;
             _display.TopLevel = false;
@@ -74,5 +75,10 @@ namespace DotNet.VisionMaster
             _currentStrategy.DispROI(_display);
         }
 
+        private void button4_Click(object sender, EventArgs e)
+        {
+            _currentStrategy.SavePara(_formPara, _vsControls);
+            _currentStrategy.Fun_action(_display, _strategys);
+        }
     }
 }

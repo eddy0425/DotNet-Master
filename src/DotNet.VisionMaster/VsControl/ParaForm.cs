@@ -33,6 +33,23 @@ namespace DotNet.VisionMaster
             _display.SetDrawMode(_name, WinDrawType.NewRect);
         }
 
+        private void btn_setCoordIn_Click(object sender, EventArgs e)
+        {
+            switch (_strategys[_index].Name)
+            {
+                case "形状匹配":
+                case "直线查找":
+                    {
+                        _form_Value.setValueForm(_index, _strategys, cmb_CoordIn.Text, OutEnum.Coord);
+                        if (_form_Value.DialogResult == DialogResult.OK)
+                        {
+                            cmb_CoordIn.Text = _form_Value.StrReturn;
+                        }
+                    }
+                    break;
+            }
+        }
+
         private void btn_100_Click(object sender, EventArgs e)
         {
             switch (_strategys[_index].Name)
@@ -66,5 +83,6 @@ namespace DotNet.VisionMaster
                     break;
             }
         }
+
     }
 }

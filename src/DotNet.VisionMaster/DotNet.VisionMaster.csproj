@@ -144,6 +144,18 @@
       <Project>{c3346b57-e924-4abb-844b-36d99379c55a}</Project>
       <Name>DotNet.HWindows</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Library\DotNet.Excel\DotNet.Excel.csproj">
+      <Project>{66313ca7-8fed-4d1d-aceb-71cb2909a09c}</Project>
+      <Name>DotNet.Excel</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Library\DotNet.Json\DotNet.Json.csproj">
+      <Project>{5954e440-e34e-49ad-bccd-93284cd8ea2b}</Project>
+      <Name>DotNet.Json</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Library\DotNet.Logging\DotNet.Logging.csproj">
+      <Project>{61b8513d-a49f-451e-b525-a7db5692cd32}</Project>
+      <Name>DotNet.Logging</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

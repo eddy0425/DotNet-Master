@@ -19,7 +19,6 @@ namespace DotNet.VisionMaster
 
     public class HObjContext : Rect2d
     {
-
         /// <summary> 角度 </summary>
         public HTuple Phi { set; get; } = 0;
 

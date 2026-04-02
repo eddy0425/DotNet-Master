@@ -200,6 +200,11 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\Library\DotNet.Extension\DotNet.Extension.csproj">
+      <Project>{b1ed16c4-1623-4764-8922-96121ad2e207}</Project>
+      <Name>DotNet.Extension</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
