@@ -1,3 +1,4 @@
+using DotNet.HWindows;
 using HalconDotNet;
 using System;
 using System.Collections.Generic;
@@ -11,7 +12,22 @@ namespace DotNet.VisionMaster
         char value = ';';
 
         public override string Name => "直线查找";
-
+        public override void Init(DrawContext draw)
+        {
+            draw.RectangleEvent += RectangleEvent;
+        }
+        public override void Close(DrawContext draw)
+        {
+            draw.RectangleEvent -= RectangleEvent;  //RemoveEvent
+        }
+        private void RectangleEvent(object sender, DrawContext.DrawRectangleArgs e)
+        {
+            if (e.Name == Name)
+            {
+                inPara.HContext.Re2Point(e.TopLeft, e.BottomRight);
+                inPara.HContext.GenRegion();
+            }
+        }
         public override bool Fun_action(DisplayForm display, List<IParaStrategy> strategys)
         {
             HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
@@ -61,23 +77,6 @@ namespace DotNet.VisionMaster
                 imgReduce.Dispose();
             }
         }
-        public override void Init(DrawContext draw)
-        {
-            draw.RectangleEvent += RectangleEvent;
-        }
-        public override void Close(DrawContext draw)
-        {
-            draw.RectangleEvent -= RectangleEvent;  //RemoveEvent
-        }
-        private void RectangleEvent(object sender, DrawContext.DrawRectangleArgs e)
-        {
-            if (e.Name == Name)
-            {
-                inPara.HContext.Re2Point(e.TopLeft, e.BottomRight);
-                inPara.HContext.GenRegion();
-            }
-        }
-
         public override void GenTreeNode(TreeVisualizer tree)
         {
             tree.Branch(Name, branch => branch
@@ -93,6 +92,20 @@ namespace DotNet.VisionMaster
                        )
                        .CommonNodes()
                    );
+        }
+        public override object GetTreeNode(string tree)
+        {
+            switch (tree)
+            {
+                case "直线":
+                    return inPara.Line;
+                case "起点":
+                    return inPara.Line.start;
+                case "终点":
+                    return inPara.Line.end;
+                default:
+                    return null;
+            }
         }
         public override void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls)
         {
@@ -174,6 +187,8 @@ namespace DotNet.VisionMaster
 
         /// <summary> 跟随坐标 </summary>
         public string CoordIn { set; get; } = "默认";
+
+        public CvLine Line { set; get; } = new CvLine();
 
         /// <summary> 区域 </summary>
         public HObjContext HContext { set; get; } = new HObjContext();

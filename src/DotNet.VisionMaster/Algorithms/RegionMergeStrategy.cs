@@ -1,3 +1,4 @@
+using DotNet.HWindows;
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
@@ -7,7 +8,6 @@ namespace DotNet.VisionMaster
     public class RegionMergeStrategy : ParaStrategyBase<RegionMerge>
     {
         public override string Name => "区域合并";
-
         public override bool Fun_action(DisplayForm display, List<IParaStrategy> strategys)
         {
             throw new NotImplementedException();
@@ -26,6 +26,26 @@ namespace DotNet.VisionMaster
                        .CommonNodes()
                    );
         }
+        public override object GetTreeNode(string tree)
+        {
+            switch (tree)
+            {
+                case "坐标系":
+                    return inPara.Coord;
+                case "原点":
+                    return inPara.Coord.center;
+                case "行":
+                    return inPara.Coord.Y;
+                case "列":
+                    return inPara.Coord.X;
+                case "角度":
+                    return inPara.Coord.angle;
+                case "区域":
+                    return inPara.HContext;
+                default:
+                    return null;
+            }
+        }
         public override void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls)
         {
             form.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Display);
@@ -38,7 +58,6 @@ namespace DotNet.VisionMaster
                 VsControls.ShowButton(form, $"btn_{id}", true);
             }
         }
-
         public override void SavePara(ParaForm form, Dictionary<string, VsControlModel> VsControls)
         {
             for (int i = 0; i < inPara.RegionSources.Length; i++)
@@ -56,6 +75,12 @@ namespace DotNet.VisionMaster
 
         /// <summary> 区域来源 </summary>
         public string[] RegionSources { get; set; } = new string[6];
+
+        /// <summary> 坐标系 </summary>
+        public CvCoord Coord { get; set; } = new CvCoord();
+
+        /// <summary> 区域 </summary>
+        public HObjContext HContext { set; get; } = new HObjContext();
     }
 
 }

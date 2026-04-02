@@ -14,7 +14,22 @@ namespace DotNet.VisionMaster
         char value = ';';
 
         public override string Name => "创建ROI";
-
+        public override void Init(DrawContext draw)
+        {
+            draw.RectangleEvent += RectangleEvent;
+        }
+        public override void Close(DrawContext draw)
+        {
+            draw.RectangleEvent -= RectangleEvent;  //RemoveEvent
+        }
+        private void RectangleEvent(object sender, DrawContext.DrawRectangleArgs e)
+        {
+            if (e.Name == Name)
+            {
+                inPara.HContext.Re2Point(e.TopLeft, e.BottomRight);
+                inPara.HContext.GenRegion();
+            }
+        }
         public override bool Fun_action(DisplayForm display, List<IParaStrategy> strategys)
         {
             HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
@@ -50,23 +65,6 @@ namespace DotNet.VisionMaster
                 imgReduce.Dispose();
             }
         }
-        public override void Init(DrawContext draw)
-        {
-            draw.RectangleEvent += RectangleEvent;
-        }
-        public override void Close(DrawContext draw)
-        {
-            draw.RectangleEvent -= RectangleEvent;  //RemoveEvent
-        }
-        private void RectangleEvent(object sender, DrawContext.DrawRectangleArgs e)
-        {
-            if (e.Name == Name)
-            {
-                inPara.HContext.Re2Point(e.TopLeft, e.BottomRight);
-                inPara.HContext.GenRegion();
-            }
-        }
-
         public override void GenTreeNode(TreeVisualizer tree)
         {
             tree.Branch(Name, branch => branch
@@ -80,7 +78,6 @@ namespace DotNet.VisionMaster
                        .Node("区域", OutEnum.Region)
                    );
         }
-
         public override object GetTreeNode(string tree)
         {
             switch (tree)
@@ -101,7 +98,6 @@ namespace DotNet.VisionMaster
                     return null;
             }
         }
-
         public override void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls)
         {
             form.ShowTabs(TabPageEnum.Region, TabPageEnum.Display);
@@ -123,6 +119,7 @@ namespace DotNet.VisionMaster
         {
             display.SetDrawMode(Name, inPara.HContext, WinDrawType.DispRect);
         }
+
     }
 
     public class CreateROI

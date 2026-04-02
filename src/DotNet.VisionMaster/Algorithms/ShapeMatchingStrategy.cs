@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DotNet.HWindows;
 using HalconDotNet;
 
 
@@ -11,6 +12,22 @@ namespace DotNet.VisionMaster
         char value = ';';
 
         public override string Name => "形状匹配";
+        public override void Init(DrawContext draw)
+        {
+            draw.RectangleEvent += RectangleEvent; //AddEvent
+        }
+        public override void Close(DrawContext draw)
+        {
+            draw.RectangleEvent -= RectangleEvent;  //RemoveEvent
+        }
+        private void RectangleEvent(object sender, DrawContext.DrawRectangleArgs e)
+        {
+            if (e.Name == Name)
+            {
+                inPara.HContext.Re2Point(e.TopLeft, e.BottomRight);
+                inPara.HContext.GenRegion();
+            }
+        }
         public override bool Fun_action(DisplayForm display, List<IParaStrategy> strategys)
         {
             HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
@@ -60,23 +77,6 @@ namespace DotNet.VisionMaster
                 imgReduce.Dispose();
             }
         }
-        public override void Init(DrawContext draw)
-        {
-            draw.RectangleEvent += RectangleEvent; //AddEvent
-        }
-        public override void Close(DrawContext draw)
-        {
-            draw.RectangleEvent -= RectangleEvent;  //RemoveEvent
-        }
-        private void RectangleEvent(object sender, DrawContext.DrawRectangleArgs e)
-        {
-            if (e.Name == Name)
-            {
-                inPara.HContext.Re2Point(e.TopLeft, e.BottomRight);
-                inPara.HContext.GenRegion();
-            }
-        }
-
         public override void GenTreeNode(TreeVisualizer tree)
         {
             tree.Branch(Name, branch => branch
@@ -88,6 +88,24 @@ namespace DotNet.VisionMaster
                            .Node("角度", OutEnum.Array)
                        )
                    );
+        }
+        public override object GetTreeNode(string tree)
+        {
+            switch (tree)
+            {
+                case "坐标系":
+                    return inPara.Coord;
+                case "原点":
+                    return inPara.Coord.center;
+                case "行":
+                    return inPara.Coord.Y;
+                case "列":
+                    return inPara.Coord.X;
+                case "角度":
+                    return inPara.Coord.angle;
+                default:
+                    return null;
+            }
         }
         public override void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls)
         {
@@ -155,7 +173,7 @@ namespace DotNet.VisionMaster
     }
 
     public class ShapeMatching
-    {
+    {   
         /// <summary> 指令类型 </summary>
         public readonly string Algorithm = "形状匹配";
 
@@ -167,6 +185,9 @@ namespace DotNet.VisionMaster
 
         /// <summary> 跟随坐标 </summary>
         public string CoordIn { set; get; } = "默认";
+
+        /// <summary> 坐标系 </summary>
+        public CvCoord Coord { get; set; } = new CvCoord();
 
         /// <summary> 区域 </summary>
         public HObjContext HContext { set; get; } = new HObjContext();

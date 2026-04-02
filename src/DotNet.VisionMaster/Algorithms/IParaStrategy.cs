@@ -28,8 +28,8 @@ namespace DotNet.VisionMaster
         public T inPara { get; set; } = new T();
         public virtual void Init(DrawContext draw) { }
         public virtual void Close(DrawContext draw) { }
-        public virtual object GetTreeNode(string tree) { return null; }
         public abstract void GenTreeNode(TreeVisualizer tree);
+        public abstract object GetTreeNode(string tree);
         public abstract void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls);
         public abstract void SavePara(ParaForm form, Dictionary<string, VsControlModel> VsControls);
         public virtual void DispROI(DisplayForm display) { }
