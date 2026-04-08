@@ -31,6 +31,16 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ParaForm));
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage0 = new System.Windows.Forms.TabPage();
+            this.cmb_ImageFolder = new System.Windows.Forms.ComboBox();
+            this.btn_openPath = new System.Windows.Forms.Button();
+            this.btn_setPath = new System.Windows.Forms.Button();
+            this.groupBox6 = new System.Windows.Forms.GroupBox();
+            this.cmb_Rotate = new System.Windows.Forms.ComboBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.label3 = new System.Windows.Forms.Label();
+            this.cmb_Mirror = new System.Windows.Forms.ComboBox();
+            this.label4 = new System.Windows.Forms.Label();
+            this.tabPage1 = new System.Windows.Forms.TabPage();
             this.btn_115 = new System.Windows.Forms.Button();
             this.lbl_115 = new System.Windows.Forms.Label();
             this.cmb_115 = new System.Windows.Forms.ComboBox();
@@ -67,7 +77,7 @@
             this.cmb_111 = new System.Windows.Forms.ComboBox();
             this.lbl_110 = new System.Windows.Forms.Label();
             this.cmb_110 = new System.Windows.Forms.ComboBox();
-            this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.tabPage2 = new System.Windows.Forms.TabPage();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.btn_rectangle2 = new System.Windows.Forms.RadioButton();
             this.btn_polygon = new System.Windows.Forms.RadioButton();
@@ -90,7 +100,7 @@
             this.btn_drawRegion = new System.Windows.Forms.Button();
             this.lbl_CoordIn = new System.Windows.Forms.Label();
             this.cmb_CoordIn = new System.Windows.Forms.ComboBox();
-            this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.tabPage3 = new System.Windows.Forms.TabPage();
             this.but_modifyModel = new System.Windows.Forms.Button();
             this.panel1 = new System.Windows.Forms.Panel();
             this.but_editModel = new System.Windows.Forms.Button();
@@ -101,7 +111,7 @@
             this.btn_circle_2 = new System.Windows.Forms.RadioButton();
             this.btn_oval_2 = new System.Windows.Forms.RadioButton();
             this.btn_rectangle1_2 = new System.Windows.Forms.RadioButton();
-            this.tabPage3 = new System.Windows.Forms.TabPage();
+            this.tabPage4 = new System.Windows.Forms.TabPage();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.radio_Output4 = new System.Windows.Forms.RadioButton();
             this.radio_Output3 = new System.Windows.Forms.RadioButton();
@@ -110,11 +120,11 @@
             this.groupBox5 = new System.Windows.Forms.GroupBox();
             this.label2 = new System.Windows.Forms.Label();
             this.CB_PointSize = new System.Windows.Forms.ComboBox();
-            this.CB_FontSize = new System.Windows.Forms.TextBox();
+            this.CB_FontSize = new System.Windows.Forms.ComboBox();
             this.lbl_122 = new System.Windows.Forms.Label();
-            this.CB_FontY = new System.Windows.Forms.TextBox();
+            this.CB_FontY = new System.Windows.Forms.ComboBox();
             this.lbl_121 = new System.Windows.Forms.Label();
-            this.CB_FontX = new System.Windows.Forms.TextBox();
+            this.CB_FontX = new System.Windows.Forms.ComboBox();
             this.lbl_120 = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.ckb_disp5 = new System.Windows.Forms.CheckBox();
@@ -125,12 +135,14 @@
             this.ckb_disp3 = new System.Windows.Forms.CheckBox();
             this.tabControl1.SuspendLayout();
             this.tabPage0.SuspendLayout();
+            this.groupBox6.SuspendLayout();
             this.tabPage1.SuspendLayout();
+            this.tabPage2.SuspendLayout();
             this.groupBox4.SuspendLayout();
             this.grb_Graph.SuspendLayout();
-            this.tabPage2.SuspendLayout();
-            this.groupBox3.SuspendLayout();
             this.tabPage3.SuspendLayout();
+            this.groupBox3.SuspendLayout();
+            this.tabPage4.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox5.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -138,11 +150,14 @@
             // 
             // tabControl1
             // 
+            this.tabControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.tabControl1.Controls.Add(this.tabPage0);
             this.tabControl1.Controls.Add(this.tabPage1);
             this.tabControl1.Controls.Add(this.tabPage2);
             this.tabControl1.Controls.Add(this.tabPage3);
-            this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tabControl1.Controls.Add(this.tabPage4);
             this.tabControl1.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.8F);
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
             this.tabControl1.Name = "tabControl1";
@@ -153,48 +168,183 @@
             // tabPage0
             // 
             this.tabPage0.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(40)))), ((int)(((byte)(30)))));
-            this.tabPage0.Controls.Add(this.btn_115);
-            this.tabPage0.Controls.Add(this.lbl_115);
-            this.tabPage0.Controls.Add(this.cmb_115);
-            this.tabPage0.Controls.Add(this.btn_100);
-            this.tabPage0.Controls.Add(this.btn_105);
-            this.tabPage0.Controls.Add(this.lbl_105);
-            this.tabPage0.Controls.Add(this.cmb_105);
-            this.tabPage0.Controls.Add(this.btn_104);
-            this.tabPage0.Controls.Add(this.btn_103);
-            this.tabPage0.Controls.Add(this.btn_102);
-            this.tabPage0.Controls.Add(this.btn_101);
-            this.tabPage0.Controls.Add(this.lbl_104);
-            this.tabPage0.Controls.Add(this.cmb_104);
-            this.tabPage0.Controls.Add(this.lbl_103);
-            this.tabPage0.Controls.Add(this.cmb_103);
-            this.tabPage0.Controls.Add(this.lbl_102);
-            this.tabPage0.Controls.Add(this.cmb_102);
-            this.tabPage0.Controls.Add(this.lbl_100);
-            this.tabPage0.Controls.Add(this.cmb_100);
-            this.tabPage0.Controls.Add(this.lbl_101);
-            this.tabPage0.Controls.Add(this.cmb_101);
-            this.tabPage0.Controls.Add(this.btn_112);
-            this.tabPage0.Controls.Add(this.btn_111);
-            this.tabPage0.Controls.Add(this.btn_110);
-            this.tabPage0.Controls.Add(this.btn_114);
-            this.tabPage0.Controls.Add(this.btn_113);
-            this.tabPage0.Controls.Add(this.lbl_114);
-            this.tabPage0.Controls.Add(this.cmb_114);
-            this.tabPage0.Controls.Add(this.lbl_113);
-            this.tabPage0.Controls.Add(this.cmb_113);
-            this.tabPage0.Controls.Add(this.lbl_112);
-            this.tabPage0.Controls.Add(this.cmb_112);
-            this.tabPage0.Controls.Add(this.lbl_111);
-            this.tabPage0.Controls.Add(this.cmb_111);
-            this.tabPage0.Controls.Add(this.lbl_110);
-            this.tabPage0.Controls.Add(this.cmb_110);
+            this.tabPage0.Controls.Add(this.cmb_ImageFolder);
+            this.tabPage0.Controls.Add(this.btn_openPath);
+            this.tabPage0.Controls.Add(this.btn_setPath);
+            this.tabPage0.Controls.Add(this.groupBox6);
+            this.tabPage0.Controls.Add(this.label4);
+            this.tabPage0.Font = new System.Drawing.Font("Arial Narrow", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.tabPage0.Location = new System.Drawing.Point(4, 26);
             this.tabPage0.Name = "tabPage0";
             this.tabPage0.Padding = new System.Windows.Forms.Padding(3);
             this.tabPage0.Size = new System.Drawing.Size(514, 205);
-            this.tabPage0.TabIndex = 5;
-            this.tabPage0.Text = "基本参数";
+            this.tabPage0.TabIndex = 8;
+            this.tabPage0.Text = "文件图像";
+            // 
+            // cmb_ImageFolder
+            // 
+            this.cmb_ImageFolder.Font = new System.Drawing.Font("楷体", 9F);
+            this.cmb_ImageFolder.ForeColor = System.Drawing.Color.Black;
+            this.cmb_ImageFolder.FormattingEnabled = true;
+            this.cmb_ImageFolder.ItemHeight = 12;
+            this.cmb_ImageFolder.Location = new System.Drawing.Point(76, 23);
+            this.cmb_ImageFolder.Name = "cmb_ImageFolder";
+            this.cmb_ImageFolder.Size = new System.Drawing.Size(328, 20);
+            this.cmb_ImageFolder.TabIndex = 194;
+            // 
+            // btn_openPath
+            // 
+            this.btn_openPath.AutoSize = true;
+            this.btn_openPath.BackColor = System.Drawing.Color.White;
+            this.btn_openPath.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("btn_openPath.BackgroundImage")));
+            this.btn_openPath.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+            this.btn_openPath.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btn_openPath.Font = new System.Drawing.Font("楷体", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.btn_openPath.ForeColor = System.Drawing.Color.Black;
+            this.btn_openPath.Location = new System.Drawing.Point(460, 22);
+            this.btn_openPath.Margin = new System.Windows.Forms.Padding(0);
+            this.btn_openPath.Name = "btn_openPath";
+            this.btn_openPath.Size = new System.Drawing.Size(30, 20);
+            this.btn_openPath.TabIndex = 203;
+            this.btn_openPath.UseVisualStyleBackColor = false;
+            this.btn_openPath.Click += new System.EventHandler(this.btn_openPath_Click);
+            // 
+            // btn_setPath
+            // 
+            this.btn_setPath.AutoSize = true;
+            this.btn_setPath.BackColor = System.Drawing.Color.White;
+            this.btn_setPath.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("btn_setPath.BackgroundImage")));
+            this.btn_setPath.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+            this.btn_setPath.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btn_setPath.Font = new System.Drawing.Font("楷体", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.btn_setPath.ForeColor = System.Drawing.Color.Black;
+            this.btn_setPath.Location = new System.Drawing.Point(419, 22);
+            this.btn_setPath.Margin = new System.Windows.Forms.Padding(0);
+            this.btn_setPath.Name = "btn_setPath";
+            this.btn_setPath.Size = new System.Drawing.Size(30, 20);
+            this.btn_setPath.TabIndex = 202;
+            this.btn_setPath.UseVisualStyleBackColor = false;
+            this.btn_setPath.Click += new System.EventHandler(this.btn_setPath_Click);
+            // 
+            // groupBox6
+            // 
+            this.groupBox6.Controls.Add(this.cmb_Rotate);
+            this.groupBox6.Controls.Add(this.label1);
+            this.groupBox6.Controls.Add(this.label3);
+            this.groupBox6.Controls.Add(this.cmb_Mirror);
+            this.groupBox6.Font = new System.Drawing.Font("Arial Narrow", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.groupBox6.ForeColor = System.Drawing.Color.White;
+            this.groupBox6.Location = new System.Drawing.Point(19, 69);
+            this.groupBox6.Name = "groupBox6";
+            this.groupBox6.Size = new System.Drawing.Size(232, 110);
+            this.groupBox6.TabIndex = 201;
+            this.groupBox6.TabStop = false;
+            this.groupBox6.Text = "图片处理";
+            // 
+            // cmb_Rotate
+            // 
+            this.cmb_Rotate.Font = new System.Drawing.Font("楷体", 9F);
+            this.cmb_Rotate.ForeColor = System.Drawing.Color.Black;
+            this.cmb_Rotate.FormattingEnabled = true;
+            this.cmb_Rotate.ItemHeight = 12;
+            this.cmb_Rotate.Location = new System.Drawing.Point(61, 27);
+            this.cmb_Rotate.Name = "cmb_Rotate";
+            this.cmb_Rotate.Size = new System.Drawing.Size(130, 20);
+            this.cmb_Rotate.TabIndex = 198;
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Font = new System.Drawing.Font("Arial Narrow", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label1.ImageAlign = System.Drawing.ContentAlignment.TopRight;
+            this.label1.Location = new System.Drawing.Point(19, 70);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(31, 16);
+            this.label1.TabIndex = 199;
+            this.label1.Text = "镜像";
+            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Font = new System.Drawing.Font("Arial Narrow", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label3.ImageAlign = System.Drawing.ContentAlignment.TopRight;
+            this.label3.Location = new System.Drawing.Point(19, 30);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(31, 16);
+            this.label3.TabIndex = 197;
+            this.label3.Text = "旋转";
+            this.label3.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // cmb_Mirror
+            // 
+            this.cmb_Mirror.Font = new System.Drawing.Font("楷体", 9F);
+            this.cmb_Mirror.ForeColor = System.Drawing.Color.Black;
+            this.cmb_Mirror.FormattingEnabled = true;
+            this.cmb_Mirror.ItemHeight = 12;
+            this.cmb_Mirror.Location = new System.Drawing.Point(61, 67);
+            this.cmb_Mirror.Name = "cmb_Mirror";
+            this.cmb_Mirror.Size = new System.Drawing.Size(130, 20);
+            this.cmb_Mirror.TabIndex = 200;
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Font = new System.Drawing.Font("Arial Narrow", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label4.ForeColor = System.Drawing.Color.White;
+            this.label4.ImageAlign = System.Drawing.ContentAlignment.TopRight;
+            this.label4.Location = new System.Drawing.Point(16, 25);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(55, 16);
+            this.label4.TabIndex = 193;
+            this.label4.Text = "图片路径";
+            this.label4.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // tabPage1
+            // 
+            this.tabPage1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(40)))), ((int)(((byte)(30)))));
+            this.tabPage1.Controls.Add(this.btn_115);
+            this.tabPage1.Controls.Add(this.lbl_115);
+            this.tabPage1.Controls.Add(this.cmb_115);
+            this.tabPage1.Controls.Add(this.btn_100);
+            this.tabPage1.Controls.Add(this.btn_105);
+            this.tabPage1.Controls.Add(this.lbl_105);
+            this.tabPage1.Controls.Add(this.cmb_105);
+            this.tabPage1.Controls.Add(this.btn_104);
+            this.tabPage1.Controls.Add(this.btn_103);
+            this.tabPage1.Controls.Add(this.btn_102);
+            this.tabPage1.Controls.Add(this.btn_101);
+            this.tabPage1.Controls.Add(this.lbl_104);
+            this.tabPage1.Controls.Add(this.cmb_104);
+            this.tabPage1.Controls.Add(this.lbl_103);
+            this.tabPage1.Controls.Add(this.cmb_103);
+            this.tabPage1.Controls.Add(this.lbl_102);
+            this.tabPage1.Controls.Add(this.cmb_102);
+            this.tabPage1.Controls.Add(this.lbl_100);
+            this.tabPage1.Controls.Add(this.cmb_100);
+            this.tabPage1.Controls.Add(this.lbl_101);
+            this.tabPage1.Controls.Add(this.cmb_101);
+            this.tabPage1.Controls.Add(this.btn_112);
+            this.tabPage1.Controls.Add(this.btn_111);
+            this.tabPage1.Controls.Add(this.btn_110);
+            this.tabPage1.Controls.Add(this.btn_114);
+            this.tabPage1.Controls.Add(this.btn_113);
+            this.tabPage1.Controls.Add(this.lbl_114);
+            this.tabPage1.Controls.Add(this.cmb_114);
+            this.tabPage1.Controls.Add(this.lbl_113);
+            this.tabPage1.Controls.Add(this.cmb_113);
+            this.tabPage1.Controls.Add(this.lbl_112);
+            this.tabPage1.Controls.Add(this.cmb_112);
+            this.tabPage1.Controls.Add(this.lbl_111);
+            this.tabPage1.Controls.Add(this.cmb_111);
+            this.tabPage1.Controls.Add(this.lbl_110);
+            this.tabPage1.Controls.Add(this.cmb_110);
+            this.tabPage1.Location = new System.Drawing.Point(4, 26);
+            this.tabPage1.Name = "tabPage1";
+            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage1.Size = new System.Drawing.Size(514, 205);
+            this.tabPage1.TabIndex = 5;
+            this.tabPage1.Text = "基本参数";
             // 
             // btn_115
             // 
@@ -658,22 +808,22 @@
             this.cmb_110.Size = new System.Drawing.Size(130, 23);
             this.cmb_110.TabIndex = 199;
             // 
-            // tabPage1
+            // tabPage2
             // 
-            this.tabPage1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(40)))), ((int)(((byte)(30)))));
-            this.tabPage1.Controls.Add(this.groupBox4);
-            this.tabPage1.Controls.Add(this.but_updataRegion);
-            this.tabPage1.Controls.Add(this.btn_setCoordIn);
-            this.tabPage1.Controls.Add(this.grb_Graph);
-            this.tabPage1.Controls.Add(this.btn_drawRegion);
-            this.tabPage1.Controls.Add(this.lbl_CoordIn);
-            this.tabPage1.Controls.Add(this.cmb_CoordIn);
-            this.tabPage1.Location = new System.Drawing.Point(4, 26);
-            this.tabPage1.Name = "tabPage1";
-            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage1.Size = new System.Drawing.Size(514, 205);
-            this.tabPage1.TabIndex = 6;
-            this.tabPage1.Text = "区域设置";
+            this.tabPage2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(40)))), ((int)(((byte)(30)))));
+            this.tabPage2.Controls.Add(this.groupBox4);
+            this.tabPage2.Controls.Add(this.but_updataRegion);
+            this.tabPage2.Controls.Add(this.btn_setCoordIn);
+            this.tabPage2.Controls.Add(this.grb_Graph);
+            this.tabPage2.Controls.Add(this.btn_drawRegion);
+            this.tabPage2.Controls.Add(this.lbl_CoordIn);
+            this.tabPage2.Controls.Add(this.cmb_CoordIn);
+            this.tabPage2.Location = new System.Drawing.Point(4, 26);
+            this.tabPage2.Name = "tabPage2";
+            this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage2.Size = new System.Drawing.Size(514, 205);
+            this.tabPage2.TabIndex = 6;
+            this.tabPage2.Text = "区域设置";
             // 
             // groupBox4
             // 
@@ -966,20 +1116,20 @@
             this.cmb_CoordIn.Size = new System.Drawing.Size(124, 23);
             this.cmb_CoordIn.TabIndex = 347;
             // 
-            // tabPage2
+            // tabPage3
             // 
-            this.tabPage2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(40)))), ((int)(((byte)(30)))));
-            this.tabPage2.Controls.Add(this.but_modifyModel);
-            this.tabPage2.Controls.Add(this.panel1);
-            this.tabPage2.Controls.Add(this.but_editModel);
-            this.tabPage2.Controls.Add(this.btn_newModel);
-            this.tabPage2.Controls.Add(this.groupBox3);
-            this.tabPage2.Location = new System.Drawing.Point(4, 26);
-            this.tabPage2.Name = "tabPage2";
-            this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(514, 205);
-            this.tabPage2.TabIndex = 7;
-            this.tabPage2.Text = "模版设置";
+            this.tabPage3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(40)))), ((int)(((byte)(30)))));
+            this.tabPage3.Controls.Add(this.but_modifyModel);
+            this.tabPage3.Controls.Add(this.panel1);
+            this.tabPage3.Controls.Add(this.but_editModel);
+            this.tabPage3.Controls.Add(this.btn_newModel);
+            this.tabPage3.Controls.Add(this.groupBox3);
+            this.tabPage3.Location = new System.Drawing.Point(4, 26);
+            this.tabPage3.Name = "tabPage3";
+            this.tabPage3.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage3.Size = new System.Drawing.Size(514, 205);
+            this.tabPage3.TabIndex = 7;
+            this.tabPage3.Text = "模版设置";
             // 
             // but_modifyModel
             // 
@@ -1111,18 +1261,18 @@
             this.btn_rectangle1_2.Text = "矩形1";
             this.btn_rectangle1_2.UseVisualStyleBackColor = true;
             // 
-            // tabPage3
+            // tabPage4
             // 
-            this.tabPage3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(40)))), ((int)(((byte)(30)))));
-            this.tabPage3.Controls.Add(this.groupBox2);
-            this.tabPage3.Controls.Add(this.groupBox5);
-            this.tabPage3.Controls.Add(this.groupBox1);
-            this.tabPage3.Location = new System.Drawing.Point(4, 26);
-            this.tabPage3.Name = "tabPage3";
-            this.tabPage3.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage3.Size = new System.Drawing.Size(514, 205);
-            this.tabPage3.TabIndex = 2;
-            this.tabPage3.Text = "显示输出";
+            this.tabPage4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(40)))), ((int)(((byte)(30)))));
+            this.tabPage4.Controls.Add(this.groupBox2);
+            this.tabPage4.Controls.Add(this.groupBox5);
+            this.tabPage4.Controls.Add(this.groupBox1);
+            this.tabPage4.Location = new System.Drawing.Point(4, 26);
+            this.tabPage4.Name = "tabPage4";
+            this.tabPage4.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage4.Size = new System.Drawing.Size(514, 205);
+            this.tabPage4.TabIndex = 2;
+            this.tabPage4.Text = "显示输出";
             // 
             // groupBox2
             // 
@@ -1234,7 +1384,7 @@
             this.CB_FontSize.Location = new System.Drawing.Point(83, 99);
             this.CB_FontSize.Margin = new System.Windows.Forms.Padding(2);
             this.CB_FontSize.Name = "CB_FontSize";
-            this.CB_FontSize.Size = new System.Drawing.Size(76, 21);
+            this.CB_FontSize.Size = new System.Drawing.Size(76, 23);
             this.CB_FontSize.TabIndex = 6;
             // 
             // lbl_122
@@ -1252,7 +1402,7 @@
             this.CB_FontY.Location = new System.Drawing.Point(83, 62);
             this.CB_FontY.Margin = new System.Windows.Forms.Padding(2);
             this.CB_FontY.Name = "CB_FontY";
-            this.CB_FontY.Size = new System.Drawing.Size(76, 21);
+            this.CB_FontY.Size = new System.Drawing.Size(76, 23);
             this.CB_FontY.TabIndex = 4;
             // 
             // lbl_121
@@ -1270,7 +1420,7 @@
             this.CB_FontX.Location = new System.Drawing.Point(83, 25);
             this.CB_FontX.Margin = new System.Windows.Forms.Padding(2);
             this.CB_FontX.Name = "CB_FontX";
-            this.CB_FontX.Size = new System.Drawing.Size(76, 21);
+            this.CB_FontX.Size = new System.Drawing.Size(76, 23);
             this.CB_FontX.TabIndex = 2;
             // 
             // lbl_120
@@ -1392,17 +1542,21 @@
             this.tabControl1.ResumeLayout(false);
             this.tabPage0.ResumeLayout(false);
             this.tabPage0.PerformLayout();
+            this.groupBox6.ResumeLayout(false);
+            this.groupBox6.PerformLayout();
             this.tabPage1.ResumeLayout(false);
             this.tabPage1.PerformLayout();
+            this.tabPage2.ResumeLayout(false);
+            this.tabPage2.PerformLayout();
             this.groupBox4.ResumeLayout(false);
             this.groupBox4.PerformLayout();
             this.grb_Graph.ResumeLayout(false);
             this.grb_Graph.PerformLayout();
-            this.tabPage2.ResumeLayout(false);
-            this.tabPage2.PerformLayout();
+            this.tabPage3.ResumeLayout(false);
+            this.tabPage3.PerformLayout();
             this.groupBox3.ResumeLayout(false);
             this.groupBox3.PerformLayout();
-            this.tabPage3.ResumeLayout(false);
+            this.tabPage4.ResumeLayout(false);
             this.groupBox2.ResumeLayout(false);
             this.groupBox2.PerformLayout();
             this.groupBox5.ResumeLayout(false);
@@ -1416,7 +1570,7 @@
         #endregion
 
         internal System.Windows.Forms.TabControl tabControl1;
-        private System.Windows.Forms.TabPage tabPage0;
+        private System.Windows.Forms.TabPage tabPage1;
         private System.Windows.Forms.Button btn_115;
         private System.Windows.Forms.Label lbl_115;
         private System.Windows.Forms.ComboBox cmb_115;
@@ -1453,8 +1607,8 @@
         private System.Windows.Forms.ComboBox cmb_111;
         private System.Windows.Forms.Label lbl_110;
         private System.Windows.Forms.ComboBox cmb_110;
-        private System.Windows.Forms.TabPage tabPage3;
-        private System.Windows.Forms.TabPage tabPage1;
+        private System.Windows.Forms.TabPage tabPage4;
+        private System.Windows.Forms.TabPage tabPage2;
         private System.Windows.Forms.GroupBox groupBox4;
         private System.Windows.Forms.RadioButton btn_rectangle2;
         private System.Windows.Forms.RadioButton btn_polygon;
@@ -1477,7 +1631,7 @@
         private System.Windows.Forms.Button btn_drawRegion;
         private System.Windows.Forms.Label lbl_CoordIn;
         private System.Windows.Forms.ComboBox cmb_CoordIn;
-        private System.Windows.Forms.TabPage tabPage2;
+        private System.Windows.Forms.TabPage tabPage3;
         private System.Windows.Forms.Button but_modifyModel;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Button but_editModel;
@@ -1496,11 +1650,11 @@
         private System.Windows.Forms.GroupBox groupBox5;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.ComboBox CB_PointSize;
-        private System.Windows.Forms.TextBox CB_FontSize;
+        private System.Windows.Forms.ComboBox CB_FontSize;
         private System.Windows.Forms.Label lbl_122;
-        private System.Windows.Forms.TextBox CB_FontY;
+        private System.Windows.Forms.ComboBox CB_FontY;
         private System.Windows.Forms.Label lbl_121;
-        private System.Windows.Forms.TextBox CB_FontX;
+        private System.Windows.Forms.ComboBox CB_FontX;
         private System.Windows.Forms.Label lbl_120;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.CheckBox ckb_disp5;
@@ -1509,5 +1663,15 @@
         private System.Windows.Forms.CheckBox ckb_disp1;
         private System.Windows.Forms.CheckBox ckb_disp0;
         private System.Windows.Forms.CheckBox ckb_disp3;
+        private System.Windows.Forms.TabPage tabPage0;
+        private System.Windows.Forms.ComboBox cmb_ImageFolder;
+        private System.Windows.Forms.Button btn_openPath;
+        private System.Windows.Forms.Button btn_setPath;
+        private System.Windows.Forms.GroupBox groupBox6;
+        private System.Windows.Forms.ComboBox cmb_Rotate;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.ComboBox cmb_Mirror;
+        private System.Windows.Forms.Label label4;
     }
 }

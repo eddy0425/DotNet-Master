@@ -21,20 +21,23 @@ namespace DotNet.VisionMaster
             for (int i = 0; i < tabsToShow.Length; i++)
             {
                 switch (tabsToShow[i])
-                { 
+                {
+                    case TabPageEnum.FileImage:
+                        tabControl1.TabPages.Add((TabPage)form.GetControl("tabPage0"));
+                        break;
                     case TabPageEnum.Parameter:
-                        var tabPage = (TabPage)form.GetControl("tabPage0");
+                        var tabPage = (TabPage)form.GetControl("tabPage1");
                         tabControl1.TabPages.Add(tabPage);
                         foreach (Control itemt in tabPage.Controls) itemt.Visible = false;  //关闭对应的显示
                         break;
                     case TabPageEnum.Region:
-                        tabControl1.TabPages.Add((TabPage)form.GetControl("tabPage1"));
-                        break;
-                    case TabPageEnum.Matching:
                         tabControl1.TabPages.Add((TabPage)form.GetControl("tabPage2"));
                         break;
-                    case TabPageEnum.Display:
+                    case TabPageEnum.Matching:
                         tabControl1.TabPages.Add((TabPage)form.GetControl("tabPage3"));
+                        break;
+                    case TabPageEnum.Display:
+                        tabControl1.TabPages.Add((TabPage)form.GetControl("tabPage4"));
                         break;
                 }
             }

@@ -1,4 +1,6 @@
-﻿namespace DotNet.VisionMaster
+﻿using System.Windows.Forms;
+
+namespace DotNet.VisionMaster
 {
     partial class DisplayForm
     {
@@ -35,6 +37,9 @@
             // 
             // panel1
             // 
+            this.panel1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.panel1.Controls.Add(this.hWindowControl1);
             this.panel1.Location = new System.Drawing.Point(13, 13);
             this.panel1.Name = "panel1";
@@ -43,6 +48,9 @@
             // 
             // hWindowControl1
             // 
+            this.hWindowControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.hWindowControl1.BackColor = System.Drawing.Color.Black;
             this.hWindowControl1.BorderColor = System.Drawing.Color.Black;
             this.hWindowControl1.ImagePart = new System.Drawing.Rectangle(0, 0, 640, 480);
@@ -53,19 +61,18 @@
             this.hWindowControl1.TabIndex = 2;
             this.hWindowControl1.WindowSize = new System.Drawing.Size(512, 404);
             // 
-            // ShapeModelForm
+            // DisplayForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(586, 472);
             this.Controls.Add(this.panel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
-            this.Name = "ShapeModelForm";
+            this.TopLevel = false;
+            this.Name = "DisplayForm";
             this.Text = "ObjectParamForm";
-            this.VisibleChanged += new System.EventHandler(this.ObjectParamForm_VisibleChanged);
             this.panel1.ResumeLayout(false);
             this.ResumeLayout(false);
-
         }
 
         #endregion

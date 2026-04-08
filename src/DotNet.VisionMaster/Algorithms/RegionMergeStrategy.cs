@@ -1,4 +1,5 @@
 using DotNet.HWindows;
+using HalconDotNet;
 using System;
 using System.Collections.Generic;
 
@@ -9,7 +10,25 @@ namespace DotNet.VisionMaster
         public override string Name => "区域合并";
         public override bool Fun_action(DisplayForm display, List<IParaStrategy> strategys)
         {
-            throw new NotImplementedException();
+            HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
+            HObject imgReduce = new HObject(); HOperatorSet.GenEmptyObj(out imgReduce);
+
+            try
+            {
+                var region = strategys.ResolveFrom<HObjContext>(inPara.RegionIn);
+                var coord = strategys.ResolveFrom<CvCoord>(inPara.CoordIn);
+
+                return true;
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                regionGet.Dispose();
+                imgReduce.Dispose();
+            }
         }
         public override void GenTreeNode(TreeVisualizer tree)
         {
@@ -38,6 +57,8 @@ namespace DotNet.VisionMaster
         {
             form.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Display);
 
+            VsControls.ShowComboBox(form, "cmb_CoordIn", inPara.CoordIn.ToString(), false);
+
             for (int i = 0; i < inPara.RegionSources.Length; i++)
             {
                 int id = 100 + i;
@@ -48,6 +69,9 @@ namespace DotNet.VisionMaster
         }
         public override void SavePara(ParaForm form, Dictionary<string, VsControlModel> VsControls)
         {
+            //基本参数
+            inPara.CoordIn = VsControls["cmb_CoordIn"].Text;
+
             for (int i = 0; i < inPara.RegionSources.Length; i++)
             {
                 inPara.RegionSources[i] = VsControls[$"cmb_{100 + i}"].Text;
@@ -60,6 +84,12 @@ namespace DotNet.VisionMaster
     {
         /// <summary> 指令类型 </summary>
         public readonly string Algorithm = "区域合并";
+
+        /// <summary> 跟随坐标 </summary>
+        public string CoordIn { set; get; } = "默认";
+
+        /// <summary> 区域来源 </summary>
+        public string RegionIn { set; get; } = "默认";
 
         /// <summary> 区域来源 </summary>
         public string[] RegionSources { get; set; } = new string[6];

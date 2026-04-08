@@ -37,6 +37,7 @@ namespace DotNet.VisionMaster
         public DisplayForm()
         {
             InitializeComponent();
+            this.Dock = DockStyle.Fill;
 
             srcImage = new HObject(); HOperatorSet.GenEmptyObj(out srcImage); // 创建初始空对象
             ho_Rectangle = new HObject(); HOperatorSet.GenEmptyObj(out ho_Rectangle); // 创建初始空对象
@@ -88,8 +89,8 @@ namespace DotNet.VisionMaster
 
         HWindow hWindow { get { return hWindowControl1.HalconWindow; } }  //窗体句柄
         HWindowMouse MouseEvent { get { return hWindowMouse; } }  //窗体句柄
-        double ho_Width { get { return hWindowImage.Width; } }
-        double ho_Height { get { return hWindowImage.Height; } }
+        public double ho_Width { get { return hWindowImage.Width; } }
+        public double ho_Height { get { return hWindowImage.Height; } }
 
         public void Reset()
         {
@@ -231,28 +232,6 @@ namespace DotNet.VisionMaster
         {
             SetColor(color);
             hWindow.DispLine(line.start.Y, line.start.X, line.end.Y, line.end.X);
-        }
-
-        #endregion
-
-        #region UI
-
-        private void ObjectParamForm_VisibleChanged(object sender, EventArgs e)
-        {
-            if (this.Visible)
-            {
-                try
-                {
-                    _isUpdating = true;
-
-                    HOperatorSet.ReadImage(out srcImage, "PR.png");
-                    DispImage(srcImage);
-                }
-                finally
-                {
-                    _isUpdating = false;
-                }
-            }
         }
 
         #endregion

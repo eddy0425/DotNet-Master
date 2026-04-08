@@ -22,9 +22,6 @@ namespace DotNet.VisionMaster
             InitializeComponent();
 
             _display = new DisplayForm();
-            _display.FormBorderStyle = FormBorderStyle.None;     //无边框
-            _display.Dock = DockStyle.Fill;
-            _display.TopLevel = false;
             _display.Show();
             panel1.Controls.Add(_display);
 
@@ -35,6 +32,7 @@ namespace DotNet.VisionMaster
             _formPara.Show();
             panel2.Controls.Add(_formPara);
 
+            _strategys.Add(new FileImageStrategy());
             _strategys.Add(new CreateROIStrategy());
             _strategys.Add(new ShapeMatchingStrategy());
             _strategys.Add(new LineFindingStrategy());
@@ -45,6 +43,9 @@ namespace DotNet.VisionMaster
             }
 
             LogFile logFile = new LogFile();
+
+            var fileImage = ((FileImageStrategy)_strategys[0]).inPara;
+            fileImage.ImageFolder = "C:\\Users\\eddy\\Desktop\\Vision\\OPT\\Basler-acA4024-29um-1200w\\Blue ring-9030-B";
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -62,6 +63,11 @@ namespace DotNet.VisionMaster
             SwitchStrategy(2);
         }
 
+        private void button4_Click(object sender, EventArgs e)
+        {
+            SwitchStrategy(3);
+        }
+
         /// <summary>
         /// 切换算法策略：解绑旧控件 → 清空 → 设置新策略 → 显示新参数
         /// </summary>
@@ -74,10 +80,18 @@ namespace DotNet.VisionMaster
             _currentStrategy.DispROI(_display);
         }
 
-        private void button4_Click(object sender, EventArgs e)
+        private void but_Run_Click(object sender, EventArgs e)
         {
-            _currentStrategy.SavePara(_formPara, _vsControls);
-            _currentStrategy.Fun_action(_display, _strategys);
+            try
+            {
+                _currentStrategy.SavePara(_formPara, _vsControls);
+                _currentStrategy.Fun_action(_display, _strategys);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
         }
+
     }
 }

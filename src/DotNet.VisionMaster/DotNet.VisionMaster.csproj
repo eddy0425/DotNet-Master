@@ -56,7 +56,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Algorithms\CreateROIStrategy.cs" />
+    <Compile Include="Drawing\HObjectExtension.cs" />
     <Compile Include="Algorithms\LineFindingStrategy.cs" />
+    <Compile Include="Algorithms\FileImageStrategy.cs" />
     <Compile Include="Algorithms\RegionMergeStrategy.cs" />
     <Compile Include="Algorithms\IParaStrategy.cs" />
     <Compile Include="Algorithms\ShapeMatchingStrategy.cs" />
@@ -140,6 +142,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\DotNet.CvHalcon\DotNet.CvHalcon.csproj">
+      <Project>{00384363-182C-4771-BAB2-F75C32750EFF}</Project>
+      <Name>DotNet.CvHalcon</Name>
+    </ProjectReference>
     <ProjectReference Include="..\DotNet.HWindows\DotNet.HWindows.csproj">
       <Project>{c3346b57-e924-4abb-844b-36d99379c55a}</Project>
       <Name>DotNet.HWindows</Name>

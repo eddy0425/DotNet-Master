@@ -20,6 +20,49 @@ namespace DotNet.VisionMaster
             _display = displayForm;
             _form_Value = new Form_Value();
         }
+        private void btn_setPath_Click(object sender, EventArgs e)
+        {
+            Button button = (Button)sender;
+            if (button == btn_setPath)
+            {
+                FolderBrowserDialog fbd = new FolderBrowserDialog();
+                try { fbd.SelectedPath = cmb_ImageFolder.Text; } catch { }
+                if (fbd.ShowDialog() == DialogResult.OK)
+                {
+                    cmb_ImageFolder.Text = fbd.SelectedPath;
+                }
+            }
+            else
+            {
+                FolderBrowserDialog fbd = new FolderBrowserDialog();
+                try { fbd.SelectedPath = cmb_115.Text; } catch { }
+                if (fbd.ShowDialog() == DialogResult.OK)
+                {
+                    cmb_115.Text = fbd.SelectedPath;
+                }
+            }
+        }
+
+        private void btn_openPath_Click(object sender, EventArgs e)
+        {
+            Button button = (Button)sender;
+            if (button == btn_openPath)
+            {
+                try
+                {
+                    System.Diagnostics.Process.Start(cmb_ImageFolder.Text);
+                }
+                catch (Exception ex) { MessageBox.Show(ex.Message); }
+            }
+            else
+            {
+                try
+                {
+                    System.Diagnostics.Process.Start(cmb_115.Text);
+                }
+                catch (Exception ex) { MessageBox.Show(ex.Message); }
+            }
+        }
 
         public void SelectPara(int index, List<IParaStrategy> strategys)
         {
@@ -84,5 +127,6 @@ namespace DotNet.VisionMaster
             }
         }
 
+       
     }
 }

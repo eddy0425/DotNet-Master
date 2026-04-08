@@ -98,7 +98,7 @@ namespace DotNet.VisionMaster
     public class CreateROI
     {
         /// <summary> 指令类型 </summary>
-        public readonly string Algorithm = "直线查找";
+        public readonly string Algorithm = "创建ROI";
 
         /// <summary> 跟随坐标 </summary>
         public string CoordIn { set; get; } = "默认";
