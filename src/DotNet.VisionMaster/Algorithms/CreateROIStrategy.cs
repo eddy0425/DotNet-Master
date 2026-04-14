@@ -1,5 +1,4 @@
 ﻿using DotNet.Drawing;
-using DotNet.HalconUI;
 using HalconDotNet;
 using System.Collections.Generic;
 
@@ -8,20 +7,20 @@ namespace DotNet.VisionMaster
     public class CreateROIStrategy : ParaStrategyBase<CreateROI>
     {
         public override string Name => "创建ROI";
-        public override void Init(DrawContext draw)
+        public override void Init(DisplayUI display)
         {
-            draw.RectangleEvent += RectEvent;
+            display.RectangleEvent += RectEvent;
         }
-        public override void Close(DrawContext draw)
+        public override void Close(DisplayUI display)
         {
-            draw.RectangleEvent -= RectEvent;
+            display.RectangleEvent -= RectEvent;
         }
         private void RectEvent(object sender, DrawRectangleArgs e)
         {
             if (e.Name == Name)
             {
-                inPara.HContext.Update2Point(e.TopLeft, e.BottomRight);
-                inPara.HContext.GenRegion();
+                inPara.HoRect.Update2Point(e.TopLeft, e.BottomRight);
+                inPara.HoRect.GenRegion();
             }
         }
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
@@ -34,7 +33,7 @@ namespace DotNet.VisionMaster
                 inPara.Coord = new CvCoord();
                 var coord = strategys.ResolveFrom(inPara.CoordIn);
 
-                var hcontext = inPara.HContext;
+                var hcontext = inPara.HoRect;
                 hcontext.GenRegion();
                 inPara.Coord = new CvCoord(hcontext.Center);
                 display.ReDispImage();
@@ -70,7 +69,7 @@ namespace DotNet.VisionMaster
             RegisterOutput("坐标系/原点/行", () => inPara.Coord.Y);
             RegisterOutput("坐标系/原点/列", () => inPara.Coord.X);
             RegisterOutput("坐标系/角度", () => inPara.Coord.Angle);
-            RegisterOutput("区域", () => inPara.HContext);
+            RegisterOutput("区域", () => inPara.HoRect);
 
         }
         public override void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls)
@@ -79,7 +78,7 @@ namespace DotNet.VisionMaster
 
             VsControls.ShowComboBox(form, "cmb_CoordIn", inPara.CoordIn.ToString(), false);
 
-            CvRegion hRegion = inPara.HContext;
+            CvRegion hRegion = inPara.HoRect;
             VsControls.ShowComboBox(form, "cmb_Width", hRegion.Width.ToString(), false);
             VsControls.ShowComboBox(form, "cmb_Height", hRegion.Height.ToString(), false);
             VsControls.ShowComboBox(form, "cmb_TopLeft", $"{hRegion.TopLeft.X};{hRegion.TopLeft.Y}", false);
@@ -92,7 +91,7 @@ namespace DotNet.VisionMaster
         }
         public override void DispROI(DisplayUI display)
         {
-            display.SetDrawMode(Name, inPara.HContext, WinDrawType.DispRect);
+            display.SetDrawMode(Name, inPara.HoRect, DrawEnum.DispRect);
         }
 
     }
@@ -109,7 +108,7 @@ namespace DotNet.VisionMaster
         public CvCoord Coord { get; set; } = new CvCoord();
 
         /// <summary> 区域 </summary>
-        public CvRegion HContext { set; get; } = new CvRegion();
+        public CvRegion HoRect { set; get; } = new CvRegion();
 
     }
 }

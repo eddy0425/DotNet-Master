@@ -42,7 +42,7 @@ namespace DotNet.VisionMaster
 
             for (int i = 0; i < _strategys.Count; i++)
             {
-                _strategys[i].Init(_display.DrawContext);
+                _strategys[i].Init(_display);
             }
 
             LogFile logFile = new LogFile();

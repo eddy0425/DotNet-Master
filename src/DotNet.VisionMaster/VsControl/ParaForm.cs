@@ -73,12 +73,12 @@ namespace DotNet.VisionMaster
 
         private void btn_drawRegion_Click(object sender, EventArgs e)
         {
-            _display.SetDrawMode(_name, WinDrawType.NewRect);
+            _display.SetDrawMode(_name, DrawEnum.NewRect);
         }
 
         private void but_updataRegion_Click(object sender, EventArgs e)
         {
-            _display.SetDrawMode(_name, WinDrawType.EditRect);
+            _display.SetDrawMode(_name, DrawEnum.EditRect);
         }
 
         private void btn_setCoordIn_Click(object sender, EventArgs e)
@@ -164,7 +164,7 @@ namespace DotNet.VisionMaster
                         var inPara = ((ShapeMatchingStrategy)_strategys[_index]).inPara;
                         var modeRect = inPara.ModeRect;
 
-                        _display.SetDrawMode(_name, WinDrawType.NewRect);
+                        _display.SetDrawMode(_name, DrawEnum.NewRect);
                         //_displayCore.DrawDispRegion(modeRect);
                         shapeMatching.SetTemplate(_display, _strategys, modeRect);
                     }

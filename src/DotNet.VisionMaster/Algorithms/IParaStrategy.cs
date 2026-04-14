@@ -11,8 +11,8 @@ namespace DotNet.VisionMaster
     public interface IParaStrategy
     {
         string Name { get; }
-        void Init(DrawContext draw);
-        void Close(DrawContext draw);
+        void Init(DisplayUI display);
+        void Close(DisplayUI display);
         void GenTreeNode(TreeVisualizer tree);
         object ResolveOutput(string[] path);
         T ResolveOutput<T>(string[] path);
@@ -50,8 +50,8 @@ namespace DotNet.VisionMaster
 
         public T ResolveOutput<T>(string[] path) => (T)ResolveOutput(path);
 
-        public virtual void Init(DrawContext draw) { }
-        public virtual void Close(DrawContext draw) { }
+        public virtual void Init(DisplayUI display) { }
+        public virtual void Close(DisplayUI display) { }
         public abstract void GenTreeNode(TreeVisualizer tree);
         public abstract void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls);
         public abstract void SavePara(ParaForm form, Dictionary<string, VsControlModel> VsControls);

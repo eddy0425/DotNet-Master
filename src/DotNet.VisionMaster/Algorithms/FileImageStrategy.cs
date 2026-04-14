@@ -3,7 +3,6 @@ using System;
 using System.Windows.Forms;
 using System.Collections.Generic;
 using DotNet.Drawing;
-using DotNet.HalconUI;
 
 
 namespace DotNet.VisionMaster
@@ -14,7 +13,7 @@ namespace DotNet.VisionMaster
         private int Index  = 0;       //图像下标
         private string[] ImagePaths;   //图像路径
 
-        public override void Init(DrawContext draw)
+        public override void Init(DisplayUI display)
         {
             try
             {
@@ -25,7 +24,7 @@ namespace DotNet.VisionMaster
                 MessageBox.Show(ex.Message);
             }
         }
-        public override void Close(DrawContext draw)
+        public override void Close(DisplayUI displayw)
         {
            
         }

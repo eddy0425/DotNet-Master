@@ -8,29 +8,29 @@ namespace DotNet.VisionMaster
     /// </summary>
     public class NoneHandler : IDrawHandler
     {
-        public bool NeedReDispImage => false;
+        public bool NeedReDisp => false;
 
-        public void SetUp(DrawContext context)
+        public void SetUp(DisplayUI display)
         {
             // 无操作
         }
 
-        public void OnMouseDown(DrawContext context, HMouseEventArgs e)
+        public void OnMouseDown(DisplayUI display, HMouseEventArgs e)
         {
             // 无操作
         }
 
-        public void OnMouseUp(DrawContext context, HMouseEventArgs e)
+        public void OnMouseUp(DisplayUI display, HMouseEventArgs e)
         {
             // 无操作
         }
 
-        public void OnMouseWheel(DrawContext context, HMouseEventArgs e)
+        public void OnMouseWheel(DisplayUI display, HMouseEventArgs e)
         {
             // 无操作
         }
 
-        public void OnMouseMove(DrawContext context, HMouseEventArgs e)
+        public void OnMouseMove(DisplayUI display, HMouseEventArgs e)
         {
             // 无操作
         }

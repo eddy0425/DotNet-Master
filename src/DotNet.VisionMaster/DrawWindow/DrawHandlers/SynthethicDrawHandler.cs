@@ -11,7 +11,7 @@ namespace DotNet.VisionMaster
     /// </summary>
     public class SynthethicDrawHandler : IDrawHandler
     {
-        public bool NeedReDispImage => true;
+        public bool NeedReDisp => true;
 
         public double LeftLong = 1.425;   //mm
         public double MediumLong = 1.15;  //mm
@@ -29,99 +29,96 @@ namespace DotNet.VisionMaster
 
         Point2d RegTopLeft;
         Point2d RegBottomRight;
-        DrawContext context;
-        DisplayForm display => context.display;
         Point2d RegCenter => new Point2d((RegTopLeft.X + RegBottomRight.X) / 2, (RegTopLeft.Y + RegBottomRight.Y) / 2);
 
-        public void SetUp(DrawContext _context)
+        public void SetUp(DisplayUI display)
         {
-            context = _context;
-            if (context.SetUp == SetUpEnum.None)
+            if (display.ShrSetUp == SetUpEnum.None)
             {
-                context.HoContour = DrawSynthethic(context, out RegTopLeft, out RegBottomRight);
-                display.DispRegion(context.HoContour, HColor.Green);
+                display.ShrContour = DrawSynthethic(display, out RegTopLeft, out RegBottomRight);
+                display.DispRegion(display.ShrContour, HColor.Green);
 
                 display.DispPoint(RegTopLeft, HColor.OrangeRed, 100);
                 display.DispPoint(RegBottomRight, HColor.OrangeRed, 100);
                 display.DispPoint(RegCenter, HColor.OrangeRed, 100);
 
-                context.SetUp = SetUpEnum.Step1;
+                display.ShrSetUp = SetUpEnum.Step1;
             }
         }
 
-        public void OnMouseDown(DrawContext context, HMouseEventArgs e)
+        public void OnMouseDown(DisplayUI display, HMouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
             {
-                if (context.SetUp == SetUpEnum.Step1)
+                if (display.ShrSetUp == SetUpEnum.Step1)
                 {
-                    switch (context.CycleMove)
+                    switch (display.ShrCycleMove)
                     {
                         // 开始移动选中的顶点
                         case CycleMoveEnum.Start:
-                            context.CycleMove = CycleMoveEnum.StartMove;
+                            display.ShrCycleMove = CycleMoveEnum.StartMove;
                             break;
                         case CycleMoveEnum.End:
-                            context.CycleMove = CycleMoveEnum.EndMove;
+                            display.ShrCycleMove = CycleMoveEnum.EndMove;
                             break;
                         case CycleMoveEnum.Center:
-                            context.CycleMove = CycleMoveEnum.CenterMove;
+                            display.ShrCycleMove = CycleMoveEnum.CenterMove;
                             break;
                     }
                 }
             }
         }
 
-        public void OnMouseUp(DrawContext context, HMouseEventArgs e)
+        public void OnMouseUp(DisplayUI display, HMouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
             {
-                if (context.SetUp == SetUpEnum.Step1)
+                if (display.ShrSetUp == SetUpEnum.Step1)
                 {
-                    switch (context.CycleMove)
+                    switch (display.ShrCycleMove)
                     {
                         // 结束顶点移动
                         case CycleMoveEnum.StartMove:
                         case CycleMoveEnum.EndMove:
                         case CycleMoveEnum.CenterMove:
-                            context.CycleMove = CycleMoveEnum.None;
+                            display.ShrCycleMove = CycleMoveEnum.None;
                             break;
                     }
                 }
             }
             else if (e.Button == MouseButtons.Right)
             {
-                if (context.SetUp == SetUpEnum.Step1)
+                if (display.ShrSetUp == SetUpEnum.Step1)
                 {
                     // 右键完成编辑
-                    context.DrawSynthethicn(context.HoContour, RegTopLeft, RegBottomRight);
-                    context.SetUp = SetUpEnum.Step2;
+                    display.DrawSynthethicn(display.ShrContour, RegTopLeft, RegBottomRight);
+                    display.ShrSetUp = SetUpEnum.Step2;
                 }
             }
         }
 
-        public void OnMouseWheel(DrawContext context, HMouseEventArgs e)
+        public void OnMouseWheel(DisplayUI display, HMouseEventArgs e)
         {
             // 滚轮事件仅触发重绘
         }
 
-        public void OnMouseMove(DrawContext context, HMouseEventArgs e)
+        public void OnMouseMove(DisplayUI display, HMouseEventArgs e)
         {
-            OnReDisplay(context);
+            OnReDisplay(display);
 
-            switch (context.SetUp)
+            switch (display.ShrSetUp)
             {
                 case SetUpEnum.Step1:
                     {
-                        switch (context.CycleMove)
+                        switch (display.ShrCycleMove)
                         {
                             case CycleMoveEnum.StartMove:
                                 RegTopLeft = new Point2d(e.X, e.Y);
-                                context.HoContour = newTopLeftSynthethic(context, new Point2d(e.X, e.Y), out scaling);
+                                display.ShrContour = newTopLeftSynthethic(display, new Point2d(e.X, e.Y), out scaling);
                                 break;
                             case CycleMoveEnum.EndMove:
                                 RegBottomRight = new Point2d(e.X, e.Y);
-                                context.HoContour = newBottomRightSynthethic(context, new Point2d(e.X, e.Y), out scaling);
+                                display.ShrContour = newBottomRightSynthethic(display, new Point2d(e.X, e.Y), out scaling);
                                 break;
                             case CycleMoveEnum.CenterMove:
                                 {
@@ -129,7 +126,7 @@ namespace DotNet.VisionMaster
                                     var calY = RegCenter.Y - e.Y;
                                     RegTopLeft = new Point2d(RegTopLeft.X - calX, RegTopLeft.Y - calY);
                                     RegBottomRight = new Point2d(RegBottomRight.X - calX, RegBottomRight.Y - calY);
-                                    context.HoContour = newCenterSynthethic(context, RegCenter, out scaling);
+                                    display.ShrContour = newCenterSynthethic(display, RegCenter, out scaling);
                                 }
                                 break;
                             default:
@@ -138,7 +135,7 @@ namespace DotNet.VisionMaster
                                     {
                                         // 高亮显示靠近的顶点
                                         display.DispPoint(RegTopLeft, HColor.Yellow);
-                                        context.CycleMove = CycleMoveEnum.Start;
+                                        display.ShrCycleMove = CycleMoveEnum.Start;
                                         break;
                                     }
 
@@ -146,7 +143,7 @@ namespace DotNet.VisionMaster
                                     {
                                         // 高亮显示靠近的顶点
                                         display.DispPoint(RegBottomRight, HColor.Yellow);
-                                        context.CycleMove = CycleMoveEnum.End;
+                                        display.ShrCycleMove = CycleMoveEnum.End;
                                         break;
                                     }
 
@@ -154,7 +151,7 @@ namespace DotNet.VisionMaster
                                     {
                                         // 高亮显示靠近的顶点
                                         display.DispPoint(RegCenter, HColor.Yellow);
-                                        context.CycleMove = CycleMoveEnum.Center;
+                                        display.ShrCycleMove = CycleMoveEnum.Center;
                                         break;
                                     }
                                 }
@@ -165,16 +162,16 @@ namespace DotNet.VisionMaster
             }
         }
 
-        public void OnReDisplay(DrawContext context)
+        public void OnReDisplay(DisplayUI display)
         {
-            switch (context.SetUp)
+            switch (display.ShrSetUp)
             {
                 case SetUpEnum.Step1:
                     {
                         display.DispPoint(RegTopLeft, HColor.OrangeRed, 100);
                         display.DispPoint(RegBottomRight, HColor.OrangeRed, 100);
                         display.DispPoint(RegCenter, HColor.OrangeRed, 100);
-                        display.DispRegion(context.HoContour, HColor.Green);
+                        display.DispRegion(display.ShrContour, HColor.Green);
                     }
                     break;
                 case SetUpEnum.Step2:
@@ -184,12 +181,12 @@ namespace DotNet.VisionMaster
                         display.DispPoint(RegCenter, HColor.OrangeRed, 100);
 
                         // 显示模型相关区域
-                        display.DispRegion(context.HoRegion, HColor.Blue);
-                        display.DispRegion(context.HoContour, HColor.Green);
+                        display.DispRegion(display.ShrRegion, HColor.Blue);
+                        display.DispRegion(display.ShrContour, HColor.Green);
 
-                        if (context.Center != null)
+                        if (display.ShrCenter != null)
                         {
-                            display.DispPoint(context.Center, HColor.Yellow);
+                            display.DispPoint(display.ShrCenter, HColor.Yellow);
                         }
                     }
                     break;
@@ -204,7 +201,7 @@ namespace DotNet.VisionMaster
         /// <param name="TopLeft">输出：左上角坐标（左上方矩形的最上边中心点，即点5）</param>
         /// <param name="BottomRight">输出：右下角坐标（右下方矩形的最下边中心点，即点3）</param>
         /// <returns>合成图形轮廓对象</returns>
-        private HObject DrawSynthethic(DrawContext context, out Point2d TopLeft, out Point2d BottomRight)
+        private HObject DrawSynthethic(DisplayUI display, out Point2d TopLeft, out Point2d BottomRight)
         {
             HObject ho_Contour; HOperatorSet.GenEmptyObj(out ho_Contour);
             HObject ho_Region1 = null, ho_Region2 = null, ho_Region3 = null, ho_Region4 = null, ho_Region5 = null;
@@ -219,17 +216,16 @@ namespace DotNet.VisionMaster
 
             try
             {
-                if (context.Center != null)
+                if (display.ShrCenter != null)
                 {
-                    centerRow = context.Center.Y;
-                    centerCol = context.Center.X;
+                    centerRow = display.ShrCenter.Y;
+                    centerCol = display.ShrCenter.X;
                 }
                 else
                 {
                     // 获取源图像尺寸
-                    HOperatorSet.GetImageSize(context.SrcImage, out HTuple hv_Width, out HTuple hv_Height);
-                    centerRow = hv_Height.D / 2;
-                    centerCol = hv_Width.D / 2;
+                    centerRow = display.HoHeight / 2;
+                    centerCol = display.HoWidth / 2;
                 }
 
                 // 计算像素值
@@ -345,7 +341,7 @@ namespace DotNet.VisionMaster
         /// <param name="newTopLeft">新的左上角坐标</param>
         /// <param name="scaling">输出缩放比例</param>
         /// <returns>缩放后的轮廓对象</returns>
-        private HObject newTopLeftSynthethic(DrawContext context, Point2d newTopLeft, out double scaling)
+        private HObject newTopLeftSynthethic(DisplayUI display, Point2d newTopLeft, out double scaling)
         {
             HObject ho_Contour; HOperatorSet.GenEmptyObj(out ho_Contour);
             HObject ho_Region1 = null, ho_Region2 = null, ho_Region3 = null, ho_Region4 = null, ho_Region5 = null;
@@ -441,7 +437,7 @@ namespace DotNet.VisionMaster
         /// <param name="newBottomRight">新的右下角坐标</param>
         /// <param name="scaling">输出缩放比例</param>
         /// <returns>缩放后的轮廓对象</returns>
-        private HObject newBottomRightSynthethic(DrawContext context, Point2d newBottomRight, out double scaling)
+        private HObject newBottomRightSynthethic(DisplayUI display, Point2d newBottomRight, out double scaling)
         {
             HObject ho_Contour; HOperatorSet.GenEmptyObj(out ho_Contour);
             HObject ho_Region1 = null, ho_Region2 = null, ho_Region3 = null, ho_Region4 = null, ho_Region5 = null;
@@ -539,7 +535,7 @@ namespace DotNet.VisionMaster
         /// <param name="newCenter">新的中心坐标</param>
         /// <param name="scaling">输出当前的缩放比例</param>
         /// <returns>平移后的轮廓对象</returns>
-        private HObject newCenterSynthethic(DrawContext context, Point2d newCenter, out double scaling)
+        private HObject newCenterSynthethic(DisplayUI display, Point2d newCenter, out double scaling)
         {
             HObject ho_Contour; HOperatorSet.GenEmptyObj(out ho_Contour);
             HObject ho_Region1 = null, ho_Region2 = null, ho_Region3 = null, ho_Region4 = null, ho_Region5 = null;

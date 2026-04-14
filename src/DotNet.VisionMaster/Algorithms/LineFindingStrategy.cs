@@ -9,20 +9,20 @@ namespace DotNet.VisionMaster
     public class LineFindingStrategy : ParaStrategyBase<LineFinding>
     {
         public override string Name => "直线查找";
-        public override void Init(DrawContext draw)
+        public override void Init(DisplayUI display)
         {
-            draw.RectangleEvent += RectEvent;
+            display.RectangleEvent += RectEvent;
         }
-        public override void Close(DrawContext draw)
+        public override void Close(DisplayUI display)
         {
-            draw.RectangleEvent -= RectEvent;
+            display.RectangleEvent -= RectEvent;
         }
         private void RectEvent(object sender, DrawRectangleArgs e)
         {
             if (e.Name == Name)
             {
-                inPara.HContext.Update2Point(e.TopLeft, e.BottomRight);
-                inPara.HContext.GenRegion();
+                inPara.HoRect.Update2Point(e.TopLeft, e.BottomRight);
+                inPara.HoRect.GenRegion();
             }
         }
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
@@ -80,7 +80,7 @@ namespace DotNet.VisionMaster
 
             VsControls.ShowComboBox(form, "cmb_CoordIn", inPara.CoordIn.ToString(), false);
 
-            CvRegion hRegion = inPara.HContext;
+            CvRegion hRegion = inPara.HoRect;
             VsControls.ShowComboBox(form, "cmb_Width", hRegion.Width.ToString(), false);
             VsControls.ShowComboBox(form, "cmb_Height", hRegion.Height.ToString(), false);
             VsControls.ShowComboBox(form, "cmb_TopLeft", $"{hRegion.TopLeft.X};{hRegion.TopLeft.Y}", false);
@@ -136,7 +136,7 @@ namespace DotNet.VisionMaster
         }
         public override void DispROI(DisplayUI display)
         {
-            display.SetDrawMode(Name, inPara.HContext, WinDrawType.DispRect);
+            display.SetDrawMode(Name, inPara.HoRect, DrawEnum.DispRect);
         }
 
     }
@@ -158,7 +158,7 @@ namespace DotNet.VisionMaster
         public CvLine Line { set; get; }
 
         /// <summary> 区域 </summary>
-        public CvRegion HContext { set; get; } = new CvRegion();
+        public CvRegion HoRect { set; get; } = new CvRegion();
 
         /// <summary> 过渡方向 </summary>
         public string Transition { set; get; }

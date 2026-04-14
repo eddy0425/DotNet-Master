@@ -10,51 +10,49 @@ namespace DotNet.VisionMaster
     /// </summary>
     public class RectDispHandler : IDrawHandler
     {
-        public bool NeedReDispImage => true;
-        DrawContext context;
-        DisplayForm display => context.display;
-        public void SetUp(DrawContext _context)
+        public bool NeedReDisp => true;
+
+        public void SetUp(DisplayUI display)
         {
-            context = _context;
-            if (context.SetUp == SetUpEnum.None)
+            if (display.ShrSetUp == SetUpEnum.None)
             {
-                Point2d TopLeft = context.HoRegion.TopLeft;
-                Point2d BottomRight = context.HoRegion.BottomRight;
-                Point2d Center = context.HoRegion.Center;
+                Point2d TopLeft = display.ShrRegion.TopLeft;
+                Point2d BottomRight = display.ShrRegion.BottomRight;
+                Point2d Center = display.ShrRegion.Center;
 
                 // 显示最终结果
                 display.DispPoint(TopLeft, HColor.OrangeRed, 50);
                 display.DispPoint(BottomRight, HColor.OrangeRed, 50);
                 display.DispPoint(Center, HColor.Orange, 50);
 
-                display.DispRegion(context.HoRegion, HColor.Blue);
+                display.DispRegion(display.ShrRegion, HColor.Blue);
 
-                context.SetUp = SetUpEnum.Step1;
+                display.ShrSetUp = SetUpEnum.Step1;
             }
         }
 
-        public void OnMouseDown(DrawContext context, HMouseEventArgs e) { }
+        public void OnMouseDown(DisplayUI display, HMouseEventArgs e) { }
 
-        public void OnMouseUp(DrawContext context, HMouseEventArgs e) { }
+        public void OnMouseUp(DisplayUI display, HMouseEventArgs e) { }
 
-        public void OnMouseWheel(DrawContext context, HMouseEventArgs e) { }
+        public void OnMouseWheel(DisplayUI display, HMouseEventArgs e) { }
 
-        public void OnMouseMove(DrawContext context, HMouseEventArgs e)
+        public void OnMouseMove(DisplayUI display, HMouseEventArgs e)
         {
-            switch (context.SetUp)
+            switch (display.ShrSetUp)
             {
                 case SetUpEnum.Step1:
                     {
-                        Point2d TopLeft = context.HoRegion.TopLeft;
-                        Point2d BottomRight = context.HoRegion.BottomRight;
-                        Point2d Center = context.HoRegion.Center;
+                        Point2d TopLeft = display.ShrRegion.TopLeft;
+                        Point2d BottomRight = display.ShrRegion.BottomRight;
+                        Point2d Center = display.ShrRegion.Center;
 
                         // 显示最终结果
                         display.DispPoint(TopLeft, HColor.OrangeRed, 50);
                         display.DispPoint(BottomRight, HColor.OrangeRed, 50);
                         display.DispPoint(Center, HColor.Orange, 50);
 
-                        display.DispRegion(context.HoRegion, HColor.Blue);
+                        display.DispRegion(display.ShrRegion, HColor.Blue);
                     }
                     break;
             }

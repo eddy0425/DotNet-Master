@@ -12,103 +12,100 @@ namespace DotNet.VisionMaster
     public class PolygonEditDrawHandler : IDrawHandler
     {
         int SelectIndex = 0; //选中的索引
-        DrawContext context;
-        DisplayForm display => context.display;
 
-        public bool NeedReDispImage => true;
+        public bool NeedReDisp => true;
 
-        public void SetUp(DrawContext _context)
+        public void SetUp(DisplayUI display)
         {
-            context = _context;
-            if (context.SetUp == SetUpEnum.None)
+            if (display.ShrSetUp == SetUpEnum.None)
             {
-                if (context.Polygons.Count == 0)
+                if (display.ShrPolygons.Count == 0)
                 {
                     GetShapeModelPoints(out double[] rowPoints, out double[] columnPoints);
-                    context.Polygons = HalconHelper.GetPolygons(rowPoints, columnPoints);
+                    display.ShrPolygons = HalconHelper.GetPolygons(rowPoints, columnPoints);
                     display.DispPoint(rowPoints, columnPoints, HColor.Green);
                 }
                 else
                 {
-                    display.DispPoint(context.Polygons, HColor.Green);
+                    display.DispPoint(display.ShrPolygons, HColor.Green);
                 }
 
-                context.SetUp = SetUpEnum.Step1;
+                display.ShrSetUp = SetUpEnum.Step1;
             }
         }
 
-        public void OnMouseDown(DrawContext context, HMouseEventArgs e)
+        public void OnMouseDown(DisplayUI display, HMouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
             {
-                if (context.SetUp == SetUpEnum.Step1)
+                if (display.ShrSetUp == SetUpEnum.Step1)
                 {
-                    if (context.CycleMove == CycleMoveEnum.Start)
+                    if (display.ShrCycleMove == CycleMoveEnum.Start)
                     {
                         // 开始移动选中的顶点
-                        context.CycleMove = CycleMoveEnum.StartMove;
+                        display.ShrCycleMove = CycleMoveEnum.StartMove;
                     }
                 }
             }
         }
 
-        public void OnMouseUp(DrawContext context, HMouseEventArgs e)
+        public void OnMouseUp(DisplayUI display, HMouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
             {
-                if (context.SetUp == SetUpEnum.Step1)
+                if (display.ShrSetUp == SetUpEnum.Step1)
                 {
-                    if (context.CycleMove == CycleMoveEnum.StartMove)
+                    if (display.ShrCycleMove == CycleMoveEnum.StartMove)
                     {
                         // 结束顶点移动
-                        context.CycleMove = CycleMoveEnum.None;
+                        display.ShrCycleMove = CycleMoveEnum.None;
                     }
                 }
             }
             else if (e.Button == MouseButtons.Right)
             {
-                if (context.SetUp == SetUpEnum.Step1)
+                if (display.ShrSetUp == SetUpEnum.Step1)
                 {
                     // 右键完成编辑
-                    context.HoContour = HalconHelper.GenContours(context.Polygons);
-                    context.DrawPolygon(context.HoContour);
-                    context.SetUp = SetUpEnum.Step2;
+                    display.ShrContour = HalconHelper.GenContours(display.ShrPolygons);
+                    display.DrawPolygon(display.ShrContour);
+                    display.ShrSetUp = SetUpEnum.Step2;
                 }
             }
         }
 
-        public void OnMouseWheel(DrawContext context, HMouseEventArgs e)
+        public void OnMouseWheel(DisplayUI display, HMouseEventArgs e)
         {
             // 滚轮事件仅触发重绘
         }
 
-        public void OnMouseMove(DrawContext context, HMouseEventArgs e)
+        public void OnMouseMove(DisplayUI display, HMouseEventArgs e)
         {
-            OnReDisplay(context);
+            OnReDisplay(display);
 
-            switch (context.SetUp)
+            switch (display.ShrSetUp)
             {
                 case SetUpEnum.Step1:
                     {
-                        if (context.CycleMove == CycleMoveEnum.StartMove)
+                        if (display.ShrCycleMove == CycleMoveEnum.StartMove)
                         {
                             // 移动选中的顶点
-                            if (SelectIndex >= 0 && SelectIndex < context.Polygons.Count)
+                            if (SelectIndex >= 0 && SelectIndex < display.ShrPolygons.Count)
                             {
-                                context.Polygons[SelectIndex] = new Point2d(e.X, e.Y);
+                                display.ShrPolygons[SelectIndex] = new Point2d(e.X, e.Y);
                             }
                         }
                         else
                         {
                             // 检测是否靠近某个顶点
-                            for (int i = 0; i < context.Polygons.Count; i++)
+                            for (int i = 0; i < display.ShrPolygons.Count; i++)
                             {
-                                if (HalconHelper.IsNearPoint(context.Polygons[i].X, context.Polygons[i].Y, e.X, e.Y))
+                                if (HalconHelper.IsNearPoint(display.ShrPolygons[i].X, display.ShrPolygons[i].Y, e.X, e.Y))
                                 {
                                     // 高亮显示靠近的顶点
-                                    display.DispPoint(context.Polygons[i], HColor.Red);
+                                    display.DispPoint(display.ShrPolygons[i], HColor.Red);
                                     SelectIndex = i;
-                                    context.CycleMove = CycleMoveEnum.Start;
+                                    display.ShrCycleMove = CycleMoveEnum.Start;
                                     break;
                                 }
                             }
@@ -118,42 +115,42 @@ namespace DotNet.VisionMaster
             }
         }
 
-        public void OnReDisplay(DrawContext context)
+        public void OnReDisplay(DisplayUI display)
         {
-            switch (context.SetUp)
+            switch (display.ShrSetUp)
             {
                 case SetUpEnum.Step1:
                     {
-                        display.DispPoint(context.Polygons, HColor.Green);
+                        display.DispPoint(display.ShrPolygons, HColor.Green);
 
                         // 绘制多边形边
-                        for (int i = 0; i < context.Polygons.Count; i++)
+                        for (int i = 0; i < display.ShrPolygons.Count; i++)
                         {
-                            if (i < context.Polygons.Count - 1)
+                            if (i < display.ShrPolygons.Count - 1)
                             {
-                                display.DispLine(new CvLine(context.Polygons[i].X, context.Polygons[i].Y,
-                                               context.Polygons[i + 1].X, context.Polygons[i + 1].Y), HColor.Red);
+                                display.DispLine(new CvLine(display.ShrPolygons[i].X, display.ShrPolygons[i].Y,
+                                               display.ShrPolygons[i + 1].X, display.ShrPolygons[i + 1].Y), HColor.Red);
                             }
                         }
 
                         // 绘制闭合线
-                        if (context.Polygons.Count > 2)
+                        if (display.ShrPolygons.Count > 2)
                         {
-                            display.DispLine(new CvLine(context.Polygons[0].X, context.Polygons[0].Y,
-                                           context.Polygons[context.Polygons.Count - 1].X,
-                                           context.Polygons[context.Polygons.Count - 1].Y), HColor.Red);
+                            display.DispLine(new CvLine(display.ShrPolygons[0].X, display.ShrPolygons[0].Y,
+                                           display.ShrPolygons[display.ShrPolygons.Count - 1].X,
+                                           display.ShrPolygons[display.ShrPolygons.Count - 1].Y), HColor.Red);
                         }
                     }
                     break;
                 case SetUpEnum.Step2:
                     {
                         // 显示模型相关区域
-                        display.DispRegion(context.HoRegion, HColor.Blue);
-                        display.DispRegion(context.HoContour, HColor.Green);
+                        display.DispRegion(display.ShrRegion, HColor.Blue);
+                        display.DispRegion(display.ShrContour, HColor.Green);
 
-                        if (context.Center != null)
+                        if (display.ShrCenter != null)
                         {
-                            display.DispPoint(context.Center, HColor.Yellow);
+                            display.DispPoint(display.ShrCenter, HColor.Yellow);
                         }
                     }
                     break;

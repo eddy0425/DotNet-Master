@@ -1,5 +1,4 @@
 using DotNet.Drawing;
-using DotNet.HalconUI;
 using HalconDotNet;
 
 namespace DotNet.VisionMaster
@@ -10,48 +9,45 @@ namespace DotNet.VisionMaster
     /// </summary>
     public class SetModelDrawHandler : IDrawHandler
     {
-        public bool NeedReDispImage => true;
-        DrawContext context;
-        DisplayForm display => context.display;
-        public void SetUp(DrawContext _context)
+        public bool NeedReDisp => true;
+        public void SetUp(DisplayUI display)
         {
-            context = _context;
-            if (context.SetUp == SetUpEnum.None)
+            if (display.ShrSetUp == SetUpEnum.None)
             {
-                OnReDisplay(context);
-                context.SetUp = SetUpEnum.Step1;
+                OnReDisplay(display);
+                display.ShrSetUp = SetUpEnum.Step1;
             }
         }
 
-        public void OnMouseDown(DrawContext context, HMouseEventArgs e)
+        public void OnMouseDown(DisplayUI display, HMouseEventArgs e)
         {
             // 设置模型模式不处理鼠标按下
         }
 
-        public void OnMouseUp(DrawContext context, HMouseEventArgs e)
+        public void OnMouseUp(DisplayUI display, HMouseEventArgs e)
         {
             // 设置模型模式不处理鼠标释放
         }
 
-        public void OnMouseWheel(DrawContext context, HMouseEventArgs e)
+        public void OnMouseWheel(DisplayUI display, HMouseEventArgs e)
         {
             // 滚轮事件仅触发重绘
         }
 
-        public void OnMouseMove(DrawContext context, HMouseEventArgs e)
+        public void OnMouseMove(DisplayUI display, HMouseEventArgs e)
         {
-            OnReDisplay(context);
+            OnReDisplay(display);
         }
 
-        public void OnReDisplay(DrawContext context)
+        public void OnReDisplay(DisplayUI display)
         {
             // 显示模型相关区域
-            display.DispRegion(context.HoRegion, HColor.Blue);
-            display.DispRegion(context.HoContour, HColor.Green);
+            display.DispRegion(display.ShrRegion, HColor.Blue);
+            display.DispRegion(display.ShrContour, HColor.Green);
 
-            if (context.Center != null)
+            if (display.ShrCenter != null)
             {
-                display.DispPoint(context.Center, HColor.Yellow);
+                display.DispPoint(display.ShrCenter, HColor.Yellow);
             }
         }
 

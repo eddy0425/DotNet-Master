@@ -1,44 +1,120 @@
 ﻿using DotNet.Drawing;
 using DotNet.HalconUI;
 using HalconDotNet;
+using System.Collections.Generic;
 using System.Windows.Forms;
 
 namespace DotNet.VisionMaster
 {
     public partial class DisplayUI : DisplayForm
     {
-        public delegate void TestImageRun(out double time);
-        public TestImageRun testImageRun;
+        #region Event
 
-        public delegate void PageReturn();
-        public PageReturn pageReturn;
+        public event DrawPointHandler PointEvent;
+        public void DrawPoint(double x, double y)
+        {
+            if (PointEvent != null)
+            {
+                var e = new DrawPointArgs(x, y);
+                PointEvent(this, e);
+            }
+        }
 
-        public delegate void SetModelIDEven(out int count, out HObject rectangle);
-        public SetModelIDEven setModelIDEven;
 
-        public delegate void FindGenericShapeModel(out double time);
-        public FindGenericShapeModel findGenericShapeModel;
+        public event DrawLineHandler LineEvent;
+        public void DrawLine(double x1, double y1, double x2, double y2)
+        {
+            if (LineEvent != null)
+            {
+                var e = new DrawLineArgs(x1, y1, x2, y2);
+                LineEvent(this, e);
+            }
+        }
 
+
+        public event DrawCircleHandler CircleEvent;
+        public void DrawCircle(double x1, double y1, double x2, double y2)
+        {
+            if (CircleEvent != null)
+            {
+                var e = new DrawCircleArgs(x1, y1, x2, y2);
+                CircleEvent(this, e);
+            }
+        }
+
+
+        public event DrawPolygonHandler PolygonEvent;
+        public void DrawPolygon(HObject contour)
+        {
+            if (PolygonEvent != null)
+            {
+                var e = new DrawPolygonArgs(contour);
+                PolygonEvent(this, e);
+            }
+        }
+
+
+        public event DrawRectangleHandler RectangleEvent;
+        public void DrawRectangle(string name, Point2d topLeft, Point2d bottomRight)
+        {
+            if (RectangleEvent != null)
+            {
+                var e = new DrawRectangleArgs(name, topLeft, bottomRight);
+                RectangleEvent(this, e);
+            }
+        }
+
+
+        public event DrawSynthethicHandler SynthethicEvent;
+        public void DrawSynthethicn(HObject contour, Point2d topLeft, Point2d bottomRight)
+        {
+            if (SynthethicEvent != null)
+            {
+                var e = new DrawSynthethicArgs(contour, topLeft, bottomRight);
+                SynthethicEvent(this, e);
+            }
+        }
+
+        #endregion
+
+        #region 共享状态 Share → Shr ; Context → Ctx ; Algorithms → Algo 
+
+        /// <summary> 算法名称 </summary> Context
+        public string AlgoName;
+
+        /// <summary> 当前设置步骤 </summary>
+        public SetUpEnum ShrSetUp = SetUpEnum.None;
+
+        /// <summary> 当前循环移动状态  </summary>
+        public CycleMoveEnum ShrCycleMove = CycleMoveEnum.None;
+
+        /// <summary> 共享中心 </summary>
+        public Point2d ShrCenter;
+
+        /// <summary> 共享矩形区域 </summary> 
+        public CvRegion ShrRegion;
+
+        /// <summary> 共享轮廓对象 </summary>
+        public HObject ShrContour;
+
+        /// <summary> 共享多边形点集合 </summary>
+        public List<Point2d> ShrPolygons = new List<Point2d>();
+
+        #endregion
 
         #region 属性
 
-        HObject ho_Contour;
-        HObject ho_Rectangle;
-
         // 绘图处理器相关
-        private WinDrawType _drawType = WinDrawType.None;
+        private DrawEnum _drawType = DrawEnum.None;
         private IDrawHandler _currentHandler;
-        private DrawContext _drawContext;
         private DrawHandlerFactory _handlerFactory;
 
         #endregion
 
         #region HWindowMouse - 插件模式
 
-        /// <summary>
-        /// 当前绘图类型
-        /// </summary>
-        public WinDrawType DrawType
+        /// <summary> 当前绘图类型 </summary>
+        public DrawEnum DrawType
         {
             get => _drawType;
             set
@@ -49,20 +125,6 @@ namespace DotNet.VisionMaster
                     _currentHandler = _handlerFactory.GetHandler(value);
                 }
             }
-        }
-
-        /// <summary>
-        /// 当前绘图类型
-        /// </summary>
-        public DrawContext DrawContext
-        {
-            get => _drawContext;
-        }
-
-        public void FormDispose()
-        {
-            ho_Contour.Dispose();
-            ho_Rectangle.Dispose();
         }
 
         public DisplayUI()
@@ -76,44 +138,42 @@ namespace DotNet.VisionMaster
             HMouseMove += WindowMouse_HMouseMove;
 
             _handlerFactory = new DrawHandlerFactory();
-            _drawContext = new DrawContext(this);
-            _drawContext.RectangleEvent += _drawContext_RectangleEvent;
-            _drawContext.PolygonEvent += _drawContext_PolygonEvent;
-            _drawContext.SynthethicEvent += _drawContext_SynthethicEvent;
-            _currentHandler = _handlerFactory.GetHandler(WinDrawType.None);
+            _currentHandler = _handlerFactory.GetHandler(DrawEnum.None);
+            RectangleEvent += _drawContext_RectangleEvent;
+            PolygonEvent += _drawContext_PolygonEvent;
+            SynthethicEvent += _drawContext_SynthethicEvent;
 
-            ho_Contour = new HObject(); HOperatorSet.GenEmptyObj(out ho_Contour); // 创建初始空对象
-            ho_Rectangle = new HObject(); HOperatorSet.GenEmptyObj(out ho_Rectangle); // 创建初始空对象
+            ShrContour = new HObject(); HOperatorSet.GenEmptyObj(out ShrContour); // 创建初始空对象
         }
 
         #region HMouse
         private void WindowMouse_HMouseDown(object sender, HMouseEventArgs e)
         {
             ReDisplay();
-            _currentHandler.OnMouseDown(_drawContext, e);
+            _currentHandler.OnMouseDown(this, e);
         }
 
         private void WindowMouse_HMouseUp(object sender, HMouseEventArgs e)
         {
             ReDisplay();
-            _currentHandler.OnMouseUp(_drawContext, e);
+            _currentHandler.OnMouseUp(this, e);
         }
 
         private void WindowMouse_HMouseWheel(object sender, HMouseEventArgs e)
         {
             ReDisplay();
-            _currentHandler.OnMouseWheel(_drawContext, e);
+            _currentHandler.OnMouseWheel(this, e);
         }
 
         private void WindowMouse_HMouseMove(object sender, HMouseEventArgs e)
         {
             ReDisplay();
-            _currentHandler.OnMouseMove(_drawContext, e);
+            _currentHandler.OnMouseMove(this, e);
         }
 
         private void ReDisplay()
         {
-            if (_currentHandler != null && _currentHandler.NeedReDispImage)
+            if (_currentHandler != null && _currentHandler.NeedReDisp)
             {
                 ReDispImage();
             }
@@ -143,8 +203,8 @@ namespace DotNet.VisionMaster
 
         private void _drawContext_PolygonEvent(object sender, DrawPolygonArgs e)
         {
-            ho_Contour = e.ho_Contour;
-            GetContourImage(ho_Contour, out HObject ho_ResultImage);
+            ShrContour = e.ho_Contour;
+            GetContourImage(ShrContour, out HObject ho_ResultImage);
 
             //try
             //{
@@ -242,7 +302,7 @@ namespace DotNet.VisionMaster
         /// </summary>
         /// <param name="type">绘图类型</param>
         /// <param name="handler">处理器实例</param>
-        public void RegisterDrawHandler(WinDrawType type, IDrawHandler handler)
+        public void RegisterDrawHandler(DrawEnum type, IDrawHandler handler)
         {
             _handlerFactory.Register(type, handler);
         }
@@ -251,31 +311,33 @@ namespace DotNet.VisionMaster
         /// 设置绘图模式
         /// </summary>
         /// <param name="type">绘图类型</param>
-        public void SetDrawMode(string Nmae, WinDrawType type)
+        public void SetDrawMode(string algorithmsName, DrawEnum type)
         {
+            DrawType = type;
+            AlgoName = algorithmsName;
+            ShrSetUp = SetUpEnum.None;        //设置步骤
+            ShrCycleMove = CycleMoveEnum.None;   //循环移动状态
+
             ReDisplay();
             Reset();
-            DrawType = type;
-            _drawContext.Name = Nmae;
-            _drawContext.SetUp = SetUpEnum.None;           //设置步骤
-            _drawContext.CycleMove = CycleMoveEnum.None;   //循环移动状态
-            _currentHandler.SetUp(_drawContext);
+            _currentHandler.SetUp(this);
         }
 
         /// <summary>
         /// 设置绘图模式
         /// </summary>
         /// <param name="type">绘图类型</param>
-        public void SetDrawMode(string Nmae, CvRegion HoRegion, WinDrawType type)
+        public void SetDrawMode(string algorithmsName, CvRegion hRegion, DrawEnum type)
         {
+            DrawType = type;
+            AlgoName = algorithmsName;
+            ShrRegion = hRegion;
+            ShrSetUp = SetUpEnum.None;           //设置步骤
+            ShrCycleMove = CycleMoveEnum.None;      //循环移动状态
+
             ReDisplay();
             Reset();
-            DrawType = type;
-            _drawContext.Name = Nmae;
-            _drawContext.HoRegion = HoRegion;
-            _drawContext.SetUp = SetUpEnum.None;           //设置步骤
-            _drawContext.CycleMove = CycleMoveEnum.None;   //循环移动状态
-            _currentHandler.SetUp(_drawContext);
+            _currentHandler.SetUp(this);
         }
 
         #endregion

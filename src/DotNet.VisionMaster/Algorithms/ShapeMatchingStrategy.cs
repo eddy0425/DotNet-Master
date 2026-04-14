@@ -13,20 +13,20 @@ namespace DotNet.VisionMaster
     {
         public int RunIndex { get; set; }
         public override string Name => "形状匹配";
-        public override void Init(DrawContext draw)
+        public override void Init(DisplayUI display)
         {
-            draw.RectangleEvent += RectEvent;
+            display.RectangleEvent += RectEvent;
         }
-        public override void Close(DrawContext draw)
+        public override void Close(DisplayUI display)
         {
-            draw.RectangleEvent -= RectEvent;
+            display.RectangleEvent -= RectEvent;
         }
         private void RectEvent(object sender, DrawRectangleArgs e)
         {
             if (e.Name == Name)
             {
-                inPara.HContext.Update2Point(e.TopLeft, e.BottomRight);
-                inPara.HContext.GenRegion();
+                inPara.HoRect.Update2Point(e.TopLeft, e.BottomRight);
+                inPara.HoRect.GenRegion();
             }
         }
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
@@ -41,7 +41,7 @@ namespace DotNet.VisionMaster
                 var coord = strategys.ResolveFrom(inPara.CoordIn);
 
                 display.ReDispImage();
-                display.DispRegion(inPara.HContext, HColor.Blue);
+                display.DispRegion(inPara.HoRect, HColor.Blue);
                 return true;
             }
             catch
@@ -78,7 +78,7 @@ namespace DotNet.VisionMaster
         {
             form.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Region, TabPageEnum.Matching, TabPageEnum.Display);
 
-            CvRegion hRegion = inPara.HContext;
+            CvRegion hRegion = inPara.HoRect;
             VsControls.ShowComboBox(form, "cmb_Width", hRegion.Width.ToString(), false);
             VsControls.ShowComboBox(form, "cmb_Height", hRegion.Height.ToString(), false);
             VsControls.ShowComboBox(form, "cmb_TopLeft", $"{hRegion.TopLeft.X};{hRegion.TopLeft.Y}", false);
@@ -134,7 +134,7 @@ namespace DotNet.VisionMaster
         }
         public override void DispROI(DisplayUI display)
         {
-            display.SetDrawMode(Name, inPara.HContext, WinDrawType.DispRect);
+            display.SetDrawMode(Name, inPara.HoRect, DrawEnum.DispRect);
         }
 
         public void SetTemplate(DisplayForm display, List<IParaStrategy> strategys, CvRegion modeRect)  //模板设置
@@ -225,7 +225,7 @@ namespace DotNet.VisionMaster
         public Point2d Follow { get; set; } = new Point2d();
 
         /// <summary> 区域 </summary>
-        public CvRegion HContext { set; get; } = new CvRegion();
+        public CvRegion HoRect { set; get; } = new CvRegion();
 
         /// <summary> 模版区域 </summary>
         public CvRegion ModeRect { set; get; } = new CvRegion();

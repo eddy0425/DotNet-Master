@@ -11,32 +11,32 @@ namespace DotNet.VisionMaster
         /// <summary>
         /// 获取是否需要重绘图像
         /// </summary>
-        bool NeedReDispImage { get; }
+        bool NeedReDisp { get; }
 
         /// <summary>
         /// 初始设置
         /// </summary>
-        void SetUp(DrawContext context);
+        void SetUp(DisplayUI display);
 
         /// <summary>
         /// 处理鼠标按下事件
         /// </summary>
-        void OnMouseDown(DrawContext context, HMouseEventArgs e);
+        void OnMouseDown(DisplayUI display, HMouseEventArgs e);
 
         /// <summary>
         /// 处理鼠标释放事件
         /// </summary>
-        void OnMouseUp(DrawContext context, HMouseEventArgs e);
+        void OnMouseUp(DisplayUI display, HMouseEventArgs e);
 
         /// <summary>
         /// 处理鼠标滚轮事件
         /// </summary>
-        void OnMouseWheel(DrawContext context, HMouseEventArgs e);
+        void OnMouseWheel(DisplayUI display, HMouseEventArgs e);
 
         /// <summary>
         /// 处理鼠标移动事件
         /// </summary>
-        void OnMouseMove(DrawContext context, HMouseEventArgs e);
+        void OnMouseMove(DisplayUI display, HMouseEventArgs e);
 
     }
 }

@@ -3,54 +3,15 @@ using System.Collections.Generic;
 
 namespace DotNet.VisionMaster
 {
-    /// <summary>
-    /// 绘图类型枚举
-    /// </summary>
-    public enum WinDrawType
-    {
-        None,
-        SetModel,
-        NewRect,
-        EditRect,
-        DispRect,//EditRectHandler
-        NewPolygon,
-        EditPolygon,
-        Synthethic,
-        ShapeModel
-    }
-
-    public enum DrawEnum
-    {
-        None,
-        NewRectangle,
-        EditRectangle,
-        DispRectangle,
-        NewRectangle2,
-        EditRectangle2,
-        DispRectangle2,
-        NewCircle,
-        EditCircle,
-        DispCircle,
-        NewEllipse,
-        EditEllipse,
-        DispEllipse,
-        NewPolygon,
-        EditPolygon,
-        DispPolygon,
-        NewRing,
-        EditRing,
-        DispRing
-    }
-
-
+    
     /// <summary>
     /// 绘图处理器工厂
     /// 负责创建和管理绘图处理器实例
     /// </summary>
     public class DrawHandlerFactory
     {
-        private readonly Dictionary<WinDrawType, IDrawHandler> _handlers;
-        private readonly Dictionary<WinDrawType, Func<IDrawHandler>> _customHandlers;
+        private readonly Dictionary<DrawEnum, IDrawHandler> _handlers;
+        private readonly Dictionary<DrawEnum, Func<IDrawHandler>> _customHandlers;
 
         /// <summary>
         /// 单例实例
@@ -60,8 +21,8 @@ namespace DotNet.VisionMaster
 
         public DrawHandlerFactory()
         {
-            _handlers = new Dictionary<WinDrawType, IDrawHandler>();
-            _customHandlers = new Dictionary<WinDrawType, Func<IDrawHandler>>();
+            _handlers = new Dictionary<DrawEnum, IDrawHandler>();
+            _customHandlers = new Dictionary<DrawEnum, Func<IDrawHandler>>();
             
             // 注册默认处理器
             RegisterDefaultHandlers();
@@ -72,13 +33,13 @@ namespace DotNet.VisionMaster
         /// </summary>
         private void RegisterDefaultHandlers()
         {
-            Register(WinDrawType.None, new NoneHandler());
-            Register(WinDrawType.SetModel, new SetModelDrawHandler());
-            Register(WinDrawType.NewRect, new RectNewHandler());
-            Register(WinDrawType.DispRect, new RectDispHandler());
-            Register(WinDrawType.NewPolygon, new PolygonNewDrawHandler());
-            Register(WinDrawType.EditPolygon, new PolygonEditDrawHandler());
-            Register(WinDrawType.Synthethic, new SynthethicDrawHandler());
+            Register(DrawEnum.None, new NoneHandler());
+            Register(DrawEnum.SetModel, new SetModelDrawHandler());
+            Register(DrawEnum.NewRect, new RectNewHandler());
+            Register(DrawEnum.DispRect, new RectDispHandler());
+            Register(DrawEnum.NewPolygon, new PolygonNewDrawHandler());
+            Register(DrawEnum.EditPolygon, new PolygonEditDrawHandler());
+            Register(DrawEnum.Synthethic, new SynthethicDrawHandler());
         }
 
         /// <summary>
@@ -86,7 +47,7 @@ namespace DotNet.VisionMaster
         /// </summary>
         /// <param name="type">绘图类型</param>
         /// <param name="handler">处理器实例</param>
-        public void Register(WinDrawType type, IDrawHandler handler)
+        public void Register(DrawEnum type, IDrawHandler handler)
         {
             _handlers[type] = handler;
         }
@@ -96,7 +57,7 @@ namespace DotNet.VisionMaster
         /// </summary>
         /// <param name="type">绘图类型</param>
         /// <param name="factory">处理器工厂方法</param>
-        public void RegisterFactory(WinDrawType type, Func<IDrawHandler> factory)
+        public void RegisterFactory(DrawEnum type, Func<IDrawHandler> factory)
         {
             _customHandlers[type] = factory;
         }
@@ -106,7 +67,7 @@ namespace DotNet.VisionMaster
         /// </summary>
         /// <param name="type">绘图类型</param>
         /// <returns>对应的绘图处理器</returns>
-        public IDrawHandler GetHandler(WinDrawType type)
+        public IDrawHandler GetHandler(DrawEnum type)
         {
             // 优先使用工厂模式创建的处理器
             if (_customHandlers.TryGetValue(type, out var factory))
@@ -129,7 +90,7 @@ namespace DotNet.VisionMaster
         /// </summary>
         /// <param name="type">绘图类型</param>
         /// <returns>是否已注册</returns>
-        public bool HasHandler(WinDrawType type)
+        public bool HasHandler(DrawEnum type)
         {
             return _handlers.ContainsKey(type) || _customHandlers.ContainsKey(type);
         }
@@ -138,7 +99,7 @@ namespace DotNet.VisionMaster
         /// 移除绘图处理器
         /// </summary>
         /// <param name="type">绘图类型</param>
-        public void Unregister(WinDrawType type)
+        public void Unregister(DrawEnum type)
         {
             _handlers.Remove(type);
             _customHandlers.Remove(type);

@@ -51,7 +51,7 @@ namespace DotNet.VisionMaster
             RegisterOutput("坐标系/原点/行", () => inPara.Coord.Y);
             RegisterOutput("坐标系/原点/列", () => inPara.Coord.X);
             RegisterOutput("坐标系/角度", () => inPara.Coord.Angle);
-            RegisterOutput("区域", () => inPara.HContext);
+            RegisterOutput("区域", () => inPara.HoRect);
 
         }
         public override void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls)
@@ -99,7 +99,7 @@ namespace DotNet.VisionMaster
         public CvCoord Coord { get; set; } = new CvCoord();
 
         /// <summary> 区域 </summary>
-        public CvRegion HContext { set; get; } = new CvRegion();
+        public CvRegion HoRect { set; get; } = new CvRegion();
     }
 
 }

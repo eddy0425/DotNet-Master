@@ -13,82 +13,79 @@ namespace DotNet.VisionMaster
     public class PolygonNewDrawHandler : IDrawHandler
     {
         Point2d StartPoint  = new Point2d(0, 0); //起始点
-        DrawContext context;
-        DisplayForm display => context.display;
-        public bool NeedReDispImage => true;
+        public bool NeedReDisp => true;
 
-        public void SetUp(DrawContext _context)
+        public void SetUp(DisplayUI display)
         {
-            context = _context;
-            if (context.SetUp == SetUpEnum.None)
+            if (display.ShrSetUp == SetUpEnum.None)
             {
-                context.SetUp = SetUpEnum.Step1;
+                display.ShrSetUp = SetUpEnum.Step1;
             }
         }
 
-        public void OnMouseDown(DrawContext context, HMouseEventArgs e)
+        public void OnMouseDown(DisplayUI display, HMouseEventArgs e)
         {
 
             if (e.Button == MouseButtons.Left)
             {
-                if (context.SetUp == SetUpEnum.Step1)
+                if (display.ShrSetUp == SetUpEnum.Step1)
                 {
                     // 开始绘制多边形，初始化点集合
-                    context.Polygons = new List<Point2d>();
+                    display.ShrPolygons = new List<Point2d>();
                     StartPoint = new Point2d(e.X, e.Y);
-                    context.Polygons.Add(new Point2d(e.X, e.Y));
+                    display.ShrPolygons.Add(new Point2d(e.X, e.Y));
                 }
-                else if (context.SetUp == SetUpEnum.Step2)
+                else if (display.ShrSetUp == SetUpEnum.Step2)
                 {
                     // 继续添加多边形顶点
-                    context.Polygons.Add(new Point2d(e.X, e.Y));
+                    display.ShrPolygons.Add(new Point2d(e.X, e.Y));
                 }
             }
         }
 
-        public void OnMouseUp(DrawContext context, HMouseEventArgs e)
+        public void OnMouseUp(DisplayUI display, HMouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
             {
-                if (context.SetUp == SetUpEnum.Step1)
+                if (display.ShrSetUp == SetUpEnum.Step1)
                 {
                     // 第一个点确定后，进入连续绘制模式
-                    context.SetUp = SetUpEnum.Step2;
+                    display.ShrSetUp = SetUpEnum.Step2;
                 }
             }
             else if (e.Button == MouseButtons.Right)
             {
-                if (context.SetUp == SetUpEnum.Step2)
+                if (display.ShrSetUp == SetUpEnum.Step2)
                 {
                     // 右键完成多边形绘制
-                    context.HoContour = HalconHelper.GenContours(context.Polygons);
-                    context.DrawPolygon(context.HoContour);
-                    context.SetUp = SetUpEnum.Step3;
+                    display.ShrContour = HalconHelper.GenContours(display.ShrPolygons);
+                    display.DrawPolygon(display.ShrContour);
+                    display.ShrSetUp = SetUpEnum.Step3;
                 }
             }
         }
 
-        public void OnMouseWheel(DrawContext context, HMouseEventArgs e)
+        public void OnMouseWheel(DisplayUI display, HMouseEventArgs e)
         {
             // 滚轮事件仅触发重绘
         }
 
-        public void OnMouseMove(DrawContext context, HMouseEventArgs e)
+        public void OnMouseMove(DisplayUI display, HMouseEventArgs e)
         {
-            OnReDisplay(context);
+            OnReDisplay(display);
 
-            if (context.SetUp == SetUpEnum.Step1)
+            if (display.ShrSetUp == SetUpEnum.Step1)
             {
                 // 显示光标十字
                 display.DispPoint(e.X, e.Y, HColor.Red);
             }
-            else if (context.SetUp == SetUpEnum.Step2)
+            else if (display.ShrSetUp == SetUpEnum.Step2)
             {
                 // 获取最后一个点
                 Point2d regPoint = new Point2d(0, 0);
-                if (context.Polygons.Count > 0)
+                if (display.ShrPolygons.Count > 0)
                 {
-                    regPoint = context.Polygons[context.Polygons.Count - 1];
+                    regPoint = display.ShrPolygons[display.ShrPolygons.Count - 1];
                 }
                 else
                 {
@@ -101,11 +98,11 @@ namespace DotNet.VisionMaster
             }
         }
 
-        public void OnReDisplay(DrawContext context)
+        public void OnReDisplay(DisplayUI display)
         {
-            var points = context.Polygons;
+            var points = display.ShrPolygons;
 
-            switch (context.SetUp)
+            switch (display.ShrSetUp)
             {
                 case SetUpEnum.Step1:
                     {
@@ -136,12 +133,12 @@ namespace DotNet.VisionMaster
                 case SetUpEnum.Step3:
                     {
                         // 显示模型相关区域
-                        display.DispRegion(context.HoRegion, HColor.Blue);
-                        display.DispRegion(context.HoContour, HColor.Green);
+                        display.DispRegion(display.ShrRegion, HColor.Blue);
+                        display.DispRegion(display.ShrContour, HColor.Green);
 
-                        if (context.Center != null)
+                        if (display.ShrCenter != null)
                         {
-                            display.DispPoint(context.Center, HColor.Yellow);
+                            display.DispPoint(display.ShrCenter, HColor.Yellow);
                         }
                     }
                     break;

@@ -75,6 +75,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Algorithms\CreateROIStrategy.cs" />
+    <Compile Include="CvEnum\EnumClass.cs" />
     <Compile Include="DrawWindow\DisplayUI.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -91,8 +92,7 @@
     <Compile Include="Algorithms\ShapeMatchingStrategy.cs" />
     <Compile Include="DrawWindow\DrawEvent.cs" />
     <Compile Include="DrawWindow\DrawHandlers\RectDispHandler.cs" />
-    <Compile Include="DrawWindow\DrawContext.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\DrawHandlerFactory.cs" />
+    <Compile Include="DrawWindow\DrawHandlerFactory.cs" />
     <Compile Include="DrawWindow\DrawHandlers\RectEditHandler.cs" />
     <Compile Include="DrawWindow\DrawHandlers\IDrawHandler.cs" />
     <Compile Include="DrawWindow\DrawHandlers\NoneHandler.cs" />
