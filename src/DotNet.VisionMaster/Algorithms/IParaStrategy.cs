@@ -1,3 +1,4 @@
+using DotNet.HalconUI;
 using HalconDotNet;
 using System;
 using System.Collections.Generic;
@@ -17,8 +18,8 @@ namespace DotNet.VisionMaster
         T ResolveOutput<T>(string[] path);
         void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls);
         void SavePara(ParaForm form, Dictionary<string, VsControlModel> VsControls);
-        void DispROI(DisplayForm display);
-        bool Fun_action(DisplayForm display, List<IParaStrategy> strategys);
+        void DispROI(DisplayUI display);
+        bool Fun_action(DisplayUI display, List<IParaStrategy> strategys);
     }
 
     /// <summary>
@@ -54,8 +55,8 @@ namespace DotNet.VisionMaster
         public abstract void GenTreeNode(TreeVisualizer tree);
         public abstract void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls);
         public abstract void SavePara(ParaForm form, Dictionary<string, VsControlModel> VsControls);
-        public virtual void DispROI(DisplayForm display) { }
-        public abstract bool Fun_action(DisplayForm display, List<IParaStrategy> strategys);
+        public virtual void DispROI(DisplayUI display) { }
+        public abstract bool Fun_action(DisplayUI display, List<IParaStrategy> strategys);
     }
 
     /// <summary>

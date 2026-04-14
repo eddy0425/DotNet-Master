@@ -1,7 +1,8 @@
 using HalconDotNet;
-using DotNet.HWindows;
 using System;
 using System.Collections.Generic;
+using DotNet.Drawing;
+using DotNet.HalconUI;
 
 namespace DotNet.VisionMaster
 {
@@ -16,15 +17,15 @@ namespace DotNet.VisionMaster
         {
             draw.RectangleEvent -= RectEvent;
         }
-        private void RectEvent(object sender, DrawContext.DrawRectangleArgs e)
+        private void RectEvent(object sender, DrawRectangleArgs e)
         {
             if (e.Name == Name)
             {
-                inPara.HContext.Re2Point(e.TopLeft, e.BottomRight);
+                inPara.HContext.Update2Point(e.TopLeft, e.BottomRight);
                 inPara.HContext.GenRegion();
             }
         }
-        public override bool Fun_action(DisplayForm display, List<IParaStrategy> strategys)
+        public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
             HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
             HObject imgReduce = new HObject(); HOperatorSet.GenEmptyObj(out imgReduce);
@@ -65,12 +66,12 @@ namespace DotNet.VisionMaster
 
             ClearResolvers();
             RegisterOutput("直线", () => inPara.Line);
-            RegisterOutput("直线/起点", () => inPara.Line.start);
-            RegisterOutput("直线/起点/行", () => inPara.Line.start.Y);
-            RegisterOutput("直线/起点/列", () => inPara.Line.start.X);
-            RegisterOutput("直线/终点", () => inPara.Line.end);
-            RegisterOutput("直线/终点/行", () => inPara.Line.end.Y);
-            RegisterOutput("直线/终点/列", () => inPara.Line.end.X);
+            RegisterOutput("直线/起点", () => inPara.Line.Start);
+            RegisterOutput("直线/起点/行", () => inPara.Line.Start.Y);
+            RegisterOutput("直线/起点/列", () => inPara.Line.Start.X);
+            RegisterOutput("直线/终点", () => inPara.Line.End);
+            RegisterOutput("直线/终点/行", () => inPara.Line.End.Y);
+            RegisterOutput("直线/终点/列", () => inPara.Line.End.X);
 
         }
         public override void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls)
@@ -79,7 +80,7 @@ namespace DotNet.VisionMaster
 
             VsControls.ShowComboBox(form, "cmb_CoordIn", inPara.CoordIn.ToString(), false);
 
-            HObjContext hRegion = inPara.HContext;
+            CvRegion hRegion = inPara.HContext;
             VsControls.ShowComboBox(form, "cmb_Width", hRegion.Width.ToString(), false);
             VsControls.ShowComboBox(form, "cmb_Height", hRegion.Height.ToString(), false);
             VsControls.ShowComboBox(form, "cmb_TopLeft", $"{hRegion.TopLeft.X};{hRegion.TopLeft.Y}", false);
@@ -133,7 +134,7 @@ namespace DotNet.VisionMaster
             inPara.StepWidth = Convert.ToInt16(VsControls["cmb_111"].Text);
             inPara.MaxErr = Convert.ToInt16(VsControls["cmb_112"].Text);
         }
-        public override void DispROI(DisplayForm display)
+        public override void DispROI(DisplayUI display)
         {
             display.SetDrawMode(Name, inPara.HContext, WinDrawType.DispRect);
         }
@@ -154,10 +155,10 @@ namespace DotNet.VisionMaster
         /// <summary> 跟随坐标 </summary>
         public string CoordIn { set; get; } = "默认";
 
-        public CvLine Line { set; get; } = new CvLine();
+        public CvLine Line { set; get; }
 
         /// <summary> 区域 </summary>
-        public HObjContext HContext { set; get; } = new HObjContext();
+        public CvRegion HContext { set; get; } = new CvRegion();
 
         /// <summary> 过渡方向 </summary>
         public string Transition { set; get; }

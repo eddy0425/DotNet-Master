@@ -1,10 +1,9 @@
-﻿using DotNet.HWindows;
-using HalconDotNet;
+﻿using HalconDotNet;
 using System;
-using System.IO;
-using System.Linq;
 using System.Windows.Forms;
 using System.Collections.Generic;
+using DotNet.Drawing;
+using DotNet.HalconUI;
 
 
 namespace DotNet.VisionMaster
@@ -14,15 +13,12 @@ namespace DotNet.VisionMaster
         public override string Name => "加载图像";
         private int Index  = 0;       //图像下标
         private string[] ImagePaths;   //图像路径
-        private string ThisFilePath => ImagePaths[Index];  //当前图像文件
-
-        public Action TestImageRun { get; set; }
 
         public override void Init(DrawContext draw)
         {
             try
             {
-                ImagePaths = GetPaths(inPara.ImageFolder);
+                ImagePaths = HalconHelper.GetPaths(inPara.ImageFolder);
             }
             catch (Exception ex)
             {
@@ -45,7 +41,7 @@ namespace DotNet.VisionMaster
 
         }
 
-        public override bool Fun_action(DisplayForm display, List<IParaStrategy> strategys)
+        public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
             HOperatorSet.GenEmptyObj(out inPara.Image);
 
@@ -53,7 +49,7 @@ namespace DotNet.VisionMaster
             {
                 if (ImagePaths == null)
                 {
-                    ImagePaths = GetPaths(inPara.ImageFolder);
+                    ImagePaths = HalconHelper.GetPaths(inPara.ImageFolder);
                 }
 
                 if (Index >= ImagePaths.Length) Index = 0;
@@ -88,7 +84,7 @@ namespace DotNet.VisionMaster
                     default: break;
                 }
 
-                var message = $"{Name} : W:{display.ho_Width} H:{display.ho_Height} Index:{Index}/{ImagePaths.Length}";
+                var message = $"{Name} : W:{display.HoWidth} H:{display.HoHeight} Index:{Index}/{ImagePaths.Length}";
                 
                 display.DispImage(inPara.Image);
                 display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
@@ -128,31 +124,6 @@ namespace DotNet.VisionMaster
             inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
         }
 
-        private string[] GetPaths(string imageFolder)
-        {
-            var imagePaths = Directory.GetFiles(imageFolder);
-            if (imagePaths.Length == 0)
-                throw new InvalidOperationException("图片路径为空！");
-
-            var numericFiles = new List<Tuple<int, string>>();
-            var nonNumericFiles = new List<string>();
-
-            foreach (var path in imagePaths)
-            {
-                string fileName = Path.GetFileNameWithoutExtension(path);
-                int number;
-                if (int.TryParse(fileName, out number))
-                    numericFiles.Add(Tuple.Create(number, path));
-                else
-                    nonNumericFiles.Add(path);
-            }
-
-            var sorted = numericFiles.OrderBy(x => x.Item1)
-                                    .Select(x => x.Item2)
-                                    .Concat(nonNumericFiles)
-                                    .ToArray();
-            return sorted;
-        }
     }
 
     public class FileImage

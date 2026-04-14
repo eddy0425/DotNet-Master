@@ -1,16 +1,20 @@
+using DotNet.HalconUI;
 using System;
-using System.Collections.Generic;
 using System.Windows.Forms;
+using System.Collections.Generic;
+
 
 namespace DotNet.VisionMaster
 {
     public partial class Form1 : Form
     {
-        DisplayForm _display;
+        DisplayUI _display;
         ParaForm _formPara;
         private readonly Dictionary<string, VsControlModel> _vsControls = new Dictionary<string, VsControlModel>();
 
         private int _index;
+
+
         /// <summary>
         /// 当前算法策略（面向接口，可随时切换）
         /// </summary>
@@ -21,8 +25,7 @@ namespace DotNet.VisionMaster
         {
             InitializeComponent();
 
-            _display = new DisplayForm();
-            _display.Show();
+            _display = new DisplayUI();
             panel1.Controls.Add(_display);
 
             _formPara = new ParaForm(_display);

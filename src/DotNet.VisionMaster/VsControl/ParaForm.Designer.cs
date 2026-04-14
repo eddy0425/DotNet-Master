@@ -918,6 +918,7 @@
             this.but_updataRegion.TabIndex = 351;
             this.but_updataRegion.Text = "修改区域";
             this.but_updataRegion.UseVisualStyleBackColor = false;
+            this.but_updataRegion.Click += new System.EventHandler(this.but_updataRegion_Click);
             // 
             // btn_setCoordIn
             // 
@@ -1180,6 +1181,7 @@
             this.btn_newModel.TabIndex = 347;
             this.btn_newModel.Text = "新建模版";
             this.btn_newModel.UseVisualStyleBackColor = false;
+            this.btn_newModel.Click += new System.EventHandler(this.btn_newModel_Click);
             // 
             // groupBox3
             // 

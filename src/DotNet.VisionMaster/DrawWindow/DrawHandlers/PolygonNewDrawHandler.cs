@@ -1,9 +1,8 @@
-using DotNet.HWindows;
+using DotNet.Drawing;
 using HalconDotNet;
-using OpenCvSharp;
-using System;
-using System.Collections.Generic;
 using System.Windows.Forms;
+using System.Collections.Generic;
+using DotNet.HalconUI;
 
 namespace DotNet.VisionMaster
 {
@@ -13,13 +12,14 @@ namespace DotNet.VisionMaster
     /// </summary>
     public class PolygonNewDrawHandler : IDrawHandler
     {
-
-        private Point2d StartPoint  = new Point2d(0, 0); //起始点
-
+        Point2d StartPoint  = new Point2d(0, 0); //起始点
+        DrawContext context;
+        DisplayForm display => context.display;
         public bool NeedReDispImage => true;
 
-        public void SetUp(DrawContext context)
+        public void SetUp(DrawContext _context)
         {
+            context = _context;
             if (context.SetUp == SetUpEnum.None)
             {
                 context.SetUp = SetUpEnum.Step1;
@@ -61,7 +61,7 @@ namespace DotNet.VisionMaster
                 if (context.SetUp == SetUpEnum.Step2)
                 {
                     // 右键完成多边形绘制
-                    context.HoContour = context.GenContours(context.Polygons);
+                    context.HoContour = HalconHelper.GenContours(context.Polygons);
                     context.DrawPolygon(context.HoContour);
                     context.SetUp = SetUpEnum.Step3;
                 }
@@ -80,7 +80,7 @@ namespace DotNet.VisionMaster
             if (context.SetUp == SetUpEnum.Step1)
             {
                 // 显示光标十字
-                context.DispCross(e.Y, e.X, HColor.Red);
+                display.DispPoint(e.X, e.Y, HColor.Red);
             }
             else if (context.SetUp == SetUpEnum.Step2)
             {
@@ -96,8 +96,8 @@ namespace DotNet.VisionMaster
                 }
 
                 // 显示光标和到最后一个点的连线
-                context.DispCross(e.Y, e.X, HColor.Red);
-                context.DispLine(new CvLine(regPoint.X, regPoint.Y, e.X, e.Y), HColor.Red);
+                display.DispPoint(e.X, e.Y, HColor.Red);
+                display.DispLine(new CvLine(regPoint.X, regPoint.Y, e.X, e.Y), HColor.Red);
             }
         }
 
@@ -115,7 +115,7 @@ namespace DotNet.VisionMaster
                         {
                             if (i < points.Count - 1)
                             {
-                                context.DispLine(new CvLine(points[i].X, points[i].Y, points[i + 1].X, points[i + 1].Y), color);
+                                display.DispLine(new CvLine(points[i].X, points[i].Y, points[i + 1].X, points[i + 1].Y), color);
                             }
                         }
                     }
@@ -128,7 +128,7 @@ namespace DotNet.VisionMaster
                         {
                             if (i < points.Count - 1)
                             {
-                                context.DispLine(new CvLine(points[i].X, points[i].Y, points[i + 1].X, points[i + 1].Y), color);
+                                display.DispLine(new CvLine(points[i].X, points[i].Y, points[i + 1].X, points[i + 1].Y), color);
                             }
                         }
                     }
@@ -136,12 +136,12 @@ namespace DotNet.VisionMaster
                 case SetUpEnum.Step3:
                     {
                         // 显示模型相关区域
-                        context.DispRegion(context.HContext.HoRect, HColor.Blue);
-                        context.DispRegion(context.HoContour, HColor.Green);
+                        display.DispRegion(context.HoRegion, HColor.Blue);
+                        display.DispRegion(context.HoContour, HColor.Green);
 
                         if (context.Center != null)
                         {
-                            context.DispCross(context.Center.Y, context.Center.X, HColor.Yellow);
+                            display.DispPoint(context.Center, HColor.Yellow);
                         }
                     }
                     break;

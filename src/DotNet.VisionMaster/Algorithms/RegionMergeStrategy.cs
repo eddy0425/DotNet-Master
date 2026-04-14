@@ -1,4 +1,5 @@
-using DotNet.HWindows;
+using DotNet.Drawing;
+using DotNet.HalconUI;
 using HalconDotNet;
 using System;
 using System.Collections.Generic;
@@ -8,14 +9,14 @@ namespace DotNet.VisionMaster
     public class RegionMergeStrategy : ParaStrategyBase<RegionMerge>
     {
         public override string Name => "区域合并";
-        public override bool Fun_action(DisplayForm display, List<IParaStrategy> strategys)
+        public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
             HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
             HObject imgReduce = new HObject(); HOperatorSet.GenEmptyObj(out imgReduce);
 
             try
             {
-                var region = strategys.ResolveFrom<HObjContext>(inPara.RegionIn);
+                var region = strategys.ResolveFrom<CvRegion>(inPara.RegionIn);
                 var coord = strategys.ResolveFrom<CvCoord>(inPara.CoordIn);
 
                 return true;
@@ -46,10 +47,10 @@ namespace DotNet.VisionMaster
 
             ClearResolvers();
             RegisterOutput("坐标系", () => inPara.Coord);
-            RegisterOutput("坐标系/原点", () => inPara.Coord.center);
+            RegisterOutput("坐标系/原点", () => inPara.Coord.Center);
             RegisterOutput("坐标系/原点/行", () => inPara.Coord.Y);
             RegisterOutput("坐标系/原点/列", () => inPara.Coord.X);
-            RegisterOutput("坐标系/角度", () => inPara.Coord.angle);
+            RegisterOutput("坐标系/角度", () => inPara.Coord.Angle);
             RegisterOutput("区域", () => inPara.HContext);
 
         }
@@ -98,7 +99,7 @@ namespace DotNet.VisionMaster
         public CvCoord Coord { get; set; } = new CvCoord();
 
         /// <summary> 区域 </summary>
-        public HObjContext HContext { set; get; } = new HObjContext();
+        public CvRegion HContext { set; get; } = new CvRegion();
     }
 
 }

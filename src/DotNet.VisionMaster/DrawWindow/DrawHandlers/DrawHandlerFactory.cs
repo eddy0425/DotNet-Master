@@ -15,7 +15,8 @@ namespace DotNet.VisionMaster
         DispRect,//EditRectHandler
         NewPolygon,
         EditPolygon,
-        Synthethic
+        Synthethic,
+        ShapeModel
     }
 
     public enum DrawEnum

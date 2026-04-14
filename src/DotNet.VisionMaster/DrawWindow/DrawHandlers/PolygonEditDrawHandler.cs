@@ -1,9 +1,7 @@
-using DotNet.HWindows;
+using DotNet.Drawing;
+using DotNet.HalconUI;
 using HalconDotNet;
-using OpenCvSharp;
-using System;
 using System.Windows.Forms;
-using System.Collections.Generic;
 
 namespace DotNet.VisionMaster
 {
@@ -13,24 +11,26 @@ namespace DotNet.VisionMaster
     /// </summary>
     public class PolygonEditDrawHandler : IDrawHandler
     {
-
-        private int SelectIndex = 0; //选中的索引
+        int SelectIndex = 0; //选中的索引
+        DrawContext context;
+        DisplayForm display => context.display;
 
         public bool NeedReDispImage => true;
 
-        public void SetUp(DrawContext context)
+        public void SetUp(DrawContext _context)
         {
+            context = _context;
             if (context.SetUp == SetUpEnum.None)
             {
                 if (context.Polygons.Count == 0)
                 {
                     GetShapeModelPoints(out double[] rowPoints, out double[] columnPoints);
-                    context.Polygons = context.GetPolygons(rowPoints, columnPoints);
-                    context.DispCross(rowPoints, columnPoints, HColor.Green);
+                    context.Polygons = HalconHelper.GetPolygons(rowPoints, columnPoints);
+                    display.DispPoint(rowPoints, columnPoints, HColor.Green);
                 }
                 else
                 {
-                    context.DispCross(context.Polygons, HColor.Green);
+                    display.DispPoint(context.Polygons, HColor.Green);
                 }
 
                 context.SetUp = SetUpEnum.Step1;
@@ -70,7 +70,7 @@ namespace DotNet.VisionMaster
                 if (context.SetUp == SetUpEnum.Step1)
                 {
                     // 右键完成编辑
-                    context.HoContour = context.GenContours(context.Polygons);
+                    context.HoContour = HalconHelper.GenContours(context.Polygons);
                     context.DrawPolygon(context.HoContour);
                     context.SetUp = SetUpEnum.Step2;
                 }
@@ -103,10 +103,10 @@ namespace DotNet.VisionMaster
                             // 检测是否靠近某个顶点
                             for (int i = 0; i < context.Polygons.Count; i++)
                             {
-                                if (context.IsNearPoint(context.Polygons[i].X, context.Polygons[i].Y, e.X, e.Y))
+                                if (HalconHelper.IsNearPoint(context.Polygons[i].X, context.Polygons[i].Y, e.X, e.Y))
                                 {
                                     // 高亮显示靠近的顶点
-                                    context.DispCross(context.Polygons[i].Y, context.Polygons[i].X, HColor.Red);
+                                    display.DispPoint(context.Polygons[i], HColor.Red);
                                     SelectIndex = i;
                                     context.CycleMove = CycleMoveEnum.Start;
                                     break;
@@ -124,14 +124,14 @@ namespace DotNet.VisionMaster
             {
                 case SetUpEnum.Step1:
                     {
-                        context.DispCross(context.Polygons, HColor.Green);
+                        display.DispPoint(context.Polygons, HColor.Green);
 
                         // 绘制多边形边
                         for (int i = 0; i < context.Polygons.Count; i++)
                         {
                             if (i < context.Polygons.Count - 1)
                             {
-                                context.DispLine(new CvLine(context.Polygons[i].X, context.Polygons[i].Y,
+                                display.DispLine(new CvLine(context.Polygons[i].X, context.Polygons[i].Y,
                                                context.Polygons[i + 1].X, context.Polygons[i + 1].Y), HColor.Red);
                             }
                         }
@@ -139,7 +139,7 @@ namespace DotNet.VisionMaster
                         // 绘制闭合线
                         if (context.Polygons.Count > 2)
                         {
-                            context.DispLine(new CvLine(context.Polygons[0].X, context.Polygons[0].Y,
+                            display.DispLine(new CvLine(context.Polygons[0].X, context.Polygons[0].Y,
                                            context.Polygons[context.Polygons.Count - 1].X,
                                            context.Polygons[context.Polygons.Count - 1].Y), HColor.Red);
                         }
@@ -148,12 +148,12 @@ namespace DotNet.VisionMaster
                 case SetUpEnum.Step2:
                     {
                         // 显示模型相关区域
-                        context.DispRegion(context.HContext.HoRect, HColor.Blue);
-                        context.DispRegion(context.HoContour, HColor.Green);
+                        display.DispRegion(context.HoRegion, HColor.Blue);
+                        display.DispRegion(context.HoContour, HColor.Green);
 
                         if (context.Center != null)
                         {
-                            context.DispCross(context.Center.Y, context.Center.X, HColor.Yellow);
+                            display.DispPoint(context.Center, HColor.Yellow);
                         }
                     }
                     break;

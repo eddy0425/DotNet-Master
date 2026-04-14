@@ -1,6 +1,6 @@
 using System;
-using System.Windows.Forms;
 using System.Collections.Generic;
+using System.Windows.Forms;
 
 
 namespace DotNet.VisionMaster
@@ -10,14 +10,14 @@ namespace DotNet.VisionMaster
         int _index;
         string _name;
         List<IParaStrategy> _strategys;
-        DisplayForm _display;
+        DisplayUI _display;
         Form_Value _form_Value;
 
-        public ParaForm(DisplayForm displayForm)
+        public ParaForm(DisplayUI displayUI)
         {
             InitializeComponent();
 
-            _display = displayForm;
+            _display = displayUI;
             _form_Value = new Form_Value();
         }
         private void btn_setPath_Click(object sender, EventArgs e)
@@ -76,6 +76,11 @@ namespace DotNet.VisionMaster
             _display.SetDrawMode(_name, WinDrawType.NewRect);
         }
 
+        private void but_updataRegion_Click(object sender, EventArgs e)
+        {
+            _display.SetDrawMode(_name, WinDrawType.EditRect);
+        }
+
         private void btn_setCoordIn_Click(object sender, EventArgs e)
         {
             switch (_strategys[_index].Name)
@@ -127,6 +132,48 @@ namespace DotNet.VisionMaster
             }
         }
 
-       
+        private void btn_newModel_Click(object sender, EventArgs e)
+        {
+            //Edit_savePara();
+
+            ////Matching inPara = jobPara.jobInfo.ListMatchings[ListIndex];
+            //DisplayForm display = jobPara.disPlay;
+
+            //if (btn_rectangle1_2.Checked) inPara.SetROI.Type = DrawForm.¾ØÐÎ;
+            //else if (btn_rectangle2_2.Checked) inPara.SetROI.Type = DrawForm.·ÂÉä¾ØÐÎ;
+            //else if (btn_circle_2.Checked) inPara.SetROI.Type = DrawForm.Ô²;
+            //else if (btn_oval_2.Checked) inPara.SetROI.Type = DrawForm.ÍÖÔ²;
+            //else if (btn_polygon_2.Checked) inPara.SetROI.Type = DrawForm.¶à±ßÐÍ;
+
+            //if (inPara.SetROI.IsDefault())
+            //{
+            //    Point2d centre = new Point2d(display.ho_Width / 2, display.ho_Height / 2);
+            //    Size2d size = new Size2d(display.ho_Width / 4, display.ho_Height / 4);
+            //    inPara.SetROI.UpdateCentre(centre, size);
+            //}
+
+            //display.DrawDispRegion(inPara.SetROI);
+            //SetTemplate(display, inPara.SetROI, inPara.ModelInfo);
+
+            switch (_strategys[_index].Name)
+            {
+                case "ÐÎ×´Æ¥Åä":
+                    {
+                        ShapeMatchingStrategy shapeMatching = (ShapeMatchingStrategy)_strategys[_index];
+
+                        var inPara = ((ShapeMatchingStrategy)_strategys[_index]).inPara;
+                        var modeRect = inPara.ModeRect;
+
+                        _display.SetDrawMode(_name, WinDrawType.NewRect);
+                        //_displayCore.DrawDispRegion(modeRect);
+                        shapeMatching.SetTemplate(_display, _strategys, modeRect);
+                    }
+                    break;
+            }
+         
+
+      
+        }
+
     }
 }

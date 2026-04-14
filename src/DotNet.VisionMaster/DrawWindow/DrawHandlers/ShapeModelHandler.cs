@@ -1,15 +1,16 @@
+﻿using HalconDotNet;
 using DotNet.Drawing;
 using DotNet.HalconUI;
-using HalconDotNet;
 using System.Windows.Forms;
+
 
 namespace DotNet.VisionMaster
 {
     /// <summary>
-    /// 矩形绘图处理器
-    /// 用于绘制和编辑矩形区域
+    /// 设置模型绘图处理器
+    /// 用于显示模型匹配结果
     /// </summary>
-    public class RectNewHandler : IDrawHandler
+    public class ShapeModelHandler : IDrawHandler
     {
         HObject HoRect;
         Point2d TopLeft;
@@ -18,7 +19,7 @@ namespace DotNet.VisionMaster
         DisplayForm display => context.display;
         Point2d RegCenter => new Point2d((TopLeft.X + BottomRight.X) / 2, (TopLeft.Y + BottomRight.Y) / 2);
 
-        public RectNewHandler()
+        public ShapeModelHandler()
         {
             HoRect = new HObject(); HOperatorSet.GenEmptyObj(out HoRect); // 创建初始空对象
         }

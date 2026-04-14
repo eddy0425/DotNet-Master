@@ -12,6 +12,21 @@
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>x64</PlatformTarget>
@@ -33,8 +48,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="halcondotnet">
+    <Reference Include="halcondotnet, Version=22.11.0.0, Culture=neutral, PublicKeyToken=4973bed59ddbf2b8, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>C:\DotNet\.dll\Halcon\halcondotnet.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>C:\DotNet\.dll\Newtonsoft.Json\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="SunnyUI">
       <HintPath>C:\DotNet\.dll\SunnyUI\SunnyUI.dll</HintPath>
@@ -56,17 +75,25 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Algorithms\CreateROIStrategy.cs" />
-    <Compile Include="Drawing\HObjectExtension.cs" />
+    <Compile Include="DrawWindow\DisplayUI.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="DrawWindow\DisplayUI.Designer.cs">
+      <DependentUpon>DisplayUI.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Drawing\ModelResult.cs" />
+    <Compile Include="DrawWindow\DrawHandlers\ShapeModelHandler.cs" />
+    <Compile Include="FilePaths.cs" />
     <Compile Include="Algorithms\LineFindingStrategy.cs" />
     <Compile Include="Algorithms\FileImageStrategy.cs" />
     <Compile Include="Algorithms\RegionMergeStrategy.cs" />
     <Compile Include="Algorithms\IParaStrategy.cs" />
     <Compile Include="Algorithms\ShapeMatchingStrategy.cs" />
+    <Compile Include="DrawWindow\DrawEvent.cs" />
     <Compile Include="DrawWindow\DrawHandlers\RectDispHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\DrawContext.cs" />
+    <Compile Include="DrawWindow\DrawContext.cs" />
     <Compile Include="DrawWindow\DrawHandlers\DrawHandlerFactory.cs" />
     <Compile Include="DrawWindow\DrawHandlers\RectEditHandler.cs" />
-    <Compile Include="DrawWindow\HObjContext.cs" />
     <Compile Include="DrawWindow\DrawHandlers\IDrawHandler.cs" />
     <Compile Include="DrawWindow\DrawHandlers\NoneHandler.cs" />
     <Compile Include="DrawWindow\DrawHandlers\PolygonEditDrawHandler.cs" />
@@ -74,12 +101,6 @@
     <Compile Include="DrawWindow\DrawHandlers\RectNewHandler.cs" />
     <Compile Include="DrawWindow\DrawHandlers\SetModelDrawHandler.cs" />
     <Compile Include="DrawWindow\DrawHandlers\SynthethicDrawHandler.cs" />
-    <Compile Include="DrawWindow\DisplayForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="DrawWindow\DisplayForm.Designer.cs">
-      <DependentUpon>DisplayForm.cs</DependentUpon>
-    </Compile>
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -107,8 +128,8 @@
     <Compile Include="VsControl\VsControlBindingStrategy.cs" />
     <Compile Include="VsControl\VsControlFactory.cs" />
     <Compile Include="VsControl\VsControlModel.cs" />
-    <EmbeddedResource Include="DrawWindow\DisplayForm.resx">
-      <DependentUpon>DisplayForm.cs</DependentUpon>
+    <EmbeddedResource Include="DrawWindow\DisplayUI.resx">
+      <DependentUpon>DisplayUI.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
@@ -142,14 +163,6 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DotNet.CvHalcon\DotNet.CvHalcon.csproj">
-      <Project>{00384363-182C-4771-BAB2-F75C32750EFF}</Project>
-      <Name>DotNet.CvHalcon</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\DotNet.HWindows\DotNet.HWindows.csproj">
-      <Project>{c3346b57-e924-4abb-844b-36d99379c55a}</Project>
-      <Name>DotNet.HWindows</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Library\DotNet.Excel\DotNet.Excel.csproj">
       <Project>{66313ca7-8fed-4d1d-aceb-71cb2909a09c}</Project>
       <Name>DotNet.Excel</Name>
@@ -162,7 +175,21 @@
       <Project>{61b8513d-a49f-451e-b525-a7db5692cd32}</Project>
       <Name>DotNet.Logging</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Preview\DotNet.Drawing\DotNet.Drawing.csproj">
+      <Project>{ce09acc5-0e8d-4d7d-aa2b-d47b837f2cd2}</Project>
+      <Name>DotNet.Drawing</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Preview\DotNet.HalconUI\DotNet.HalconUI.csproj">
+      <Project>{f64662fa-e352-43ae-9b06-2e1ecfb1f205}</Project>
+      <Name>DotNet.HalconUI</Name>
+    </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

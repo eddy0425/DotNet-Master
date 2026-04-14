@@ -1,6 +1,6 @@
-﻿using DotNet.HWindows;
-using HalconDotNet;
-using OpenCvSharp;
+﻿using HalconDotNet;
+using DotNet.Drawing;
+using DotNet.HalconUI;
 
 namespace DotNet.VisionMaster
 {
@@ -11,21 +11,23 @@ namespace DotNet.VisionMaster
     public class RectDispHandler : IDrawHandler
     {
         public bool NeedReDispImage => true;
-
-        public void SetUp(DrawContext context)
+        DrawContext context;
+        DisplayForm display => context.display;
+        public void SetUp(DrawContext _context)
         {
+            context = _context;
             if (context.SetUp == SetUpEnum.None)
             {
-                Point2d TopLeft = context.HContext.TopLeft;
-                Point2d BottomRight = context.HContext.BottomRight;
-                Point2d Center = context.HContext.Center;
+                Point2d TopLeft = context.HoRegion.TopLeft;
+                Point2d BottomRight = context.HoRegion.BottomRight;
+                Point2d Center = context.HoRegion.Center;
 
                 // 显示最终结果
-                context.DispCross(TopLeft.Y, TopLeft.X, 50, HColor.OrangeRed);
-                context.DispCross(BottomRight.Y, BottomRight.X, 50, HColor.OrangeRed);
-                context.DispCross(Center.Y, Center.X, 50, HColor.Orange);
+                display.DispPoint(TopLeft, HColor.OrangeRed, 50);
+                display.DispPoint(BottomRight, HColor.OrangeRed, 50);
+                display.DispPoint(Center, HColor.Orange, 50);
 
-                context.DispRegion(context.HContext.HoRect, HColor.Blue);
+                display.DispRegion(context.HoRegion, HColor.Blue);
 
                 context.SetUp = SetUpEnum.Step1;
             }
@@ -43,16 +45,16 @@ namespace DotNet.VisionMaster
             {
                 case SetUpEnum.Step1:
                     {
-                        Point2d TopLeft = context.HContext.TopLeft;
-                        Point2d BottomRight = context.HContext.BottomRight;
-                        Point2d Center = context.HContext.Center;
+                        Point2d TopLeft = context.HoRegion.TopLeft;
+                        Point2d BottomRight = context.HoRegion.BottomRight;
+                        Point2d Center = context.HoRegion.Center;
 
                         // 显示最终结果
-                        context.DispCross(TopLeft.Y, TopLeft.X, 50, HColor.OrangeRed);
-                        context.DispCross(BottomRight.Y, BottomRight.X, 50, HColor.OrangeRed);
-                        context.DispCross(Center.Y, Center.X, 50, HColor.Orange);
-          
-                        context.DispRegion(context.HContext.HoRect, HColor.Blue);
+                        display.DispPoint(TopLeft, HColor.OrangeRed, 50);
+                        display.DispPoint(BottomRight, HColor.OrangeRed, 50);
+                        display.DispPoint(Center, HColor.Orange, 50);
+
+                        display.DispRegion(context.HoRegion, HColor.Blue);
                     }
                     break;
             }

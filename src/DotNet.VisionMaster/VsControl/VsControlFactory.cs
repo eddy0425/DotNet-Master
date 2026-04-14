@@ -1,7 +1,7 @@
-using System;
+using System.Reflection;
 using System.Windows.Forms;
 using System.Collections.Generic;
-using System.Reflection;
+
 
 namespace DotNet.VisionMaster
 {

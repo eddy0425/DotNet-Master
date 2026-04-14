@@ -1,4 +1,5 @@
-using DotNet.HWindows;
+using DotNet.Drawing;
+using DotNet.HalconUI;
 using HalconDotNet;
 
 namespace DotNet.VisionMaster
@@ -10,9 +11,11 @@ namespace DotNet.VisionMaster
     public class SetModelDrawHandler : IDrawHandler
     {
         public bool NeedReDispImage => true;
-
-        public void SetUp(DrawContext context)
+        DrawContext context;
+        DisplayForm display => context.display;
+        public void SetUp(DrawContext _context)
         {
+            context = _context;
             if (context.SetUp == SetUpEnum.None)
             {
                 OnReDisplay(context);
@@ -43,12 +46,12 @@ namespace DotNet.VisionMaster
         public void OnReDisplay(DrawContext context)
         {
             // 显示模型相关区域
-            context.DispRegion(context.HContext.HoRect, HColor.Blue);
-            context.DispRegion(context.HoContour, HColor.Green);
+            display.DispRegion(context.HoRegion, HColor.Blue);
+            display.DispRegion(context.HoContour, HColor.Green);
 
             if (context.Center != null)
             {
-                context.DispCross(context.Center.Y, context.Center.X, HColor.Yellow);
+                display.DispPoint(context.Center, HColor.Yellow);
             }
         }
 

@@ -1,6 +1,6 @@
-using DotNet.HWindows;
+using DotNet.Drawing;
+using DotNet.HalconUI;
 using HalconDotNet;
-using OpenCvSharp;
 using System.Windows.Forms;
 
 namespace DotNet.VisionMaster
@@ -29,18 +29,21 @@ namespace DotNet.VisionMaster
 
         Point2d RegTopLeft;
         Point2d RegBottomRight;
+        DrawContext context;
+        DisplayForm display => context.display;
         Point2d RegCenter => new Point2d((RegTopLeft.X + RegBottomRight.X) / 2, (RegTopLeft.Y + RegBottomRight.Y) / 2);
 
-        public void SetUp(DrawContext context)
+        public void SetUp(DrawContext _context)
         {
+            context = _context;
             if (context.SetUp == SetUpEnum.None)
             {
                 context.HoContour = DrawSynthethic(context, out RegTopLeft, out RegBottomRight);
-                context.DispRegion(context.HoContour, HColor.Green);
+                display.DispRegion(context.HoContour, HColor.Green);
 
-                context.DispCross(RegTopLeft.Y, RegTopLeft.X, 100, HColor.OrangeRed);
-                context.DispCross(RegBottomRight.Y, RegBottomRight.X, 100, HColor.OrangeRed);
-                context.DispCross(RegCenter.Y, RegCenter.X, 100, HColor.OrangeRed);
+                display.DispPoint(RegTopLeft, HColor.OrangeRed, 100);
+                display.DispPoint(RegBottomRight, HColor.OrangeRed, 100);
+                display.DispPoint(RegCenter, HColor.OrangeRed, 100);
 
                 context.SetUp = SetUpEnum.Step1;
             }
@@ -131,26 +134,26 @@ namespace DotNet.VisionMaster
                                 break;
                             default:
                                 {
-                                    if (context.IsNearPoint(RegTopLeft.X, RegTopLeft.Y, e.X, e.Y))
+                                    if (HalconHelper.IsNearPoint(RegTopLeft.X, RegTopLeft.Y, e.X, e.Y))
                                     {
                                         // 高亮显示靠近的顶点
-                                        context.DispCross(RegTopLeft.Y, RegTopLeft.X, HColor.Yellow);
+                                        display.DispPoint(RegTopLeft, HColor.Yellow);
                                         context.CycleMove = CycleMoveEnum.Start;
                                         break;
                                     }
 
-                                    if (context.IsNearPoint(RegBottomRight.X, RegBottomRight.Y, e.X, e.Y))
+                                    if (HalconHelper.IsNearPoint(RegBottomRight.X, RegBottomRight.Y, e.X, e.Y))
                                     {
                                         // 高亮显示靠近的顶点
-                                        context.DispCross(RegBottomRight.Y, RegBottomRight.X, HColor.Yellow);
+                                        display.DispPoint(RegBottomRight, HColor.Yellow);
                                         context.CycleMove = CycleMoveEnum.End;
                                         break;
                                     }
 
-                                    if (context.IsNearPoint(RegCenter.X, RegCenter.Y, e.X, e.Y))
+                                    if (HalconHelper.IsNearPoint(RegCenter.X, RegCenter.Y, e.X, e.Y))
                                     {
                                         // 高亮显示靠近的顶点
-                                        context.DispCross(RegCenter.Y, RegCenter.X, HColor.Yellow);
+                                        display.DispPoint(RegCenter, HColor.Yellow);
                                         context.CycleMove = CycleMoveEnum.Center;
                                         break;
                                     }
@@ -168,25 +171,25 @@ namespace DotNet.VisionMaster
             {
                 case SetUpEnum.Step1:
                     {
-                        context.DispCross(RegTopLeft.Y, RegTopLeft.X, 100, HColor.OrangeRed);
-                        context.DispCross(RegBottomRight.Y, RegBottomRight.X, 100, HColor.OrangeRed);
-                        context.DispCross(RegCenter.Y, RegCenter.X, 100, HColor.OrangeRed);
-                        context.DispRegion(context.HoContour, HColor.Green);
+                        display.DispPoint(RegTopLeft, HColor.OrangeRed, 100);
+                        display.DispPoint(RegBottomRight, HColor.OrangeRed, 100);
+                        display.DispPoint(RegCenter, HColor.OrangeRed, 100);
+                        display.DispRegion(context.HoContour, HColor.Green);
                     }
                     break;
                 case SetUpEnum.Step2:
                     {
-                        context.DispCross(RegTopLeft.Y, RegTopLeft.X, 100, HColor.OrangeRed);
-                        context.DispCross(RegBottomRight.Y, RegBottomRight.X, 100, HColor.OrangeRed);
-                        context.DispCross(RegCenter.Y, RegCenter.X, 100, HColor.OrangeRed);
+                        display.DispPoint(RegTopLeft, HColor.OrangeRed, 100);
+                        display.DispPoint(RegBottomRight, HColor.OrangeRed, 100);
+                        display.DispPoint(RegCenter, HColor.OrangeRed, 100);
 
                         // 显示模型相关区域
-                        context.DispRegion(context.HContext.HoRect, HColor.Blue);
-                        context.DispRegion(context.HoContour, HColor.Green);
+                        display.DispRegion(context.HoRegion, HColor.Blue);
+                        display.DispRegion(context.HoContour, HColor.Green);
 
                         if (context.Center != null)
                         {
-                            context.DispCross(context.Center.Y, context.Center.X, HColor.Yellow);
+                            display.DispPoint(context.Center, HColor.Yellow);
                         }
                     }
                     break;

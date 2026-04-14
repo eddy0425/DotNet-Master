@@ -1,5 +1,6 @@
-﻿using HalconDotNet;
-using DotNet.HWindows;
+﻿using DotNet.Drawing;
+using DotNet.HalconUI;
+using HalconDotNet;
 using System.Collections.Generic;
 
 namespace DotNet.VisionMaster
@@ -15,15 +16,15 @@ namespace DotNet.VisionMaster
         {
             draw.RectangleEvent -= RectEvent;
         }
-        private void RectEvent(object sender, DrawContext.DrawRectangleArgs e)
+        private void RectEvent(object sender, DrawRectangleArgs e)
         {
             if (e.Name == Name)
             {
-                inPara.HContext.Re2Point(e.TopLeft, e.BottomRight);
+                inPara.HContext.Update2Point(e.TopLeft, e.BottomRight);
                 inPara.HContext.GenRegion();
             }
         }
-        public override bool Fun_action(DisplayForm display, List<IParaStrategy> strategys)
+        public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
             HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
             HObject imgReduce = new HObject(); HOperatorSet.GenEmptyObj(out imgReduce);
@@ -35,8 +36,9 @@ namespace DotNet.VisionMaster
 
                 var hcontext = inPara.HContext;
                 hcontext.GenRegion();
-                inPara.Coord.center = hcontext.Center;
-                display.DispRegion(hcontext.HoRect);
+                inPara.Coord = new CvCoord(hcontext.Center);
+                display.ReDispImage();
+                display.DispRegion(hcontext, HColor.Blue);
                 return true;
             }
             catch
@@ -64,10 +66,10 @@ namespace DotNet.VisionMaster
 
             ClearResolvers();
             RegisterOutput("坐标系", () => inPara.Coord);
-            RegisterOutput("坐标系/原点", () => inPara.Coord.center);
+            RegisterOutput("坐标系/原点", () => inPara.Coord.Center);
             RegisterOutput("坐标系/原点/行", () => inPara.Coord.Y);
             RegisterOutput("坐标系/原点/列", () => inPara.Coord.X);
-            RegisterOutput("坐标系/角度", () => inPara.Coord.angle);
+            RegisterOutput("坐标系/角度", () => inPara.Coord.Angle);
             RegisterOutput("区域", () => inPara.HContext);
 
         }
@@ -77,7 +79,7 @@ namespace DotNet.VisionMaster
 
             VsControls.ShowComboBox(form, "cmb_CoordIn", inPara.CoordIn.ToString(), false);
 
-            HObjContext hRegion = inPara.HContext;
+            CvRegion hRegion = inPara.HContext;
             VsControls.ShowComboBox(form, "cmb_Width", hRegion.Width.ToString(), false);
             VsControls.ShowComboBox(form, "cmb_Height", hRegion.Height.ToString(), false);
             VsControls.ShowComboBox(form, "cmb_TopLeft", $"{hRegion.TopLeft.X};{hRegion.TopLeft.Y}", false);
@@ -88,7 +90,7 @@ namespace DotNet.VisionMaster
         {
             inPara.CoordIn = VsControls["cmb_CoordIn"].Text;
         }
-        public override void DispROI(DisplayForm display)
+        public override void DispROI(DisplayUI display)
         {
             display.SetDrawMode(Name, inPara.HContext, WinDrawType.DispRect);
         }
@@ -107,7 +109,7 @@ namespace DotNet.VisionMaster
         public CvCoord Coord { get; set; } = new CvCoord();
 
         /// <summary> 区域 </summary>
-        public HObjContext HContext { set; get; } = new HObjContext();
+        public CvRegion HContext { set; get; } = new CvRegion();
 
     }
 }
