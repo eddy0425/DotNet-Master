@@ -2,8 +2,7 @@
 using System.Windows.Forms;
 using System.Collections.Generic;
 using HalconDotNet;
-using OpenCvSharp;
-using DotNet.Library.Extension;
+using DotNet.Drawing;
 
 namespace DotNet.HWindows
 {

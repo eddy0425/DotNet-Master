@@ -1,4 +1,5 @@
-﻿using HalconDotNet;
+﻿using DotNet.Drawing;
+using HalconDotNet;
 using System.Collections.Generic;
 
 namespace DotNet.HWindows

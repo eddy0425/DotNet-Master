@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
+using DotNet.Drawing;
 using HalconDotNet;
-using OpenCvSharp;
-using DotNet.Library.Extension;
 
 namespace DotNet.HWindows
 {
@@ -64,7 +63,7 @@ namespace DotNet.HWindows
                 HOperatorSet.AreaCenter(findRegion, out HTuple area, out HTuple hv_Row, out HTuple hv_Column);
                 Point2d Follow = new Point2d(ho_Centre.X, ho_Centre.Y);
                 Point2d matching = new Point2d(hv_Column.D, hv_Row.D);
-                CvOperatorSet.TransRegion(matching, Follow, findRegion, out findRegion);
+                HalconHelper.TransRegion(matching, Follow, findRegion, out findRegion);
 
                 type.FindModel2(srcImage, info, 1, out ModelResult result);
 
@@ -103,7 +102,7 @@ namespace DotNet.HWindows
                 Point2d Follow = new Point2d(ho_Centre.X, ho_Centre.Y);
                 Point2d matching = new Point2d(hv_Column.D, hv_Row.D);
 
-                CvOperatorSet.TransRegion(matching, Follow, findRegion, out findRegion);
+                HalconHelper.TransRegion(matching, Follow, findRegion, out findRegion);
                 transCoord = _coord;
 
                 ReDisplay();
@@ -136,14 +135,14 @@ namespace DotNet.HWindows
                 Point2d Follow = new Point2d(ho_Centre.X, ho_Centre.Y);
                 Point2d matching = new Point2d(hv_Column.D, hv_Row.D);
 
-                CvOperatorSet.TransRegion(matching, Follow, findRegion, out findRegion);
+                HalconHelper.TransRegion(matching, Follow, findRegion, out findRegion);
 
                 if (type == ModelType.NccModel)
-                    CvOperatorSet.TransRegion(matching, Follow, modelContour, out modelContour);
+                    HalconHelper.TransRegion(matching, Follow, modelContour, out modelContour);
                 else
-                    CvOperatorSet.TransContourXld(matching, Follow, modelContour, out modelContour);
+                    HalconHelper.TransContourXld(matching, Follow, modelContour, out modelContour);
 
-                CvOperatorSet.TransPixel(matching, Follow, result.row.D, result.column.D, out HTuple rowTrans, out HTuple colTrans);
+                HalconHelper.TransPixel(matching, Follow, result.row.D, result.column.D, out HTuple rowTrans, out HTuple colTrans);
 
                 transCoord = new CvCoord(colTrans.D, rowTrans.D, result.angle.D.ToDegrees());
 

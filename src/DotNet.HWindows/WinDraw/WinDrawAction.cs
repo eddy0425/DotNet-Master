@@ -1,8 +1,8 @@
 ﻿using HalconDotNet;
-using OpenCvSharp;
 using System;
 using System.Windows.Forms;
 using System.Collections.Generic;
+using DotNet.Drawing;
 
 namespace DotNet.HWindows.WinDraw
 {

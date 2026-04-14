@@ -56,20 +56,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Extension\CvOperatorSet.cs" />
-    <Compile Include="enum\DrawForm.cs" />
     <Compile Include="enum\ModelType.cs" />
-    <Compile Include="TransExpV2.cs" />
     <Compile Include="WinDraw\WinDrawAction.cs" />
     <Compile Include="WinDraw\WinDrawType.cs" />
-    <Compile Include="Extension\old\DoubleExtension.cs" />
-    <Compile Include="Extension\HWDisPlayExtension.cs" />
-    <Compile Include="Extension\HWindowExtension.cs" />
-    <Compile Include="Extension\RegionExtension.cs" />
-    <Compile Include="Font\HWindowFont2018.cs" />
-    <Compile Include="Font\HWindowFont2022.cs" />
-    <Compile Include="Font\HWindowFontBase.cs" />
-    <Compile Include="HWindows\HWindowFontFactory.cs" />
     <Compile Include="Form_HWDisPlay.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -88,78 +77,16 @@
     <Compile Include="Form_ModelModify.Designer.cs">
       <DependentUpon>Form_ModelModify.cs</DependentUpon>
     </Compile>
-    <Compile Include="HWindows\HWindowImage.cs" />
-    <Compile Include="HWindows\HWindowMouse.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Model\CvCircle.cs" />
-    <Compile Include="Model\CvCoord.cs" />
-    <Compile Include="Model\disp\DispArrow.cs" />
-    <Compile Include="Model\disp\DispDCircle.cs" />
-    <Compile Include="Model\disp\DispDCoord.cs" />
-    <Compile Include="Model\disp\DispDLine.cs" />
-    <Compile Include="Model\disp\DispDRegion.cs" />
-    <Compile Include="Model\disp\DispPoint2d.cs" />
-    <Compile Include="Model\disp\DispText.cs" />
-    <Compile Include="Model\CvLine.cs" />
-    <Compile Include="Model\CvRegion.cs" />
     <Compile Include="Model\FindModel.cs" />
-    <Compile Include="Model\HColor.cs" />
     <Compile Include="WinDraw\WinDrawModel.cs" />
-    <Compile Include="Model\ZoomImage.cs" />
-    <Compile Include="OpenCvSharp\DMatch.cs" />
-    <Compile Include="OpenCvSharp\KeyPoint.cs" />
-    <Compile Include="OpenCvSharp\MatType.cs" />
-    <Compile Include="OpenCvSharp\Point.cs" />
-    <Compile Include="OpenCvSharp\Point2d.cs" />
-    <Compile Include="OpenCvSharp\Point2f.cs" />
-    <Compile Include="OpenCvSharp\Point3d.cs" />
-    <Compile Include="OpenCvSharp\Point3f.cs" />
-    <Compile Include="OpenCvSharp\Point3i.cs" />
-    <Compile Include="OpenCvSharp\Range.cs" />
-    <Compile Include="OpenCvSharp\Rangef.cs" />
-    <Compile Include="OpenCvSharp\Rect.cs" />
-    <Compile Include="OpenCvSharp\Rect2d.cs" />
-    <Compile Include="OpenCvSharp\Rect2f.cs" />
-    <Compile Include="OpenCvSharp\RotatedRect.cs" />
-    <Compile Include="OpenCvSharp\Scalar.cs" />
-    <Compile Include="OpenCvSharp\Size.cs" />
-    <Compile Include="OpenCvSharp\Size2d.cs" />
-    <Compile Include="OpenCvSharp\Size2f.cs" />
-    <Compile Include="OpenCvSharp\TermCriteria.cs" />
-    <Compile Include="OpenCvSharp\Vec\IVec.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec2b.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec2d.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec2f.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec2i.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec2s.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec2w.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec3b.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec3d.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec3f.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec3i.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec3s.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec3w.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec4b.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec4d.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec4f.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec4i.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec4s.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec4w.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec6b.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec6d.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec6f.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec6i.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec6s.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec6w.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Serialize\JsonConvertHObject.cs" />
-    <Compile Include="Serialize\SerializeConvert.cs" />
     <Compile Include="Template\FindModelInfo.cs" />
     <Compile Include="Template\ModelInfo.cs" />
     <Compile Include="Template\ModelResult.cs" />
@@ -201,9 +128,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Library\DotNet.Extension\DotNet.Extension.csproj">
-      <Project>{b1ed16c4-1623-4764-8922-96121ad2e207}</Project>
-      <Name>DotNet.Extension</Name>
+    <ProjectReference Include="..\Preview\DotNet.Drawing\DotNet.Drawing.csproj">
+      <Project>{ce09acc5-0e8d-4d7d-aa2b-d47b837f2cd2}</Project>
+      <Name>DotNet.Drawing</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

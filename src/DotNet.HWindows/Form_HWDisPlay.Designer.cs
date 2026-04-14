@@ -36,7 +36,7 @@ namespace DotNet.HWindows
             this.lbl_result = new System.Windows.Forms.Label();
             this.tableLayoutPanel_floor = new System.Windows.Forms.TableLayoutPanel();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.hWindowControl1 = new HalconDotNet.HWindowControl();
+            this.hWindowControl = new HalconDotNet.HWindowControl();
             this.tableLayoutPanel_tool.SuspendLayout();
             this.tableLayoutPanel_floor.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -121,7 +121,7 @@ namespace DotNet.HWindows
             // panel1
             // 
             this.panel1.BackColor = System.Drawing.Color.SlateGray;
-            this.panel1.Controls.Add(this.hWindowControl1);
+            this.panel1.Controls.Add(this.hWindowControl);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 20);
             this.panel1.Margin = new System.Windows.Forms.Padding(0);
@@ -129,20 +129,20 @@ namespace DotNet.HWindows
             this.panel1.Size = new System.Drawing.Size(512, 404);
             this.panel1.TabIndex = 1;
             // 
-            // hWindowControl1
+            // hWindowControl
             // 
-            this.hWindowControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.hWindowControl.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.hWindowControl1.BackColor = System.Drawing.Color.Black;
-            this.hWindowControl1.BorderColor = System.Drawing.Color.Black;
-            this.hWindowControl1.ImagePart = new System.Drawing.Rectangle(0, 0, 640, 480);
-            this.hWindowControl1.Location = new System.Drawing.Point(0, 0);
-            this.hWindowControl1.Margin = new System.Windows.Forms.Padding(0);
-            this.hWindowControl1.Name = "hWindowControl1";
-            this.hWindowControl1.Size = new System.Drawing.Size(512, 404);
-            this.hWindowControl1.TabIndex = 1;
-            this.hWindowControl1.WindowSize = new System.Drawing.Size(512, 404);
+            this.hWindowControl.BackColor = System.Drawing.Color.Black;
+            this.hWindowControl.BorderColor = System.Drawing.Color.Black;
+            this.hWindowControl.ImagePart = new System.Drawing.Rectangle(0, 0, 640, 480);
+            this.hWindowControl.Location = new System.Drawing.Point(0, 0);
+            this.hWindowControl.Margin = new System.Windows.Forms.Padding(0);
+            this.hWindowControl.Name = "hWindowControl";
+            this.hWindowControl.Size = new System.Drawing.Size(512, 404);
+            this.hWindowControl.TabIndex = 1;
+            this.hWindowControl.WindowSize = new System.Drawing.Size(512, 404);
             // 
             // Form_HWDisPlay
             // 
@@ -166,7 +166,7 @@ namespace DotNet.HWindows
         public System.Windows.Forms.Label lbl_result;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel_floor;
         private System.Windows.Forms.Button btn_ReSetPart;
-        public HalconDotNet.HWindowControl hWindowControl1;
+        public HalconDotNet.HWindowControl hWindowControl;
         private System.Windows.Forms.Button but_IsCross;
         public System.Windows.Forms.Panel panel1;
     }

@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
+using DotNet.Drawing;
 using HalconDotNet;
-using OpenCvSharp;
-using DotNet.Library.Extension;
-using DotNet.HWindows.WinDraw;
-using System.Net;
 
 namespace DotNet.HWindows
 {
@@ -83,7 +80,7 @@ namespace DotNet.HWindows
         {
             try
             {
-                CvOperatorSet.TransRegion(disPlay.HoCentre, setModeCenter, findModeRegion.HoRegion, out findModeRegion.InRegion);
+                HalconHelper.TransRegion(disPlay.HoCentre, setModeCenter, findModeRegion.HoRegion, out findModeRegion.InRegion);
 
                 this.Hide();
                 e.Cancel = true;
@@ -150,7 +147,7 @@ namespace DotNet.HWindows
                 findModeRegion = _findRegion;
                 setModeCenter = _setModeCenter;
 
-                CvOperatorSet.TransRegion(setModeCenter, disPlay.HoCentre, findModeRegion.HoRegion, out findModeRegion.InRegion);
+                HalconHelper.TransRegion(setModeCenter, disPlay.HoCentre, findModeRegion.HoRegion, out findModeRegion.InRegion);
 
                 //参数备份
                 oldModelID = info.modelID.Clone();
@@ -187,7 +184,7 @@ namespace DotNet.HWindows
                 {
                     type.FindModel2(hImage, info, 1, out newResult); if (newResult.score.Length <= 0) throw new Exception($"新建模板失败！!");
 
-                    CvOperatorSet.TransPixel(newResult.coord, LockCenter, 0, 0, out rowTrans, out colTrans);
+                    HalconHelper.TransPixel(newResult.coord, LockCenter, 0, 0, out rowTrans, out colTrans);
                     type.SetModelOrigin(info.modelID, rowTrans, colTrans);
 
                     ////修改模版中心
@@ -214,8 +211,8 @@ namespace DotNet.HWindows
                 {
                     disPlay.DispText($"坐标偏移值 X:{colTrans.D.ToString("F2")} Y:{rowTrans.D.ToString("F2")}", 10, 5, HColor.Red);
                 }
-                disPlay.DispText($"新坐标 X:{modelCentre.X.ToString("F2")} Y:{modelCentre.Y.ToString("F2")} A:{modelCentre.angle.ToString("F2")}", 10, 10, HColor.Red);
-                disPlay.DispText($"旧坐标 X:{LockCenter.X.ToString("F2")} Y:{LockCenter.Y.ToString("F2")} A:{LockCenter.angle.ToString("F2")}", 10, 15, HColor.Red);
+                disPlay.DispText($"新坐标 X:{modelCentre.X.ToString("F2")} Y:{modelCentre.Y.ToString("F2")} A:{modelCentre.Angle.ToString("F2")}", 10, 10, HColor.Red);
+                disPlay.DispText($"旧坐标 X:{LockCenter.X.ToString("F2")} Y:{LockCenter.Y.ToString("F2")} A:{LockCenter.Angle.ToString("F2")}", 10, 15, HColor.Red);
 
                 IsOk = true;
             }
@@ -258,8 +255,8 @@ namespace DotNet.HWindows
             disPlay.DispObj(modelContour, HColor.Green);
             disPlay.DispCross(modelCentre, 50, HColor.Green);
 
-            disPlay.DispText($"新坐标 X:{modelCentre.X.ToString("F2")} Y:{modelCentre.Y.ToString("F2")} A:{modelCentre.angle.ToString("F2")}", 10, 10, HColor.Red);
-            disPlay.DispText($"旧坐标 X:{LockCenter.X.ToString("F2")} Y:{LockCenter.Y.ToString("F2")} A:{LockCenter.angle.ToString("F2")}", 10, 15, HColor.Red);
+            disPlay.DispText($"新坐标 X:{modelCentre.X.ToString("F2")} Y:{modelCentre.Y.ToString("F2")} A:{modelCentre.Angle.ToString("F2")}", 10, 10, HColor.Red);
+            disPlay.DispText($"旧坐标 X:{LockCenter.X.ToString("F2")} Y:{LockCenter.Y.ToString("F2")} A:{LockCenter.Angle.ToString("F2")}", 10, 15, HColor.Red);
 
         }
 
@@ -305,7 +302,7 @@ namespace DotNet.HWindows
             {
                 ColorButton(but_ModyfyCenter, false);
                 UpdataTemplateCenter();
-                LockCenter = new CvCoord(modelCentre.X, modelCentre.Y, modelCentre.angle);
+                LockCenter = new CvCoord(modelCentre.X, modelCentre.Y, modelCentre.Angle);
             }
             catch (Exception ex)
             {
@@ -329,7 +326,7 @@ namespace DotNet.HWindows
 
             switch (findModeRegion.Type)
             {
-                case DrawForm.矩形:
+                case RectEnum.Rectangle:
                     HTuple row, col, row3, col3;
                     HOperatorSet.DrawRectangle1(disPlay.HoWindow, out row, out col, out row3, out col3);
                     if (row.D == 0 && col.D == 0)
@@ -337,7 +334,7 @@ namespace DotNet.HWindows
                     HOperatorSet.GenRectangle1(out region, row, col, row3, col3);
                     break;
 
-                case DrawForm.仿射矩形:
+                case RectEnum.Rectangle2:
                     HTuple angle, length1, length2;
                     HOperatorSet.DrawRectangle2(disPlay.HoWindow, out row, out col, out angle, out length1, out length2);
                     if (row.D == 0 && col.D == 0)
@@ -345,7 +342,7 @@ namespace DotNet.HWindows
                     HOperatorSet.GenRectangle2(out region, row, col, angle, length1, length2);
                     break;
 
-                case DrawForm.圆:
+                case RectEnum.Circle:
                     HTuple radius;
                     HOperatorSet.DrawCircle(disPlay.HoWindow, out row, out col, out radius);
                     if (row.D == 0 && col.D == 0)
@@ -353,14 +350,14 @@ namespace DotNet.HWindows
                     HOperatorSet.GenCircle(out region, row, col, radius);
                     break;
 
-                case DrawForm.椭圆:
+                case RectEnum.Ellipse:
                     HOperatorSet.DrawEllipse(disPlay.HoWindow, out row, out col, out angle, out length1, out length2);
                     if (row.D == 0 && col.D == 0)
                         return;
                     HOperatorSet.GenEllipse(out region, row, col, angle, length1, length2);
                     break;
 
-                case DrawForm.多边型:
+                case RectEnum.Polygon:
                     HOperatorSet.DrawRegion(out region, disPlay.HoWindow);
                     HTuple R, C, A;
                     HOperatorSet.AreaCenter(region, out R, out C, out A);
@@ -558,14 +555,14 @@ namespace DotNet.HWindows
             if (modelCentre != null) disPlay.DispCross(modelCentre, 30, HColor.OrangeRed);
         }
 
-        private DrawForm GetModifyShape()
+        private RectEnum GetModifyShape()
         {
-            DrawForm drawForm = DrawForm.矩形;
-            if (CB_ModifyShape.Text == "矩形") drawForm = DrawForm.矩形;
-            else if (CB_ModifyShape.Text == "仿射矩形") drawForm = DrawForm.仿射矩形;
-            else if (CB_ModifyShape.Text == "圆") drawForm = DrawForm.圆;
-            else if (CB_ModifyShape.Text == "椭圆") drawForm = DrawForm.椭圆;
-            else if (CB_ModifyShape.Text == "多边型") drawForm = DrawForm.多边型;
+            RectEnum drawForm = RectEnum.Rectangle;
+            if (CB_ModifyShape.Text == "矩形") drawForm = RectEnum.Rectangle;
+            else if (CB_ModifyShape.Text == "仿射矩形") drawForm = RectEnum.Rectangle2;
+            else if (CB_ModifyShape.Text == "圆") drawForm = RectEnum.Circle;
+            else if (CB_ModifyShape.Text == "椭圆") drawForm = RectEnum.Ellipse;
+            else if (CB_ModifyShape.Text == "多边型") drawForm = RectEnum.Polygon;
             return drawForm;
         }
 

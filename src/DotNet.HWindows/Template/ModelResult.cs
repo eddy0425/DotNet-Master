@@ -1,6 +1,6 @@
-﻿using HalconDotNet;
+﻿using DotNet.Drawing;
+using HalconDotNet;
 using Newtonsoft.Json;
-using DotNet.Library.Extension;
 
 namespace DotNet.HWindows
 {
