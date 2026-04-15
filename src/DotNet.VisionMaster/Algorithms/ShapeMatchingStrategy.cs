@@ -175,7 +175,7 @@ namespace DotNet.VisionMaster
                     display.ReDispImage();
                     display.DispRegion(modeRect, HColor.Red);
                     display.DispRegion(contourModel, HColor.Green);
-                    display.DispCross(result.Row.D, result.Column.D, result.Angle.D.ToDegrees(), HColor.Red, 50);
+                    display.DispCross(result.Column.D, result.Row.D, result.Angle.D.ToDegrees(), HColor.Red, 50);
 
                     //m_dispModel.ShowModel(imgReduced, modeRect.HoRect, contourModel, result, type);
 
@@ -190,9 +190,9 @@ namespace DotNet.VisionMaster
 
                 inPara.Follow = new Point2d(result.X, result.Y);      //更改跟随坐标
             }
-            catch (Exception ex)
+            catch
             {
-                MessageBox.Show(ex.Message);
+                throw;
             }
             finally
             {

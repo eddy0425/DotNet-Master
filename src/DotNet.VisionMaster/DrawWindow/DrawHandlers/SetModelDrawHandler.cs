@@ -12,10 +12,10 @@ namespace DotNet.VisionMaster
         public bool NeedReDisp => true;
         public void SetUp(DisplayUI display)
         {
-            if (display.ShrSetUp == SetUpEnum.None)
+            if (display.SetUp == SetUpEnum.None)
             {
                 OnReDisplay(display);
-                display.ShrSetUp = SetUpEnum.Step1;
+                display.SetUp = SetUpEnum.Step1;
             }
         }
 

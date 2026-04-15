@@ -14,7 +14,7 @@ namespace DotNet.VisionMaster
 
         public void SetUp(DisplayUI display)
         {
-            if (display.ShrSetUp == SetUpEnum.None)
+            if (display.SetUp == SetUpEnum.None)
             {
                 Point2d TopLeft = display.ShrRegion.TopLeft;
                 Point2d BottomRight = display.ShrRegion.BottomRight;
@@ -27,7 +27,7 @@ namespace DotNet.VisionMaster
 
                 display.DispRegion(display.ShrRegion, HColor.Blue);
 
-                display.ShrSetUp = SetUpEnum.Step1;
+                display.SetUp = SetUpEnum.Step1;
             }
         }
 
@@ -39,7 +39,7 @@ namespace DotNet.VisionMaster
 
         public void OnMouseMove(DisplayUI display, HMouseEventArgs e)
         {
-            switch (display.ShrSetUp)
+            switch (display.SetUp)
             {
                 case SetUpEnum.Step1:
                     {

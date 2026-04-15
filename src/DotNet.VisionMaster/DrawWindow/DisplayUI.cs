@@ -83,10 +83,10 @@ namespace DotNet.VisionMaster
         public string AlgoName;
 
         /// <summary> 当前设置步骤 </summary>
-        public SetUpEnum ShrSetUp = SetUpEnum.None;
+        public SetUpEnum SetUp = SetUpEnum.None;
 
         /// <summary> 当前循环移动状态  </summary>
-        public CycleMoveEnum ShrCycleMove = CycleMoveEnum.None;
+        public CycleMoveEnum CycleMove = CycleMoveEnum.None;
 
         /// <summary> 共享中心 </summary>
         public Point2d ShrCenter;
@@ -315,8 +315,8 @@ namespace DotNet.VisionMaster
         {
             DrawType = type;
             AlgoName = algorithmsName;
-            ShrSetUp = SetUpEnum.None;        //设置步骤
-            ShrCycleMove = CycleMoveEnum.None;   //循环移动状态
+            SetUp = SetUpEnum.None;        //设置步骤
+            CycleMove = CycleMoveEnum.None;   //循环移动状态
 
             ReDisplay();
             Reset();
@@ -332,8 +332,8 @@ namespace DotNet.VisionMaster
             DrawType = type;
             AlgoName = algorithmsName;
             ShrRegion = hRegion;
-            ShrSetUp = SetUpEnum.None;           //设置步骤
-            ShrCycleMove = CycleMoveEnum.None;      //循环移动状态
+            SetUp = SetUpEnum.None;           //设置步骤
+            CycleMove = CycleMoveEnum.None;      //循环移动状态
 
             ReDisplay();
             Reset();

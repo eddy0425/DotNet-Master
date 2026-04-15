@@ -33,7 +33,7 @@ namespace DotNet.VisionMaster
 
         public void SetUp(DisplayUI display)
         {
-            if (display.ShrSetUp == SetUpEnum.None)
+            if (display.SetUp == SetUpEnum.None)
             {
                 display.ShrContour = DrawSynthethic(display, out RegTopLeft, out RegBottomRight);
                 display.DispRegion(display.ShrContour, HColor.Green);
@@ -42,7 +42,7 @@ namespace DotNet.VisionMaster
                 display.DispPoint(RegBottomRight, HColor.OrangeRed, 100);
                 display.DispPoint(RegCenter, HColor.OrangeRed, 100);
 
-                display.ShrSetUp = SetUpEnum.Step1;
+                display.SetUp = SetUpEnum.Step1;
             }
         }
 
@@ -50,19 +50,19 @@ namespace DotNet.VisionMaster
         {
             if (e.Button == MouseButtons.Left)
             {
-                if (display.ShrSetUp == SetUpEnum.Step1)
+                if (display.SetUp == SetUpEnum.Step1)
                 {
-                    switch (display.ShrCycleMove)
+                    switch (display.CycleMove)
                     {
                         // 开始移动选中的顶点
                         case CycleMoveEnum.Start:
-                            display.ShrCycleMove = CycleMoveEnum.StartMove;
+                            display.CycleMove = CycleMoveEnum.StartMove;
                             break;
                         case CycleMoveEnum.End:
-                            display.ShrCycleMove = CycleMoveEnum.EndMove;
+                            display.CycleMove = CycleMoveEnum.EndMove;
                             break;
                         case CycleMoveEnum.Center:
-                            display.ShrCycleMove = CycleMoveEnum.CenterMove;
+                            display.CycleMove = CycleMoveEnum.CenterMove;
                             break;
                     }
                 }
@@ -73,26 +73,26 @@ namespace DotNet.VisionMaster
         {
             if (e.Button == MouseButtons.Left)
             {
-                if (display.ShrSetUp == SetUpEnum.Step1)
+                if (display.SetUp == SetUpEnum.Step1)
                 {
-                    switch (display.ShrCycleMove)
+                    switch (display.CycleMove)
                     {
                         // 结束顶点移动
                         case CycleMoveEnum.StartMove:
                         case CycleMoveEnum.EndMove:
                         case CycleMoveEnum.CenterMove:
-                            display.ShrCycleMove = CycleMoveEnum.None;
+                            display.CycleMove = CycleMoveEnum.None;
                             break;
                     }
                 }
             }
             else if (e.Button == MouseButtons.Right)
             {
-                if (display.ShrSetUp == SetUpEnum.Step1)
+                if (display.SetUp == SetUpEnum.Step1)
                 {
                     // 右键完成编辑
                     display.DrawSynthethicn(display.ShrContour, RegTopLeft, RegBottomRight);
-                    display.ShrSetUp = SetUpEnum.Step2;
+                    display.SetUp = SetUpEnum.Step2;
                 }
             }
         }
@@ -106,11 +106,11 @@ namespace DotNet.VisionMaster
         {
             OnReDisplay(display);
 
-            switch (display.ShrSetUp)
+            switch (display.SetUp)
             {
                 case SetUpEnum.Step1:
                     {
-                        switch (display.ShrCycleMove)
+                        switch (display.CycleMove)
                         {
                             case CycleMoveEnum.StartMove:
                                 RegTopLeft = new Point2d(e.X, e.Y);
@@ -135,7 +135,7 @@ namespace DotNet.VisionMaster
                                     {
                                         // 高亮显示靠近的顶点
                                         display.DispPoint(RegTopLeft, HColor.Yellow);
-                                        display.ShrCycleMove = CycleMoveEnum.Start;
+                                        display.CycleMove = CycleMoveEnum.Start;
                                         break;
                                     }
 
@@ -143,7 +143,7 @@ namespace DotNet.VisionMaster
                                     {
                                         // 高亮显示靠近的顶点
                                         display.DispPoint(RegBottomRight, HColor.Yellow);
-                                        display.ShrCycleMove = CycleMoveEnum.End;
+                                        display.CycleMove = CycleMoveEnum.End;
                                         break;
                                     }
 
@@ -151,7 +151,7 @@ namespace DotNet.VisionMaster
                                     {
                                         // 高亮显示靠近的顶点
                                         display.DispPoint(RegCenter, HColor.Yellow);
-                                        display.ShrCycleMove = CycleMoveEnum.Center;
+                                        display.CycleMove = CycleMoveEnum.Center;
                                         break;
                                     }
                                 }
@@ -164,7 +164,7 @@ namespace DotNet.VisionMaster
 
         public void OnReDisplay(DisplayUI display)
         {
-            switch (display.ShrSetUp)
+            switch (display.SetUp)
             {
                 case SetUpEnum.Step1:
                     {

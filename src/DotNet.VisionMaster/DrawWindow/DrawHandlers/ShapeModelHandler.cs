@@ -26,9 +26,9 @@ namespace DotNet.VisionMaster
 
         public void SetUp(DisplayUI display)
         {
-            if (display.ShrSetUp == SetUpEnum.None)
+            if (display.SetUp == SetUpEnum.None)
             {
-                display.ShrSetUp = SetUpEnum.Step1;
+                display.SetUp = SetUpEnum.Step1;
             }
         }
 
@@ -36,26 +36,26 @@ namespace DotNet.VisionMaster
         {
             if (e.Button == MouseButtons.Left)
             {
-                if (display.ShrSetUp == SetUpEnum.Step1)
+                if (display.SetUp == SetUpEnum.Step1)
                 {
                     // 开始绘制矩形，记录左上角
                     TopLeft = new Point2d(e.X, e.Y);
-                    display.ShrSetUp = SetUpEnum.Step2;
+                    display.SetUp = SetUpEnum.Step2;
                 }
-                else if (display.ShrSetUp == SetUpEnum.Step3)
+                else if (display.SetUp == SetUpEnum.Step3)
                 {
                     // 编辑模式：开始移动角点
-                    if (display.ShrCycleMove == CycleMoveEnum.Start)
+                    if (display.CycleMove == CycleMoveEnum.Start)
                     {
-                        display.ShrCycleMove = CycleMoveEnum.StartMove;
+                        display.CycleMove = CycleMoveEnum.StartMove;
                     }
-                    else if (display.ShrCycleMove == CycleMoveEnum.End)
+                    else if (display.CycleMove == CycleMoveEnum.End)
                     {
-                        display.ShrCycleMove = CycleMoveEnum.EndMove;
+                        display.CycleMove = CycleMoveEnum.EndMove;
                     }
-                    else if (display.ShrCycleMove == CycleMoveEnum.Center)
+                    else if (display.CycleMove == CycleMoveEnum.Center)
                     {
-                        display.ShrCycleMove = CycleMoveEnum.CenterMove;
+                        display.CycleMove = CycleMoveEnum.CenterMove;
                     }
                 }
             }
@@ -65,24 +65,24 @@ namespace DotNet.VisionMaster
         {
             if (e.Button == MouseButtons.Left)
             {
-                if (display.ShrSetUp == SetUpEnum.Step2)
+                if (display.SetUp == SetUpEnum.Step2)
                 {
                     // 完成矩形绘制，记录右下角
                     BottomRight = new Point2d(e.X, e.Y);
-                    display.ShrSetUp = SetUpEnum.Step3;
+                    display.SetUp = SetUpEnum.Step3;
                 }
-                else if (display.ShrSetUp == SetUpEnum.Step3)
+                else if (display.SetUp == SetUpEnum.Step3)
                 {
                     // 结束角点移动
-                    display.ShrCycleMove = CycleMoveEnum.None;
+                    display.CycleMove = CycleMoveEnum.None;
                 }
             }
             else if (e.Button == MouseButtons.Right)
             {
-                if (display.ShrSetUp == SetUpEnum.Step3)
+                if (display.SetUp == SetUpEnum.Step3)
                 {
                     // 右键确认，进入下一步
-                    display.ShrSetUp = SetUpEnum.Step4;
+                    display.SetUp = SetUpEnum.Step4;
                 }
             }
         }
@@ -94,7 +94,7 @@ namespace DotNet.VisionMaster
 
         public void OnMouseMove(DisplayUI display, HMouseEventArgs e)
         {
-            switch (display.ShrSetUp)
+            switch (display.SetUp)
             {
                 case SetUpEnum.Step1:
                 case SetUpEnum.Step2:
@@ -107,7 +107,7 @@ namespace DotNet.VisionMaster
                     break;
             }
 
-            switch (display.ShrSetUp)
+            switch (display.SetUp)
             {
                 case SetUpEnum.Step1:
                     // 显示光标十字
@@ -127,7 +127,7 @@ namespace DotNet.VisionMaster
 
                 case SetUpEnum.Step4:
                     display.DrawRectangle(display.AlgoName, TopLeft, BottomRight);
-                    display.ShrSetUp = SetUpEnum.Step5;
+                    display.SetUp = SetUpEnum.Step5;
                     break;
 
                 case SetUpEnum.Step5:
@@ -156,19 +156,19 @@ namespace DotNet.VisionMaster
             display.DispPoint(BottomRight, HColor.Orange, 50);
             dispRectangle(display, HColor.Red);
 
-            if (display.ShrCycleMove == CycleMoveEnum.StartMove)
+            if (display.CycleMove == CycleMoveEnum.StartMove)
             {
                 // 移动左上角
                 TopLeft = new Point2d(e.X, e.Y);
                 dispRectangle(display, HColor.Red);
             }
-            else if (display.ShrCycleMove == CycleMoveEnum.EndMove)
+            else if (display.CycleMove == CycleMoveEnum.EndMove)
             {
                 // 移动右下角
                 BottomRight = new Point2d(e.X, e.Y);
                 dispRectangle(display, HColor.Red);
             }
-            else if (display.ShrCycleMove == CycleMoveEnum.CenterMove)
+            else if (display.CycleMove == CycleMoveEnum.CenterMove)
             {
                 // 移动右下角
                 var calX = RegCenter.X - e.X;
@@ -181,23 +181,23 @@ namespace DotNet.VisionMaster
             {
                 // 靠近左上角，高亮显示
                 display.DispPoint(TopLeft, HColor.Green, 10);
-                display.ShrCycleMove = CycleMoveEnum.Start;
+                display.CycleMove = CycleMoveEnum.Start;
             }
             else if (HalconHelper.IsNearPoint(BottomRight.X, BottomRight.Y, e.X, e.Y))
             {
                 // 靠近右下角，高亮显示
                 display.DispPoint(BottomRight, HColor.Green, 10);
-                display.ShrCycleMove = CycleMoveEnum.End;
+                display.CycleMove = CycleMoveEnum.End;
             }
             else if (HalconHelper.IsNearPoint(RegCenter.X, RegCenter.Y, e.X, e.Y))
             {
                 // 靠近右下角，高亮显示
                 display.DispPoint(RegCenter, HColor.Green, 10);
-                display.ShrCycleMove = CycleMoveEnum.Center;
+                display.CycleMove = CycleMoveEnum.Center;
             }
             else
             {
-                display.ShrCycleMove = CycleMoveEnum.None;
+                display.CycleMove = CycleMoveEnum.None;
             }
         }
 

@@ -17,9 +17,9 @@ namespace DotNet.VisionMaster
 
         public void SetUp(DisplayUI display)
         {
-            if (display.ShrSetUp == SetUpEnum.None)
+            if (display.SetUp == SetUpEnum.None)
             {
-                display.ShrSetUp = SetUpEnum.Step1;
+                display.SetUp = SetUpEnum.Step1;
             }
         }
 
@@ -28,14 +28,14 @@ namespace DotNet.VisionMaster
 
             if (e.Button == MouseButtons.Left)
             {
-                if (display.ShrSetUp == SetUpEnum.Step1)
+                if (display.SetUp == SetUpEnum.Step1)
                 {
                     // 开始绘制多边形，初始化点集合
                     display.ShrPolygons = new List<Point2d>();
                     StartPoint = new Point2d(e.X, e.Y);
                     display.ShrPolygons.Add(new Point2d(e.X, e.Y));
                 }
-                else if (display.ShrSetUp == SetUpEnum.Step2)
+                else if (display.SetUp == SetUpEnum.Step2)
                 {
                     // 继续添加多边形顶点
                     display.ShrPolygons.Add(new Point2d(e.X, e.Y));
@@ -47,20 +47,20 @@ namespace DotNet.VisionMaster
         {
             if (e.Button == MouseButtons.Left)
             {
-                if (display.ShrSetUp == SetUpEnum.Step1)
+                if (display.SetUp == SetUpEnum.Step1)
                 {
                     // 第一个点确定后，进入连续绘制模式
-                    display.ShrSetUp = SetUpEnum.Step2;
+                    display.SetUp = SetUpEnum.Step2;
                 }
             }
             else if (e.Button == MouseButtons.Right)
             {
-                if (display.ShrSetUp == SetUpEnum.Step2)
+                if (display.SetUp == SetUpEnum.Step2)
                 {
                     // 右键完成多边形绘制
                     display.ShrContour = HalconHelper.GenContours(display.ShrPolygons);
                     display.DrawPolygon(display.ShrContour);
-                    display.ShrSetUp = SetUpEnum.Step3;
+                    display.SetUp = SetUpEnum.Step3;
                 }
             }
         }
@@ -74,12 +74,12 @@ namespace DotNet.VisionMaster
         {
             OnReDisplay(display);
 
-            if (display.ShrSetUp == SetUpEnum.Step1)
+            if (display.SetUp == SetUpEnum.Step1)
             {
                 // 显示光标十字
                 display.DispPoint(e.X, e.Y, HColor.Red);
             }
-            else if (display.ShrSetUp == SetUpEnum.Step2)
+            else if (display.SetUp == SetUpEnum.Step2)
             {
                 // 获取最后一个点
                 Point2d regPoint = new Point2d(0, 0);
@@ -102,7 +102,7 @@ namespace DotNet.VisionMaster
         {
             var points = display.ShrPolygons;
 
-            switch (display.ShrSetUp)
+            switch (display.SetUp)
             {
                 case SetUpEnum.Step1:
                     {

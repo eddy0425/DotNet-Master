@@ -17,7 +17,7 @@ namespace DotNet.VisionMaster
 
         public void SetUp(DisplayUI display)
         {
-            if (display.ShrSetUp == SetUpEnum.None)
+            if (display.SetUp == SetUpEnum.None)
             {
                 if (display.ShrPolygons.Count == 0)
                 {
@@ -30,7 +30,7 @@ namespace DotNet.VisionMaster
                     display.DispPoint(display.ShrPolygons, HColor.Green);
                 }
 
-                display.ShrSetUp = SetUpEnum.Step1;
+                display.SetUp = SetUpEnum.Step1;
             }
         }
 
@@ -38,12 +38,12 @@ namespace DotNet.VisionMaster
         {
             if (e.Button == MouseButtons.Left)
             {
-                if (display.ShrSetUp == SetUpEnum.Step1)
+                if (display.SetUp == SetUpEnum.Step1)
                 {
-                    if (display.ShrCycleMove == CycleMoveEnum.Start)
+                    if (display.CycleMove == CycleMoveEnum.Start)
                     {
                         // 开始移动选中的顶点
-                        display.ShrCycleMove = CycleMoveEnum.StartMove;
+                        display.CycleMove = CycleMoveEnum.StartMove;
                     }
                 }
             }
@@ -53,23 +53,23 @@ namespace DotNet.VisionMaster
         {
             if (e.Button == MouseButtons.Left)
             {
-                if (display.ShrSetUp == SetUpEnum.Step1)
+                if (display.SetUp == SetUpEnum.Step1)
                 {
-                    if (display.ShrCycleMove == CycleMoveEnum.StartMove)
+                    if (display.CycleMove == CycleMoveEnum.StartMove)
                     {
                         // 结束顶点移动
-                        display.ShrCycleMove = CycleMoveEnum.None;
+                        display.CycleMove = CycleMoveEnum.None;
                     }
                 }
             }
             else if (e.Button == MouseButtons.Right)
             {
-                if (display.ShrSetUp == SetUpEnum.Step1)
+                if (display.SetUp == SetUpEnum.Step1)
                 {
                     // 右键完成编辑
                     display.ShrContour = HalconHelper.GenContours(display.ShrPolygons);
                     display.DrawPolygon(display.ShrContour);
-                    display.ShrSetUp = SetUpEnum.Step2;
+                    display.SetUp = SetUpEnum.Step2;
                 }
             }
         }
@@ -83,11 +83,11 @@ namespace DotNet.VisionMaster
         {
             OnReDisplay(display);
 
-            switch (display.ShrSetUp)
+            switch (display.SetUp)
             {
                 case SetUpEnum.Step1:
                     {
-                        if (display.ShrCycleMove == CycleMoveEnum.StartMove)
+                        if (display.CycleMove == CycleMoveEnum.StartMove)
                         {
                             // 移动选中的顶点
                             if (SelectIndex >= 0 && SelectIndex < display.ShrPolygons.Count)
@@ -105,7 +105,7 @@ namespace DotNet.VisionMaster
                                     // 高亮显示靠近的顶点
                                     display.DispPoint(display.ShrPolygons[i], HColor.Red);
                                     SelectIndex = i;
-                                    display.ShrCycleMove = CycleMoveEnum.Start;
+                                    display.CycleMove = CycleMoveEnum.Start;
                                     break;
                                 }
                             }
@@ -117,7 +117,7 @@ namespace DotNet.VisionMaster
 
         public void OnReDisplay(DisplayUI display)
         {
-            switch (display.ShrSetUp)
+            switch (display.SetUp)
             {
                 case SetUpEnum.Step1:
                     {
