@@ -1,4 +1,3 @@
-using DotNet.HalconUI;
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
@@ -92,11 +91,12 @@ namespace DotNet.VisionMaster
         {
             try
             {
+                _display.ReDispImage();
+
                 switch (_strategys[_index].Name)
                 {
                     case "ShapeMode":
                         {
-                            _display.ReDispImage();
                             _display.SetDrawMode("ShapeMode", DrawEnum.DispModel);
                         }
                         break;

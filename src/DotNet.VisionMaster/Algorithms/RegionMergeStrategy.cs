@@ -1,8 +1,7 @@
 using DotNet.Drawing;
-using DotNet.HalconUI;
 using HalconDotNet;
-using System;
 using System.Collections.Generic;
+
 
 namespace DotNet.VisionMaster
 {

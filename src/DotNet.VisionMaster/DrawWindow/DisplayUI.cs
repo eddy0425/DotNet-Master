@@ -1,8 +1,9 @@
 ﻿using DotNet.Drawing;
 using DotNet.HalconUI;
 using HalconDotNet;
-using System.Collections.Generic;
 using System.Windows.Forms;
+using System.Collections.Generic;
+
 
 namespace DotNet.VisionMaster
 {
@@ -63,6 +64,17 @@ namespace DotNet.VisionMaster
                 RectangleEvent(this, e);
             }
         }
+
+        public event DrawAffRectHandler AffRectEvent;
+        public void DrawAffRect(string name, Point2d center, Size2d rectSize, double phi)
+        {
+            if (AffRectEvent != null)
+            {
+                var e = new DrawAffRectArgs(name, center, rectSize, phi);
+                AffRectEvent(this, e);
+            }
+        }
+
 
         public event DrawSetModelHandler SetModelEvent;
         public void DrawSetModel(string name, Point2d topLeft, Point2d bottomRight, DisplayUI display)

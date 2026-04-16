@@ -2,7 +2,7 @@ using HalconDotNet;
 using System;
 using System.Collections.Generic;
 using DotNet.Drawing;
-using DotNet.HalconUI;
+
 
 namespace DotNet.VisionMaster
 {

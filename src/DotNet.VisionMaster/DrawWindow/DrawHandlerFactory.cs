@@ -37,6 +37,7 @@ namespace DotNet.VisionMaster
             Register(DrawEnum.SetModel, new SetModelHandler());
             Register(DrawEnum.DispModel, new DispModelHandler());
             Register(DrawEnum.NewRect, new NewRectHandler());
+            Register(DrawEnum.NewAffRect, new NewAffRectHandler());
             Register(DrawEnum.DispRect, new DispRectHandler());
             Register(DrawEnum.NewPolygon, new PolygonNewDrawHandler());
             Register(DrawEnum.EditPolygon, new PolygonEditDrawHandler());

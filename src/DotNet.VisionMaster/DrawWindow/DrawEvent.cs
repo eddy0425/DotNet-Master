@@ -1,5 +1,4 @@
 ﻿using DotNet.Drawing;
-using DotNet.VisionMaster;
 using HalconDotNet;
 using System;
 
@@ -75,6 +74,28 @@ namespace DotNet.VisionMaster
 
         /// <summary> 矩形右下角点 </summary>
         public Point2d BottomRight { get; private set; }
+    }
+
+    public class DrawAffRectArgs : EventArgs
+    {
+        public DrawAffRectArgs(string name, Point2d center, Size2d rectSize, double phi)
+        {
+            Name = name;
+            Center = center;
+            RectSize = rectSize;
+            Phi = phi;
+        }
+
+        /// <summary> 名称 </summary>
+        public string Name { get; private set; }
+
+        /// <summary> 矩形中心 </summary>
+        public Point2d Center { get; private set; }
+
+        /// <summary> 矩形大小 </summary>
+        public Size2d RectSize { get; private set; }
+
+        public double Phi { get; private set; }
     }
 
     public class DrawSetModelArgs : EventArgs
@@ -155,6 +176,8 @@ namespace DotNet.VisionMaster
     public delegate void DrawPolygonHandler(object sender, DrawPolygonArgs e);
 
     public delegate void DrawRectangleHandler(object sender, DrawRectangleArgs e);
+
+    public delegate void DrawAffRectHandler(object sender, DrawAffRectArgs e);
 
     public delegate void DrawSetModelHandler(object sender, DrawSetModelArgs e);
 

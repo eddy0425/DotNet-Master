@@ -1,6 +1,7 @@
 using System.Windows.Forms;
 using System.ComponentModel;
 
+
 namespace DotNet.VisionMaster
 {
     public class VsControlModel : INotifyPropertyChanged

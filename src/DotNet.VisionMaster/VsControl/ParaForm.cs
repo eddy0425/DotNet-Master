@@ -1,6 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Windows.Forms;
+using System.Collections.Generic;
 
 
 namespace DotNet.VisionMaster
@@ -73,7 +73,36 @@ namespace DotNet.VisionMaster
 
         private void btn_drawRegion_Click(object sender, EventArgs e)
         {
-            _disPlay.SetDrawMode(_name, DrawEnum.NewRect);
+            //FitArcMidpointStrategy fitArcMidpoint = (FitArcMidpointStrategy)_strategys[_index];
+            //var inPara = ((FitArcMidpointStrategy)_strategys[_index]).inPara;
+
+            switch (_strategys[_index].Name)
+            {
+                case "åœ†å¼§ä¸­ç‚¹":
+                    {
+                        //var inPara = ((FitArcMidpointStrategy)_strategys[_index]).inPara;
+                        //var hRegion = inPara.HoRect;
+
+                        //_disPlay.SetDrawMode(_name, DrawEnum.None);
+
+                        //_disPlay.Reset();
+                        //_disPlay.ReDispImage();
+                        //_disPlay.SetColor(HColor.Red);
+                        //HOperatorSet.DrawRectangle2(_disPlay.HoWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
+                        //HOperatorSet.GenRectangle2(out hRegion.InRegion, row, column, phi, length1, length2);
+
+                        //hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(length1.D * 2, length2.D * 2));
+                        //hRegion.Phi = phi;
+
+                        //_disPlay.DispRegion(hRegion);
+
+                        _disPlay.SetDrawMode(_name, DrawEnum.NewAffRect);
+                    }
+                    break;
+                default:
+                    _disPlay.SetDrawMode(_name, DrawEnum.NewRect);
+                    break;
+            }
         }
 
         private void but_updataRegion_Click(object sender, EventArgs e)
@@ -85,8 +114,8 @@ namespace DotNet.VisionMaster
         {
             switch (_strategys[_index].Name)
             {
-                case "ÐÎ×´Æ¥Åä":
-                case "Ö±Ïß²éÕÒ":
+                case "ï¿½ï¿½×´Æ¥ï¿½ï¿½":
+                case "Ö±ï¿½ß²ï¿½ï¿½ï¿½":
                     {
                         _form_Value.setValueForm(_index, _strategys, cmb_CoordIn.Text, OutEnum.Coord);
                         if (_form_Value.DialogResult == DialogResult.OK)
@@ -102,8 +131,8 @@ namespace DotNet.VisionMaster
         {
             switch (_strategys[_index].Name)
             {
-                case "ÐÎ×´Æ¥Åä":
-                case "Ö±Ïß²éÕÒ":
+                case "ï¿½ï¿½×´Æ¥ï¿½ï¿½":
+                case "Ö±ï¿½ß²ï¿½ï¿½ï¿½":
                     {
                         _form_Value.setValueForm(_index, _strategys, cmb_100.Text, OutEnum.Image);
                         if (_form_Value.DialogResult == DialogResult.OK)
@@ -119,8 +148,8 @@ namespace DotNet.VisionMaster
         {
             switch (_strategys[_index].Name)
             {
-                case "ÐÎ×´Æ¥Åä":
-                case "Ö±Ïß²éÕÒ":
+                case "ï¿½ï¿½×´Æ¥ï¿½ï¿½":
+                case "Ö±ï¿½ß²ï¿½ï¿½ï¿½":
                     {
                         _form_Value.setValueForm(_index, _strategys, cmb_101.Text, OutEnum.Region);
                         if (_form_Value.DialogResult == DialogResult.OK)
@@ -139,11 +168,11 @@ namespace DotNet.VisionMaster
             ////Matching inPara = jobPara.jobInfo.ListMatchings[ListIndex];
             //DisplayForm display = jobPara.disPlay;
 
-            //if (btn_rectangle1_2.Checked) inPara.SetROI.Type = DrawForm.¾ØÐÎ;
-            //else if (btn_rectangle2_2.Checked) inPara.SetROI.Type = DrawForm.·ÂÉä¾ØÐÎ;
+            //if (btn_rectangle1_2.Checked) inPara.SetROI.Type = DrawForm.ï¿½ï¿½ï¿½ï¿½;
+            //else if (btn_rectangle2_2.Checked) inPara.SetROI.Type = DrawForm.ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½;
             //else if (btn_circle_2.Checked) inPara.SetROI.Type = DrawForm.Ô²;
-            //else if (btn_oval_2.Checked) inPara.SetROI.Type = DrawForm.ÍÖÔ²;
-            //else if (btn_polygon_2.Checked) inPara.SetROI.Type = DrawForm.¶à±ßÐÍ;
+            //else if (btn_oval_2.Checked) inPara.SetROI.Type = DrawForm.ï¿½ï¿½Ô²;
+            //else if (btn_polygon_2.Checked) inPara.SetROI.Type = DrawForm.ï¿½ï¿½ï¿½ï¿½ï¿½;
 
             //if (inPara.SetROI.IsDefault())
             //{

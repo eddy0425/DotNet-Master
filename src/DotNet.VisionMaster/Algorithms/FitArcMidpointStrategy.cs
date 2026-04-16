@@ -11,25 +11,28 @@ namespace DotNet.VisionMaster
         public override string Name => "圆弧中点";
         public override void Init(DisplayUI display)
         {
-            display.RectangleEvent += RectEvent;
+            display.AffRectEvent += AffRectEvent;
         }
         public override void Close(DisplayUI display)
         {
-            display.RectangleEvent -= RectEvent;
+            display.AffRectEvent -= AffRectEvent;
         }
-        private void RectEvent(object sender, DrawRectangleArgs e)
+        private void AffRectEvent(object sender, DrawAffRectArgs e)
         {
             if (e.Name == Name)
             {
-                inPara.HoRect.Update2Point(e.TopLeft, e.BottomRight);
+                inPara.HoRect.UpdateCenter(e.Center, e.RectSize);
+                inPara.HoRect.Phi = e.Phi;
+                inPara.HoRect.Type = RectEnum.Rectangle2;
                 inPara.HoRect.GenRegion();
             }
         }
-        
+
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
             HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
             HObject contourFitting = new HObject(); HOperatorSet.GenEmptyObj(out contourFitting);
+            HObject arcContour = new HObject(); HOperatorSet.GenEmptyObj(out arcContour);
 
             try
             {
@@ -40,29 +43,25 @@ namespace DotNet.VisionMaster
                     ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
 
                 HObject ho_Rect;
-                if (inPara.ImageIn == "默认")
+                if (inPara.RegionIn == "默认")
                     ho_Rect = inPara.HoRect.HoRegion;
                 else
                     ho_Rect = strategys.ResolveFrom<HObject>(inPara.RegionIn);
 
                 HOperatorSet.ReduceDomain(ho_Image, ho_Rect, out imgReduced);
+                display.DispRegion(ho_Rect, HColor.Blue);
 
-                #region 角度&变量
-                HTuple baseAgl = 0;
-                HTuple startAgl = baseAgl + inPara.StartAngle.ToRadians();
-                HTuple deltaAgl = baseAgl + inPara.DeltaAngle.ToRadians();
-                HTuple fixAgl = baseAgl + inPara.HoRect.Phi;
-
+                #region 变量
+                HTuple fixAgl = inPara.HoRect.Phi;
                 HTuple fixRow = inPara.HoRect.Center.Y;
                 HTuple fixCol = inPara.HoRect.Center.X;
                 HTuple fixLen1 = inPara.HoRect.Width / 2;
                 HTuple fixLen2 = inPara.HoRect.Height / 2;
-
                 HTuple imgWid = display.HoWidth;
                 HTuple imgHei = display.HoHeight;
                 #endregion
 
-                #region 直边轮廓查找
+                #region 边缘查找
                 double stepPace = Convert.ToDouble(inPara.StepPace); if (stepPace < 1) stepPace = 1;
                 double stepWid = Convert.ToDouble(inPara.StepWidth) / 2; if (stepWid < 1) stepWid = 1;
                 string transition = inPara.GetTransition;
@@ -98,7 +97,6 @@ namespace DotNet.VisionMaster
                     {
                         Array.Resize(ref rowFitting, rowFitting.Length + 1); rowFitting[rowFitting.Length - 1] = mRow.TupleSelect(0).D;
                         Array.Resize(ref colFitting, colFitting.Length + 1); colFitting[colFitting.Length - 1] = mCol.TupleSelect(0).D;
-
                         if (inPara.DispFittingPoint)
                         {
                             display.DispPoint(mCol.TupleSelect(0), mRow.TupleSelect(0), HColor.Red, inPara.PointSize);
@@ -115,26 +113,54 @@ namespace DotNet.VisionMaster
                     }
                     HOperatorSet.CloseMeasure(hMHandle);
                 }
+                #endregion
 
-                //拟合直线轮廓
-                if (rowFitting.Length > 1)
+                #region 拟合圆弧中点
+                if (rowFitting.Length >= 3)
                 {
                     HOperatorSet.GenContourPolygonXld(out contourFitting, rowFitting, colFitting);
 
-                    if (inPara.DispRegion) display.DispRegion(ho_Rect, HColor.Blue);
-                    if (inPara.DispResult) display.DispRegion(contourFitting, HColor.Red);
+                    HTuple circRow, circCol, circRadius, circStartPhi, circEndPhi, circPointOrder;
+                    HOperatorSet.FitCircleContourXld(contourFitting, "algebraic", -1, 0, 0, 3, 2,
+                        out circRow, out circCol, out circRadius, out circStartPhi, out circEndPhi, out circPointOrder);
 
-                     var contours = new Point2d[rowFitting.Length];
-                    for (int i = 0; i < rowFitting.Length; i++)
+                    double startPhi = circStartPhi.D;
+                    double endPhi = circEndPhi.D;
+                    string pointOrder = circPointOrder.S;
+
+                    double arcSpan, arcMidPhi;
+                    if (pointOrder == "positive")
                     {
-                        contours[i] = new Point2d(colFitting[i], rowFitting[i]);
+                        arcSpan = endPhi >= startPhi
+                            ? (endPhi - startPhi)
+                            : (2 * Math.PI + endPhi - startPhi);
+                        arcMidPhi = startPhi + arcSpan / 2.0;
+                    }
+                    else
+                    {
+                        arcSpan = startPhi >= endPhi
+                            ? (startPhi - endPhi)
+                            : (2 * Math.PI + startPhi - endPhi);
+                        arcMidPhi = startPhi - arcSpan / 2.0;
+                    }
+
+                    double midRow = circRow.D - circRadius.D * Math.Sin(arcMidPhi);
+                    double midCol = circCol.D + circRadius.D * Math.Cos(arcMidPhi);
+                    inPara.ArcMidpoint = new Point2d(midCol, midRow);
+
+                    if (inPara.DispRegion) display.DispRegion(ho_Rect, HColor.Blue);
+                    if (inPara.DispResult)
+                    {
+                        HOperatorSet.GenCircleContourXld(out arcContour,
+                            circRow, circCol, circRadius, circStartPhi, circEndPhi, circPointOrder, 1);
+                        display.DispRegion(arcContour, HColor.Red);
+                        display.DispPoint(midCol, midRow, HColor.Green, inPara.PointSize);
                     }
                 }
                 else
                 {
-                    throw new NullReferenceException("未找到轮廓！");
+                    throw new NullReferenceException("未找到足够的轮廓点！");
                 }
-
                 #endregion
 
                 return true;
@@ -147,9 +173,9 @@ namespace DotNet.VisionMaster
             {
                 imgReduced.Dispose();
                 contourFitting.Dispose();
+                arcContour.Dispose();
             }
         }
-        
         public override void GenTreeNode(TreeVisualizer tree)
         {
             tree.Branch(Name, branch => branch
@@ -306,10 +332,10 @@ namespace DotNet.VisionMaster
         /// <summary>
         /// 阈值 val = 0: 自动阈值, val > 0: 手动阈值, val = -1: 能量最强, val 小于 -1: 百分比阈值
         /// </summary>
-        public int Threshold { set; get; } = 80;
+        public int Threshold { set; get; } = 120;
 
         /// <summary> 步距 </summary>
-        public int StepPace { set; get; } = 5;
+        public int StepPace { set; get; } = 20;
 
         /// <summary> 步宽 </summary>
         public int StepWidth { set; get; } = 5;
@@ -336,7 +362,7 @@ namespace DotNet.VisionMaster
         public bool DispText { set; get; } = false;
 
         /// <summary> 拟合点 </summary>
-        public bool DispFittingPoint { set; get; } = false;
+        public bool DispFittingPoint { set; get; } = true;
 
     }
 }

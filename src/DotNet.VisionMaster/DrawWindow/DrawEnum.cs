@@ -7,6 +7,7 @@
         SetModel,
         DispModel,
         NewRect,
+        NewAffRect,
         EditRect,
         DispRect,
         NewPolygon,

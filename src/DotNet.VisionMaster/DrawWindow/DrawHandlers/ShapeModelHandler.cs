@@ -1,6 +1,5 @@
 ﻿using HalconDotNet;
 using DotNet.Drawing;
-using DotNet.HalconUI;
 using System.Windows.Forms;
 
 
@@ -28,6 +27,8 @@ namespace DotNet.VisionMaster
         {
             if (display.SetUp == SetUpEnum.None)
             {
+                display.Reset();
+                display.ReDispImage();
                 display.SetUp = SetUpEnum.Step1;
             }
         }

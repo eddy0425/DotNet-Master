@@ -13,7 +13,12 @@ namespace DotNet.VisionMaster
 
         public void SetUp(DisplayUI display)
         {
-            // 无操作
+            if (display.SetUp == SetUpEnum.None)
+            {
+                display.Reset();
+                display.ReDispImage();
+                display.SetUp = SetUpEnum.Step1;
+            }
         }
 
         public void OnMouseDown(DisplayUI display, HMouseEventArgs e)
@@ -33,7 +38,12 @@ namespace DotNet.VisionMaster
 
         public void OnMouseMove(DisplayUI display, HMouseEventArgs e)
         {
-            display.DrawDispModel(display.AlgoName, display);
+            switch (display.SetUp)
+            {
+                case SetUpEnum.Step1:
+                    display.DrawDispModel(display.AlgoName, display);
+                    break;
+            }
         }
     }
 }

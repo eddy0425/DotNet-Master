@@ -1,5 +1,4 @@
 using DotNet.Drawing;
-using DotNet.HalconUI;
 using HalconDotNet;
 using System.Windows.Forms;
 
@@ -19,6 +18,9 @@ namespace DotNet.VisionMaster
         {
             if (display.SetUp == SetUpEnum.None)
             {
+                display.Reset();
+                display.ReDispImage();
+
                 if (display.ShrPolygons.Count == 0)
                 {
                     GetShapeModelPoints(out double[] rowPoints, out double[] columnPoints);

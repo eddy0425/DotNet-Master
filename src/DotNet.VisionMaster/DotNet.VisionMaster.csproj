@@ -86,6 +86,7 @@
     <Compile Include="DrawWindow\DrawEnum.cs" />
     <Compile Include="DrawWindow\DrawHandlers\DispModelHandler.cs" />
     <Compile Include="DrawWindow\DrawHandlers\DispRectHandler.cs" />
+    <Compile Include="DrawWindow\DrawHandlers\NewAffRectHandler.cs" />
     <Compile Include="DrawWindow\DrawHandlers\NewRectHandler.cs" />
     <Compile Include="DrawWindow\DrawHandlers\SetModelHandler.cs" />
     <Compile Include="DrawWindow\DrawHandlers\ShapeModelHandler.cs" />

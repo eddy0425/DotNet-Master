@@ -79,13 +79,13 @@ namespace DotNet.HalconUI
         /// <summary> 显示字体 </summary>
         public void DispText(string message, HTuple FontX, HTuple FontY, string color)
         {
-            display.DispText(message, FontY, FontX, color);
+            display.DispText(message, FontX, FontY, color);
         }
 
         /// <summary> 显示字体 </summary>
         public void DispText(string message, HTuple FontX, HTuple FontY, HTuple size, string color)
         {
-            display.DispText(message, FontY, FontX, size, color);
+            display.DispText(message, FontX, FontY, size, color);
         }
 
         #endregion

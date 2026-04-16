@@ -1,5 +1,4 @@
 using DotNet.Drawing;
-using DotNet.HalconUI;
 using HalconDotNet;
 using System.Windows.Forms;
 
@@ -35,6 +34,9 @@ namespace DotNet.VisionMaster
         {
             if (display.SetUp == SetUpEnum.None)
             {
+                display.Reset();
+                display.ReDispImage();
+
                 display.ShrContour = DrawSynthethic(display, out RegTopLeft, out RegBottomRight);
                 display.DispRegion(display.ShrContour, HColor.Green);
 
