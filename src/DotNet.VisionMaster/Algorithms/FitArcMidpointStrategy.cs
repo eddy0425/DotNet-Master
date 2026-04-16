@@ -25,6 +25,7 @@ namespace DotNet.VisionMaster
                 inPara.HoRect.GenRegion();
             }
         }
+        
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
             HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
@@ -66,9 +67,7 @@ namespace DotNet.VisionMaster
                 double stepWid = Convert.ToDouble(inPara.StepWidth) / 2; if (stepWid < 1) stepWid = 1;
                 string transition = inPara.GetTransition;
                 string select = inPara.GetContourType;
-                //double stepPace = Convert.ToDouble(inPara.StepPace); if (stepPace < 1) stepPace = 1;
-                //double stepWid = Convert.ToDouble(inPara.StepWidth) / 2; if (stepWid < 1) stepWid = 1;
-                //
+
                 HTuple mRow = new HTuple(), mCol = new HTuple(), mAmp = new HTuple(), mDis = new HTuple();
                 HTuple rowNew = new HTuple(), colNew = new HTuple();
                 HTuple hMHandle;
@@ -150,31 +149,22 @@ namespace DotNet.VisionMaster
                 contourFitting.Dispose();
             }
         }
+        
         public override void GenTreeNode(TreeVisualizer tree)
         {
             tree.Branch(Name, branch => branch
-                       .Node("直线", OutEnum.Line, line => line
-                           .Branch("起点", pt => pt
-                               .Node("行", OutEnum.Number)
-                               .Node("列", OutEnum.Number)
-                           )
-                           .Branch("终点", pt => pt
-                               .Node("行", OutEnum.Number)
-                               .Node("列", OutEnum.Number)
+                       .Node("中点", OutEnum.Point, pt => pt
+                               .Branch("行", OutEnum.Number)
+                               .Branch("列", OutEnum.Number)
                            )
                        )
                        .CommonNodes()
                    );
 
             ClearResolvers();
-            RegisterOutput("直线", () => inPara.Line);
-            RegisterOutput("直线/起点", () => inPara.Line.Start);
-            RegisterOutput("直线/起点/行", () => inPara.Line.Start.Y);
-            RegisterOutput("直线/起点/列", () => inPara.Line.Start.X);
-            RegisterOutput("直线/终点", () => inPara.Line.End);
-            RegisterOutput("直线/终点/行", () => inPara.Line.End.Y);
-            RegisterOutput("直线/终点/列", () => inPara.Line.End.X);
-
+            RegisterOutput("中点", () => inPara.ArcMidpoint);
+            RegisterOutput("中点/行", () => inPara.ArcMidpoint.Y);
+            RegisterOutput("中点/列", () => inPara.ArcMidpoint.X);
         }
         public override void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls)
         {
@@ -257,7 +247,8 @@ namespace DotNet.VisionMaster
         /// <summary> 跟随坐标 </summary>
         public string CoordIn { set; get; } = "默认";
 
-        public CvLine Line { set; get; }
+        /// <summary> 圆弧中点 </summary>
+        public Point2d ArcMidpoint { set; get; }
 
         /// <summary> 区域 </summary>
         public CvRegion HoRect { set; get; } = new CvRegion();
