@@ -3,23 +3,26 @@ using DotNet.HalconUI;
 using HalconDotNet;
 using System;
 using System.Collections.Generic;
-using System.Reflection.Emit;
-using System.Windows.Forms;
 
 
 namespace DotNet.VisionMaster
 {
-    public class ShapeMatchingStrategy : ParaStrategyBase<ShapeMatching>
+    public class ShapeModeStrategy : ParaStrategyBase<ShapeMode>
     {
         public int RunIndex { get; set; }
-        public override string Name => "形状匹配";
+        public override string Name => "ShapeMode";
+
         public override void Init(DisplayUI display)
         {
             display.RectangleEvent += RectEvent;
+            display.SetModelEvent += SetModelEvent;
+            display.DispModelEvent += DispModelEvent;
         }
+
         public override void Close(DisplayUI display)
         {
             display.RectangleEvent -= RectEvent;
+            display.SetModelEvent -= SetModelEvent;
         }
         private void RectEvent(object sender, DrawRectangleArgs e)
         {
@@ -29,19 +32,73 @@ namespace DotNet.VisionMaster
                 inPara.HoRect.GenRegion();
             }
         }
+        private void SetModelEvent(object sender, DrawSetModelArgs e)
+        {
+            if (e.Name == Name)
+            {
+                inPara.ModeRect.Update2Point(e.TopLeft, e.BottomRight);
+                inPara.ModeRect.GenRegion();
+
+                SetTemplate(e.Display);
+            }
+        }
+        private void DispModelEvent(object sender, DrawDispModelArgs e)
+        {
+            if (e.Name == Name)
+            {
+                e.Display.DispRegion(inPara.HoRect, HColor.Blue);
+                e.Display.DispRegion(inPara.HoContour, HColor.Green);
+                e.Display.DispCross(inPara.Coord, HColor.OrangeRed);
+            }
+        }
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
-            HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
-            HObject imgReduce = new HObject(); HOperatorSet.GenEmptyObj(out imgReduce);
+            HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
 
             try
             {
-                var image = strategys.ResolveFrom(inPara.ImageIn);
-                var region = strategys.ResolveFrom(inPara.RegionIn);
-                var coord = strategys.ResolveFrom(inPara.CoordIn);
+                HObject ho_Image;
+                if (inPara.ImageIn == "默认")
+                    ho_Image = display.HoImage;
+                else
+                    ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
 
-                display.ReDispImage();
-                display.DispRegion(inPara.HoRect, HColor.Blue);
+                HObject ho_Rect;
+                if (inPara.ImageIn == "默认")
+                    ho_Rect = inPara.HoRect.HoRegion;
+                else
+                    ho_Rect = strategys.ResolveFrom<HObject>(inPara.RegionIn);
+
+                display.DispRegion(ho_Rect, HColor.Blue);
+
+                List<ModelResult> modelResults = new List<ModelResult>();
+
+                for (int j = 0; j < ho_Rect.CountObj(); j++)
+                {
+                    HOperatorSet.GenEmptyObj(out imgReduced);
+                    HOperatorSet.ReduceDomain(ho_Image, ho_Rect.SelectObj(j + 1), out imgReduced);
+
+                    //查找模板
+                    HOperatorSet.FindShapeModel(imgReduced, inPara.ModelID, inPara.AngleStart.TupleRad(), inPara.AngleExtent.TupleRad(),
+                                 inPara.MinScore, inPara.NumMatches, inPara.MaxOverlap, inPara.SubPixel, inPara.NumLevels, inPara.Greediness,
+                                 out HTuple row, out HTuple column, out HTuple angle, out HTuple score);
+
+                    for (int i = 0; i < score.Length; i++)
+                    {
+                        var result = new ModelResult(row, column, angle, score);
+                        modelResults.Add(result);
+                        inPara.Coord = new CvCoord(result.X, result.Y, result.Angle);
+
+                        HTuple hv_HomMat2D = new HTuple();
+                        HOperatorSet.GenEmptyObj(out inPara.HoContour);
+                        HOperatorSet.GetShapeModelContours(out inPara.HoContour, inPara.ModelID, 1);
+                        HOperatorSet.VectorAngleToRigid(0, 0, 0, result.Row, result.Column, result.Angle, out hv_HomMat2D);
+                        HOperatorSet.AffineTransContourXld(inPara.HoContour, out inPara.HoContour, hv_HomMat2D);
+
+                        display.DispRegion(inPara.HoContour, HColor.Green);
+                        display.DispCross(result.coord, HColor.Red);
+                    }
+                }
                 return true;
             }
             catch
@@ -50,8 +107,7 @@ namespace DotNet.VisionMaster
             }
             finally
             {
-                regionGet.Dispose();
-                imgReduce.Dispose();
+                imgReduced.Dispose();
             }
         }
         public override void GenTreeNode(TreeVisualizer tree)
@@ -137,58 +193,52 @@ namespace DotNet.VisionMaster
             display.SetDrawMode(Name, inPara.HoRect, DrawEnum.DispRect);
         }
 
-        public void SetTemplate(DisplayForm display, List<IParaStrategy> strategys, CvRegion modeRect)  //模板设置
+        private void SetTemplate(DisplayForm display)  //模板设置
         {
             HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
-            HObject contourModel = new HObject(); HOperatorSet.GenEmptyObj(out contourModel);
-            HObject modelContours = new HObject(); HOperatorSet.GenEmptyObj(out modelContours);
+            HObject ho_Contour = new HObject(); HOperatorSet.GenEmptyObj(out ho_Contour);
 
             try
             {
                 var savelPath = FilePaths.JobDir + RunIndex + "\\matching.bmp";
-                var hImage = strategys.ResolveFrom<HObject>(inPara.ImageIn);
-       
-                HOperatorSet.ReduceDomain(hImage, modeRect.HoRegion, out imgReduced);
+                var hImage = display.HoImage;
+
+                HOperatorSet.ReduceDomain(hImage, inPara.ModeRect.HoRegion, out imgReduced);
 
                 //制作模板
                 HOperatorSet.CreateShapeModel(imgReduced, inPara.NumLevels, inPara.AngleStart.TupleRad(), inPara.AngleExtent.TupleRad(),
                                           "auto", "auto", "use_polarity", "auto", "auto", out HTuple modelID);
-
-                HOperatorSet.FindShapeModel(imgReduced, modelID, inPara.AngleStart.TupleRad(), inPara.AngleExtent.TupleRad(),
-                                            inPara.MinScore, inPara.NumMatches, inPara.MaxOverlap, inPara.SubPixel, inPara.NumLevels, inPara.Greediness,
-                                            out HTuple row, out HTuple column, out HTuple angle, out HTuple score);
-
                 inPara.ModelID = modelID;
 
+                HOperatorSet.FindShapeModel(imgReduced, inPara.ModelID, inPara.AngleStart.TupleRad(), inPara.AngleExtent.TupleRad(),
+                                            inPara.MinScore, 1, inPara.MaxOverlap, inPara.SubPixel, inPara.NumLevels, inPara.Greediness,
+                                            out HTuple row, out HTuple column, out HTuple angle, out HTuple score);
+
                 var result = new ModelResult(row, column, angle, score);
+                HTuple hv_HomMat2D = new HTuple();
+                HOperatorSet.GenEmptyObj(out ho_Contour);
+                HOperatorSet.GetShapeModelContours(out ho_Contour, modelID, 1);
+                HOperatorSet.VectorAngleToRigid(0, 0, 0, result.Row, result.Column, result.Angle, out hv_HomMat2D);
+                HOperatorSet.AffineTransContourXld(ho_Contour, out ho_Contour, hv_HomMat2D);
 
-                if (result.Score.Length > 0)
+                HalconHelper.SaveSmallestRectImage(hImage, imgReduced, savelPath);
+
+                display.ReDispImage();
+                display.DispRegion(inPara.ModeRect, HColor.Red);
+                display.DispRegion(ho_Contour, HColor.Green);
+                display.DispCross(result.Column, result.Row, result.Angle.ToDegrees(), HColor.Red, 50);
+
+                //m_dispModel.ShowModel(imgReduced, modeRect.HoRect, contourModel, result, type);
+
+                if (score.Length > 0)
                 {
-                    var level = 1;
-                    HTuple hv_HomMat2D = new HTuple();
-                    HOperatorSet.GetShapeModelContours(out modelContours, modelID, level);
-                    HOperatorSet.VectorAngleToRigid(0, 0, 0, result.Row, result.Column, result.Angle, out hv_HomMat2D);
-                    HOperatorSet.AffineTransContourXld(modelContours, out modelContours, hv_HomMat2D);
-
-                    HalconHelper.SaveSmallestRectImage(hImage, imgReduced, savelPath);
-
-                    display.ReDispImage();
-                    display.DispRegion(modeRect, HColor.Red);
-                    display.DispRegion(contourModel, HColor.Green);
-                    display.DispCross(result.Column.D, result.Row.D, result.Angle.D.ToDegrees(), HColor.Red, 50);
-
-                    //m_dispModel.ShowModel(imgReduced, modeRect.HoRect, contourModel, result, type);
-
                     display.DispText("新建模板成功！", 10, 10, HColor.Green);
+                    inPara.Follow = new Point2d(result.X, result.Y);      //更改跟随坐标
                 }
                 else
                 {
                     display.DispText("新建模板失败！", 10, 10, HColor.Red);
                 }
-
-                //jobPara.SaveParameter();
-
-                inPara.Follow = new Point2d(result.X, result.Y);      //更改跟随坐标
             }
             catch
             {
@@ -197,17 +247,16 @@ namespace DotNet.VisionMaster
             finally
             {
                 imgReduced?.Dispose();
-                contourModel?.Dispose();
-                modelContours?.Dispose();
+                ho_Contour?.Dispose();
             }
         }
 
     }
 
-    public class ShapeMatching
+    public class ShapeMode
     {   
         /// <summary> 指令类型 </summary>
-        public readonly string Algorithm = "形状匹配";
+        public readonly string Algorithm = "ShapeMode";
 
         /// <summary> 图像来源 </summary>
         public string ImageIn { set; get; } = "默认";
@@ -229,6 +278,9 @@ namespace DotNet.VisionMaster
 
         /// <summary> 模版区域 </summary>
         public CvRegion ModeRect { set; get; } = new CvRegion();
+
+        /// <summary> 模版轮廓 </summary>
+        public HObject HoContour = new HObject();
 
         /// <summary> 锁定中心 </summary>
         public bool LockCenter { get; set; } = true;

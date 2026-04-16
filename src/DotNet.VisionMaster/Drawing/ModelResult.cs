@@ -1,5 +1,4 @@
 ﻿using DotNet.Drawing;
-using HalconDotNet;
 using Newtonsoft.Json;
 
 
@@ -8,18 +7,18 @@ namespace DotNet.VisionMaster
     public struct ModelResult
     {
         /// <summary> 行 </summary>
-        public HTuple Row { get; set; }
+        public double Row { get; set; }
 
         /// <summary> 列 </summary>
-        public HTuple Column { get; set; }
+        public double Column { get; set; }
 
         /// <summary> 角度 </summary>
-        public HTuple Angle { get; set; }
+        public double Angle { get; set; }
 
         /// <summary> 分数 </summary>
-        public HTuple Score { get; set; }
+        public double Score { get; set; }
 
-        public ModelResult( HTuple row,  HTuple column,  HTuple angle,  HTuple score)
+        public ModelResult(double row, double column, double angle, double score)
         {
             Row = row;
             Column = column;
@@ -28,15 +27,15 @@ namespace DotNet.VisionMaster
         }
 
         [JsonIgnore]
-        public double X { get { return Column.D; } }
+        public double X { get { return Column; } }
         [JsonIgnore]
-        public double Y { get { return Row.D; } }
+        public double Y { get { return Row; } }
         [JsonIgnore]
-        public double ToAngle { get { return Angle.D.ToDegrees(); } }
+        public double ToAngle { get { return Angle.ToDegrees(); } }
         [JsonIgnore]
-        public CvCoord coord { get { return new CvCoord(Column.D, Row.D, Angle.D); } }
+        public CvCoord coord { get { return new CvCoord(Column, Row, Angle); } }
         [JsonIgnore]
-        public CvCoord coordAngle { get { return new CvCoord(Column.D, Row.D, Angle.D.ToDegrees()); } }
+        public CvCoord coordAngle { get { return new CvCoord(Column, Row, Angle.ToDegrees()); } }
 
     }
 }

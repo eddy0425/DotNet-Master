@@ -1,25 +1,19 @@
-using DotNet.Drawing;
-using DotNet.HalconUI;
+﻿using DotNet.Drawing;
 using HalconDotNet;
 using System.Windows.Forms;
+
 
 namespace DotNet.VisionMaster
 {
     /// <summary>
-    /// 矩形绘图处理器
-    /// 用于绘制和编辑矩形区域
+    /// 设置模型绘图处理器
+    /// 用于显示模型匹配结果
     /// </summary>
-    public class RectNewHandler : IDrawHandler
+    public class SetModelHandler : IDrawHandler
     {
-        HObject HoRect;
         Point2d TopLeft;
         Point2d BottomRight;
         Point2d RegCenter => new Point2d((TopLeft.X + BottomRight.X) / 2, (TopLeft.Y + BottomRight.Y) / 2);
-
-        public RectNewHandler()
-        {
-            HoRect = new HObject(); HOperatorSet.GenEmptyObj(out HoRect); // 创建初始空对象
-        }
 
         public bool NeedReDisp => true;
 
@@ -96,19 +90,6 @@ namespace DotNet.VisionMaster
             switch (display.SetUp)
             {
                 case SetUpEnum.Step1:
-                case SetUpEnum.Step2:
-                case SetUpEnum.Step3:
-                    // 显示模版中心
-                    if (display.ShrCenter != null)
-                    {
-                        display.DispPoint(display.ShrCenter, HColor.OrangeRed, 100);
-                    }
-                    break;
-            }
-
-            switch (display.SetUp)
-            {
-                case SetUpEnum.Step1:
                     // 显示光标十字
                     display.DispPoint(e.X, e.Y, HColor.OrangeRed);
                     break;
@@ -125,7 +106,9 @@ namespace DotNet.VisionMaster
                     break;
 
                 case SetUpEnum.Step4:
-                    display.DrawRectangle(display.AlgoName, TopLeft, BottomRight);
+                    display.ShrRegion.Update2Point(TopLeft, BottomRight);
+                    display.ShrRegion.GenRegion();
+                    display.DrawSetModel(display.AlgoName, TopLeft, BottomRight, display);
                     display.SetUp = SetUpEnum.Step5;
                     break;
 
@@ -134,15 +117,10 @@ namespace DotNet.VisionMaster
                         // 显示最终结果
                         display.DispPoint(TopLeft, HColor.OrangeRed, 50);
                         display.DispPoint(BottomRight, HColor.OrangeRed, 50);
-                        dispRectangle(display, HColor.Blue);
-
+                        display.DispPoint(RegCenter, HColor.Orange, 50);
                         display.DispRegion(display.ShrRegion, HColor.Blue);
-                        display.DispRegion(display.ShrContour, HColor.Green);
 
-                        if (display.ShrCenter != null)
-                        {
-                            display.DispPoint(display.ShrCenter, HColor.Yellow);
-                        }
+                        //display.DispRegion(display.ShrContour, HColor.Green);
                     }
                     break;
             }
@@ -214,9 +192,9 @@ namespace DotNet.VisionMaster
         {
             try
             {
-                HoRect.Dispose();
-                HOperatorSet.GenRectangle1(out HoRect, Y1, X1, Y2, X2);
-                display.DispRegion(HoRect, color);
+                HOperatorSet.GenEmptyObj(out display.ShrRegion.InRegion);
+                HOperatorSet.GenRectangle1(out display.ShrRegion.InRegion, Y1, X1, Y2, X2);
+                display.DispRegion(display.ShrRegion.InRegion, color);
 
                 var p = HalconHelper.Cal2P(X1, Y1, X2, Y2);
                 display.DispPoint(p.X, p.Y, HColor.Orange, 100);

@@ -34,9 +34,10 @@ namespace DotNet.VisionMaster
         private void RegisterDefaultHandlers()
         {
             Register(DrawEnum.None, new NoneHandler());
-            Register(DrawEnum.SetModel, new SetModelDrawHandler());
-            Register(DrawEnum.NewRect, new RectNewHandler());
-            Register(DrawEnum.DispRect, new RectDispHandler());
+            Register(DrawEnum.SetModel, new SetModelHandler());
+            Register(DrawEnum.DispModel, new DispModelHandler());
+            Register(DrawEnum.NewRect, new NewRectHandler());
+            Register(DrawEnum.DispRect, new DispRectHandler());
             Register(DrawEnum.NewPolygon, new PolygonNewDrawHandler());
             Register(DrawEnum.EditPolygon, new PolygonEditDrawHandler());
             Register(DrawEnum.Synthethic, new SynthethicDrawHandler());

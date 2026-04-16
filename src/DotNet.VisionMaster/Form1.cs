@@ -1,7 +1,8 @@
 using DotNet.HalconUI;
+using DotNet.VisionMaster.Algorithms;
 using System;
-using System.Windows.Forms;
 using System.Collections.Generic;
+using System.Windows.Forms;
 
 
 namespace DotNet.VisionMaster
@@ -37,8 +38,9 @@ namespace DotNet.VisionMaster
 
             _strategys.Add(new FileImageStrategy());
             _strategys.Add(new CreateROIStrategy());
-            _strategys.Add(new ShapeMatchingStrategy());
-            _strategys.Add(new LineFindingStrategy());
+            _strategys.Add(new ShapeModeStrategy());
+            _strategys.Add(new FitLineStrategy());
+            _strategys.Add(new FitArcMidpointStrategy());
 
             for (int i = 0; i < _strategys.Count; i++)
             {
@@ -70,6 +72,10 @@ namespace DotNet.VisionMaster
         {
             SwitchStrategy(3);
         }
+        private void button5_Click(object sender, EventArgs e)
+        {
+            SwitchStrategy(4);
+        }
 
         /// <summary>
         /// 切换算法策略：解绑旧控件 → 清空 → 设置新策略 → 显示新参数
@@ -87,6 +93,16 @@ namespace DotNet.VisionMaster
         {
             try
             {
+                switch (_strategys[_index].Name)
+                {
+                    case "ShapeMode":
+                        {
+                            _display.ReDispImage();
+                            _display.SetDrawMode("ShapeMode", DrawEnum.DispModel);
+                        }
+                        break;
+                }
+
                 _currentStrategy.SavePara(_formPara, _vsControls);
                 _currentStrategy.Fun_action(_display, _strategys);
             }
@@ -95,6 +111,7 @@ namespace DotNet.VisionMaster
                 MessageBox.Show(ex.Message);
             }
         }
+
 
     }
 }

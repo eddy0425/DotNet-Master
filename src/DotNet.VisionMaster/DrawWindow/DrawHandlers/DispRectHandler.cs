@@ -1,6 +1,6 @@
-﻿using HalconDotNet;
-using DotNet.Drawing;
-using DotNet.HalconUI;
+﻿using DotNet.Drawing;
+using HalconDotNet;
+
 
 namespace DotNet.VisionMaster
 {
@@ -8,7 +8,7 @@ namespace DotNet.VisionMaster
     /// 矩形绘图处理器
     /// 用于绘制和编辑矩形区域
     /// </summary>
-    public class RectDispHandler : IDrawHandler
+    public class DispRectHandler : IDrawHandler
     {
         public bool NeedReDisp => true;
 

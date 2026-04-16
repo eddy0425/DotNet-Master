@@ -1,4 +1,5 @@
 ﻿using DotNet.Drawing;
+using DotNet.VisionMaster;
 using HalconDotNet;
 using System;
 
@@ -74,7 +75,44 @@ namespace DotNet.VisionMaster
 
         /// <summary> 矩形右下角点 </summary>
         public Point2d BottomRight { get; private set; }
+    }
 
+    public class DrawSetModelArgs : EventArgs
+    {
+        public DrawSetModelArgs(string name, Point2d topLeft, Point2d bottomRight, DisplayUI display)
+        {
+            Name = name;
+            TopLeft = topLeft;
+            BottomRight = bottomRight;
+            Display = display;
+        }
+
+        /// <summary> 名称 </summary>
+        public string Name { get; private set; }
+
+        /// <summary> 矩形左上角点 </summary>
+        public Point2d TopLeft { get; private set; }
+
+        /// <summary> 矩形右下角点 </summary>
+        public Point2d BottomRight { get; private set; }
+
+        /// <summary> 显示控件 </summary>
+        public DisplayUI Display { get; private set; }
+    }
+
+    public class DrawDispModelArgs : EventArgs
+    {
+        public DrawDispModelArgs(string name, DisplayUI display)
+        {
+            Name = name;
+            Display = display;
+        }
+
+        /// <summary> 名称 </summary>
+        public string Name { get; private set; }
+
+        /// <summary> 显示控件 </summary>
+        public DisplayUI Display { get; private set; }
     }
 
     public class DrawSynthethicArgs : EventArgs
@@ -118,8 +156,11 @@ namespace DotNet.VisionMaster
 
     public delegate void DrawRectangleHandler(object sender, DrawRectangleArgs e);
 
+    public delegate void DrawSetModelHandler(object sender, DrawSetModelArgs e);
+
+    public delegate void DrawDispModelHandler(object sender, DrawDispModelArgs e);
+
     public delegate void DrawSynthethicHandler(object sender, DrawSynthethicArgs e);
 
     #endregion
-
 }

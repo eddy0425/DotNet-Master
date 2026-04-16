@@ -28,6 +28,7 @@
     {
         None,
         SetModel,
+        DispModel,
         NewRect,
         EditRect,
         DispRect,

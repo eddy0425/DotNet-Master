@@ -10,14 +10,14 @@ namespace DotNet.VisionMaster
         int _index;
         string _name;
         List<IParaStrategy> _strategys;
-        DisplayUI _display;
+        DisplayUI _disPlay;
         Form_Value _form_Value;
 
         public ParaForm(DisplayUI displayUI)
         {
             InitializeComponent();
 
-            _display = displayUI;
+            _disPlay = displayUI;
             _form_Value = new Form_Value();
         }
         private void btn_setPath_Click(object sender, EventArgs e)
@@ -73,12 +73,12 @@ namespace DotNet.VisionMaster
 
         private void btn_drawRegion_Click(object sender, EventArgs e)
         {
-            _display.SetDrawMode(_name, DrawEnum.NewRect);
+            _disPlay.SetDrawMode(_name, DrawEnum.NewRect);
         }
 
         private void but_updataRegion_Click(object sender, EventArgs e)
         {
-            _display.SetDrawMode(_name, DrawEnum.EditRect);
+            _disPlay.SetDrawMode(_name, DrawEnum.EditRect);
         }
 
         private void btn_setCoordIn_Click(object sender, EventArgs e)
@@ -157,16 +157,9 @@ namespace DotNet.VisionMaster
 
             switch (_strategys[_index].Name)
             {
-                case "ÐÎ×´Æ¥Åä":
+                case "ShapeMode":
                     {
-                        ShapeMatchingStrategy shapeMatching = (ShapeMatchingStrategy)_strategys[_index];
-
-                        var inPara = ((ShapeMatchingStrategy)_strategys[_index]).inPara;
-                        var modeRect = inPara.ModeRect;
-
-                        _display.SetDrawMode(_name, DrawEnum.NewRect);
-                        //_displayCore.DrawDispRegion(modeRect);
-                        shapeMatching.SetTemplate(_display, _strategys, modeRect);
+                        _disPlay.SetDrawMode("ShapeMode", DrawEnum.SetModel);
                     }
                     break;
             }

@@ -64,6 +64,26 @@ namespace DotNet.VisionMaster
             }
         }
 
+        public event DrawSetModelHandler SetModelEvent;
+        public void DrawSetModel(string name, Point2d topLeft, Point2d bottomRight, DisplayUI display)
+        {
+            if (SetModelEvent != null)
+            {
+                var e = new DrawSetModelArgs(name, topLeft, bottomRight, display);
+                SetModelEvent(this, e);
+            }
+        }
+
+        public event DrawDispModelHandler DispModelEvent;
+        public void DrawDispModel(string name, DisplayUI display)
+        {
+            if (DispModelEvent != null)
+            {
+                var e = new DrawDispModelArgs(name, display);
+                DispModelEvent(this, e);
+            }
+        }
+
 
         public event DrawSynthethicHandler SynthethicEvent;
         public void DrawSynthethicn(HObject contour, Point2d topLeft, Point2d bottomRight)
@@ -76,6 +96,7 @@ namespace DotNet.VisionMaster
         }
 
         #endregion
+
 
         #region 共享状态 Share → Shr ; Context → Ctx ; Algorithms → Algo 
 
@@ -139,6 +160,7 @@ namespace DotNet.VisionMaster
 
             _handlerFactory = new DrawHandlerFactory();
             _currentHandler = _handlerFactory.GetHandler(DrawEnum.None);
+
             RectangleEvent += _drawContext_RectangleEvent;
             PolygonEvent += _drawContext_PolygonEvent;
             SynthethicEvent += _drawContext_SynthethicEvent;

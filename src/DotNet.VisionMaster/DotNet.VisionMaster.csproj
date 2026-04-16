@@ -75,6 +75,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Algorithms\CreateROIStrategy.cs" />
+    <Compile Include="Algorithms\FitArcMidpointStrategy.cs" />
     <Compile Include="CvEnum\EnumClass.cs" />
     <Compile Include="DrawWindow\DisplayUI.cs">
       <SubType>UserControl</SubType>
@@ -83,23 +84,24 @@
       <DependentUpon>DisplayUI.cs</DependentUpon>
     </Compile>
     <Compile Include="Drawing\ModelResult.cs" />
+    <Compile Include="DrawWindow\DrawHandlers\DispModelHandler.cs" />
+    <Compile Include="DrawWindow\DrawHandlers\DispRectHandler.cs" />
+    <Compile Include="DrawWindow\DrawHandlers\NewRectHandler.cs" />
+    <Compile Include="DrawWindow\DrawHandlers\SetModelHandler.cs" />
     <Compile Include="DrawWindow\DrawHandlers\ShapeModelHandler.cs" />
     <Compile Include="FilePaths.cs" />
-    <Compile Include="Algorithms\LineFindingStrategy.cs" />
+    <Compile Include="Algorithms\FitLineStrategy.cs" />
     <Compile Include="Algorithms\FileImageStrategy.cs" />
     <Compile Include="Algorithms\RegionMergeStrategy.cs" />
     <Compile Include="Algorithms\IParaStrategy.cs" />
-    <Compile Include="Algorithms\ShapeMatchingStrategy.cs" />
+    <Compile Include="Algorithms\ShapeModeStrategy.cs" />
     <Compile Include="DrawWindow\DrawEvent.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\RectDispHandler.cs" />
     <Compile Include="DrawWindow\DrawHandlerFactory.cs" />
     <Compile Include="DrawWindow\DrawHandlers\RectEditHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\IDrawHandler.cs" />
+    <Compile Include="DrawWindow\IDrawHandler.cs" />
     <Compile Include="DrawWindow\DrawHandlers\NoneHandler.cs" />
     <Compile Include="DrawWindow\DrawHandlers\PolygonEditDrawHandler.cs" />
     <Compile Include="DrawWindow\DrawHandlers\PolygonNewDrawHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\RectNewHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\SetModelDrawHandler.cs" />
     <Compile Include="DrawWindow\DrawHandlers\SynthethicDrawHandler.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>

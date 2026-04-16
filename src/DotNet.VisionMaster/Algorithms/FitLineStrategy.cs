@@ -6,9 +6,9 @@ using DotNet.HalconUI;
 
 namespace DotNet.VisionMaster
 {
-    public class LineFindingStrategy : ParaStrategyBase<LineFinding>
+    public class FitLineStrategy : ParaStrategyBase<FitLine>
     {
-        public override string Name => "直线查找";
+        public override string Name => "拟合直线";
         public override void Init(DisplayUI display)
         {
             display.RectangleEvent += RectEvent;
@@ -141,10 +141,10 @@ namespace DotNet.VisionMaster
 
     }
 
-    public class LineFinding
+    public class FitLine
     {
         /// <summary> 指令类型 </summary>
-        public readonly string Algorithm = "直线查找";
+        public readonly string Algorithm = "拟合直线";
 
         /// <summary> 图像来源 </summary>
         public string ImageIn { set; get; } = "默认";

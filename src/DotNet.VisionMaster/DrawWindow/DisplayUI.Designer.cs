@@ -30,12 +30,18 @@
         {
             this.SuspendLayout();
             // 
+            // hWindowControl
+            // 
+            this.hWindowControl.Location = new System.Drawing.Point(0, 19);
+            this.hWindowControl.Size = new System.Drawing.Size(429, 321);
+            this.hWindowControl.WindowSize = new System.Drawing.Size(429, 321);
+            // 
             // DisplayUI
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Name = "DisplayUI";
-            this.Size = new System.Drawing.Size(607, 495);
+            this.Size = new System.Drawing.Size(429, 380);
             this.ResumeLayout(false);
 
         }
