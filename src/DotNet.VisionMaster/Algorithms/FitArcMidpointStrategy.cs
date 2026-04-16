@@ -154,10 +154,9 @@ namespace DotNet.VisionMaster
         {
             tree.Branch(Name, branch => branch
                        .Node("中点", OutEnum.Point, pt => pt
-                               .Branch("行", OutEnum.Number)
-                               .Branch("列", OutEnum.Number)
+                               .Node("行", OutEnum.Number)
+                               .Node("列", OutEnum.Number)
                            )
-                       )
                        .CommonNodes()
                    );
 
@@ -203,6 +202,8 @@ namespace DotNet.VisionMaster
             VsControls.ShowComboBoxDropDown(form, "cmb_105", inPara.Threshold.ToString(), new[] { "30", "50" });
             VsControls.ShowButton(form, "btn_105", false);
 
+
+
             VsControls.ShowLabel(form, "lbl_110", "步距");
             VsControls.ShowComboBoxDropDown(form, "cmb_110", inPara.StepPace.ToString(), new[] { "2", "5", "10" });
 
@@ -211,10 +212,19 @@ namespace DotNet.VisionMaster
 
             VsControls.ShowLabel(form, "lbl_112", "最大偏差");
             VsControls.ShowComboBoxDropDown(form, "cmb_112", inPara.MaxErr.ToString(), new[] { "1", "3", "5", "10" });
+
+            VsControls.ShowLabel(form, "lbl_113", "开始角度");
+            VsControls.ShowComboBoxDropDown(form, "cmb_113", inPara.StartAngle.ToString(), new[] { "0", "90", "180", "270" });
+            VsControls.ShowButton(form, "btn_113", false);
+
+            VsControls.ShowLabel(form, "lbl_114", "增量角度");
+            VsControls.ShowComboBoxDropDown(form, "cmb_114", inPara.DeltaAngle.ToString(), new[] { "90", "180", "270", "360" });
+            VsControls.ShowButton(form, "btn_114", false);
         }
         public override void SavePara(ParaForm form, Dictionary<string, VsControlModel> VsControls)
         {
             inPara.CoordIn = VsControls["cmb_CoordIn"].Text;
+
             inPara.ImageIn = VsControls["cmb_100"].Text;
             inPara.RegionIn = VsControls["cmb_101"].Text;
             inPara.Transition = VsControls["cmb_102"].Text;
@@ -225,6 +235,8 @@ namespace DotNet.VisionMaster
             inPara.StepPace = Convert.ToInt16(VsControls["cmb_110"].Text);
             inPara.StepWidth = Convert.ToInt16(VsControls["cmb_111"].Text);
             inPara.MaxErr = Convert.ToInt16(VsControls["cmb_112"].Text);
+            inPara.StartAngle = Convert.ToDouble(VsControls["cmb_113"].Text);
+            inPara.DeltaAngle = Convert.ToDouble(VsControls["cmb_114"].Text);
         }
         public override void DispROI(DisplayUI display)
         {
