@@ -97,19 +97,11 @@ namespace DotNet.VisionMaster
                     {
                         Array.Resize(ref rowFitting, rowFitting.Length + 1); rowFitting[rowFitting.Length - 1] = mRow.TupleSelect(0).D;
                         Array.Resize(ref colFitting, colFitting.Length + 1); colFitting[colFitting.Length - 1] = mCol.TupleSelect(0).D;
-                        if (inPara.DispFittingPoint)
-                        {
-                            display.DispPoint(mCol.TupleSelect(0), mRow.TupleSelect(0), HColor.Red, inPara.PointSize);
-                        }
                     }
                     else if (mRow.Length > 1 && select == "second")
                     {
                         Array.Resize(ref rowFitting, rowFitting.Length + 1); rowFitting[rowFitting.Length - 1] = mRow.TupleSelect(1).D;
                         Array.Resize(ref colFitting, colFitting.Length + 1); colFitting[colFitting.Length - 1] = mCol.TupleSelect(1).D;
-                        if (inPara.DispFittingPoint)
-                        {
-                            display.DispPoint(mCol.TupleSelect(1), mRow.TupleSelect(1), HColor.Red, inPara.PointSize);
-                        }
                     }
                     HOperatorSet.CloseMeasure(hMHandle);
                 }
@@ -120,9 +112,116 @@ namespace DotNet.VisionMaster
                 {
                     HOperatorSet.GenContourPolygonXld(out contourFitting, rowFitting, colFitting);
 
+                    #region Stage 1：用 gauss 鲁棒直线拟合先剔除严重跑偏的点
+                    double maxErr = inPara.MaxErr; if (maxErr < 0) maxErr = 0;
+                    // 直线粗滤阈值适度放宽以容纳弧的凸量 (sagitta)
+                    double lineGate = Math.Max(maxErr * 3.0, 15.0);
+
+                    List<double> rowList = new List<double>(rowFitting);
+                    List<double> colList = new List<double>(colFitting);
+                    List<double> rowRemoved = new List<double>();
+                    List<double> colRemoved = new List<double>();
+
+                    HTuple lineRowBegin, lineColBegin, lineRowEnd, lineColEnd, lineNr, lineNc, lineDist;
+                    HOperatorSet.FitLineContourXld(contourFitting, "gauss", -1, 0, 5, 1.345,
+                        out lineRowBegin, out lineColBegin, out lineRowEnd, out lineColEnd,
+                        out lineNr, out lineNc, out lineDist);
+
+                    for (int i = rowList.Count - 1; i >= 0; i--)
+                    {
+                        HTuple curdis;
+                        HOperatorSet.DistancePl(rowList[i], colList[i],
+                            lineRowBegin, lineColBegin, lineRowEnd, lineColEnd, out curdis);
+                        if (Math.Abs(curdis.D) > lineGate)
+                        {
+                            rowRemoved.Add(rowList[i]);
+                            colRemoved.Add(colList[i]);
+                            rowList.RemoveAt(i);
+                            colList.RemoveAt(i);
+                        }
+                    }
+
+                    if (rowList.Count < 3)
+                    {
+                        throw new NullReferenceException("直线粗滤后有效点不足，无法拟合圆弧！");
+                    }
+                    #endregion
+
+                    #region Stage 2：atukey 圆拟合 + 径向距离迭代精滤
+                    contourFitting.Dispose(); HOperatorSet.GenEmptyObj(out contourFitting);
+                    HOperatorSet.GenContourPolygonXld(out contourFitting, rowList.ToArray(), colList.ToArray());
+
                     HTuple circRow, circCol, circRadius, circStartPhi, circEndPhi, circPointOrder;
-                    HOperatorSet.FitCircleContourXld(contourFitting, "algebraic", -1, 0, 0, 3, 2,
+                    HOperatorSet.FitCircleContourXld(contourFitting, "atukey", -1, 0, 0, 5, 2,
                         out circRow, out circCol, out circRadius, out circStartPhi, out circEndPhi, out circPointOrder);
+
+                    int safety = rowList.Count;
+                    for (int iter = 0; iter < safety; iter++)
+                    {
+                        int worstIdx = -1;
+                        double worstErr = 0;
+                        for (int i = 0; i < rowList.Count; i++)
+                        {
+                            double dRow = rowList[i] - circRow.D;
+                            double dCol = colList[i] - circCol.D;
+                            double err = Math.Abs(Math.Sqrt(dRow * dRow + dCol * dCol) - circRadius.D);
+                            if (err > worstErr) { worstErr = err; worstIdx = i; }
+                        }
+
+                        if (worstIdx < 0 || worstErr <= maxErr) break;
+                        if (rowList.Count <= 3) break;
+
+                        rowRemoved.Add(rowList[worstIdx]);
+                        colRemoved.Add(colList[worstIdx]);
+                        rowList.RemoveAt(worstIdx);
+                        colList.RemoveAt(worstIdx);
+
+                        contourFitting.Dispose(); HOperatorSet.GenEmptyObj(out contourFitting);
+                        HOperatorSet.GenContourPolygonXld(out contourFitting, rowList.ToArray(), colList.ToArray());
+                        HOperatorSet.FitCircleContourXld(contourFitting, "atukey", -1, 0, 0, 5, 2,
+                            out circRow, out circCol, out circRadius, out circStartPhi, out circEndPhi, out circPointOrder);
+                    }
+
+                    if (rowList.Count < 3)
+                    {
+                        throw new NullReferenceException("最大偏差筛选后有效点不足，无法拟合圆弧！");
+                    }
+                    #endregion
+
+                    #region Stage 3：可选裁剪筛选后首尾点并重新拟合
+                    if (inPara.IsTrimEnds && rowList.Count >= 5)
+                    {
+                        rowRemoved.Add(rowList[0]);
+                        colRemoved.Add(colList[0]);
+                        rowRemoved.Add(rowList[rowList.Count - 1]);
+                        colRemoved.Add(colList[colList.Count - 1]);
+
+                        rowList.RemoveAt(rowList.Count - 1);
+                        colList.RemoveAt(colList.Count - 1);
+                        rowList.RemoveAt(0);
+                        colList.RemoveAt(0);
+
+                        contourFitting.Dispose(); HOperatorSet.GenEmptyObj(out contourFitting);
+                        HOperatorSet.GenContourPolygonXld(out contourFitting, rowList.ToArray(), colList.ToArray());
+                        HOperatorSet.FitCircleContourXld(contourFitting, "atukey", -1, 0, 0, 5, 2,
+                            out circRow, out circCol, out circRadius, out circStartPhi, out circEndPhi, out circPointOrder);
+                    }
+
+                    rowFitting = rowList.ToArray();
+                    colFitting = colList.ToArray();
+                    #endregion
+
+                    if (inPara.DispFittingPoint)
+                    {
+                        for (int i = 0; i < rowRemoved.Count; i++)
+                        {
+                            display.DispPoint(colRemoved[i], rowRemoved[i], HColor.Red, inPara.PointSize);
+                        }
+                        for (int i = 0; i < rowFitting.Length; i++)
+                        {
+                            display.DispPoint(colFitting[i], rowFitting[i], HColor.Green, inPara.PointSize);
+                        }
+                    }
 
                     double startPhi = circStartPhi.D;
                     double endPhi = circEndPhi.D;
@@ -154,7 +253,7 @@ namespace DotNet.VisionMaster
                         HOperatorSet.GenCircleContourXld(out arcContour,
                             circRow, circCol, circRadius, circStartPhi, circEndPhi, circPointOrder, 1);
                         display.DispRegion(arcContour, HColor.Red);
-                        display.DispPoint(midCol, midRow, HColor.Green, inPara.PointSize);
+                        display.DispPoint(midCol, midRow, HColor.OrangeRed, inPara.PointSize + 50);
                     }
                 }
                 else
@@ -239,13 +338,10 @@ namespace DotNet.VisionMaster
             VsControls.ShowLabel(form, "lbl_112", "最大偏差");
             VsControls.ShowComboBoxDropDown(form, "cmb_112", inPara.MaxErr.ToString(), new[] { "1", "3", "5", "10" });
 
-            VsControls.ShowLabel(form, "lbl_113", "开始角度");
-            VsControls.ShowComboBoxDropDown(form, "cmb_113", inPara.StartAngle.ToString(), new[] { "0", "90", "180", "270" });
+            VsControls.ShowLabel(form, "lbl_113", "裁剪首尾");
+            VsControls.ShowComboBoxList(form, "cmb_113", inPara.TrimEnds, new[] { "否", "是" });
             VsControls.ShowButton(form, "btn_113", false);
 
-            VsControls.ShowLabel(form, "lbl_114", "增量角度");
-            VsControls.ShowComboBoxDropDown(form, "cmb_114", inPara.DeltaAngle.ToString(), new[] { "90", "180", "270", "360" });
-            VsControls.ShowButton(form, "btn_114", false);
         }
         public override void SavePara(ParaForm form, Dictionary<string, VsControlModel> VsControls)
         {
@@ -261,8 +357,7 @@ namespace DotNet.VisionMaster
             inPara.StepPace = Convert.ToInt16(VsControls["cmb_110"].Text);
             inPara.StepWidth = Convert.ToInt16(VsControls["cmb_111"].Text);
             inPara.MaxErr = Convert.ToInt16(VsControls["cmb_112"].Text);
-            inPara.StartAngle = Convert.ToDouble(VsControls["cmb_113"].Text);
-            inPara.DeltaAngle = Convert.ToDouble(VsControls["cmb_114"].Text);
+            inPara.TrimEnds = VsControls["cmb_113"].Text;
         }
         public override void DispROI(DisplayUI display)
         {
@@ -332,10 +427,10 @@ namespace DotNet.VisionMaster
         /// <summary>
         /// 阈值 val = 0: 自动阈值, val > 0: 手动阈值, val = -1: 能量最强, val 小于 -1: 百分比阈值
         /// </summary>
-        public int Threshold { set; get; } = 120;
+        public int Threshold { set; get; } = 80;
 
         /// <summary> 步距 </summary>
-        public int StepPace { set; get; } = 20;
+        public int StepPace { set; get; } = 10;
 
         /// <summary> 步宽 </summary>
         public int StepWidth { set; get; } = 5;
@@ -343,11 +438,10 @@ namespace DotNet.VisionMaster
         /// <summary> 最大偏差 </summary>
         public int MaxErr { set; get; } = 5;
 
-        /// <summary> 开始角度 </summary>
-        public double StartAngle { set; get; } = 0;
+        /// <summary> 裁剪首尾点 </summary>
+        public string TrimEnds { set; get; } = "是";
 
-        /// <summary> 增量角度 </summary>
-        public double DeltaAngle { set; get; } = 360;
+        internal bool IsTrimEnds => TrimEnds == "是";
 
         /// <summary> 点大小 </summary>
         public int PointSize { set; get; } = 15;
