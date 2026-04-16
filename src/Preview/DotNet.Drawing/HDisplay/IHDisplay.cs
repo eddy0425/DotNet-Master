@@ -30,6 +30,8 @@ namespace DotNet.Drawing
         #region 点相关
         void DispPoint(HWindow hWindow, double crossX, double crossY, double size = 20);
         void DispPoint(HWindow hWindow, double crossX, double crossY, string color, int size = 20);
+        void DispPoint(HWindow hWindow, HTuple crossX, HTuple crossY, double size = 20);
+        void DispPoint(HWindow hWindow, HTuple crossX, HTuple crossY, string color, int size = 20);
         void DispPoint(HWindow hWindow, double[] rowPoints, double[] columnPoints, int size = 20);
         void DispPoint(HWindow hWindow, double[] rowPoints, double[] columnPoints, string color, int size = 20);
         void DispPoint(HWindow hWindow, List<Point2d> polygons, int size = 20);

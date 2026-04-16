@@ -181,6 +181,14 @@ namespace DotNet.Drawing
         {
             display.DispPoint(hWindow, crossX, crossY, color, size);
         }
+        public void DispPoint(HTuple crossX, HTuple crossY, double size = 20)
+        {
+            display.DispPoint(hWindow, crossX, crossY, size);
+        }
+        public void DispPoint(HTuple crossX, HTuple crossY, string color, int size = 20)
+        {
+            display.DispPoint(hWindow, crossX, crossY, color, size);
+        }
         public void DispPoint(double[] rowPoints, double[] columnPoints, int size = 20)
         {
             display.DispPoint(hWindow, rowPoints, columnPoints, size);

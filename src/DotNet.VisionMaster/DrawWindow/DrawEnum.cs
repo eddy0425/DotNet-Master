@@ -1,5 +1,20 @@
 ﻿namespace DotNet.VisionMaster
 {
+    /// <summary> 绘画类型枚举 </summary>
+    public enum DrawEnum
+    {
+        None,
+        SetModel,
+        DispModel,
+        NewRect,
+        EditRect,
+        DispRect,
+        NewPolygon,
+        EditPolygon,
+        Synthethic,
+        ShapeModel
+    }
+
     /// <summary> 设置步骤枚举 </summary>
     public enum SetUpEnum
     {
@@ -21,21 +36,6 @@
         EndMove,
         Center,
         CenterMove
-    }
-
-    /// <summary> 绘画类型枚举 </summary>
-    public enum DrawEnum
-    {
-        None,
-        SetModel,
-        DispModel,
-        NewRect,
-        EditRect,
-        DispRect,
-        NewPolygon,
-        EditPolygon,
-        Synthethic,
-        ShapeModel
     }
 
 }

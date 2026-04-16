@@ -1,5 +1,4 @@
 using DotNet.HalconUI;
-using DotNet.VisionMaster.Algorithms;
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;

@@ -146,6 +146,14 @@ namespace DotNet.HalconUI
         {
             display.DispPoint(crossX, crossY, color, size);
         }
+        public void DispPoint(HTuple crossX, HTuple crossY, double size = 20)
+        {
+            display.DispPoint(crossX, crossY, size);
+        }
+        public void DispPoint(HTuple crossX, HTuple crossY, string color, int size = 20)
+        {
+            display.DispPoint(crossX, crossY, color, size);
+        }
         public void DispPoint(double[] rowPoints, double[] columnPoints, int size = 20)
         {
             display.DispPoint(rowPoints, columnPoints, size);

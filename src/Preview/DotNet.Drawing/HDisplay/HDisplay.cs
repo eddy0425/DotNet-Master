@@ -76,6 +76,15 @@ namespace DotNet.Drawing
             SetColor(hWindow, color);
             hWindow.DispCross(crossY, crossX, size, 0);
         }
+        public void DispPoint(HWindow hWindow, HTuple crossX, HTuple crossY, double size = 20)
+        {
+            hWindow.DispCross(crossY, crossX, size, 0);
+        }
+        public void DispPoint(HWindow hWindow, HTuple crossX, HTuple crossY, string color, int size = 20)
+        {
+            SetColor(hWindow, color);
+            hWindow.DispCross(crossY, crossX, size, 0);
+        }
         public void DispPoint(HWindow hWindow, double[] rowPoints, double[] columnPoints, int size = 20)
         {
             if (rowPoints.Length != columnPoints.Length) return;

@@ -96,7 +96,7 @@ namespace DotNet.VisionMaster
                         HOperatorSet.AffineTransContourXld(inPara.HoContour, out inPara.HoContour, hv_HomMat2D);
 
                         display.DispRegion(inPara.HoContour, HColor.Green);
-                        display.DispCross(result.coord, HColor.Red);
+                        display.DispCross(result.Coord, HColor.Red);
                     }
                 }
                 return true;

@@ -6,6 +6,10 @@
     public enum OutEnum
     {
         /// <summary>
+        /// 未定义
+        /// </summary>
+        Undefined,
+        /// <summary>
         /// 对象
         /// </summary>
         HTuple,
@@ -16,7 +20,7 @@
         /// <summary>
         /// 点
         /// </summary>
-        Piont,
+        Point,
         /// <summary>
         /// 线
         /// </summary>
@@ -62,11 +66,9 @@
         /// </summary>
         String,
         CalOrOut,
-        Undefined,
         /// <summary>
         /// 逻辑结果
         /// </summary>
         Result,
-        Point,
     }
 }

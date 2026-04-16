@@ -31,11 +31,9 @@ namespace DotNet.VisionMaster
         [JsonIgnore]
         public double Y { get { return Row; } }
         [JsonIgnore]
-        public double ToAngle { get { return Angle.ToDegrees(); } }
+        public double ToDegrees { get { return Angle.ToDegrees(); } }
         [JsonIgnore]
-        public CvCoord coord { get { return new CvCoord(Column, Row, Angle); } }
-        [JsonIgnore]
-        public CvCoord coordAngle { get { return new CvCoord(Column, Row, Angle.ToDegrees()); } }
+        public CvCoord Coord { get { return new CvCoord(Column, Row, Angle); } }
 
     }
 }

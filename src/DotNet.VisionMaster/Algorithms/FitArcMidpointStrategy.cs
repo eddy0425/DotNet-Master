@@ -4,11 +4,11 @@ using System;
 using System.Collections.Generic;
 
 
-namespace DotNet.VisionMaster.Algorithms
+namespace DotNet.VisionMaster
 {
     public class FitArcMidpointStrategy : ParaStrategyBase<FitArcMidpoint>
     {
-        public override string Name => "拟合圆弧中点";
+        public override string Name => "圆弧中点";
         public override void Init(DisplayUI display)
         {
             display.RectangleEvent += RectEvent;
@@ -27,14 +27,116 @@ namespace DotNet.VisionMaster.Algorithms
         }
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
-            HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
-            HObject imgReduce = new HObject(); HOperatorSet.GenEmptyObj(out imgReduce);
+            HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
+            HObject contourFitting = new HObject(); HOperatorSet.GenEmptyObj(out contourFitting);
 
             try
             {
-                var image = strategys.ResolveFrom(inPara.ImageIn);
-                var region = strategys.ResolveFrom(inPara.RegionIn);
-                var coord = strategys.ResolveFrom(inPara.CoordIn);
+                HObject ho_Image;
+                if (inPara.ImageIn == "默认")
+                    ho_Image = display.HoImage;
+                else
+                    ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
+
+                HObject ho_Rect;
+                if (inPara.ImageIn == "默认")
+                    ho_Rect = inPara.HoRect.HoRegion;
+                else
+                    ho_Rect = strategys.ResolveFrom<HObject>(inPara.RegionIn);
+
+                HOperatorSet.ReduceDomain(ho_Image, ho_Rect, out imgReduced);
+
+                #region 角度&变量
+                HTuple baseAgl = 0;
+                HTuple startAgl = baseAgl + inPara.StartAngle.ToRadians();
+                HTuple deltaAgl = baseAgl + inPara.DeltaAngle.ToRadians();
+                HTuple fixAgl = baseAgl + inPara.HoRect.Phi;
+
+                HTuple fixRow = inPara.HoRect.Center.Y;
+                HTuple fixCol = inPara.HoRect.Center.X;
+                HTuple fixLen1 = inPara.HoRect.Width / 2;
+                HTuple fixLen2 = inPara.HoRect.Height / 2;
+
+                HTuple imgWid = display.HoWidth;
+                HTuple imgHei = display.HoHeight;
+                #endregion
+
+                #region 直边轮廓查找
+                double stepPace = Convert.ToDouble(inPara.StepPace); if (stepPace < 1) stepPace = 1;
+                double stepWid = Convert.ToDouble(inPara.StepWidth) / 2; if (stepWid < 1) stepWid = 1;
+                string transition = inPara.GetTransition;
+                string select = inPara.GetContourType;
+                //double stepPace = Convert.ToDouble(inPara.StepPace); if (stepPace < 1) stepPace = 1;
+                //double stepWid = Convert.ToDouble(inPara.StepWidth) / 2; if (stepWid < 1) stepWid = 1;
+                //
+                HTuple mRow = new HTuple(), mCol = new HTuple(), mAmp = new HTuple(), mDis = new HTuple();
+                HTuple rowNew = new HTuple(), colNew = new HTuple();
+                HTuple hMHandle;
+                double[] rowFitting = new double[0];
+                double[] colFitting = new double[0];
+                int loop_cnt = (int)(fixLen2.D / stepPace + 0.5); if (loop_cnt < 1) loop_cnt = 1;
+                double cosLen2 = fixLen2 * Math.Cos(fixAgl) / ((double)(loop_cnt));
+                double sinLen2 = fixLen2 * Math.Sin(fixAgl) / ((double)(loop_cnt));
+
+                for (float s = -1 * loop_cnt; s <= loop_cnt; s++)
+                {
+                    rowNew = fixRow + s * cosLen2;
+                    colNew = fixCol + s * sinLen2;
+                    HOperatorSet.GenMeasureRectangle2(rowNew, colNew, fixAgl, fixLen1, stepWid, imgWid, imgHei, "nearest_neighbor", out hMHandle);
+                    if (select != "second")
+                    {
+                        HOperatorSet.MeasurePos(imgReduced, hMHandle, inPara.Sigma, inPara.Threshold, transition, select, out mRow, out mCol, out mAmp, out mDis);
+                    }
+                    else
+                    {
+                        HOperatorSet.MeasurePos(imgReduced, hMHandle, inPara.Sigma, inPara.Threshold, transition, "all", out mRow, out mCol, out mAmp, out mDis);
+                    }
+                    if (inPara.DispRegion)
+                    {
+                        display.DispRectangle2(rowNew, colNew, fixAgl, fixLen1, stepWid, HColor.Blue);
+                    }
+                    if (mRow.Length > 0 && select != "second")
+                    {
+                        Array.Resize(ref rowFitting, rowFitting.Length + 1); rowFitting[rowFitting.Length - 1] = mRow.TupleSelect(0).D;
+                        Array.Resize(ref colFitting, colFitting.Length + 1); colFitting[colFitting.Length - 1] = mCol.TupleSelect(0).D;
+
+                        if (inPara.DispFittingPoint)
+                        {
+                            display.DispPoint(mCol.TupleSelect(0), mRow.TupleSelect(0), HColor.Red, inPara.PointSize);
+                        }
+                    }
+                    else if (mRow.Length > 1 && select == "second")
+                    {
+                        Array.Resize(ref rowFitting, rowFitting.Length + 1); rowFitting[rowFitting.Length - 1] = mRow.TupleSelect(1).D;
+                        Array.Resize(ref colFitting, colFitting.Length + 1); colFitting[colFitting.Length - 1] = mCol.TupleSelect(1).D;
+                        if (inPara.DispFittingPoint)
+                        {
+                            display.DispPoint(mCol.TupleSelect(1), mRow.TupleSelect(1), HColor.Red, inPara.PointSize);
+                        }
+                    }
+                    HOperatorSet.CloseMeasure(hMHandle);
+                }
+
+                //拟合直线轮廓
+                if (rowFitting.Length > 1)
+                {
+                    HOperatorSet.GenContourPolygonXld(out contourFitting, rowFitting, colFitting);
+
+                    if (inPara.DispRegion) display.DispRegion(ho_Rect, HColor.Blue);
+                    if (inPara.DispResult) display.DispRegion(contourFitting, HColor.Red);
+
+                     var contours = new Point2d[rowFitting.Length];
+                    for (int i = 0; i < rowFitting.Length; i++)
+                    {
+                        contours[i] = new Point2d(colFitting[i], rowFitting[i]);
+                    }
+                }
+                else
+                {
+                    throw new NullReferenceException("未找到轮廓！");
+                }
+
+                #endregion
 
                 return true;
             }
@@ -44,8 +146,8 @@ namespace DotNet.VisionMaster.Algorithms
             }
             finally
             {
-                regionGet.Dispose();
-                imgReduce.Dispose();
+                imgReduced.Dispose();
+                contourFitting.Dispose();
             }
         }
         public override void GenTreeNode(TreeVisualizer tree)
@@ -144,7 +246,7 @@ namespace DotNet.VisionMaster.Algorithms
     public class FitArcMidpoint
     {
         /// <summary> 指令类型 </summary>
-        public readonly string Algorithm = "拟合圆弧中点";
+        public readonly string Algorithm = "圆弧中点";
 
         /// <summary> 图像来源 </summary>
         public string ImageIn { set; get; } = "默认";
@@ -161,26 +263,77 @@ namespace DotNet.VisionMaster.Algorithms
         public CvRegion HoRect { set; get; } = new CvRegion();
 
         /// <summary> 过渡方向 </summary>
-        public string Transition { set; get; }
+        public string Transition { set; get; } = "由黑到白";
+
+        /// <summary>
+        /// 获取过渡方向
+        /// </summary>
+        internal string GetTransition
+        {
+            get
+            {
+                if (Transition == "由黑到白") return "positive";
+                else if (Transition == "由白到黑") return "negative";
+                else if (Transition == "全部") return "all";
+                return "";
+            }
+        }
 
         /// <summary> 选择 </summary>
-        public string ContourType { set; get; }
+        public string ContourType { set; get; } = "第一条边";
+
+        /// <summary>
+        /// 获取选择
+        /// </summary>
+        internal string GetContourType
+        {
+            get
+            {
+                if (ContourType == "第一条边") return "first";
+                else if (ContourType == "第二条边") return "second";
+                else if (ContourType == "最后一条") return "last";
+                else if (ContourType == "全部") return "all";
+                return "";
+            }
+        }
 
         /// <summary> 滤波 </summary>
-        public int Sigma { set; get; }
+        public int Sigma { set; get; } = 1;
 
         /// <summary>
         /// 阈值 val = 0: 自动阈值, val > 0: 手动阈值, val = -1: 能量最强, val 小于 -1: 百分比阈值
         /// </summary>
-        public int Threshold { set; get; }
+        public int Threshold { set; get; } = 80;
 
         /// <summary> 步距 </summary>
-        public int StepPace { set; get; }
+        public int StepPace { set; get; } = 5;
 
         /// <summary> 步宽 </summary>
-        public int StepWidth { set; get; }
+        public int StepWidth { set; get; } = 5;
 
         /// <summary> 最大偏差 </summary>
-        public int MaxErr { set; get; }
+        public int MaxErr { set; get; } = 5;
+
+        /// <summary> 开始角度 </summary>
+        public double StartAngle { set; get; } = 0;
+
+        /// <summary> 增量角度 </summary>
+        public double DeltaAngle { set; get; } = 360;
+
+        /// <summary> 点大小 </summary>
+        public int PointSize { set; get; } = 15;
+
+        /// <summary> 显示区域 </summary>
+        public bool DispRegion { set; get; } = false;
+
+        /// <summary> 显示结果 </summary>
+        public bool DispResult { set; get; } = true;
+
+        /// <summary> 显示文本 </summary>
+        public bool DispText { set; get; } = false;
+
+        /// <summary> 拟合点 </summary>
+        public bool DispFittingPoint { set; get; } = false;
+
     }
 }

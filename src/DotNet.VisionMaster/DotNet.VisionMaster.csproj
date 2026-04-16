@@ -76,7 +76,6 @@
   <ItemGroup>
     <Compile Include="Algorithms\CreateROIStrategy.cs" />
     <Compile Include="Algorithms\FitArcMidpointStrategy.cs" />
-    <Compile Include="CvEnum\EnumClass.cs" />
     <Compile Include="DrawWindow\DisplayUI.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -84,6 +83,7 @@
       <DependentUpon>DisplayUI.cs</DependentUpon>
     </Compile>
     <Compile Include="Drawing\ModelResult.cs" />
+    <Compile Include="DrawWindow\DrawEnum.cs" />
     <Compile Include="DrawWindow\DrawHandlers\DispModelHandler.cs" />
     <Compile Include="DrawWindow\DrawHandlers\DispRectHandler.cs" />
     <Compile Include="DrawWindow\DrawHandlers\NewRectHandler.cs" />
