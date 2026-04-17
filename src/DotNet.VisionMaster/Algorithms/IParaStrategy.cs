@@ -10,15 +10,17 @@ namespace DotNet.VisionMaster
     public interface IParaStrategy
     {
         string Name { get; }
+        object ResolveOutput(string[] path);
+        T ResolveOutput<T>(string[] path);
+
         void Init(DisplayUI display);
         void Close(DisplayUI display);
         void GenTreeNode(TreeVisualizer tree);
-        object ResolveOutput(string[] path);
-        T ResolveOutput<T>(string[] path);
+
+        bool Fun_action(DisplayUI display, List<IParaStrategy> strategys);
         void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls);
         void SavePara(ParaForm form, Dictionary<string, VsControlModel> VsControls);
         void DispROI(DisplayUI display);
-        bool Fun_action(DisplayUI display, List<IParaStrategy> strategys);
     }
 
     /// <summary>
@@ -30,12 +32,9 @@ namespace DotNet.VisionMaster
 
         public abstract string Name { get; }
         public TPara inPara { get; set; } = new TPara();
-
         protected void RegisterOutput(string path, Func<object> resolver)
             => _resolvers[path] = resolver;
-
         protected void ClearResolvers() => _resolvers.Clear();
-
         public object ResolveOutput(string[] path)
         {
             for (int depth = path.Length; depth >= 1; depth--)
@@ -46,16 +45,17 @@ namespace DotNet.VisionMaster
             }
             return null;
         }
-
         public T ResolveOutput<T>(string[] path) => (T)ResolveOutput(path);
 
         public virtual void Init(DisplayUI display) { }
         public virtual void Close(DisplayUI display) { }
         public abstract void GenTreeNode(TreeVisualizer tree);
+  
+        public abstract bool Fun_action(DisplayUI display, List<IParaStrategy> strategys);
         public abstract void DispPara(ParaForm form, Dictionary<string, VsControlModel> VsControls);
         public abstract void SavePara(ParaForm form, Dictionary<string, VsControlModel> VsControls);
         public virtual void DispROI(DisplayUI display) { }
-        public abstract bool Fun_action(DisplayUI display, List<IParaStrategy> strategys);
+
     }
 
     /// <summary>

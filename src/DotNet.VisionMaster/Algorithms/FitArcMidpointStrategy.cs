@@ -67,6 +67,273 @@ namespace DotNet.VisionMaster
                 string transition = inPara.GetTransition;
                 string select = inPara.GetContourType;
 
+                // 预先确定 MeasurePos 的 select 参数与取点下标，避免在循环内反复判断
+                string measureSelect = (select == "second") ? "all" : select;
+                int pickIndex = (select == "second") ? 1 : 0;
+
+                int loop_cnt = (int)(fixLen2.D / stepPace + 0.5); if (loop_cnt < 1) loop_cnt = 1;
+                double cosLen2 = fixLen2 * Math.Cos(fixAgl) / loop_cnt;
+                double sinLen2 = fixLen2 * Math.Sin(fixAgl) / loop_cnt;
+
+                List<double> rowList = new List<double>(2 * loop_cnt + 1);
+                List<double> colList = new List<double>(2 * loop_cnt + 1);
+
+                for (int s = -loop_cnt; s <= loop_cnt; s++)
+                {
+                    HTuple rowNew = fixRow + s * cosLen2;
+                    HTuple colNew = fixCol + s * sinLen2;
+
+                    HTuple hMHandle;
+                    HOperatorSet.GenMeasureRectangle2(rowNew, colNew, fixAgl, fixLen1, stepWid,
+                        imgWid, imgHei, "nearest_neighbor", out hMHandle);
+                    try
+                    {
+                        HTuple mRow, mCol, mAmp, mDis;
+                        HOperatorSet.MeasurePos(imgReduced, hMHandle, inPara.Sigma, inPara.Threshold,
+                            transition, measureSelect, out mRow, out mCol, out mAmp, out mDis);
+
+                        if (inPara.DispRegion)
+                        {
+                            display.DispRectangle2(rowNew, colNew, fixAgl, fixLen1, stepWid, HColor.Blue);
+                        }
+
+                        if (mRow.Length > pickIndex)
+                        {
+                            rowList.Add(mRow.TupleSelect(pickIndex).D);
+                            colList.Add(mCol.TupleSelect(pickIndex).D);
+                        }
+                    }
+                    finally
+                    {
+                        HOperatorSet.CloseMeasure(hMHandle);
+                    }
+                }
+                #endregion
+
+                #region 拟合圆弧中点
+                if (rowList.Count < 3)
+                {
+                    throw new InvalidOperationException("未找到足够的轮廓点！");
+                }
+
+                double maxErr = inPara.MaxErr; if (maxErr < 0) maxErr = 0;
+                // 直线粗滤阈值适度放宽以容纳弧的凸量 (sagitta)
+                double lineGate = Math.Max(maxErr * 3.0, 15.0);
+
+                List<double> rowRemoved = new List<double>();
+                List<double> colRemoved = new List<double>();
+
+                #region Stage 1：gauss 鲁棒直线拟合剔除严重跑偏的点
+                RebuildContour(ref contourFitting, rowList, colList);
+
+                HTuple lineRowBegin, lineColBegin, lineRowEnd, lineColEnd, lineNr, lineNc, lineDist;
+                HOperatorSet.FitLineContourXld(contourFitting, "gauss", -1, 0, 5, 1.345,
+                    out lineRowBegin, out lineColBegin, out lineRowEnd, out lineColEnd,
+                    out lineNr, out lineNc, out lineDist);
+
+                // 使用 Hesse 形式在 C# 侧直接算点到直线距离，省去循环内的 Halcon 调用
+                double nr = lineNr.D, nc = lineNc.D, nd = lineDist.D;
+                for (int i = rowList.Count - 1; i >= 0; i--)
+                {
+                    double dist = Math.Abs(nr * rowList[i] + nc * colList[i] - nd);
+                    if (dist > lineGate)
+                    {
+                        rowRemoved.Add(rowList[i]);
+                        colRemoved.Add(colList[i]);
+                        rowList.RemoveAt(i);
+                        colList.RemoveAt(i);
+                    }
+                }
+
+                if (rowList.Count < 3)
+                {
+                    throw new InvalidOperationException("直线粗滤后有效点不足，无法拟合圆弧！");
+                }
+                #endregion
+
+                #region Stage 2：atukey 圆拟合 + 径向距离迭代精滤
+                HTuple circRow, circCol, circRadius, circStartPhi, circEndPhi, circPointOrder;
+                FitArcFromPoints(ref contourFitting, rowList, colList,
+                    out circRow, out circCol, out circRadius,
+                    out circStartPhi, out circEndPhi, out circPointOrder);
+
+                int safety = rowList.Count;
+                for (int iter = 0; iter < safety; iter++)
+                {
+                    double cr = circRow.D, cc = circCol.D, rad = circRadius.D;
+                    int worstIdx = -1;
+                    double worstErr = 0;
+                    for (int i = 0; i < rowList.Count; i++)
+                    {
+                        double dRow = rowList[i] - cr;
+                        double dCol = colList[i] - cc;
+                        double err = Math.Abs(Math.Sqrt(dRow * dRow + dCol * dCol) - rad);
+                        if (err > worstErr) { worstErr = err; worstIdx = i; }
+                    }
+
+                    if (worstIdx < 0 || worstErr <= maxErr) break;
+                    if (rowList.Count <= 3) break;
+
+                    rowRemoved.Add(rowList[worstIdx]);
+                    colRemoved.Add(colList[worstIdx]);
+                    rowList.RemoveAt(worstIdx);
+                    colList.RemoveAt(worstIdx);
+
+                    FitArcFromPoints(ref contourFitting, rowList, colList,
+                        out circRow, out circCol, out circRadius,
+                        out circStartPhi, out circEndPhi, out circPointOrder);
+                }
+
+                if (rowList.Count < 3)
+                {
+                    throw new InvalidOperationException("最大偏差筛选后有效点不足，无法拟合圆弧！");
+                }
+                #endregion
+
+                #region Stage 3：可选裁剪筛选后首尾点并重新拟合
+                if (inPara.IsTrimEnds && rowList.Count >= 5)
+                {
+                    int last = rowList.Count - 1;
+                    rowRemoved.Add(rowList[0]);
+                    colRemoved.Add(colList[0]);
+                    rowRemoved.Add(rowList[last]);
+                    colRemoved.Add(colList[last]);
+
+                    rowList.RemoveAt(last);
+                    colList.RemoveAt(last);
+                    rowList.RemoveAt(0);
+                    colList.RemoveAt(0);
+
+                    FitArcFromPoints(ref contourFitting, rowList, colList,
+                        out circRow, out circCol, out circRadius,
+                        out circStartPhi, out circEndPhi, out circPointOrder);
+                }
+                #endregion
+
+                if (inPara.DispFittingPoint)
+                {
+                    for (int i = 0; i < rowRemoved.Count; i++)
+                    {
+                        display.DispPoint(colRemoved[i], rowRemoved[i], HColor.Red, inPara.PointSize);
+                    }
+                    for (int i = 0; i < rowList.Count; i++)
+                    {
+                        display.DispPoint(colList[i], rowList[i], HColor.Green, inPara.PointSize);
+                    }
+                }
+
+                double arcMidPhi = ComputeArcMidPhi(circStartPhi.D, circEndPhi.D, circPointOrder.S);
+                double midRow = circRow.D - circRadius.D * Math.Sin(arcMidPhi);
+                double midCol = circCol.D + circRadius.D * Math.Cos(arcMidPhi);
+                inPara.ArcMidpoint = new Point2d(midCol, midRow);
+
+                if (inPara.DispRegion) display.DispRegion(ho_Rect, HColor.Blue);
+                if (inPara.DispResult)
+                {
+                    arcContour.Dispose(); HOperatorSet.GenEmptyObj(out arcContour);
+                    HOperatorSet.GenCircleContourXld(out arcContour,
+                        circRow, circCol, circRadius, circStartPhi, circEndPhi, circPointOrder, 1);
+                    display.DispRegion(arcContour, HColor.Red);
+                    display.DispPoint(midCol, midRow, HColor.OrangeRed, inPara.PointSize + 50);
+                }
+                #endregion
+
+                return true;
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                imgReduced.Dispose();
+                contourFitting.Dispose();
+                arcContour.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// 释放旧轮廓并按给定点集重建 XLD 多边形轮廓。
+        /// </summary>
+        private static void RebuildContour(ref HObject contour, List<double> rowList, List<double> colList)
+        {
+            contour.Dispose();
+            HOperatorSet.GenEmptyObj(out contour);
+            HOperatorSet.GenContourPolygonXld(out contour, rowList.ToArray(), colList.ToArray());
+        }
+
+        /// <summary>
+        /// 重建轮廓并用 atukey 鲁棒圆拟合，得到圆心/半径/起止角与点序。
+        /// </summary>
+        private static void FitArcFromPoints(ref HObject contour, List<double> rowList, List<double> colList,
+            out HTuple circRow, out HTuple circCol, out HTuple circRadius,
+            out HTuple circStartPhi, out HTuple circEndPhi, out HTuple circPointOrder)
+        {
+            RebuildContour(ref contour, rowList, colList);
+            HOperatorSet.FitCircleContourXld(contour, "atukey", -1, 0, 0, 5, 2,
+                out circRow, out circCol, out circRadius,
+                out circStartPhi, out circEndPhi, out circPointOrder);
+        }
+
+        /// <summary>
+        /// 根据拟合得到的起止角与点序，计算弧段中点所在角度（Halcon 图像坐标系）。
+        /// </summary>
+        private static double ComputeArcMidPhi(double startPhi, double endPhi, string pointOrder)
+        {
+            const double twoPi = 2 * Math.PI;
+            if (pointOrder == "positive")
+            {
+                double span = endPhi - startPhi;
+                if (span < 0) span += twoPi;
+                return startPhi + span * 0.5;
+            }
+            else
+            {
+                double span = startPhi - endPhi;
+                if (span < 0) span += twoPi;
+                return startPhi - span * 0.5;
+            }
+        }
+
+        public bool Fun_action2(DisplayUI display, List<IParaStrategy> strategys)
+        {
+            HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
+            HObject contourFitting = new HObject(); HOperatorSet.GenEmptyObj(out contourFitting);
+            HObject arcContour = new HObject(); HOperatorSet.GenEmptyObj(out arcContour);
+
+            try
+            {
+                HObject ho_Image;
+                if (inPara.ImageIn == "默认")
+                    ho_Image = display.HoImage;
+                else
+                    ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
+
+                HObject ho_Rect;
+                if (inPara.RegionIn == "默认")
+                    ho_Rect = inPara.HoRect.HoRegion;
+                else
+                    ho_Rect = strategys.ResolveFrom<HObject>(inPara.RegionIn);
+
+                HOperatorSet.ReduceDomain(ho_Image, ho_Rect, out imgReduced);
+                display.DispRegion(ho_Rect, HColor.Blue);
+
+                #region 变量
+                HTuple fixAgl = inPara.HoRect.Phi;
+                HTuple fixRow = inPara.HoRect.Center.Y;
+                HTuple fixCol = inPara.HoRect.Center.X;
+                HTuple fixLen1 = inPara.HoRect.Width / 2;
+                HTuple fixLen2 = inPara.HoRect.Height / 2;
+                HTuple imgWid = display.HoWidth;
+                HTuple imgHei = display.HoHeight;
+                #endregion
+
+                #region 边缘查找
+                double stepPace = Convert.ToDouble(inPara.StepPace); if (stepPace < 1) stepPace = 1;
+                double stepWid = Convert.ToDouble(inPara.StepWidth) / 2; if (stepWid < 1) stepWid = 1;
+                string transition = inPara.GetTransition;
+                string select = inPara.GetContourType;
+
                 HTuple mRow = new HTuple(), mCol = new HTuple(), mAmp = new HTuple(), mDis = new HTuple();
                 HTuple rowNew = new HTuple(), colNew = new HTuple();
                 HTuple hMHandle;
@@ -275,6 +542,7 @@ namespace DotNet.VisionMaster
                 arcContour.Dispose();
             }
         }
+
         public override void GenTreeNode(TreeVisualizer tree)
         {
             tree.Branch(Name, branch => branch

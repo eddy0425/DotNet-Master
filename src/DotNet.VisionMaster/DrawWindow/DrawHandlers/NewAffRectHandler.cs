@@ -62,7 +62,7 @@ namespace DotNet.VisionMaster
                     break;
 
                 case SetUpEnum.Step2:
-                    display.DispRegion(display.ShrRegion);
+                    display.DispRegion(display.ShrRegion, HColor.Green);
                     //display.SetUp = SetUpEnum.Step3;
                     break;
             }
