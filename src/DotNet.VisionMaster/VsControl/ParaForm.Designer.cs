@@ -112,11 +112,6 @@
             this.btn_oval_2 = new System.Windows.Forms.RadioButton();
             this.btn_rectangle1_2 = new System.Windows.Forms.RadioButton();
             this.tabPage4 = new System.Windows.Forms.TabPage();
-            this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.radio_Output4 = new System.Windows.Forms.RadioButton();
-            this.radio_Output3 = new System.Windows.Forms.RadioButton();
-            this.radio_Output1 = new System.Windows.Forms.RadioButton();
-            this.radio_Output2 = new System.Windows.Forms.RadioButton();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
             this.label2 = new System.Windows.Forms.Label();
             this.CB_PointSize = new System.Windows.Forms.ComboBox();
@@ -143,7 +138,6 @@
             this.tabPage3.SuspendLayout();
             this.groupBox3.SuspendLayout();
             this.tabPage4.SuspendLayout();
-            this.groupBox2.SuspendLayout();
             this.groupBox5.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
@@ -1266,7 +1260,6 @@
             // tabPage4
             // 
             this.tabPage4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(40)))), ((int)(((byte)(30)))));
-            this.tabPage4.Controls.Add(this.groupBox2);
             this.tabPage4.Controls.Add(this.groupBox5);
             this.tabPage4.Controls.Add(this.groupBox1);
             this.tabPage4.Location = new System.Drawing.Point(4, 26);
@@ -1275,69 +1268,6 @@
             this.tabPage4.Size = new System.Drawing.Size(514, 205);
             this.tabPage4.TabIndex = 2;
             this.tabPage4.Text = "显示输出";
-            // 
-            // groupBox2
-            // 
-            this.groupBox2.Controls.Add(this.radio_Output4);
-            this.groupBox2.Controls.Add(this.radio_Output3);
-            this.groupBox2.Controls.Add(this.radio_Output1);
-            this.groupBox2.Controls.Add(this.radio_Output2);
-            this.groupBox2.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.groupBox2.ForeColor = System.Drawing.Color.White;
-            this.groupBox2.Location = new System.Drawing.Point(370, 8);
-            this.groupBox2.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Padding = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.groupBox2.Size = new System.Drawing.Size(132, 187);
-            this.groupBox2.TabIndex = 293;
-            this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "输出设置";
-            // 
-            // radio_Output4
-            // 
-            this.radio_Output4.AutoSize = true;
-            this.radio_Output4.Location = new System.Drawing.Point(20, 113);
-            this.radio_Output4.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.radio_Output4.Name = "radio_Output4";
-            this.radio_Output4.Size = new System.Drawing.Size(85, 19);
-            this.radio_Output4.TabIndex = 289;
-            this.radio_Output4.Text = "输出圆区域";
-            this.radio_Output4.UseVisualStyleBackColor = true;
-            // 
-            // radio_Output3
-            // 
-            this.radio_Output3.AutoSize = true;
-            this.radio_Output3.Location = new System.Drawing.Point(20, 84);
-            this.radio_Output3.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.radio_Output3.Name = "radio_Output3";
-            this.radio_Output3.Size = new System.Drawing.Size(73, 19);
-            this.radio_Output3.TabIndex = 288;
-            this.radio_Output3.Text = "输出轮廓";
-            this.radio_Output3.UseVisualStyleBackColor = true;
-            // 
-            // radio_Output1
-            // 
-            this.radio_Output1.AutoSize = true;
-            this.radio_Output1.Checked = true;
-            this.radio_Output1.Location = new System.Drawing.Point(20, 25);
-            this.radio_Output1.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.radio_Output1.Name = "radio_Output1";
-            this.radio_Output1.Size = new System.Drawing.Size(61, 19);
-            this.radio_Output1.TabIndex = 4;
-            this.radio_Output1.TabStop = true;
-            this.radio_Output1.Text = "不输出";
-            this.radio_Output1.UseVisualStyleBackColor = true;
-            // 
-            // radio_Output2
-            // 
-            this.radio_Output2.AutoSize = true;
-            this.radio_Output2.Location = new System.Drawing.Point(20, 53);
-            this.radio_Output2.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.radio_Output2.Name = "radio_Output2";
-            this.radio_Output2.Size = new System.Drawing.Size(73, 19);
-            this.radio_Output2.TabIndex = 1;
-            this.radio_Output2.Text = "输出区域";
-            this.radio_Output2.UseVisualStyleBackColor = true;
             // 
             // groupBox5
             // 
@@ -1351,7 +1281,7 @@
             this.groupBox5.Controls.Add(this.lbl_120);
             this.groupBox5.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.groupBox5.ForeColor = System.Drawing.Color.White;
-            this.groupBox5.Location = new System.Drawing.Point(176, 8);
+            this.groupBox5.Location = new System.Drawing.Point(287, 9);
             this.groupBox5.Name = "groupBox5";
             this.groupBox5.Size = new System.Drawing.Size(175, 187);
             this.groupBox5.TabIndex = 292;
@@ -1445,7 +1375,7 @@
             this.groupBox1.Controls.Add(this.ckb_disp3);
             this.groupBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.groupBox1.ForeColor = System.Drawing.Color.White;
-            this.groupBox1.Location = new System.Drawing.Point(12, 8);
+            this.groupBox1.Location = new System.Drawing.Point(31, 9);
             this.groupBox1.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(3, 2, 3, 2);
@@ -1559,8 +1489,6 @@
             this.groupBox3.ResumeLayout(false);
             this.groupBox3.PerformLayout();
             this.tabPage4.ResumeLayout(false);
-            this.groupBox2.ResumeLayout(false);
-            this.groupBox2.PerformLayout();
             this.groupBox5.ResumeLayout(false);
             this.groupBox5.PerformLayout();
             this.groupBox1.ResumeLayout(false);
@@ -1644,11 +1572,6 @@
         private System.Windows.Forms.RadioButton btn_circle_2;
         private System.Windows.Forms.RadioButton btn_oval_2;
         private System.Windows.Forms.RadioButton btn_rectangle1_2;
-        private System.Windows.Forms.GroupBox groupBox2;
-        private System.Windows.Forms.RadioButton radio_Output4;
-        private System.Windows.Forms.RadioButton radio_Output3;
-        private System.Windows.Forms.RadioButton radio_Output1;
-        private System.Windows.Forms.RadioButton radio_Output2;
         private System.Windows.Forms.GroupBox groupBox5;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.ComboBox CB_PointSize;

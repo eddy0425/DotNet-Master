@@ -11,10 +11,10 @@ namespace DotNet.VisionMaster
     public static class VsControlBindingStrategyFactory
     {
         private static readonly VsTabPageBindingStrategy _tabPageBindingStrategy = new VsTabPageBindingStrategy();
-        private static readonly VsLabelBindingStrategy _labelBindingStrategy = new VsLabelBindingStrategy();
+        //private static readonly VsLabelBindingStrategy _labelBindingStrategy = new VsLabelBindingStrategy();
+        //private static readonly VsButtonBindingStrategy _buttonBindingStrategy = new VsButtonBindingStrategy();
         private static readonly VsTextBoxBindingStrategy _textBoxBindingStrategy = new VsTextBoxBindingStrategy();
         private static readonly VsComboBoxBindingStrategy _comboBoxBindingStrategy = new VsComboBoxBindingStrategy();
-        private static readonly VsButtonBindingStrategy _buttonBindingStrategy = new VsButtonBindingStrategy();
         private static readonly VsCheckBoxBindingStrategy _checkBoxBindingStrategy = new VsCheckBoxBindingStrategy();
         private static readonly VsRadioButtonBindingStrategy _radioButtonBindingStrategy = new VsRadioButtonBindingStrategy();
         private static readonly VsTrackBarBindingStrategy _trackBarBindingStrategy = new VsTrackBarBindingStrategy();
@@ -26,10 +26,10 @@ namespace DotNet.VisionMaster
             switch (controlType)
             {
                 case "TabPage":       return _tabPageBindingStrategy;
-                case "Label":         return _labelBindingStrategy;
+                //case "Label":         return _labelBindingStrategy;
+                //case "Button":        return _buttonBindingStrategy;
                 case "TextBox":       return _textBoxBindingStrategy;
                 case "ComboBox":      return _comboBoxBindingStrategy;
-                case "Button":        return _buttonBindingStrategy;
                 case "CheckBox":      return _checkBoxBindingStrategy;
                 case "RadioButton":   return _radioButtonBindingStrategy;
                 case "TrackBar":      return _trackBarBindingStrategy;
@@ -67,12 +67,12 @@ namespace DotNet.VisionMaster
             var con = (TabPage)form.GetControl(bindingSource.Name);
             con.DataBindings.Add("Text", bindingSource, nameof(VsControlModel.Text), false, DataSourceUpdateMode.OnPropertyChanged);
 
-            bindingSource.BoundHandler = (sender, args) =>
-            {
-                if (args.PropertyName == nameof(VsControlModel.Visible))
-                    con.Visible = bindingSource.Visible;
-            };
-            bindingSource.PropertyChanged += bindingSource.BoundHandler;
+            //bindingSource.BoundHandler = (sender, args) =>
+            //{
+            //    if (args.PropertyName == nameof(VsControlModel.Visible))
+            //        con.Visible = bindingSource.Visible;
+            //};
+            //bindingSource.PropertyChanged += bindingSource.BoundHandler;
         }
 
         public void Unbind(Form form, VsControlModel bindingSource)
@@ -90,24 +90,50 @@ namespace DotNet.VisionMaster
     {
         public void Bind(Form form, VsControlModel bindingSource)
         {
-            var con = (Label)form.GetControl(bindingSource.Name);
-            con.DataBindings.Add("Text", bindingSource, nameof(VsControlModel.Text), false, DataSourceUpdateMode.OnPropertyChanged);
+            //var con = (Label)form.GetControl(bindingSource.Name);
+            //con.DataBindings.Add("Text", bindingSource, nameof(VsControlModel.Text), false, DataSourceUpdateMode.OnPropertyChanged);
 
-            bindingSource.BoundHandler = (sender, args) =>
-            {
-                if (args.PropertyName == nameof(VsControlModel.Visible))
-                    con.Visible = bindingSource.Visible;
-                else if (args.PropertyName == nameof(VsControlModel.Enabled))
-                    con.Enabled = bindingSource.Enabled;
-            };
-            bindingSource.PropertyChanged += bindingSource.BoundHandler;
+            //bindingSource.BoundHandler = (sender, args) =>
+            //{
+            //    if (args.PropertyName == nameof(VsControlModel.Visible))
+            //        con.Visible = bindingSource.Visible;
+            //    else if (args.PropertyName == nameof(VsControlModel.Enabled))
+            //        con.Enabled = bindingSource.Enabled;
+            //};
+            //bindingSource.PropertyChanged += bindingSource.BoundHandler;
         }
 
         public void Unbind(Form form, VsControlModel bindingSource)
         {
-            var con = (Label)form.GetControl(bindingSource.Name);
-            con.DataBindings.Clear();
-            BindingHelper.RemoveBoundHandler(bindingSource);
+            //var con = (Label)form.GetControl(bindingSource.Name);
+            //con.DataBindings.Clear();
+            //BindingHelper.RemoveBoundHandler(bindingSource);
+        }
+    }
+
+    // ============================================================
+    //  Button
+    // ============================================================
+    public class VsButtonBindingStrategy : IVsControlBinding
+    {
+        public void Bind(Form form, VsControlModel bindingSource)
+        {
+            //var con = (Button)form.GetControl(bindingSource.Name);
+            //con.DataBindings.Add("Text", bindingSource, nameof(VsControlModel.Text), false, DataSourceUpdateMode.OnPropertyChanged);
+
+            //bindingSource.BoundHandler = (sender, args) =>
+            //{
+            //    if (args.PropertyName == nameof(VsControlModel.Visible))
+            //        con.Visible = bindingSource.Visible;
+            //};
+            //bindingSource.PropertyChanged += bindingSource.BoundHandler;
+        }
+
+        public void Unbind(Form form, VsControlModel bindingSource)
+        {
+            //var con = (Button)form.GetControl(bindingSource.Name);
+            //con.DataBindings.Clear();
+            //BindingHelper.RemoveBoundHandler(bindingSource);
         }
     }
 
@@ -121,14 +147,14 @@ namespace DotNet.VisionMaster
             var con = (TextBox)form.GetControl(bindingSource.Name);
             con.DataBindings.Add("Text", bindingSource, nameof(VsControlModel.Text), false, DataSourceUpdateMode.OnPropertyChanged);
 
-            bindingSource.BoundHandler = (sender, args) =>
-            {
-                if (args.PropertyName == nameof(VsControlModel.Visible))
-                    con.Visible = bindingSource.Visible;
-                else if (args.PropertyName == nameof(VsControlModel.Enabled))
-                    con.Enabled = bindingSource.Enabled;
-            };
-            bindingSource.PropertyChanged += bindingSource.BoundHandler;
+            //bindingSource.BoundHandler = (sender, args) =>
+            //{
+            //    if (args.PropertyName == nameof(VsControlModel.Visible))
+            //        con.Visible = bindingSource.Visible;
+            //    else if (args.PropertyName == nameof(VsControlModel.Enabled))
+            //        con.Enabled = bindingSource.Enabled;
+            //};
+            //bindingSource.PropertyChanged += bindingSource.BoundHandler;
         }
 
         public void Unbind(Form form, VsControlModel bindingSource)
@@ -149,55 +175,29 @@ namespace DotNet.VisionMaster
             var con = (ComboBox)form.GetControl(bindingSource.Name);
             con.DataBindings.Add("Text", bindingSource, nameof(VsControlModel.Text), false, DataSourceUpdateMode.OnPropertyChanged);
 
-            bindingSource.BoundHandler = (sender, args) =>
-            {
-                if (args.PropertyName == nameof(VsControlModel.Visible))
-                    con.Visible = bindingSource.Visible;
-                else if (args.PropertyName == nameof(VsControlModel.Enabled))
-                    con.Enabled = bindingSource.Enabled;
-                else if (args.PropertyName == nameof(VsControlModel.DropDownStyle))
-                    con.DropDownStyle = bindingSource.DropDownStyle ? ComboBoxStyle.DropDownList : ComboBoxStyle.DropDown;
-                else if (args.PropertyName == nameof(VsControlModel.Items))
-                {
-                    if (con.DropDownStyle == ComboBoxStyle.DropDownList)
-                    {
-                        con.Items.Clear();
-                        con.Items.AddRange(bindingSource.Items);
-                    }
-                }
-            };
-            bindingSource.PropertyChanged += bindingSource.BoundHandler;
+            //bindingSource.BoundHandler = (sender, args) =>
+            //{
+            //    if (args.PropertyName == nameof(VsControlModel.Visible))
+            //        con.Visible = bindingSource.Visible;
+            //    else if (args.PropertyName == nameof(VsControlModel.Enabled))
+            //        con.Enabled = bindingSource.Enabled;
+            //    else if (args.PropertyName == nameof(VsControlModel.DropDownStyle))
+            //        con.DropDownStyle = bindingSource.DropDownStyle ? ComboBoxStyle.DropDownList : ComboBoxStyle.DropDown;
+            //    else if (args.PropertyName == nameof(VsControlModel.Items))
+            //    {
+            //        if (con.DropDownStyle == ComboBoxStyle.DropDownList)
+            //        {
+            //            con.Items.Clear();
+            //            con.Items.AddRange(bindingSource.Items);
+            //        }
+            //    }
+            //};
+            //bindingSource.PropertyChanged += bindingSource.BoundHandler;
         }
 
         public void Unbind(Form form, VsControlModel bindingSource)
         {
             var con = (ComboBox)form.GetControl(bindingSource.Name);
-            con.DataBindings.Clear();
-            BindingHelper.RemoveBoundHandler(bindingSource);
-        }
-    }
-
-    // ============================================================
-    //  Button
-    // ============================================================
-    public class VsButtonBindingStrategy : IVsControlBinding
-    {
-        public void Bind(Form form, VsControlModel bindingSource)
-        {
-            var con = (Button)form.GetControl(bindingSource.Name);
-            con.DataBindings.Add("Text", bindingSource, nameof(VsControlModel.Text), false, DataSourceUpdateMode.OnPropertyChanged);
-
-            bindingSource.BoundHandler = (sender, args) =>
-            {
-                if (args.PropertyName == nameof(VsControlModel.Visible))
-                    con.Visible = bindingSource.Visible;
-            };
-            bindingSource.PropertyChanged += bindingSource.BoundHandler;
-        }
-
-        public void Unbind(Form form, VsControlModel bindingSource)
-        {
-            var con = (Button)form.GetControl(bindingSource.Name);
             con.DataBindings.Clear();
             BindingHelper.RemoveBoundHandler(bindingSource);
         }
@@ -213,14 +213,14 @@ namespace DotNet.VisionMaster
             var con = (CheckBox)form.GetControl(bindingSource.Name);
             con.DataBindings.Add("Checked", bindingSource, nameof(VsControlModel.Checked), false, DataSourceUpdateMode.OnPropertyChanged);
 
-            bindingSource.BoundHandler = (sender, args) =>
-            {
-                if (args.PropertyName == nameof(VsControlModel.Text))
-                    con.Text = bindingSource.Text;
-                else if (args.PropertyName == nameof(VsControlModel.Visible))
-                    con.Visible = bindingSource.Visible;
-            };
-            bindingSource.PropertyChanged += bindingSource.BoundHandler;
+            //bindingSource.BoundHandler = (sender, args) =>
+            //{
+            //    if (args.PropertyName == nameof(VsControlModel.Text))
+            //        con.Text = bindingSource.Text;
+            //    else if (args.PropertyName == nameof(VsControlModel.Visible))
+            //        con.Visible = bindingSource.Visible;
+            //};
+            //bindingSource.PropertyChanged += bindingSource.BoundHandler;
         }
 
         public void Unbind(Form form, VsControlModel bindingSource)
@@ -241,14 +241,14 @@ namespace DotNet.VisionMaster
             var con = (RadioButton)form.GetControl(bindingSource.Name);
             con.DataBindings.Add("Checked", bindingSource, nameof(VsControlModel.Checked), false, DataSourceUpdateMode.OnPropertyChanged);
 
-            bindingSource.BoundHandler = (sender, args) =>
-            {
-                if (args.PropertyName == nameof(VsControlModel.Text))
-                    con.Text = bindingSource.Text;
-                else if (args.PropertyName == nameof(VsControlModel.Visible))
-                    con.Visible = bindingSource.Visible;
-            };
-            bindingSource.PropertyChanged += bindingSource.BoundHandler;
+            //bindingSource.BoundHandler = (sender, args) =>
+            //{
+            //    if (args.PropertyName == nameof(VsControlModel.Text))
+            //        con.Text = bindingSource.Text;
+            //    else if (args.PropertyName == nameof(VsControlModel.Visible))
+            //        con.Visible = bindingSource.Visible;
+            //};
+            //bindingSource.PropertyChanged += bindingSource.BoundHandler;
         }
 
         public void Unbind(Form form, VsControlModel bindingSource)
@@ -287,14 +287,14 @@ namespace DotNet.VisionMaster
         {
             var con = (DataGridView)form.GetControl(bindingSource.Name);
 
-            bindingSource.BoundHandler = (sender, args) =>
-            {
-                if (args.PropertyName == nameof(VsControlModel.Visible))
-                    con.Visible = bindingSource.Visible;
-                else if (args.PropertyName == nameof(VsControlModel.Enabled))
-                    con.Enabled = bindingSource.Enabled;
-            };
-            bindingSource.PropertyChanged += bindingSource.BoundHandler;
+            //bindingSource.BoundHandler = (sender, args) =>
+            //{
+            //    if (args.PropertyName == nameof(VsControlModel.Visible))
+            //        con.Visible = bindingSource.Visible;
+            //    else if (args.PropertyName == nameof(VsControlModel.Enabled))
+            //        con.Enabled = bindingSource.Enabled;
+            //};
+            //bindingSource.PropertyChanged += bindingSource.BoundHandler;
         }
 
         public void Unbind(Form form, VsControlModel bindingSource)

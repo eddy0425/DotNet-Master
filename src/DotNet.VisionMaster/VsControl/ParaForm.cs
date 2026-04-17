@@ -73,29 +73,10 @@ namespace DotNet.VisionMaster
 
         private void btn_drawRegion_Click(object sender, EventArgs e)
         {
-            //FitArcMidpointStrategy fitArcMidpoint = (FitArcMidpointStrategy)_strategys[_index];
-            //var inPara = ((FitArcMidpointStrategy)_strategys[_index]).inPara;
-
             switch (_strategys[_index].Name)
             {
                 case "圆弧中点":
                     {
-                        //var inPara = ((FitArcMidpointStrategy)_strategys[_index]).inPara;
-                        //var hRegion = inPara.HoRect;
-
-                        //_disPlay.SetDrawMode(_name, DrawEnum.None);
-
-                        //_disPlay.Reset();
-                        //_disPlay.ReDispImage();
-                        //_disPlay.SetColor(HColor.Red);
-                        //HOperatorSet.DrawRectangle2(_disPlay.HoWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
-                        //HOperatorSet.GenRectangle2(out hRegion.InRegion, row, column, phi, length1, length2);
-
-                        //hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(length1.D * 2, length2.D * 2));
-                        //hRegion.Phi = phi;
-
-                        //_disPlay.DispRegion(hRegion);
-
                         _disPlay.SetDrawMode(_name, DrawEnum.NewAffRect);
                     }
                     break;
