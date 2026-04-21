@@ -638,9 +638,6 @@ namespace DotNet.HalconAlgo
 
     public class FitArcMidpoint
     {
-        /// <summary> 指令类型 </summary>
-        public readonly string Algorithm = "圆弧中点";
-
         /// <summary> 图像来源 </summary>
         public string ImageIn { set; get; } = "默认";
 

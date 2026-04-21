@@ -345,10 +345,10 @@ namespace DotNet.HalconAlgo
         /// 设置绘图模式
         /// </summary>
         /// <param name="type">绘图类型</param>
-        public void SetDrawMode(string algorithmsName, DrawEnum type)
+        public void SetDrawMode(string algoName, DrawEnum type)
         {
             DrawType = type;
-            AlgoName = algorithmsName;
+            AlgoName = algoName;
             SetUp = SetUpEnum.None;        //设置步骤
             CycleMove = CycleMoveEnum.None;   //循环移动状态
 
@@ -361,10 +361,10 @@ namespace DotNet.HalconAlgo
         /// 设置绘图模式
         /// </summary>
         /// <param name="type">绘图类型</param>
-        public void SetDrawMode(string algorithmsName, CvRegion hRegion, DrawEnum type)
+        public void SetDrawMode(string algoName, CvRegion hRegion, DrawEnum type)
         {
             DrawType = type;
-            AlgoName = algorithmsName;
+            AlgoName = algoName;
             ShrRegion = hRegion;
             SetUp = SetUpEnum.None;           //设置步骤
             CycleMove = CycleMoveEnum.None;      //循环移动状态

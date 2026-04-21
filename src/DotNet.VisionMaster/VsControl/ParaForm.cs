@@ -9,7 +9,6 @@ namespace DotNet.VisionMaster
     public partial class ParaForm : Form
     {
         int _index;
-        string _name;
         List<IParaStrategy> _strategys;
         DisplayUI _disPlay;
         ValueForm _form_Value;
@@ -69,52 +68,38 @@ namespace DotNet.VisionMaster
         {
             _index = index;
             _strategys = strategys;
-            _name = strategys[_index].Name;
         }
 
         private void btn_drawRegion_Click(object sender, EventArgs e)
         {
-            switch (_strategys[_index].Name)
+            var strategy = _strategys[_index];
+            switch (strategy.Algorithm)
             {
-                case "圆弧中点":
+                case AlgoEnum.FitArcMidpoint:
                     {
-                        _disPlay.SetDrawMode(_name, DrawEnum.NewAffRect);
+                        _disPlay.SetDrawMode(strategy.Name, DrawEnum.NewAffRect);
                     }
                     break;
                 default:
-                    _disPlay.SetDrawMode(_name, DrawEnum.NewRect);
+                    _disPlay.SetDrawMode(strategy.Name, DrawEnum.NewRect);
                     break;
             }
         }
 
         private void but_updataRegion_Click(object sender, EventArgs e)
         {
-            _disPlay.SetDrawMode(_name, DrawEnum.EditRect);
-        }
-
-        private void btn_setCoordIn_Click(object sender, EventArgs e)
-        {
-            switch (_strategys[_index].Name)
-            {
-                case "��״ƥ��":
-                case "ֱ�߲���":
-                    {
-                        _form_Value.setValueForm(_index, _strategys, cmb_CoordIn.Text, OutEnum.Coord);
-                        if (_form_Value.DialogResult == DialogResult.OK)
-                        {
-                            cmb_CoordIn.Text = _form_Value.StrReturn;
-                        }
-                    }
-                    break;
-            }
+            var strategy = _strategys[_index];
+            _disPlay.SetDrawMode(strategy.Name, DrawEnum.EditRect);
         }
 
         private void btn_100_Click(object sender, EventArgs e)
         {
-            switch (_strategys[_index].Name)
+            var strategy = _strategys[_index];
+            switch (strategy.Algorithm)
             {
-                case "��״ƥ��":
-                case "ֱ�߲���":
+                case AlgoEnum.FitLine:
+                case AlgoEnum.FitArcMidpoint:
+                case AlgoEnum.ShapeMode:
                     {
                         _form_Value.setValueForm(_index, _strategys, cmb_100.Text, OutEnum.Image);
                         if (_form_Value.DialogResult == DialogResult.OK)
@@ -128,10 +113,12 @@ namespace DotNet.VisionMaster
 
         private void btn_101_Click(object sender, EventArgs e)
         {
-            switch (_strategys[_index].Name)
+            var strategy = _strategys[_index];
+            switch (strategy.Algorithm)
             {
-                case "��״ƥ��":
-                case "ֱ�߲���":
+                case AlgoEnum.ShapeMode:
+                case AlgoEnum.FitLine:
+                case AlgoEnum.FitArcMidpoint:
                     {
                         _form_Value.setValueForm(_index, _strategys, cmb_101.Text, OutEnum.Region);
                         if (_form_Value.DialogResult == DialogResult.OK)
@@ -143,8 +130,39 @@ namespace DotNet.VisionMaster
             }
         }
 
+        private void btn_setCoordIn_Click(object sender, EventArgs e)
+        {
+            var strategy = _strategys[_index];
+            switch (strategy.Algorithm)
+            {
+                case AlgoEnum.CreateROI:
+                case AlgoEnum.ShapeMode:
+                case AlgoEnum.FitLine:
+                case AlgoEnum.FitArcMidpoint:
+                    {
+                        _form_Value.setValueForm(_index, _strategys, cmb_CoordIn.Text, OutEnum.Coord);
+                        if (_form_Value.DialogResult == DialogResult.OK)
+                        {
+                            cmb_CoordIn.Text = _form_Value.StrReturn;
+                        }
+                    }
+                    break;
+            }
+        }
+
         private void btn_newModel_Click(object sender, EventArgs e)
         {
+            var strategy = _strategys[_index];
+            switch (strategy.Algorithm)
+            {
+                case AlgoEnum.ShapeMode:
+                    {
+                        _disPlay.SetDrawMode(_strategys[_index].Name, DrawEnum.SetModel);
+                    }
+                    break;
+            }
+
+            #region
             //Edit_savePara();
 
             ////Matching inPara = jobPara.jobInfo.ListMatchings[ListIndex];
@@ -166,17 +184,8 @@ namespace DotNet.VisionMaster
             //display.DrawDispRegion(inPara.SetROI);
             //SetTemplate(display, inPara.SetROI, inPara.ModelInfo);
 
-            switch (_strategys[_index].Name)
-            {
-                case "ShapeMode":
-                    {
-                        _disPlay.SetDrawMode("ShapeMode", DrawEnum.SetModel);
-                    }
-                    break;
-            }
-         
+            #endregion
 
-      
         }
 
     }

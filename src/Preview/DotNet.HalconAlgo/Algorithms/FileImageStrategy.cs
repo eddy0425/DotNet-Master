@@ -10,7 +10,7 @@ namespace DotNet.HalconAlgo
     public class FileImageStrategy : ParaStrategyBase<FileImage>
     {
         public override AlgoEnum Algorithm => AlgoEnum.FileImage;
-        public override string Name { get; set; } = "加载图像";
+        public override string Name { get; set; } = "文件图像";
         private int Index  = 0;       //图像下标
         private string[] ImagePaths;   //图像路径
 
@@ -128,9 +128,6 @@ namespace DotNet.HalconAlgo
 
     public class FileImage
     {
-        /// <summary> 指令类型 </summary>
-        public readonly string Algorithm = "加载图像";
-
         /// <summary> 图像 </summary>
         public HObject Image = new HObject();
 

@@ -145,9 +145,6 @@ namespace DotNet.HalconAlgo
 
     public class FitLine
     {
-        /// <summary> 指令类型 </summary>
-        public readonly string Algorithm = "拟合直线";
-
         /// <summary> 图像来源 </summary>
         public string ImageIn { set; get; } = "默认";
 

@@ -256,10 +256,7 @@ namespace DotNet.HalconAlgo
     }
 
     public class ShapeMode
-    {   
-        /// <summary> 指令类型 </summary>
-        public readonly string Algorithm = "ShapeMode";
-
+    {
         /// <summary> 图像来源 </summary>
         public string ImageIn { set; get; } = "默认";
 

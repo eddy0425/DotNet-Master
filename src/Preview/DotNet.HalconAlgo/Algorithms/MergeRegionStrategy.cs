@@ -84,9 +84,6 @@ namespace DotNet.HalconAlgo
 
     public class RegionMerge
     {
-        /// <summary> 指令类型 </summary>
-        public readonly string Algorithm = "区域合并";
-
         /// <summary> 跟随坐标 </summary>
         public string CoordIn { set; get; } = "默认";
 
