@@ -9,5 +9,7 @@
         public static string System = $"{ProjectDir}\\System.json";
         public static string SchemeInfo = "SchemeInfo.json";
         public static string JobInfo = "JobInfo.json";
+
+        public static bool UIBlock = true;
     }
 }

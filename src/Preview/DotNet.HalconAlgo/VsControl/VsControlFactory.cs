@@ -14,6 +14,8 @@ namespace DotNet.HalconAlgo
 
         public static void ShowTabs(this Form form, params TabPageEnum[] tabsToShow)
         {
+            if (AlgoPaths.UIBlock) return;
+
             // 清空当前显示的标签页 TabControl
             var tabControl1 = (TabControl)form.GetControl("tabControl1");
             tabControl1.TabPages.Clear();
