@@ -9,7 +9,8 @@ namespace DotNet.HalconAlgo
 {
     public class FitArcMidpointStrategy : ParaStrategyBase<FitArcMidpoint>
     {
-        public override string Name => "圆弧中点";
+        public override AlgoEnum Algorithm => AlgoEnum.FitArcMidpoint;
+        public override string Name { get; set; } = "圆弧中点";
         public override void Init(DisplayUI display)
         {
             display.AffRectEvent += AffRectEvent;

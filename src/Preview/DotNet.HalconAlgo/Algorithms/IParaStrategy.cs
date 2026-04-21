@@ -10,7 +10,8 @@ namespace DotNet.HalconAlgo
     /// </summary>
     public interface IParaStrategy
     {
-        string Name { get; }
+        AlgoEnum Algorithm { get; }
+        string Name { get; set; }
         object ResolveOutput(string[] path);
         T ResolveOutput<T>(string[] path);
 
@@ -31,11 +32,12 @@ namespace DotNet.HalconAlgo
     {
         private readonly Dictionary<string, Func<object>> _resolvers = new Dictionary<string, Func<object>>();
 
-        public abstract string Name { get; }
+        public abstract AlgoEnum Algorithm { get; }
+        public abstract string Name { get; set; }
         public TPara inPara { get; set; } = new TPara();
-        protected void RegisterOutput(string path, Func<object> resolver)
-            => _resolvers[path] = resolver;
+        protected void RegisterOutput(string path, Func<object> resolver) => _resolvers[path] = resolver;
         protected void ClearResolvers() => _resolvers.Clear();
+        public T ResolveOutput<T>(string[] path) => (T)ResolveOutput(path);
         public object ResolveOutput(string[] path)
         {
             for (int depth = path.Length; depth >= 1; depth--)
@@ -46,7 +48,6 @@ namespace DotNet.HalconAlgo
             }
             return null;
         }
-        public T ResolveOutput<T>(string[] path) => (T)ResolveOutput(path);
 
         public virtual void Init(DisplayUI display) { }
         public virtual void Close(DisplayUI display) { }

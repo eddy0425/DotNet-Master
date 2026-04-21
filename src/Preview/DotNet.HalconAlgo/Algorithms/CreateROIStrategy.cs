@@ -8,7 +8,8 @@ namespace DotNet.HalconAlgo
 {
     public class CreateROIStrategy : ParaStrategyBase<CreateROI>
     {
-        public override string Name => "创建ROI";
+        public override AlgoEnum Algorithm => AlgoEnum.CreateROI;
+        public override string Name { get; set; } = "创建ROI";
         public override void Init(DisplayUI display)
         {
             display.RectangleEvent += RectEvent;

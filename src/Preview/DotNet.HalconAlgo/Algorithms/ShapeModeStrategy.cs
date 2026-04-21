@@ -10,8 +10,9 @@ namespace DotNet.HalconAlgo
 {
     public class ShapeModeStrategy : ParaStrategyBase<ShapeMode>
     {
+        public override AlgoEnum Algorithm => AlgoEnum.ShapeMode;
+        public override string Name { get; set; } = "形状匹配";
         public int RunIndex { get; set; }
-        public override string Name => "ShapeMode";
 
         public override void Init(DisplayUI display)
         {

@@ -54,13 +54,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AlgoEnum.cs" />
     <Compile Include="AlgoPaths.cs" />
     <Compile Include="Algorithms\CreateROIStrategy.cs" />
     <Compile Include="Algorithms\FileImageStrategy.cs" />
     <Compile Include="Algorithms\FitArcMidpointStrategy.cs" />
     <Compile Include="Algorithms\FitLineStrategy.cs" />
     <Compile Include="Algorithms\IParaStrategy.cs" />
-    <Compile Include="Algorithms\RegionMergeStrategy.cs" />
+    <Compile Include="Algorithms\MergeRegionStrategy.cs" />
     <Compile Include="Algorithms\ShapeModeStrategy.cs" />
     <Compile Include="Drawing\ModelResult.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -9,7 +9,8 @@ namespace DotNet.HalconAlgo
 {
     public class FitLineStrategy : ParaStrategyBase<FitLine>
     {
-        public override string Name => "拟合直线";
+        public override AlgoEnum Algorithm => AlgoEnum.FitLine;
+        public override string Name { get; set; } = "拟合直线";
         public override void Init(DisplayUI display)
         {
             display.RectangleEvent += RectEvent;

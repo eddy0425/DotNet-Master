@@ -6,9 +6,10 @@ using System.Collections.Generic;
 
 namespace DotNet.HalconAlgo
 {
-    public class RegionMergeStrategy : ParaStrategyBase<RegionMerge>
+    public class MergeRegionStrategy : ParaStrategyBase<RegionMerge>
     {
-        public override string Name => "区域合并";
+        public override AlgoEnum Algorithm => AlgoEnum.MergeRegion;
+        public override string Name { get; set; } = "区域合并";
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
             HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
