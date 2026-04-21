@@ -54,7 +54,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AlgoFilePaths.cs" />
+    <Compile Include="AlgoPaths.cs" />
     <Compile Include="Algorithms\CreateROIStrategy.cs" />
     <Compile Include="Algorithms\FileImageStrategy.cs" />
     <Compile Include="Algorithms\FitArcMidpointStrategy.cs" />

@@ -201,7 +201,7 @@ namespace DotNet.HalconAlgo
 
             try
             {
-                var savelPath = AlgoFilePaths.JobDir + RunIndex + "\\matching.bmp";
+                var savelPath = AlgoPaths.JobDir + RunIndex + "\\matching.bmp";
                 var hImage = display.HoImage;
 
                 HOperatorSet.ReduceDomain(hImage, inPara.ModeRect.HoRegion, out imgReduced);

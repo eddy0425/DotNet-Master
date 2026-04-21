@@ -1,9 +1,6 @@
-﻿using System;
-
-
-namespace DotNet.HalconAlgo
+﻿namespace DotNet.HalconAlgo
 {
-    public static class AlgoFilePaths
+    public static class AlgoPaths
     {
         public static string ProjectDir = "Config\\";
         public static string SchemeDir = $"{ProjectDir}\\Scheme\\";
