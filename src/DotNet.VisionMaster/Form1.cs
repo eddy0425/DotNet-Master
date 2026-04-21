@@ -1,6 +1,7 @@
 using System;
-using System.Collections.Generic;
+using DotNet.HalconAlgo;
 using System.Windows.Forms;
+using System.Collections.Generic;
 
 
 namespace DotNet.VisionMaster
@@ -48,7 +49,7 @@ namespace DotNet.VisionMaster
             LogFile logFile = new LogFile();
 
             var fileImage = ((FileImageStrategy)_strategys[0]).inPara;
-            fileImage.ImageFolder = "C:\\Users\\eddy\\Desktop\\Vision\\OPT\\Basler-acA4024-29um-1200w\\Blue ring-9030-B";
+            fileImage.ImageFolder = "D:\\testImage\\FitArcMidpoint";
         }
 
         private void button1_Click(object sender, EventArgs e)

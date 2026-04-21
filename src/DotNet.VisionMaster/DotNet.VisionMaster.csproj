@@ -74,36 +74,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Algorithms\CreateROIStrategy.cs" />
-    <Compile Include="Algorithms\FitArcMidpointStrategy.cs" />
-    <Compile Include="DrawWindow\DisplayUI.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="DrawWindow\DisplayUI.Designer.cs">
-      <DependentUpon>DisplayUI.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Drawing\ModelResult.cs" />
-    <Compile Include="DrawWindow\DrawEnum.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\DispModelHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\DispRectHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\NewAffRectHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\NewRectHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\SetModelHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\ShapeModelHandler.cs" />
     <Compile Include="FilePaths.cs" />
-    <Compile Include="Algorithms\FitLineStrategy.cs" />
-    <Compile Include="Algorithms\FileImageStrategy.cs" />
-    <Compile Include="Algorithms\RegionMergeStrategy.cs" />
-    <Compile Include="Algorithms\IParaStrategy.cs" />
-    <Compile Include="Algorithms\ShapeModeStrategy.cs" />
-    <Compile Include="DrawWindow\DrawEvent.cs" />
-    <Compile Include="DrawWindow\DrawHandlerFactory.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\RectEditHandler.cs" />
-    <Compile Include="DrawWindow\IDrawHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\NoneHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\PolygonEditDrawHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\PolygonNewDrawHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\SynthethicDrawHandler.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -119,21 +90,13 @@
     <Compile Include="TreeNode\Form_Value.Designer.cs">
       <DependentUpon>Form_Value.cs</DependentUpon>
     </Compile>
-    <Compile Include="TreeNode\OutEnum.cs" />
-    <Compile Include="TreeNode\TreeVisualizer.cs" />
     <Compile Include="VsControl\ParaForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="VsControl\ParaForm.Designer.cs">
       <DependentUpon>ParaForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="VsControl\TabPageEnum.cs" />
-    <Compile Include="VsControl\VsControlBindingStrategy.cs" />
     <Compile Include="VsControl\VsControlFactory.cs" />
-    <Compile Include="VsControl\VsControlModel.cs" />
-    <EmbeddedResource Include="DrawWindow\DisplayUI.resx">
-      <DependentUpon>DisplayUI.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>
@@ -181,6 +144,10 @@
     <ProjectReference Include="..\Preview\DotNet.Drawing\DotNet.Drawing.csproj">
       <Project>{ce09acc5-0e8d-4d7d-aa2b-d47b837f2cd2}</Project>
       <Name>DotNet.Drawing</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Preview\DotNet.HalconAlgo\DotNet.HalconAlgo.csproj">
+      <Project>{90ffd348-89ae-46ad-995f-780490a7865f}</Project>
+      <Name>DotNet.HalconAlgo</Name>
     </ProjectReference>
     <ProjectReference Include="..\Preview\DotNet.HalconUI\DotNet.HalconUI.csproj">
       <Project>{f64662fa-e352-43ae-9b06-2e1ecfb1f205}</Project>

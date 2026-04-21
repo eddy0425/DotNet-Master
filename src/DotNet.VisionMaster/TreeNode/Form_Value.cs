@@ -1,8 +1,9 @@
 using Sunny.UI;
 using System;
-using System.Collections.Generic;
-using System.Drawing;
+using DotNet.HalconAlgo;
 using System.Windows.Forms;
+using System.Collections.Generic;
+
 
 namespace DotNet.VisionMaster
 {
