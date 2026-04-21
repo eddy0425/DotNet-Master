@@ -84,11 +84,11 @@
     <Compile Include="LogFile.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TreeNode\Form_Value.cs">
+    <Compile Include="TreeNode\ValueForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="TreeNode\Form_Value.Designer.cs">
-      <DependentUpon>Form_Value.cs</DependentUpon>
+    <Compile Include="TreeNode\ValueForm.Designer.cs">
+      <DependentUpon>ValueForm.cs</DependentUpon>
     </Compile>
     <Compile Include="VsControl\ParaForm.cs">
       <SubType>Form</SubType>
@@ -96,7 +96,6 @@
     <Compile Include="VsControl\ParaForm.Designer.cs">
       <DependentUpon>ParaForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="VsControl\VsControlFactory.cs" />
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>
@@ -109,8 +108,8 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <EmbeddedResource Include="TreeNode\Form_Value.resx">
-      <DependentUpon>Form_Value.cs</DependentUpon>
+    <EmbeddedResource Include="TreeNode\ValueForm.resx">
+      <DependentUpon>ValueForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="VsControl\ParaForm.resx">
       <DependentUpon>ParaForm.cs</DependentUpon>

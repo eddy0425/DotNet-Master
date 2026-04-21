@@ -24,6 +24,7 @@ namespace DotNet.VisionMaster
         public Form1()
         {
             InitializeComponent();
+            AlgoPaths.UIBlock = false;
 
             _display = new DisplayUI();
             panel1.Controls.Add(_display);

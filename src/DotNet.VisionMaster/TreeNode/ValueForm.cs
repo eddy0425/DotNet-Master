@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace DotNet.VisionMaster
 {
-    public partial class Form_Value : UIForm
+    public partial class ValueForm : UIForm
     {
         int _runIndex;
         public string StrReturn;
@@ -16,7 +16,7 @@ namespace DotNet.VisionMaster
         char varSplit = '/';
         char valSplit = ';';
 
-        public Form_Value()
+        public ValueForm()
         {
             InitializeComponent();
         }

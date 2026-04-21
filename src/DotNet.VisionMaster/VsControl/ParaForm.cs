@@ -12,14 +12,14 @@ namespace DotNet.VisionMaster
         string _name;
         List<IParaStrategy> _strategys;
         DisplayUI _disPlay;
-        Form_Value _form_Value;
+        ValueForm _form_Value;
 
         public ParaForm(DisplayUI displayUI)
         {
             InitializeComponent();
 
             _disPlay = displayUI;
-            _form_Value = new Form_Value();
+            _form_Value = new ValueForm();
         }
         private void btn_setPath_Click(object sender, EventArgs e)
         {

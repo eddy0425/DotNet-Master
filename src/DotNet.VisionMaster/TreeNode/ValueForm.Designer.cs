@@ -1,6 +1,6 @@
 namespace DotNet.VisionMaster
 {
-    partial class Form_Value
+    partial class ValueForm
     {
         /// <summary>
         /// Required designer variable.
