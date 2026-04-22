@@ -13,30 +13,194 @@ namespace DotNet.HalconAlgo
         public override string Name { get; set; } = "拟合直线";
         public override void Init(DisplayUI display)
         {
-            display.RectangleEvent += RectEvent;
+            display.AffRectEvent += AffRectEvent;
         }
         public override void Close(DisplayUI display)
         {
-            display.RectangleEvent -= RectEvent;
+            display.AffRectEvent -= AffRectEvent;
         }
-        private void RectEvent(object sender, DrawRectangleArgs e)
+        private void AffRectEvent(object sender, DrawAffRectArgs e)
         {
             if (e.Name == Name)
             {
-                inPara.HoRect.Update2Point(e.TopLeft, e.BottomRight);
+                inPara.HoRect.UpdateCenter(e.Center, e.RectSize);
+                inPara.HoRect.Phi = e.Phi;
+                inPara.HoRect.Type = RectEnum.Rectangle2;
                 inPara.HoRect.GenRegion();
             }
         }
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
-            HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
-            HObject imgReduce = new HObject(); HOperatorSet.GenEmptyObj(out imgReduce);
+            HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
+            HObject contourFitting = new HObject(); HOperatorSet.GenEmptyObj(out contourFitting);
+            HObject arcContour = new HObject(); HOperatorSet.GenEmptyObj(out arcContour);
 
             try
             {
-                var image = strategys.ResolveFrom(inPara.ImageIn);
-                var region = strategys.ResolveFrom(inPara.RegionIn);
-                var coord = strategys.ResolveFrom(inPara.CoordIn);
+                HObject ho_Image;
+                if (inPara.ImageIn == "默认")
+                    ho_Image = display.HoImage;
+                else
+                    ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
+
+                HObject ho_Rect;
+                if (inPara.RegionIn == "默认")
+                    ho_Rect = inPara.HoRect.HoRegion;
+                else
+                    ho_Rect = strategys.ResolveFrom<HObject>(inPara.RegionIn);
+
+                HOperatorSet.ReduceDomain(ho_Image, ho_Rect, out imgReduced);
+                display.DispRegion(ho_Rect, HColor.Blue);
+
+                #region 变量
+                HTuple fixAgl = inPara.HoRect.Phi;
+                HTuple fixRow = inPara.HoRect.Center.Y;
+                HTuple fixCol = inPara.HoRect.Center.X;
+                HTuple fixLen1 = inPara.HoRect.Width / 2;
+                HTuple fixLen2 = inPara.HoRect.Height / 2;
+                HTuple imgWid = display.HoWidth;
+                HTuple imgHei = display.HoHeight;
+                #endregion
+
+                #region 边缘查找
+                double stepPace = Convert.ToDouble(inPara.StepPace); if (stepPace < 1) stepPace = 1;
+                double stepWid = Convert.ToDouble(inPara.StepWidth) / 2; if (stepWid < 1) stepWid = 1;
+                string transition = inPara.GetTransition;
+                string select = inPara.GetContourType;
+
+                // 预先确定 MeasurePos 的 select 参数与取点下标，避免在循环内反复判断
+                string measureSelect = (select == "second") ? "all" : select;
+                int pickIndex = (select == "second") ? 1 : 0;
+
+                int loop_cnt = (int)(fixLen2.D / stepPace + 0.5); if (loop_cnt < 1) loop_cnt = 1;
+                double cosLen2 = fixLen2 * Math.Cos(fixAgl) / loop_cnt;
+                double sinLen2 = fixLen2 * Math.Sin(fixAgl) / loop_cnt;
+
+                List<double> rowList = new List<double>(2 * loop_cnt + 1);
+                List<double> colList = new List<double>(2 * loop_cnt + 1);
+
+                for (int s = -loop_cnt; s <= loop_cnt; s++)
+                {
+                    HTuple rowNew = fixRow + s * cosLen2;
+                    HTuple colNew = fixCol + s * sinLen2;
+
+                    HTuple hMHandle;
+                    HOperatorSet.GenMeasureRectangle2(rowNew, colNew, fixAgl, fixLen1, stepWid,
+                        imgWid, imgHei, "nearest_neighbor", out hMHandle);
+                    try
+                    {
+                        HTuple mRow, mCol, mAmp, mDis;
+                        HOperatorSet.MeasurePos(imgReduced, hMHandle, inPara.Sigma, inPara.Threshold,
+                            transition, measureSelect, out mRow, out mCol, out mAmp, out mDis);
+
+                        if (inPara.DispRegion)
+                        {
+                            display.DispRectangle2(rowNew, colNew, fixAgl, fixLen1, stepWid, HColor.Blue);
+                        }
+
+                        if (mRow.Length > pickIndex)
+                        {
+                            rowList.Add(mRow.TupleSelect(pickIndex).D);
+                            colList.Add(mCol.TupleSelect(pickIndex).D);
+                        }
+                    }
+                    finally
+                    {
+                        HOperatorSet.CloseMeasure(hMHandle);
+                    }
+                }
+                #endregion
+
+                #region 拟合直线
+                if (rowList.Count < 2)
+                {
+                    throw new InvalidOperationException("未找到足够的轮廓点！");
+                }
+
+                double maxErr = inPara.MaxErr; if (maxErr < 0) maxErr = 0;
+
+                List<double> rowRemoved = new List<double>();
+                List<double> colRemoved = new List<double>();
+
+                #region Stage 1：gauss 鲁棒直线拟合
+                HTuple rowBegin, colBegin, rowEnd, colEnd, nr, nc, lineDist;
+                FitLineFromPoints(ref contourFitting, rowList, colList,
+                    out rowBegin, out colBegin, out rowEnd, out colEnd,
+                    out nr, out nc, out lineDist);
+                #endregion
+
+                #region Stage 2：依据最大偏差迭代精滤
+                if (maxErr > 0)
+                {
+                    int safety = rowList.Count;
+                    for (int iter = 0; iter < safety; iter++)
+                    {
+                        double pn = nr.D, pc = nc.D, pd = lineDist.D;
+                        int worstIdx = -1;
+                        double worstErr = 0;
+                        for (int i = 0; i < rowList.Count; i++)
+                        {
+                            double err = Math.Abs(pn * rowList[i] + pc * colList[i] - pd);
+                            if (err > worstErr) { worstErr = err; worstIdx = i; }
+                        }
+
+                        if (worstIdx < 0 || worstErr <= maxErr) break;
+                        if (rowList.Count <= 2) break;
+
+                        rowRemoved.Add(rowList[worstIdx]);
+                        colRemoved.Add(colList[worstIdx]);
+                        rowList.RemoveAt(worstIdx);
+                        colList.RemoveAt(worstIdx);
+
+                        FitLineFromPoints(ref contourFitting, rowList, colList,
+                            out rowBegin, out colBegin, out rowEnd, out colEnd,
+                            out nr, out nc, out lineDist);
+                    }
+                }
+
+                if (rowList.Count < 2)
+                {
+                    throw new InvalidOperationException("最大偏差筛选后有效点不足，无法拟合直线！");
+                }
+                #endregion
+
+                #region Stage 3：可选裁剪筛选后首尾点并重新拟合
+                if (inPara.IsTrimEnds && rowList.Count >= 4)
+                {
+                    int last = rowList.Count - 1;
+                    rowRemoved.Add(rowList[0]);
+                    colRemoved.Add(colList[0]);
+                    rowRemoved.Add(rowList[last]);
+                    colRemoved.Add(colList[last]);
+
+                    rowList.RemoveAt(last);
+                    colList.RemoveAt(last);
+                    rowList.RemoveAt(0);
+                    colList.RemoveAt(0);
+
+                    FitLineFromPoints(ref contourFitting, rowList, colList,
+                        out rowBegin, out colBegin, out rowEnd, out colEnd,
+                        out nr, out nc, out lineDist);
+                }
+                #endregion
+
+                if (inPara.DispFittingPoint)
+                {
+                    for (int i = 0; i < rowRemoved.Count; i++)
+                    {
+                        display.DispPoint(colRemoved[i], rowRemoved[i], HColor.Red, inPara.PointSize);
+                    }
+                    for (int i = 0; i < rowList.Count; i++)
+                    {
+                        display.DispPoint(colList[i], rowList[i], HColor.Green, inPara.PointSize);
+                    }
+                }
+
+                inPara.Line = new CvLine(colBegin.D, rowBegin.D, colEnd.D, rowEnd.D);
+
+                if (inPara.DispRegion) display.DispRegion(ho_Rect, HColor.Blue);
+                if (inPara.DispResult) display.DispArrow(inPara.Line, HColor.Red, 2);
+                #endregion
 
                 return true;
             }
@@ -46,10 +210,34 @@ namespace DotNet.HalconAlgo
             }
             finally
             {
-                regionGet.Dispose();
-                imgReduce.Dispose();
+                imgReduced.Dispose();
+                contourFitting.Dispose();
+                arcContour.Dispose();
             }
         }
+
+        /// <summary>
+        /// 释放旧轮廓并按给定点集重建 XLD 多边形轮廓。
+        /// </summary>
+        private static void RebuildContour(ref HObject contour, List<double> rowList, List<double> colList)
+        {
+            contour.Dispose();
+            HOperatorSet.GenEmptyObj(out contour);
+            HOperatorSet.GenContourPolygonXld(out contour, rowList.ToArray(), colList.ToArray());
+        }
+
+        /// <summary>
+        /// 重建轮廓并用 gauss 鲁棒直线拟合，得到端点与 Hesse 法线参数。
+        /// </summary>
+        private static void FitLineFromPoints(ref HObject contour, List<double> rowList, List<double> colList,
+            out HTuple rowBegin, out HTuple colBegin, out HTuple rowEnd, out HTuple colEnd,
+            out HTuple nr, out HTuple nc, out HTuple dist)
+        {
+            RebuildContour(ref contour, rowList, colList);
+            HOperatorSet.FitLineContourXld(contour, "gauss", -1, 0, 5, 1.345,
+                out rowBegin, out colBegin, out rowEnd, out colEnd, out nr, out nc, out dist);
+        }
+
         public override void GenTreeNode(TreeVisualizer tree)
         {
             tree.Branch(Name, branch => branch
@@ -121,6 +309,10 @@ namespace DotNet.HalconAlgo
 
             VsControls.ShowLabel(form, "lbl_112", "最大偏差");
             VsControls.ShowComboBoxDropDown(form, "cmb_112", inPara.MaxErr.ToString(), new[] { "1", "3", "5", "10" });
+
+            VsControls.ShowLabel(form, "lbl_113", "裁剪首尾");
+            VsControls.ShowComboBoxList(form, "cmb_113", inPara.TrimEnds, new[] { "否", "是" });
+            VsControls.ShowButton(form, "btn_113", false);
         }
         public override void SavePara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
@@ -135,6 +327,7 @@ namespace DotNet.HalconAlgo
             inPara.StepPace = Convert.ToInt16(VsControls["cmb_110"].Text);
             inPara.StepWidth = Convert.ToInt16(VsControls["cmb_111"].Text);
             inPara.MaxErr = Convert.ToInt16(VsControls["cmb_112"].Text);
+            inPara.TrimEnds = VsControls["cmb_113"].Text;
         }
         public override void DispROI(DisplayUI display)
         {
@@ -154,32 +347,82 @@ namespace DotNet.HalconAlgo
         /// <summary> 跟随坐标 </summary>
         public string CoordIn { set; get; } = "默认";
 
+        /// <summary> 直线 </summary>
         public CvLine Line { set; get; }
 
         /// <summary> 区域 </summary>
         public CvRegion HoRect { set; get; } = new CvRegion();
 
         /// <summary> 过渡方向 </summary>
-        public string Transition { set; get; }
+        public string Transition { set; get; } = "由黑到白";
+
+        /// <summary>
+        /// 获取过渡方向
+        /// </summary>
+        internal string GetTransition
+        {
+            get
+            {
+                if (Transition == "由黑到白") return "positive";
+                else if (Transition == "由白到黑") return "negative";
+                else if (Transition == "全部") return "all";
+                return "";
+            }
+        }
 
         /// <summary> 选择 </summary>
-        public string ContourType { set; get; }
+        public string ContourType { set; get; } = "第一条边";
+
+        /// <summary>
+        /// 获取选择
+        /// </summary>
+        internal string GetContourType
+        {
+            get
+            {
+                if (ContourType == "第一条边") return "first";
+                else if (ContourType == "第二条边") return "second";
+                else if (ContourType == "最后一条") return "last";
+                else if (ContourType == "全部") return "all";
+                return "";
+            }
+        }
 
         /// <summary> 滤波 </summary>
-        public int Sigma { set; get; }
+        public int Sigma { set; get; } = 1;
 
         /// <summary>
         /// 阈值 val = 0: 自动阈值, val > 0: 手动阈值, val = -1: 能量最强, val 小于 -1: 百分比阈值
         /// </summary>
-        public int Threshold { set; get; }
+        public int Threshold { set; get; } = 80;
 
         /// <summary> 步距 </summary>
-        public int StepPace { set; get; }
+        public int StepPace { set; get; } = 10;
 
         /// <summary> 步宽 </summary>
-        public int StepWidth { set; get; }
+        public int StepWidth { set; get; } = 5;
 
         /// <summary> 最大偏差 </summary>
-        public int MaxErr { set; get; }
+        public int MaxErr { set; get; } = 5;
+
+        /// <summary> 裁剪首尾点 </summary>
+        public string TrimEnds { set; get; } = "是";
+
+        internal bool IsTrimEnds => TrimEnds == "是";
+
+        /// <summary> 点大小 </summary>
+        public int PointSize { set; get; } = 15;
+
+        /// <summary> 显示区域 </summary>
+        public bool DispRegion { set; get; } = false;
+
+        /// <summary> 显示结果 </summary>
+        public bool DispResult { set; get; } = true;
+
+        /// <summary> 显示文本 </summary>
+        public bool DispText { set; get; } = false;
+
+        /// <summary> 拟合点 </summary>
+        public bool DispFittingPoint { set; get; } = true;
     }
 }

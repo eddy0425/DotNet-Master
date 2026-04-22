@@ -77,6 +77,7 @@ namespace DotNet.VisionMaster
                 var strategy = _strategys[_index];
                 switch (strategy.Algorithm)
                 {
+                    case AlgoEnum.FitLine:
                     case AlgoEnum.FitArcMidpoint:
                         {
                             _disPlay.SetDrawMode(strategy.Name, DrawEnum.NewAffRect);
