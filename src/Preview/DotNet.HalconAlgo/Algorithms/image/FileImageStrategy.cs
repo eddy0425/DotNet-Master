@@ -44,8 +44,6 @@ namespace DotNet.HalconAlgo
 
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
-            HOperatorSet.GenEmptyObj(out inPara.Image);
-
             try
             {
                 if (ImagePaths == null)
@@ -55,6 +53,7 @@ namespace DotNet.HalconAlgo
 
                 if (Index >= ImagePaths.Length) Index = 0;
 
+                HOperatorSet.GenEmptyObj(out inPara.Image);
                 HOperatorSet.ReadImage(out inPara.Image, ImagePaths[Index]);
 
                 //判断图像是否为空

@@ -57,9 +57,11 @@
     <Compile Include="AlgoEnum.cs" />
     <Compile Include="AlgoPaths.cs" />
     <Compile Include="Algorithms\CreateROIStrategy.cs" />
-    <Compile Include="Algorithms\FileImageStrategy.cs" />
+    <Compile Include="Algorithms\image\FileImageStrategy.cs" />
     <Compile Include="Algorithms\FitArcMidpointStrategy.cs" />
     <Compile Include="Algorithms\FitLineStrategy.cs" />
+    <Compile Include="Algorithms\image\LineRotImageStrategy.cs" />
+    <Compile Include="Algorithms\image\RotateImageStrategy.cs" />
     <Compile Include="Algorithms\matching\GenericModelStrategy.cs" />
     <Compile Include="Algorithms\IParaStrategy.cs" />
     <Compile Include="Algorithms\MergeRegionStrategy.cs" />
@@ -120,9 +122,7 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Extension\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <ProjectReference Include="..\DotNet.Drawing\DotNet.Drawing.csproj">
       <Project>{ce09acc5-0e8d-4d7d-aa2b-d47b837f2cd2}</Project>
