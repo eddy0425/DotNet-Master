@@ -6,22 +6,17 @@ using System.Collections.Generic;
 
 namespace DotNet.VisionMaster
 {
-    public partial class Form1 : Form
+    public partial class CreateROIForm : Form
     {
         DisplayUI _display;
         ParaForm _formPara;
-        private readonly Dictionary<string, VsControlModel> _vsControls = new Dictionary<string, VsControlModel>();
-
         private int _index;
-
-
-        /// <summary>
-        /// 当前算法策略（面向接口，可随时切换）
-        /// </summary>
         private IParaStrategy _currentStrategy => _strategys[_index];
         private List<IParaStrategy> _strategys = new List<IParaStrategy>();
+        private readonly Dictionary<string, VsControlModel> _vsControls = new Dictionary<string, VsControlModel>();
 
-        public Form1()
+
+        public CreateROIForm()
         {
             InitializeComponent();
             AlgoPaths.UIBlock = false;
@@ -37,10 +32,8 @@ namespace DotNet.VisionMaster
             panel2.Controls.Add(_formPara);
 
             _strategys.Add(new FileImageStrategy());
+            _strategys.Add(new ShapeModelStrategy());
             _strategys.Add(new CreateROIStrategy());
-            _strategys.Add(new ShapeModeStrategy());
-            _strategys.Add(new FitLineStrategy());
-            _strategys.Add(new FitArcMidpointStrategy());
 
             for (int i = 0; i < _strategys.Count; i++)
             {
@@ -50,7 +43,7 @@ namespace DotNet.VisionMaster
             LogFile logFile = new LogFile();
 
             var fileImage = ((FileImageStrategy)_strategys[0]).inPara;
-            fileImage.ImageFolder = "D:\\testImage\\FitArcMidpoint";
+            fileImage.ImageFolder = "D:\\testImage\\123";
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -68,14 +61,6 @@ namespace DotNet.VisionMaster
             SwitchStrategy(2);
         }
 
-        private void button4_Click(object sender, EventArgs e)
-        {
-            SwitchStrategy(3);
-        }
-        private void button5_Click(object sender, EventArgs e)
-        {
-            SwitchStrategy(4);
-        }
 
         /// <summary>
         /// 切换算法策略：解绑旧控件 → 清空 → 设置新策略 → 显示新参数
@@ -113,6 +98,19 @@ namespace DotNet.VisionMaster
             }
         }
 
-
+        private void but_Cycle_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                for (int i = 0; i < _strategys.Count; i++)
+                {
+                    _strategys[i].Fun_action(_display, _strategys);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
     }
 }

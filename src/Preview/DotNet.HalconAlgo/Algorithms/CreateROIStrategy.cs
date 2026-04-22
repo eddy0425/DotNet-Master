@@ -29,18 +29,29 @@ namespace DotNet.HalconAlgo
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
             HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
-            HObject imgReduce = new HObject(); HOperatorSet.GenEmptyObj(out imgReduce);
 
             try
             {
                 inPara.Coord = new CvCoord();
-                var coord = strategys.ResolveFrom(inPara.CoordIn);
+                var ho_ROI = inPara.HoRect;
 
-                var hcontext = inPara.HoRect;
-                hcontext.GenRegion();
-                inPara.Coord = new CvCoord(hcontext.Center);
-                display.ReDispImage();
-                display.DispRegion(hcontext, HColor.Blue);
+                if (inPara.CoordIn == "默认")
+                {
+                    inPara.Coord = new CvCoord(ho_ROI.Center);
+                    display.DispRegion(ho_ROI, HColor.Blue);
+                }
+                else
+                {
+                    var coordIn = inPara.CoordIn;
+                    var pointIn = coordIn.ToTmplPoint();
+                    var inCoord = strategys.ResolveFrom<CvCoord>(coordIn);
+                    var tmplPoint = strategys.ResolveFrom<Point2d>(pointIn);
+
+                    HalconHelper.TransRegion(tmplPoint, inCoord.Center, ho_ROI.HoRegion, out regionGet);
+                    HOperatorSet.AreaCenter(regionGet, out _, out HTuple row, out HTuple column);
+                    inPara.Coord = new CvCoord(new Point2d(column, row));
+                    display.DispRegion(regionGet, HColor.Blue);
+                }
                 return true;
             }
             catch
@@ -50,7 +61,6 @@ namespace DotNet.HalconAlgo
             finally
             {
                 regionGet.Dispose();
-                imgReduce.Dispose();
             }
         }
         public override void GenTreeNode(TreeVisualizer tree)

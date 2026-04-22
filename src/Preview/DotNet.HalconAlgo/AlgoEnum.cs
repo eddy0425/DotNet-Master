@@ -21,6 +21,15 @@
         MergeRegion,
 
         /// <summary> 形状匹配 </summary>
-        ShapeMode,
+        ShapeModel,
+
+        /// <summary> 灰度匹配 </summary>
+        NccModel,
+
+        /// <summary> 缩放匹配 </summary>
+        ScaledModel,
+
+        /// <summary> 通用匹配 </summary>
+        GenericModel,
     }
 }

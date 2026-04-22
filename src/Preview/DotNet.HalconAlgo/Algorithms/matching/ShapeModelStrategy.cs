@@ -8,9 +8,9 @@ using System.Collections.Generic;
 
 namespace DotNet.HalconAlgo
 {
-    public class ShapeModeStrategy : ParaStrategyBase<ShapeMode>
+    public class ShapeModelStrategy : ParaStrategyBase<ShapeModel>
     {
-        public override AlgoEnum Algorithm => AlgoEnum.ShapeMode;
+        public override AlgoEnum Algorithm => AlgoEnum.ShapeModel;
         public override string Name { get; set; } = "形状匹配";
         public int RunIndex { get; set; }
 
@@ -66,7 +66,7 @@ namespace DotNet.HalconAlgo
                     ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
 
                 HObject ho_Rect;
-                if (inPara.ImageIn == "默认")
+                if (inPara.RegionIn == "默认")
                     ho_Rect = inPara.HoRect.HoRegion;
                 else
                     ho_Rect = strategys.ResolveFrom<HObject>(inPara.RegionIn);
@@ -125,12 +125,12 @@ namespace DotNet.HalconAlgo
                    );
 
             ClearResolvers();
+            RegisterOutput("TmplPoint", () => inPara.TmplPoint);
             RegisterOutput("坐标系", () => inPara.Coord);
             RegisterOutput("坐标系/原点", () => inPara.Coord.Center);
             RegisterOutput("坐标系/原点/行", () => inPara.Coord.Y);
             RegisterOutput("坐标系/原点/列", () => inPara.Coord.X);
             RegisterOutput("坐标系/角度", () => inPara.Coord.Angle);
-
         }
         public override void DispPara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
@@ -235,7 +235,7 @@ namespace DotNet.HalconAlgo
                 if (score.Length > 0)
                 {
                     display.DispText("新建模板成功！", 10, 10, HColor.Green);
-                    inPara.Follow = new Point2d(result.X, result.Y);      //更改跟随坐标
+                    inPara.TmplPoint = new Point2d(result.X, result.Y);      //更改跟随坐标
                 }
                 else
                 {
@@ -255,7 +255,7 @@ namespace DotNet.HalconAlgo
 
     }
 
-    public class ShapeMode
+    public class ShapeModel
     {
         /// <summary> 图像来源 </summary>
         public string ImageIn { set; get; } = "默认";
@@ -269,8 +269,8 @@ namespace DotNet.HalconAlgo
         /// <summary> 坐标系 </summary>
         public CvCoord Coord { get; set; } = new CvCoord();
 
-        /// <summary> 跟随点 </summary>
-        public Point2d Follow { get; set; } = new Point2d();
+        /// <summary> 模版坐标 </summary>
+        public Point2d TmplPoint { get; set; } = new Point2d();
 
         /// <summary> 区域 </summary>
         public CvRegion HoRect { set; get; } = new CvRegion();
@@ -289,9 +289,6 @@ namespace DotNet.HalconAlgo
 
         /// <summary> 起始角度 </summary>
         public HTuple AngleStart { get; set; } = -90;
-
-        /// <summary> 终点角度 </summary>
-        public HTuple AngleEnd { get; set; } = 180;
 
         /// <summary> 增量角度 </summary>
         public HTuple AngleExtent { get; set; } = 180;
@@ -318,12 +315,6 @@ namespace DotNet.HalconAlgo
         /// 搜索启发式的“贪婪”（0：安全但缓慢；1：快速但匹配可能错过）。默认值：0.9
         /// </summary>
         public HTuple Greediness { get; set; } = 0.7;
-
-        /// <summary> 最小缩放 (缩放匹配) </summary>
-        public HTuple ScaleMin { get; set; } = 0.8;
-
-        /// <summary> 最大缩放 (缩放匹配) </summary>
-        public HTuple ScaleMax { get; set; } = 1.2;
 
         public List<ModelResult> Results { get; set; }
 

@@ -72,95 +72,131 @@ namespace DotNet.VisionMaster
 
         private void btn_drawRegion_Click(object sender, EventArgs e)
         {
-            var strategy = _strategys[_index];
-            switch (strategy.Algorithm)
+            try
             {
-                case AlgoEnum.FitArcMidpoint:
-                    {
-                        _disPlay.SetDrawMode(strategy.Name, DrawEnum.NewAffRect);
-                    }
-                    break;
-                default:
-                    _disPlay.SetDrawMode(strategy.Name, DrawEnum.NewRect);
-                    break;
+                var strategy = _strategys[_index];
+                switch (strategy.Algorithm)
+                {
+                    case AlgoEnum.FitArcMidpoint:
+                        {
+                            _disPlay.SetDrawMode(strategy.Name, DrawEnum.NewAffRect);
+                        }
+                        break;
+                    default:
+                        _disPlay.SetDrawMode(strategy.Name, DrawEnum.NewRect);
+                        break;
+                }
             }
+            catch (Exception ex) { MessageBox.Show(ex.Message); }
         }
 
         private void but_updataRegion_Click(object sender, EventArgs e)
         {
-            var strategy = _strategys[_index];
-            _disPlay.SetDrawMode(strategy.Name, DrawEnum.EditRect);
+            try
+            {
+                var strategy = _strategys[_index];
+                _disPlay.SetDrawMode(strategy.Name, DrawEnum.EditRect);
+            }
+            catch (Exception ex) { MessageBox.Show(ex.Message); }
         }
 
         private void btn_100_Click(object sender, EventArgs e)
         {
-            var strategy = _strategys[_index];
-            switch (strategy.Algorithm)
+            try
             {
-                case AlgoEnum.FitLine:
-                case AlgoEnum.FitArcMidpoint:
-                case AlgoEnum.ShapeMode:
-                    {
-                        _form_Value.setValueForm(_index, _strategys, cmb_100.Text, OutEnum.Image);
-                        if (_form_Value.DialogResult == DialogResult.OK)
+                var strategy = _strategys[_index];
+                switch (strategy.Algorithm)
+                {
+                    case AlgoEnum.ShapeModel:
+                    case AlgoEnum.NccModel:
+                    case AlgoEnum.ScaledModel:
+                    case AlgoEnum.GenericModel:
+                    case AlgoEnum.FitLine:
+                    case AlgoEnum.FitArcMidpoint:
                         {
-                            cmb_100.Text = _form_Value.StrReturn;
+                            _form_Value.setValueForm(_index, _strategys, cmb_100.Text, OutEnum.Image);
+                            if (_form_Value.DialogResult == DialogResult.OK)
+                            {
+                                cmb_100.Text = _form_Value.StrReturn;
+                            }
                         }
-                    }
-                    break;
+                        break;
+                }
             }
+            catch (Exception ex) { MessageBox.Show(ex.Message); }
         }
 
         private void btn_101_Click(object sender, EventArgs e)
         {
-            var strategy = _strategys[_index];
-            switch (strategy.Algorithm)
+            try
             {
-                case AlgoEnum.ShapeMode:
-                case AlgoEnum.FitLine:
-                case AlgoEnum.FitArcMidpoint:
-                    {
-                        _form_Value.setValueForm(_index, _strategys, cmb_101.Text, OutEnum.Region);
-                        if (_form_Value.DialogResult == DialogResult.OK)
+                var strategy = _strategys[_index];
+                switch (strategy.Algorithm)
+                {
+                    case AlgoEnum.ShapeModel:
+                    case AlgoEnum.NccModel:
+                    case AlgoEnum.ScaledModel:
+                    case AlgoEnum.GenericModel:
+                    case AlgoEnum.FitLine:
+                    case AlgoEnum.FitArcMidpoint:
                         {
-                            cmb_101.Text = _form_Value.StrReturn;
+                            _form_Value.setValueForm(_index, _strategys, cmb_101.Text, OutEnum.Region);
+                            if (_form_Value.DialogResult == DialogResult.OK)
+                            {
+                                cmb_101.Text = _form_Value.StrReturn;
+                            }
                         }
-                    }
-                    break;
+                        break;
+                }
             }
+            catch (Exception ex) { MessageBox.Show(ex.Message); }
         }
 
         private void btn_setCoordIn_Click(object sender, EventArgs e)
         {
-            var strategy = _strategys[_index];
-            switch (strategy.Algorithm)
+            try
             {
-                case AlgoEnum.CreateROI:
-                case AlgoEnum.ShapeMode:
-                case AlgoEnum.FitLine:
-                case AlgoEnum.FitArcMidpoint:
-                    {
-                        _form_Value.setValueForm(_index, _strategys, cmb_CoordIn.Text, OutEnum.Coord);
-                        if (_form_Value.DialogResult == DialogResult.OK)
+                var strategy = _strategys[_index];
+                switch (strategy.Algorithm)
+                {
+                    case AlgoEnum.CreateROI:
+                    case AlgoEnum.ShapeModel:
+                    case AlgoEnum.NccModel:
+                    case AlgoEnum.ScaledModel:
+                    case AlgoEnum.GenericModel:
+                    case AlgoEnum.FitLine:
+                    case AlgoEnum.FitArcMidpoint:
                         {
-                            cmb_CoordIn.Text = _form_Value.StrReturn;
+                            _form_Value.setValueForm(_index, _strategys, cmb_CoordIn.Text, OutEnum.Coord);
+                            if (_form_Value.DialogResult == DialogResult.OK)
+                            {
+                                cmb_CoordIn.Text = _form_Value.StrReturn;
+                            }
                         }
-                    }
-                    break;
+                        break;
+                }
             }
+            catch (Exception ex) { MessageBox.Show(ex.Message); }
         }
 
         private void btn_newModel_Click(object sender, EventArgs e)
         {
-            var strategy = _strategys[_index];
-            switch (strategy.Algorithm)
+            try
             {
-                case AlgoEnum.ShapeMode:
-                    {
-                        _disPlay.SetDrawMode(_strategys[_index].Name, DrawEnum.SetModel);
-                    }
-                    break;
+                var strategy = _strategys[_index];
+                switch (strategy.Algorithm)
+                {
+                    case AlgoEnum.ShapeModel:
+                    case AlgoEnum.NccModel:
+                    case AlgoEnum.ScaledModel:
+                    case AlgoEnum.GenericModel:
+                        {
+                            _disPlay.SetDrawMode(_strategys[_index].Name, DrawEnum.SetModel);
+                        }
+                        break;
+                }
             }
+            catch (Exception ex) { MessageBox.Show(ex.Message); }
 
             #region
             //Edit_savePara();
