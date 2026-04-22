@@ -12,7 +12,7 @@ namespace DotNet.HalconAlgo
     {
         public override AlgoEnum Algorithm => AlgoEnum.NccModel;
         public override string Name { get; set; } = "灰度匹配";
-        public int RunIndex { get; set; }
+        public override int RunIndex { get; set; }
 
         public override void Init(DisplayUI display)
         {

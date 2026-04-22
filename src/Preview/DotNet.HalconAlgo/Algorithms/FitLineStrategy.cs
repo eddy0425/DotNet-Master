@@ -11,6 +11,8 @@ namespace DotNet.HalconAlgo
     {
         public override AlgoEnum Algorithm => AlgoEnum.FitLine;
         public override string Name { get; set; } = "拟合直线";
+        public override int RunIndex { get; set; }
+
         public override void Init(DisplayUI display)
         {
             display.AffRectEvent += AffRectEvent;

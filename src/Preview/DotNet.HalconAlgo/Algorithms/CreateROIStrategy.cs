@@ -10,6 +10,8 @@ namespace DotNet.HalconAlgo
     {
         public override AlgoEnum Algorithm => AlgoEnum.CreateROI;
         public override string Name { get; set; } = "创建ROI";
+        public override int RunIndex { get; set; }
+
         public override void Init(DisplayUI display)
         {
             display.RectangleEvent += RectEvent;

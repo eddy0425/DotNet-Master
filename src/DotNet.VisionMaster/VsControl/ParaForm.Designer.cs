@@ -1161,6 +1161,7 @@
             this.but_editModel.TabIndex = 348;
             this.but_editModel.Text = "编辑模板";
             this.but_editModel.UseVisualStyleBackColor = false;
+            this.but_editModel.Click += new System.EventHandler(this.but_editModel_Click);
             // 
             // btn_newModel
             // 

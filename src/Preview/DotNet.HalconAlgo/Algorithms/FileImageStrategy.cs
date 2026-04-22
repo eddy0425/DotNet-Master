@@ -11,9 +11,10 @@ namespace DotNet.HalconAlgo
     {
         public override AlgoEnum Algorithm => AlgoEnum.FileImage;
         public override string Name { get; set; } = "文件图像";
+        public override int RunIndex { get; set; }
+
         private int Index  = 0;       //图像下标
         private string[] ImagePaths;   //图像路径
-
         public override void Init(DisplayUI display)
         {
             try

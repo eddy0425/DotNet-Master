@@ -12,6 +12,7 @@ namespace DotNet.HalconAlgo
     {
         AlgoEnum Algorithm { get; }
         string Name { get; set; }
+        int RunIndex { get; set; }
         object ResolveOutput(string[] path);
         T ResolveOutput<T>(string[] path);
 
@@ -34,6 +35,7 @@ namespace DotNet.HalconAlgo
 
         public abstract AlgoEnum Algorithm { get; }
         public abstract string Name { get; set; }
+        public abstract int RunIndex { get; set; }
         public TPara inPara { get; set; } = new TPara();
         protected void RegisterOutput(string path, Func<object> resolver) => _resolvers[path] = resolver;
         protected void ClearResolvers() => _resolvers.Clear();

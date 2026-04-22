@@ -56,6 +56,11 @@ namespace DotNet.HalconUI
             hWindowControl.Focus();
         }
 
+        public void SetDraw(HTuple mode)
+        {
+            HOperatorSet.SetDraw(HoWindow, mode);
+        }
+
         #region IHWindowFont
 
         /// <summary> 获取颜色 </summary>

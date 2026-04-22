@@ -62,6 +62,7 @@
     <Compile Include="Extension\DoubleExtension.cs" />
     <Compile Include="Extension\HObjectExtension.cs" />
     <Compile Include="Extension\HTupleExtension.cs" />
+    <Compile Include="Extension\StringExtension.cs" />
     <Compile Include="HFont\HWindowFont2018.cs" />
     <Compile Include="HFont\HWindowFont2022.cs" />
     <Compile Include="HFont\IHWindowFont.cs" />

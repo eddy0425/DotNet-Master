@@ -109,7 +109,6 @@ namespace DotNet.HalconAlgo
 
         #endregion
 
-
         #region 共享状态 Share → Shr ; Context → Ctx ; Algorithms → Algo 
 
         /// <summary> 算法名称 </summary> Context

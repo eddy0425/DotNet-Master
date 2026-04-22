@@ -38,6 +38,7 @@ namespace DotNet.VisionMaster
             for (int i = 0; i < _strategys.Count; i++)
             {
                 _strategys[i].Init(_display);
+                _strategys[i].RunIndex = i;
             }
 
             LogFile logFile = new LogFile();

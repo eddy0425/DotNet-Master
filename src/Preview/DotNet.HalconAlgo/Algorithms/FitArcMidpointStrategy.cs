@@ -11,6 +11,8 @@ namespace DotNet.HalconAlgo
     {
         public override AlgoEnum Algorithm => AlgoEnum.FitArcMidpoint;
         public override string Name { get; set; } = "圆弧中点";
+        public override int RunIndex { get; set; }
+
         public override void Init(DisplayUI display)
         {
             display.AffRectEvent += AffRectEvent;

@@ -10,6 +10,8 @@ namespace DotNet.HalconAlgo
     {
         public override AlgoEnum Algorithm => AlgoEnum.MergeRegion;
         public override string Name { get; set; } = "区域合并";
+        public override int RunIndex { get; set; }
+
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
             HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);

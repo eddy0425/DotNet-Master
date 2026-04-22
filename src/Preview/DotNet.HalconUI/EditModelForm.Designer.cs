@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
-            this.displayForm1 = new DotNet.HalconUI.DisplayForm();
+            this.display = new DotNet.HalconUI.DisplayForm();
             this.panel2 = new System.Windows.Forms.Panel();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.CB_LockCenter = new System.Windows.Forms.CheckBox();
@@ -57,7 +57,7 @@
             this.tableLayoutPanel1.ColumnCount = 2;
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 220F));
-            this.tableLayoutPanel1.Controls.Add(this.displayForm1, 0, 0);
+            this.tableLayoutPanel1.Controls.Add(this.display, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.panel2, 1, 0);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
@@ -67,17 +67,17 @@
             this.tableLayoutPanel1.Size = new System.Drawing.Size(623, 486);
             this.tableLayoutPanel1.TabIndex = 2;
             // 
-            // displayForm1
+            // display
             // 
-            this.displayForm1.Adaptive = true;
-            this.displayForm1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.displayForm1.HoMouseDouble = false;
-            this.displayForm1.HoMouseDown = false;
-            this.displayForm1.IsCross = false;
-            this.displayForm1.Location = new System.Drawing.Point(3, 3);
-            this.displayForm1.Name = "displayForm1";
-            this.displayForm1.Size = new System.Drawing.Size(397, 480);
-            this.displayForm1.TabIndex = 2;
+            this.display.Adaptive = true;
+            this.display.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.display.HoMouseDouble = false;
+            this.display.HoMouseDown = false;
+            this.display.IsCross = false;
+            this.display.Location = new System.Drawing.Point(3, 3);
+            this.display.Name = "display";
+            this.display.Size = new System.Drawing.Size(397, 480);
+            this.display.TabIndex = 2;
             // 
             // panel2
             // 
@@ -154,6 +154,7 @@
             this.but_ApplyRegion.TabIndex = 351;
             this.but_ApplyRegion.Text = "擦除区域";
             this.but_ApplyRegion.UseVisualStyleBackColor = false;
+            this.but_ApplyRegion.Click += new System.EventHandler(this.but_ApplyRegion_Click);
             // 
             // CB_ApplyColor
             // 
@@ -241,6 +242,7 @@
             this.btn_deleteRegion.TabIndex = 349;
             this.btn_deleteRegion.Text = "删除区域";
             this.btn_deleteRegion.UseVisualStyleBackColor = false;
+            this.btn_deleteRegion.Click += new System.EventHandler(this.btn_deleteRegion_Click);
             // 
             // label3
             // 
@@ -264,6 +266,7 @@
             this.but_addRegion.TabIndex = 348;
             this.but_addRegion.Text = "添加区域";
             this.but_addRegion.UseVisualStyleBackColor = false;
+            this.but_addRegion.Click += new System.EventHandler(this.but_addRegion_Click);
             // 
             // CB_ModifyShape
             // 
@@ -282,6 +285,8 @@
             this.Controls.Add(this.tableLayoutPanel1);
             this.Name = "EditModelForm";
             this.Text = "EditModelForm";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.EditModelForm_FormClosing);
+            this.Load += new System.EventHandler(this.EditModelForm_Load);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.panel2.ResumeLayout(false);
             this.groupBox3.ResumeLayout(false);
@@ -312,6 +317,6 @@
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Button but_addRegion;
         private System.Windows.Forms.ComboBox CB_ModifyShape;
-        private DisplayForm displayForm1;
+        private DisplayForm display;
     }
 }

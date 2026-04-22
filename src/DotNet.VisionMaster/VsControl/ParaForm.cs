@@ -2,6 +2,7 @@ using System;
 using DotNet.HalconAlgo;
 using System.Windows.Forms;
 using System.Collections.Generic;
+using DotNet.HalconUI;
 
 
 namespace DotNet.VisionMaster
@@ -192,7 +193,7 @@ namespace DotNet.VisionMaster
                     case AlgoEnum.ScaledModel:
                     case AlgoEnum.GenericModel:
                         {
-                            _disPlay.SetDrawMode(_strategys[_index].Name, DrawEnum.SetModel);
+                            _disPlay.SetDrawMode(strategy.Name, DrawEnum.SetModel);
                         }
                         break;
                 }
@@ -225,5 +226,25 @@ namespace DotNet.VisionMaster
 
         }
 
+        EditModelForm editModelForm = new EditModelForm();
+        private void but_editModel_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var filePath = AlgoPaths.JobDir + _index + "\\matching.bmp";
+                var strategy = _strategys[_index];
+                switch (strategy.Algorithm)
+                {
+                    case AlgoEnum.ShapeModel:
+                        {
+                            editModelForm.Show();
+                            editModelForm.ShowModifyTemplate(filePath);
+                            //_disPlay.SetDrawMode(strategy.Name, DrawEnum.NewAffRect);
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex) { MessageBox.Show(ex.Message); }
+        }
     }
 }

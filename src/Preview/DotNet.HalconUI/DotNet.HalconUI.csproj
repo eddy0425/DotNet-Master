@@ -58,6 +58,13 @@
     <Compile Include="DisplayForm.Designer.cs">
       <DependentUpon>DisplayForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="DrawWindow\Handlers\EraseRectHandler.cs" />
+    <Compile Include="DrawWindow\Handlers\NewRectHandler.cs" />
+    <Compile Include="DrawWindow\Handlers\NoneHandler.cs" />
+    <Compile Include="DrawWindow\ModelEvent.cs" />
+    <Compile Include="DrawWindow\ModelHandlerFactory.cs" />
+    <Compile Include="DrawWindow\IModelHandler.cs" />
+    <Compile Include="EditModelExtension.cs" />
     <Compile Include="EditModelForm.cs">
       <SubType>Form</SubType>
     </Compile>
