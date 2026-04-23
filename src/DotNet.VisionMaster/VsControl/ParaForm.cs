@@ -115,6 +115,8 @@ namespace DotNet.VisionMaster
                     case AlgoEnum.GenericModel:
                     case AlgoEnum.FitLine:
                     case AlgoEnum.FitArcMidpoint:
+                    case AlgoEnum.LineRotImage:
+                    case AlgoEnum.RotateImage:
                         {
                             _form_Value.setValueForm(_index, _strategys, cmb_100.Text, OutEnum.Image);
                             if (_form_Value.DialogResult == DialogResult.OK)
@@ -149,6 +151,15 @@ namespace DotNet.VisionMaster
                             }
                         }
                         break;
+                    case AlgoEnum.LineRotImage:
+                        {
+                            _form_Value.setValueForm(_index, _strategys, cmb_101.Text, OutEnum.Line);
+                            if (_form_Value.DialogResult == DialogResult.OK)
+                            {
+                                cmb_101.Text = _form_Value.StrReturn;
+                            }
+                        }
+                        break;
                 }
             }
             catch (Exception ex) { MessageBox.Show(ex.Message); }
@@ -168,6 +179,7 @@ namespace DotNet.VisionMaster
                     case AlgoEnum.GenericModel:
                     case AlgoEnum.FitLine:
                     case AlgoEnum.FitArcMidpoint:
+                    case AlgoEnum.RotateImage:
                         {
                             _form_Value.setValueForm(_index, _strategys, cmb_CoordIn.Text, OutEnum.Coord);
                             if (_form_Value.DialogResult == DialogResult.OK)

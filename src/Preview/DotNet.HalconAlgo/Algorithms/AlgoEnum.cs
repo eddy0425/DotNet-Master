@@ -11,13 +11,19 @@
         /// <summary> 文件图像 </summary>
         FileImage,
 
+        /// <summary> 旋转图像 </summary>
+        RotateImage,
+
+        /// <summary> 直线旋转图像 </summary>
+        LineRotImage,
+
         /// <summary> 拟合直线 </summary>
         FitLine,
 
         /// <summary> 圆弧中点 </summary>
         FitArcMidpoint,
 
-        /// <summary> 对象 </summary>
+        /// <summary> 合并区域 </summary>
         MergeRegion,
 
         /// <summary> 形状匹配 </summary>

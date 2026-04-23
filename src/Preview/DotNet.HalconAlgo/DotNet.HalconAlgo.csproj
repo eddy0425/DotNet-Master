@@ -54,20 +54,31 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AlgoEnum.cs" />
+    <Compile Include="Algorithms\AlgoEnum.cs" />
     <Compile Include="AlgoPaths.cs" />
-    <Compile Include="Algorithms\CreateROIStrategy.cs" />
+    <Compile Include="Algorithms\contour\FitCircleStrategy.cs" />
+    <Compile Include="Algorithms\geometry\CreateCoordStrategy.cs" />
+    <Compile Include="Algorithms\geometry\LineOffsetStrategy.cs" />
+    <Compile Include="Algorithms\Identification\BarCodeStrategy.cs" />
+    <Compile Include="Algorithms\Identification\QRCodeStrategy.cs" />
+    <Compile Include="Algorithms\image\CaptureWinStrategy.cs" />
+    <Compile Include="Algorithms\image\IndexImageStrategy.cs" />
+    <Compile Include="Algorithms\image\RGBToGrayStrategy.cs" />
+    <Compile Include="Algorithms\image\SaveRegionImgStrategy.cs" />
+    <Compile Include="Algorithms\region\CreateROIStrategy.cs" />
     <Compile Include="Algorithms\image\FileImageStrategy.cs" />
-    <Compile Include="Algorithms\FitArcMidpointStrategy.cs" />
-    <Compile Include="Algorithms\FitLineStrategy.cs" />
+    <Compile Include="Algorithms\contour\FitArcMidpointStrategy.cs" />
+    <Compile Include="Algorithms\contour\FitLineStrategy.cs" />
     <Compile Include="Algorithms\image\LineRotImageStrategy.cs" />
     <Compile Include="Algorithms\image\RotateImageStrategy.cs" />
+    <Compile Include="Algorithms\image\SaveImageStrategy.cs" />
     <Compile Include="Algorithms\matching\GenericModelStrategy.cs" />
     <Compile Include="Algorithms\IParaStrategy.cs" />
-    <Compile Include="Algorithms\MergeRegionStrategy.cs" />
+    <Compile Include="Algorithms\region\MergeRegionStrategy.cs" />
     <Compile Include="Algorithms\matching\NccModelStrategy.cs" />
     <Compile Include="Algorithms\matching\ScaledModelStrategy.cs" />
     <Compile Include="Algorithms\matching\ShapeModelStrategy.cs" />
+    <Compile Include="Algorithms\region\SaveRegionStrategy.cs" />
     <Compile Include="Drawing\ModelResult.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="DrawWindow\DisplayUI.cs">

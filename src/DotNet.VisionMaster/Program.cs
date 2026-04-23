@@ -13,7 +13,7 @@ namespace DotNet.VisionMaster
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new CreateROIForm());
+            Application.Run(new LineRotImageForm());
         }
     }
 }
