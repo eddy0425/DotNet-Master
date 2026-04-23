@@ -11,7 +11,7 @@ namespace DotNet.Drawing
     /// Struct for matching: query descriptor index, train descriptor index, train image index and distance between descriptors.
     /// </summary>
 #endif
-    public struct DMatch
+    public struct DMatch : IEquatable<DMatch>
     {
 #if LANG_JP
         /// <summary>
@@ -108,14 +108,32 @@ namespace DotNet.Drawing
             return d1.Distance > d2.Distance;
         }
 
+        #region Equality
+
+        public bool Equals(DMatch other)
+        {
+            return QueryIdx == other.QueryIdx
+                && TrainIdx == other.TrainIdx
+                && ImgIdx == other.ImgIdx
+                && Distance.Equals(other.Distance);
+        }
+
+        public override bool Equals(object obj) => obj is DMatch other && Equals(other);
+
+        public override int GetHashCode() => HashCode.Combine(QueryIdx, TrainIdx, ImgIdx, Distance);
+
+        public static bool operator ==(DMatch d1, DMatch d2) => d1.Equals(d2);
+
+        public static bool operator !=(DMatch d1, DMatch d2) => !d1.Equals(d2);
+
+        #endregion
+
         /// <summary>
         /// 
         /// </summary>
         /// <returns></returns>
         public override string ToString()
         {
-            //return String.Format("DMatch (QueryIdx:{0}, TrainIdx:{1}, ImgIdx:{2}, Distance:{3})",
-            //    QueryIdx, TrainIdx, ImgIdx, Distance);
             return $"DMatch (QueryIdx:{QueryIdx}, TrainIdx:{TrainIdx}, ImgIdx:{ImgIdx}, Distance:{Distance})";
         }
     }

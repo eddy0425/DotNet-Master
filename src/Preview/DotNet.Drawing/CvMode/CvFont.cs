@@ -414,7 +414,18 @@ namespace DotNet.Drawing
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(X, Y, Size, Text, Color);
+            // 必须覆盖 Equals 中比较的所有字段，否则违反 Equals/GetHashCode 契约
+            var hash = new HashCode();
+            hash.Add(X);
+            hash.Add(Y);
+            hash.Add(OffsetX);
+            hash.Add(OffsetY);
+            hash.Add(Size);
+            hash.Add(Text);
+            hash.Add(Color);
+            hash.Add(Weight);
+            hash.Add(Alignment);
+            return hash.ToHashCode();
         }
 
         #endregion

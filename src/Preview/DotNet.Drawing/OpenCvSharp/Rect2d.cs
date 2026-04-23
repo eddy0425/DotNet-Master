@@ -116,10 +116,24 @@ namespace DotNet.Drawing
 
         #region == / !=
 
-        public bool Equals(Rect2d? obj)
+        /// <summary>
+        /// 判断两个矩形是否在容差内相等
+        /// </summary>
+        /// <remarks>
+        /// 设为 <c>virtual</c> 让派生类（如 <see cref="CvRegion"/>）可以扩展比较语义（增加 Phi/Type/...），
+        /// 同时通过虚分派保证 <c>HashSet&lt;Rect2d&gt;</c>、<c>EqualityComparer&lt;Rect2d&gt;.Default</c> 等
+        /// 标准容器调用时仍走最具体类型的 Equals，从而维持 Equals/GetHashCode 契约。
+        /// </remarks>
+        public virtual bool Equals(Rect2d? obj)
         {
             if (ReferenceEquals(obj, null)) return false;
-            return X == obj.X && Y == obj.Y && Width == obj.Width && Height == obj.Height;
+            if (ReferenceEquals(this, obj)) return true;
+            // 使用 MathHelper.AreEqual 与 Point2d/Size2d/CvCoord 等同口径，
+            // 避免 IEEE-754 舍入误差导致的"显示一样但 Equals==false"问题。
+            return MathHelper.AreEqual(X, obj.X)
+                && MathHelper.AreEqual(Y, obj.Y)
+                && MathHelper.AreEqual(Width, obj.Width)
+                && MathHelper.AreEqual(Height, obj.Height);
         }
 
         public static bool operator ==(Rect2d? lhs, Rect2d? rhs)
@@ -129,12 +143,7 @@ namespace DotNet.Drawing
             return lhs.Equals(rhs);
         }
 
-        public static bool operator !=(Rect2d? lhs, Rect2d? rhs)
-        {
-            if (ReferenceEquals(lhs, null))
-                return !ReferenceEquals(rhs, null);
-            return !lhs.Equals(rhs);
-        }
+        public static bool operator !=(Rect2d? lhs, Rect2d? rhs) => !(lhs == rhs);
 
         #endregion
 
@@ -407,18 +416,15 @@ namespace DotNet.Drawing
             return new Rect2d(x1, y1, x2 - x1, y2 - y1);
         }
 
-        public override bool Equals(object? obj)
-        {
-            if (obj is Rect2d rect)
-            {
-                return Equals(rect);
-            }
-            return false;
-        }
+        public override bool Equals(object? obj) => Equals(obj as Rect2d);
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(X, Y, Width, Height);
+            return HashCode.Combine(
+                MathHelper.QuantizeToTolerance(X),
+                MathHelper.QuantizeToTolerance(Y),
+                MathHelper.QuantizeToTolerance(Width),
+                MathHelper.QuantizeToTolerance(Height));
         }
 
         public override string ToString()

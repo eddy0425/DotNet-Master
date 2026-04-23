@@ -130,8 +130,8 @@ namespace DotNet.Drawing
                 maxY = Math.Max(maxY, Math.Max(startPoint.Y, endPoint.Y));
 
                 // 检查是否跨越四个极值点
-                double normalizedStart = NormalizeAngle(StartPhi);
-                double normalizedEnd = NormalizeAngle(EndPhi);
+                double normalizedStart = MathHelper.NormalizeAnglePositive(StartPhi);
+                double normalizedEnd = MathHelper.NormalizeAnglePositive(EndPhi);
                 double[] extremeAngles = { 0, Math.PI / 2, Math.PI, 3 * Math.PI / 2 };
 
                 foreach (double angle in extremeAngles)
@@ -457,24 +457,16 @@ namespace DotNet.Drawing
         #region Utility Methods
 
         /// <summary>
-        /// 将角度规范化到 [0, 2π) 范围
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static double NormalizeAngle(double angle)
-        {
-            while (angle < 0) angle += 2 * Math.PI;
-            while (angle >= 2 * Math.PI) angle -= 2 * Math.PI;
-            return angle;
-        }
-
-        /// <summary>
         /// 检查角度是否在圆弧范围内
         /// </summary>
+        /// <remarks>
+        /// 角度范围约定为 [0, 2π)，统一使用 <see cref="MathHelper.NormalizeAnglePositive"/>。
+        /// </remarks>
         private static bool IsAngleInArc(double angle, double startPhi, double endPhi)
         {
-            angle = NormalizeAngle(angle);
-            startPhi = NormalizeAngle(startPhi);
-            endPhi = NormalizeAngle(endPhi);
+            angle = MathHelper.NormalizeAnglePositive(angle);
+            startPhi = MathHelper.NormalizeAnglePositive(startPhi);
+            endPhi = MathHelper.NormalizeAnglePositive(endPhi);
 
             if (startPhi <= endPhi)
             {
@@ -482,7 +474,7 @@ namespace DotNet.Drawing
             }
             else
             {
-                // 圆弧跨越0度
+                // 圆弧跨越 0 度
                 return angle >= startPhi || angle <= endPhi;
             }
         }
@@ -503,7 +495,11 @@ namespace DotNet.Drawing
                    MathHelper.AreEqual(EndPhi, other.EndPhi);
         }
 
-        public override int GetHashCode() => HashCode.Combine(Center, Radius, StartPhi, EndPhi);
+        public override int GetHashCode() => HashCode.Combine(
+            Center,
+            MathHelper.QuantizeToTolerance(Radius),
+            MathHelper.QuantizeToTolerance(StartPhi),
+            MathHelper.QuantizeToTolerance(EndPhi));
 
         #endregion
 

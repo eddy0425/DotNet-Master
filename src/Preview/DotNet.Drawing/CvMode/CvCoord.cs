@@ -8,11 +8,11 @@ namespace DotNet.Drawing
     /// </summary>
     /// <remarks>
     /// 设计特点：
-    /// - readonly record struct: 不可变值类型，天生线程安全，零GC分配
+    /// - readonly struct: 不可变值类型，天生线程安全，零GC分配
     /// - 用于表示物体的位置和朝向（位姿）
-    /// - 自动支持 with 表达式进行函数式更新
+    /// - 属性使用 init 访问器，保证不可变语义
     /// </remarks>
-    public readonly record struct CvCoord : IEquatable<CvCoord>, ICvTranslatable<CvCoord>, ICvRotatable<CvCoord>
+    public readonly struct CvCoord : IEquatable<CvCoord>, ICvTranslatable<CvCoord>, ICvRotatable<CvCoord>
     {
         #region Properties
 
@@ -82,7 +82,7 @@ namespace DotNet.Drawing
         {
             X = x;
             Y = y;
-            Angle = NormalizeAngle(angle);
+            Angle = MathHelper.NormalizeAngle(angle);
         }
 
         /// <summary>
@@ -95,7 +95,7 @@ namespace DotNet.Drawing
         {
             X = center.X;
             Y = center.Y;
-            Angle = NormalizeAngle(angle);
+            Angle = MathHelper.NormalizeAngle(angle);
         }
 
         /// <summary>
@@ -248,7 +248,7 @@ namespace DotNet.Drawing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public double AngleDifferenceTo(CvCoord other)
         {
-            return NormalizeAngle(other.Angle - Angle);
+            return MathHelper.NormalizeAngle(other.Angle - Angle);
         }
 
         /// <summary>
@@ -264,24 +264,15 @@ namespace DotNet.Drawing
         }
 
         /// <summary>
-        /// 将角度规范化到 [-π, π) 范围
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static double NormalizeAngle(double angle)
-        {
-            while (angle >= Math.PI) angle -= 2 * Math.PI;
-            while (angle < -Math.PI) angle += 2 * Math.PI;
-            return angle;
-        }
-
-        /// <summary>
         /// 计算两个角度之间的最短差值
         /// </summary>
+        /// <remarks>
+        /// 复用 <see cref="MathHelper.AngleDifference"/>，保证全工程角度归一化口径一致 ([-π, π))。
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static double ShortestAngleDifference(double from, double to)
         {
-            double diff = NormalizeAngle(to - from);
-            return diff;
+            return MathHelper.AngleDifference(from, to);
         }
 
         #endregion
@@ -296,8 +287,19 @@ namespace DotNet.Drawing
                    MathHelper.AreEqual(Angle, other.Angle);
         }
 
+        public override bool Equals(object? obj) => obj is CvCoord other && Equals(other);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode() => HashCode.Combine(X, Y, Angle);
+        public override int GetHashCode() => HashCode.Combine(
+            MathHelper.QuantizeToTolerance(X),
+            MathHelper.QuantizeToTolerance(Y),
+            MathHelper.QuantizeToTolerance(Angle));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator ==(CvCoord left, CvCoord right) => left.Equals(right);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator !=(CvCoord left, CvCoord right) => !left.Equals(right);
 
         #endregion
 

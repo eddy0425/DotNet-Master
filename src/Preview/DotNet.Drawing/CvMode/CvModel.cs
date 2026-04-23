@@ -523,11 +523,21 @@ namespace DotNet.Drawing
 
         public override int GetHashCode()
         {
+            // 必须覆盖 Equals 中比较的所有字段；浮点字段量化到容差网格保证与 MathHelper.AreEqual 一致
             var hash = new HashCode();
             hash.Add(ModelID?.D);
-            hash.Add(MinScore);
+            hash.Add(LockCenter);
+            hash.Add(MathHelper.QuantizeToTolerance(AngleStart));
+            hash.Add(MathHelper.QuantizeToTolerance(AngleEnd));
+            hash.Add(MathHelper.QuantizeToTolerance(AngleExtent));
+            hash.Add(MathHelper.QuantizeToTolerance(MinScore));
             hash.Add(NumMatches);
-            hash.Add(Greediness);
+            hash.Add(MathHelper.QuantizeToTolerance(MaxOverlap));
+            hash.Add(SubPixel);
+            hash.Add(NumLevels);
+            hash.Add(MathHelper.QuantizeToTolerance(Greediness));
+            hash.Add(MathHelper.QuantizeToTolerance(ScaleMin));
+            hash.Add(MathHelper.QuantizeToTolerance(ScaleMax));
             return hash.ToHashCode();
         }
 

@@ -355,7 +355,11 @@ namespace DotNet.Drawing
                    Style == other.Style;
         }
 
-        public override int GetHashCode() => HashCode.Combine(Line, HeadSize, HeadAngle, Style);
+        public override int GetHashCode() => HashCode.Combine(
+            Line,
+            MathHelper.QuantizeToTolerance(HeadSize),
+            MathHelper.QuantizeToTolerance(HeadAngle),
+            Style);
 
         #endregion
 

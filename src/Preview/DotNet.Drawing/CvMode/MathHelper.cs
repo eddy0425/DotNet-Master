@@ -109,6 +109,33 @@ namespace DotNet.Drawing
             return value < -Tolerance;
         }
 
+        /// <summary>
+        /// 将浮点值量化到容差网格上，用于实现"容差版 GetHashCode"
+        /// </summary>
+        /// <remarks>
+        /// 用法：当类型的 <c>Equals</c> 使用容差比较 (<see cref="AreEqual(double,double)"/>)
+        /// 时，<c>GetHashCode</c> 必须保证 <c>x.Equals(y) ⇒ x.GetHashCode() == y.GetHashCode()</c>。
+        /// 直接 <c>x.GetHashCode()</c> 会让 1e-15 的舍入误差产生不同哈希。
+        /// 把值量化到容差网格 (默认 <see cref="Tolerance"/>) 后再哈希，可以让"近似相等"的值
+        /// 在绝大多数情况下落入同一桶；唯一例外是恰好跨越桶边界 (e.g. 1.4999e-9 vs 1.5000e-9) 的极端值，
+        /// 这是任何"容差等价 + 离散哈希"方案的固有限制。
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double QuantizeToTolerance(double value, double tolerance = Tolerance)
+        {
+            if (tolerance <= 0 || double.IsNaN(value) || double.IsInfinity(value)) return value;
+            return Math.Round(value / tolerance) * tolerance;
+        }
+
+        /// <summary>
+        /// 直接生成与容差版 <c>Equals</c> 兼容的哈希分量
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int TolerantHash(double value, double tolerance = Tolerance)
+        {
+            return QuantizeToTolerance(value, tolerance).GetHashCode();
+        }
+
         #endregion
 
         #region Angle Conversions

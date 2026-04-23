@@ -251,7 +251,7 @@ namespace DotNet.Drawing
 #endif
         public override bool Equals(object obj)
         {
-            return base.Equals(obj);
+            return obj is Scalar other && Equals(other);
         }
 
 #if LANG_JP
@@ -267,8 +267,9 @@ namespace DotNet.Drawing
 #endif
         public override int GetHashCode()
         {
-            int result = Val0.GetHashCode() ^ Val1.GetHashCode() ^ Val2.GetHashCode() ^ Val3.GetHashCode();
-            return result;
+            // 使用 HashCode.Combine 替代 XOR：
+            // XOR 在分量出现重复值或对称分布时极易产生哈希碰撞（如 (1,1,2,2) 与 (2,2,1,1) 同哈希）
+            return HashCode.Combine(Val0, Val1, Val2, Val3);
         }
 
 #if LANG_JP

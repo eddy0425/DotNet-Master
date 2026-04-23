@@ -11,10 +11,10 @@ namespace DotNet.Drawing
     /// </summary>
     /// <remarks>
     /// 设计特点：
-    /// - readonly record struct: 不可变值类型，天生线程安全，零GC分配
-    /// - 自动支持 with 表达式进行函数式更新
+    /// - readonly struct: 不可变值类型，天生线程安全，零GC分配
+    /// - 属性使用 init 访问器，保证不可变语义
     /// </remarks>
-    public readonly record struct Size2d : IEquatable<Size2d>, ICvScalable<Size2d>
+    public readonly struct Size2d : IEquatable<Size2d>, ICvScalable<Size2d>
     {
         #region Properties
 
@@ -267,8 +267,18 @@ namespace DotNet.Drawing
                    MathHelper.AreEqual(Height, other.Height);
         }
 
+        public override bool Equals(object? obj) => obj is Size2d other && Equals(other);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode() => HashCode.Combine(Width, Height);
+        public override int GetHashCode() => HashCode.Combine(
+            MathHelper.QuantizeToTolerance(Width),
+            MathHelper.QuantizeToTolerance(Height));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator ==(Size2d left, Size2d right) => left.Equals(right);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator !=(Size2d left, Size2d right) => !left.Equals(right);
 
         #endregion
 

@@ -11,11 +11,11 @@ namespace DotNet.Drawing
     /// </summary>
     /// <remarks>
     /// 设计特点：
-    /// - readonly record struct: 不可变值类型，天生线程安全，零GC分配
-    /// - 自动支持 with 表达式进行函数式更新
+    /// - readonly struct: 不可变值类型，天生线程安全，零GC分配
+    /// - 属性使用 init 访问器，保证不可变语义
     /// - 实现 IEquatable&lt;T&gt; 提供高效相等性比较
     /// </remarks>
-    public readonly record struct Point2d : IEquatable<Point2d>, ICvTranslatable<Point2d>, ICvScalable<Point2d>
+    public readonly struct Point2d : IEquatable<Point2d>, ICvTranslatable<Point2d>, ICvScalable<Point2d>
     {
         #region Properties
 
@@ -252,8 +252,18 @@ namespace DotNet.Drawing
             return MathHelper.AreEqual(X, other.X) && MathHelper.AreEqual(Y, other.Y);
         }
 
+        public override bool Equals(object? obj) => obj is Point2d other && Equals(other);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode() => HashCode.Combine(X, Y);
+        public override int GetHashCode() => HashCode.Combine(
+            MathHelper.QuantizeToTolerance(X),
+            MathHelper.QuantizeToTolerance(Y));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator ==(Point2d left, Point2d right) => left.Equals(right);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator !=(Point2d left, Point2d right) => !left.Equals(right);
 
         #endregion
 
