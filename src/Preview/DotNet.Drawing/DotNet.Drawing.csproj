@@ -80,9 +80,7 @@
     <Compile Include="CvMode\CvArrow.cs" />
     <Compile Include="CvMode\CvCircle.cs" />
     <Compile Include="CvMode\CvCoord.cs" />
-    <Compile Include="CvMode\CvFont.cs" />
     <Compile Include="CvMode\CvLine.cs" />
-    <Compile Include="CvMode\CvModel.cs" />
     <Compile Include="CvMode\CvRegion.cs" />
     <Compile Include="CvMode\HashCode.cs" />
     <Compile Include="CvMode\ICvShape.cs" />
@@ -92,13 +90,9 @@
     <Compile Include="OpenCvSharp\KeyPoint.cs" />
     <Compile Include="OpenCvSharp\Point2d.cs" />
     <Compile Include="OpenCvSharp\Point2f.cs" />
-    <Compile Include="OpenCvSharp\Range.cs" />
-    <Compile Include="OpenCvSharp\Rangef.cs" />
     <Compile Include="OpenCvSharp\Rect.cs" />
     <Compile Include="OpenCvSharp\Rect2d.cs" />
     <Compile Include="OpenCvSharp\Rect2f.cs" />
-    <Compile Include="OpenCvSharp\RotatedRect.cs" />
-    <Compile Include="OpenCvSharp\Scalar.cs" />
     <Compile Include="OpenCvSharp\Size2d.cs" />
     <Compile Include="OpenCvSharp\Size2f.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
