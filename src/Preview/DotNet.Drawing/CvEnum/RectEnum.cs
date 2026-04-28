@@ -5,7 +5,7 @@ namespace DotNet.Drawing
     public enum RectEnum
     {
         Rectangle,
-        Rectangle2,
+        AffRect,
         Circle,
         Ellipse,
         Polygon,

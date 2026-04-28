@@ -27,7 +27,7 @@ namespace DotNet.HalconAlgo
             {
                 inPara.HoRect.UpdateCenter(e.Center, e.RectSize);
                 inPara.HoRect.Phi = e.Phi;
-                inPara.HoRect.Type = RectEnum.Rectangle2;
+                inPara.HoRect.Type = RectEnum.AffRect;
                 inPara.HoRect.GenRegion();
             }
         }

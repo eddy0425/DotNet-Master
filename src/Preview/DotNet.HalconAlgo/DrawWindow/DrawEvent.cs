@@ -2,17 +2,14 @@
 using HalconDotNet;
 using System;
 
-
 namespace DotNet.HalconAlgo
 {
-    #region Event
+    // 事件参数全部为不可变对象 (只读属性), 由 EventHandler<T> 标准委托承载.
+    // 不再为每个 Args 单独定义委托类型, 直接使用 BCL 的 EventHandler<TEventArgs>.
+
     public class DrawPointArgs : EventArgs
     {
-        public DrawPointArgs(double x, double y)
-        {
-            X = x;
-            Y = y;
-        }
+        public DrawPointArgs(double x, double y) { X = x; Y = y; }
         public double X { get; private set; }
         public double Y { get; private set; }
     }
@@ -21,10 +18,7 @@ namespace DotNet.HalconAlgo
     {
         public DrawLineArgs(double x1, double y1, double x2, double y2)
         {
-            X1 = x1;
-            Y1 = y1;
-            X2 = x2;
-            Y2 = y2;
+            X1 = x1; Y1 = y1; X2 = x2; Y2 = y2;
         }
         public double X1 { get; private set; }
         public double Y1 { get; private set; }
@@ -36,10 +30,7 @@ namespace DotNet.HalconAlgo
     {
         public DrawCircleArgs(double x1, double y1, double x2, double y2)
         {
-            X1 = x1;
-            Y1 = y1;
-            X2 = x2;
-            Y2 = y2;
+            X1 = x1; Y1 = y1; X2 = x2; Y2 = y2;
         }
         public double X1 { get; private set; }
         public double Y1 { get; private set; }
@@ -49,11 +40,7 @@ namespace DotNet.HalconAlgo
 
     public class DrawPolygonArgs : EventArgs
     {
-        public DrawPolygonArgs(HObject contour)
-        {
-            ho_Contour = contour;
-        }
-
+        public DrawPolygonArgs(HObject contour) { ho_Contour = contour; }
         public HObject ho_Contour { get; private set; }
     }
 
@@ -147,43 +134,11 @@ namespace DotNet.HalconAlgo
 
         public HObject ho_Contour { get; private set; }
 
-        /// <summary>
-        /// 矩形左上角点
-        /// </summary>
+        /// <summary> 矩形左上角点 </summary>
         public Point2d TopLeft { get; private set; }
 
-        /// <summary>
-        /// 矩形右下角点
-        /// </summary>
+        /// <summary> 矩形右下角点 </summary>
         public Point2d BottomRight { get; private set; }
 
-        /// <summary>
-        /// 中心
-        /// </summary>
-        public Point2d Center => new Point2d((TopLeft.X + BottomRight.X) / 2, (TopLeft.Y + BottomRight.Y) / 2);
     }
-
-    #endregion
-
-    #region Delegates
-
-    public delegate void DrawPointHandler(object sender, DrawPointArgs e);
-
-    public delegate void DrawLineHandler(object sender, DrawLineArgs e);
-
-    public delegate void DrawCircleHandler(object sender, DrawCircleArgs e);
-
-    public delegate void DrawPolygonHandler(object sender, DrawPolygonArgs e);
-
-    public delegate void DrawRectangleHandler(object sender, DrawRectangleArgs e);
-
-    public delegate void DrawAffRectHandler(object sender, DrawAffRectArgs e);
-
-    public delegate void DrawSetModelHandler(object sender, DrawSetModelArgs e);
-
-    public delegate void DrawDispModelHandler(object sender, DrawDispModelArgs e);
-
-    public delegate void DrawSynthethicHandler(object sender, DrawSynthethicArgs e);
-
-    #endregion
 }

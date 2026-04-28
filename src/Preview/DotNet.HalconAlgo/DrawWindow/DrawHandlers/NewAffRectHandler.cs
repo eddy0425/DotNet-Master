@@ -23,7 +23,8 @@ namespace DotNet.HalconAlgo
                 display.Reset();
                 display.ReDispImage();
                 display.SetColor(HColor.Red);
-                HOperatorSet.DrawRectangle2(display.HoWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
+                HOperatorSet.DrawRectangle2(display.HoWindow, 
+                    out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
                 //HOperatorSet.GenRectangle2(out display.ShrRegion.InRegion, row, column, phi, length1, length2);
 
                 Center = new Point2d(column.D, row.D);
@@ -55,7 +56,7 @@ namespace DotNet.HalconAlgo
                 case SetUpEnum.Step1:
                     display.ShrRegion.UpdateCenter(Center, RectSize);
                     display.ShrRegion.Phi = Phi;
-                    display.ShrRegion.Type = RectEnum.Rectangle2;
+                    display.ShrRegion.Type = RectEnum.AffRect;
                     display.ShrRegion.GenRegion();
                     display.DrawAffRect(display.AlgoName, Center, RectSize, Phi);
                     display.SetUp = SetUpEnum.Step2;

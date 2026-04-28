@@ -21,7 +21,7 @@ namespace DotNet.Drawing
                                                hRegion.BottomRight.Y, hRegion.BottomRight.X);
                     }
                     break;
-                case RectEnum.Rectangle2:
+                case RectEnum.AffRect:
                     {
                         HOperatorSet.GenRectangle2(out hRegion.InRegion, hRegion.CenterY, hRegion.CenterX, hRegion.Phi,
                                                hRegion.Width / 2, hRegion.Height / 2);

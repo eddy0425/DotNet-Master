@@ -372,7 +372,7 @@ namespace DotNet.Drawing
                                                             hRegion.Bottom, hRegion.Right);
                     }
                     break;
-                case RectEnum.Rectangle2:
+                case RectEnum.AffRect:
                     {
                         HOperatorSet.DispRectangle2(hWindow, hRegion.CenterY + 0.5, hRegion.CenterX + 1, hRegion.Phi,
                                                  hRegion.Width / 2, hRegion.Height / 2);
@@ -424,7 +424,7 @@ namespace DotNet.Drawing
                         hRegion.Update2Point(row1, column1, row2, column2);
                     }
                     break;
-                case RectEnum.Rectangle2:
+                case RectEnum.AffRect:
                     {
                         HOperatorSet.DrawRectangle2(hWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
                         HOperatorSet.GenRectangle2(out hRegion.InRegion, row, column, phi, length1, length2);
@@ -481,7 +481,7 @@ namespace DotNet.Drawing
                         hRegion.Update2Point(row1, column1, row2, column2);
                     }
                     break;
-                case RectEnum.Rectangle2:
+                case RectEnum.AffRect:
                     {
                         HOperatorSet.DrawRectangle2Mod(hWindow, hRegion.CenterY, hRegion.CenterX, hRegion.Phi,
                                                  hRegion.Width / 2, hRegion.Height / 2,

@@ -1,6 +1,7 @@
 ﻿using DotNet.Drawing;
 using DotNet.HalconUI;
 using HalconDotNet;
+using System;
 using System.Windows.Forms;
 using System.Collections.Generic;
 
@@ -9,121 +10,93 @@ namespace DotNet.HalconAlgo
 {
     public partial class DisplayUI : DisplayForm
     {
-        #region Event
+        #region Events
 
-        public event DrawPointHandler PointEvent;
+        // 全部使用 BCL 的 EventHandler<TArgs> 标准委托;
+        // 旧的自定义 DrawXxxHandler 委托类型已删除, 外部 +=/= 方法引用兼容性不变.
+
+        public event EventHandler<DrawPointArgs>      PointEvent;
+        public event EventHandler<DrawLineArgs>       LineEvent;
+        public event EventHandler<DrawCircleArgs>     CircleEvent;
+        public event EventHandler<DrawPolygonArgs>    PolygonEvent;
+        public event EventHandler<DrawRectangleArgs>  RectangleEvent;
+        public event EventHandler<DrawAffRectArgs>    AffRectEvent;
+        public event EventHandler<DrawSetModelArgs>   SetModelEvent;
+        public event EventHandler<DrawDispModelArgs>  DispModelEvent;
+        public event EventHandler<DrawSynthethicArgs> SynthethicEvent;
+
         public void DrawPoint(double x, double y)
         {
-            if (PointEvent != null)
-            {
-                var e = new DrawPointArgs(x, y);
-                PointEvent(this, e);
-            }
+            var handler = PointEvent;
+            if (handler != null) handler(this, new DrawPointArgs(x, y));
         }
 
-
-        public event DrawLineHandler LineEvent;
         public void DrawLine(double x1, double y1, double x2, double y2)
         {
-            if (LineEvent != null)
-            {
-                var e = new DrawLineArgs(x1, y1, x2, y2);
-                LineEvent(this, e);
-            }
+            var handler = LineEvent;
+            if (handler != null) handler(this, new DrawLineArgs(x1, y1, x2, y2));
         }
 
-
-        public event DrawCircleHandler CircleEvent;
         public void DrawCircle(double x1, double y1, double x2, double y2)
         {
-            if (CircleEvent != null)
-            {
-                var e = new DrawCircleArgs(x1, y1, x2, y2);
-                CircleEvent(this, e);
-            }
+            var handler = CircleEvent;
+            if (handler != null) handler(this, new DrawCircleArgs(x1, y1, x2, y2));
         }
 
-
-        public event DrawPolygonHandler PolygonEvent;
         public void DrawPolygon(HObject contour)
         {
-            if (PolygonEvent != null)
-            {
-                var e = new DrawPolygonArgs(contour);
-                PolygonEvent(this, e);
-            }
+            var handler = PolygonEvent;
+            if (handler != null) handler(this, new DrawPolygonArgs(contour));
         }
 
-
-        public event DrawRectangleHandler RectangleEvent;
         public void DrawRectangle(string name, Point2d topLeft, Point2d bottomRight)
         {
-            if (RectangleEvent != null)
-            {
-                var e = new DrawRectangleArgs(name, topLeft, bottomRight);
-                RectangleEvent(this, e);
-            }
+            var handler = RectangleEvent;
+            if (handler != null) handler(this, new DrawRectangleArgs(name, topLeft, bottomRight));
         }
 
-        public event DrawAffRectHandler AffRectEvent;
         public void DrawAffRect(string name, Point2d center, Size2d rectSize, double phi)
         {
-            if (AffRectEvent != null)
-            {
-                var e = new DrawAffRectArgs(name, center, rectSize, phi);
-                AffRectEvent(this, e);
-            }
+            var handler = AffRectEvent;
+            if (handler != null) handler(this, new DrawAffRectArgs(name, center, rectSize, phi));
         }
 
-
-        public event DrawSetModelHandler SetModelEvent;
         public void DrawSetModel(string name, Point2d topLeft, Point2d bottomRight, DisplayUI display)
         {
-            if (SetModelEvent != null)
-            {
-                var e = new DrawSetModelArgs(name, topLeft, bottomRight, display);
-                SetModelEvent(this, e);
-            }
+            var handler = SetModelEvent;
+            if (handler != null) handler(this, new DrawSetModelArgs(name, topLeft, bottomRight, display));
         }
 
-        public event DrawDispModelHandler DispModelEvent;
         public void DrawDispModel(string name, DisplayUI display)
         {
-            if (DispModelEvent != null)
-            {
-                var e = new DrawDispModelArgs(name, display);
-                DispModelEvent(this, e);
-            }
+            var handler = DispModelEvent;
+            if (handler != null) handler(this, new DrawDispModelArgs(name, display));
         }
 
-
-        public event DrawSynthethicHandler SynthethicEvent;
+        // 命名保留兼容: Synthethicn (尾部 n) 是历史 API
         public void DrawSynthethicn(HObject contour, Point2d topLeft, Point2d bottomRight)
         {
-            if (SynthethicEvent != null)
-            {
-                var e = new DrawSynthethicArgs(contour, topLeft, bottomRight);
-                SynthethicEvent(this, e);
-            }
+            var handler = SynthethicEvent;
+            if (handler != null) handler(this, new DrawSynthethicArgs(contour, topLeft, bottomRight));
         }
 
         #endregion
 
-        #region 共享状态 Share → Shr ; Context → Ctx ; Algorithms → Algo 
+        #region 共享状态 Share -> Shr; Context -> Ctx; Algorithms -> Algo
 
-        /// <summary> 算法名称 </summary> Context
+        /// <summary> 算法名称 </summary>
         public string AlgoName;
 
         /// <summary> 当前设置步骤 </summary>
         public SetUpEnum SetUp = SetUpEnum.None;
 
-        /// <summary> 当前循环移动状态  </summary>
+        /// <summary> 当前循环移动状态 </summary>
         public CycleMoveEnum CycleMove = CycleMoveEnum.None;
 
         /// <summary> 共享中心 </summary>
         public Point2d ShrCenter;
 
-        /// <summary> 共享矩形区域 </summary> 
+        /// <summary> 共享矩形区域 </summary>
         public CvRegion ShrRegion;
 
         /// <summary> 共享轮廓对象 </summary>
@@ -214,83 +187,9 @@ namespace DotNet.HalconAlgo
 
         #endregion
 
-        #region DrawHandler
-        private void _drawContext_RectangleEvent(object sender, DrawRectangleArgs e)
-        {
-            //// 更新模板中心
-            //UnSetTemplateCenter();
-            //SetTemplateCenter(e.Center);
+        #region 公共 API
 
-            //// 查找形状模型
-            //HalconHelper.FindShapeModel(srcImage, ho_Rectangle, objectParam, out center);
-            //_drawContext.Center = center;
-
-            //// 计算反向仿射变换
-            //UnHomMat2D = new HTuple();
-            //var p = e.Center;
-            //if (p != null && center != null)
-            //{
-            //    HOperatorSet.VectorAngleToRigid(p.Y, p.X, 0, center.Y, center.X, 0, out UnHomMat2D);
-            //}
-        }
-
-        private void _drawContext_PolygonEvent(object sender, DrawPolygonArgs e)
-        {
-            ShrContour = e.ho_Contour;
-            GetContourImage(ShrContour, out HObject ho_ResultImage);
-
-            //try
-            //{
-            //    ho_Contour.Dispose();
-            //    HalconHelper.SetModelID(ho_ResultImage, ho_Rectangle, objectParam, out ho_Contour, out center);
-            //    _drawContext.HoContour = ho_Contour;
-            //}
-            //catch (Exception ex)
-            //{
-            //    System.Diagnostics.Debug.WriteLine($"Error: {ex.Message}");
-            //}
-            //finally
-            //{
-            //    ho_ResultImage.Dispose();
-            //}
-        }
-
-        private void _drawContext_SynthethicEvent(object sender, DrawSynthethicArgs e)
-        {
-            //ho_Contour = e.ho_Contour;
-            //GetContourImage(ho_Contour, out HObject ho_ResultImage);
-
-            //try
-            //{
-            //    ho_Contour.Dispose();
-            //    HalconHelper.SetModelID(ho_ResultImage, ho_Rectangle, objectParam, out ho_Contour, out center);
-            //    HalconHelper.FindShapeModel(srcImage, ho_Rectangle, objectParam, out center); // 查找形状模型
-
-            //    SetTemplateCenter(e.Center);
-
-            //    HalconHelper.FindShapeModel(srcImage, ho_Rectangle, objectParam, out center); // 查找形状模型
-            //    _drawContext.Polygons = new List<Point2d>();
-            //    _drawContext.HoContour = ho_Contour;
-            //    _drawContext.Center = center;
-
-            //    // 计算反向仿射变换
-            //    UnHomMat2D = new HTuple();
-            //    var p = e.Center;
-            //    if (p != null && center != null)
-            //    {
-            //        HOperatorSet.VectorAngleToRigid(p.Y, p.X, 0, center.Y, center.X, 0, out UnHomMat2D);
-            //    }
-            //}
-            //catch (Exception ex)
-            //{
-            //    System.Diagnostics.Debug.WriteLine($"Error: {ex.Message}");
-            //}
-            //finally
-            //{
-            //    ho_ResultImage.Dispose();
-            //}
-        }
-
+        /// <summary> 由 XLD 轮廓生成"白底黑色填充"的掩膜图像 </summary>
         public void GetContourImage(HObject contour, out HObject ho_ResultImage)
         {
             HObject ho_Region; HOperatorSet.GenEmptyObj(out ho_Region);
