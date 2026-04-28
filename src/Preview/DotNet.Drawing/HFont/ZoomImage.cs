@@ -1,4 +1,4 @@
-﻿using System.Windows.Forms;
+﻿using System.Drawing;
 using HalconDotNet;
 
 namespace DotNet.Drawing
@@ -6,21 +6,28 @@ namespace DotNet.Drawing
     /// <summary>
     /// 图像缩放信息载体
     /// </summary>
-    public class ZoomImage
+    public struct ZoomImage
     {
         /// <summary>
         /// 图像宽度（默认 1248）
         /// </summary>
-        public HTuple width = 1248;
+        public HTuple width;
 
         /// <summary>
         /// 图像高度（默认 2200）
         /// </summary>
-        public HTuple height = 2200;
+        public HTuple height;
 
         /// <summary>
         /// 父容器引用（用于尺寸计算）
         /// </summary>
-        public Control parent = new Control();
+        public Size parent;
+
+        public ZoomImage()
+        {
+            width = 1248;
+            height = 2200;
+            parent = new Size();
+        }
     }
 }

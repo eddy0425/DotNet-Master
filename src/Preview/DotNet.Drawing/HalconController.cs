@@ -300,6 +300,43 @@ namespace DotNet.Drawing
             }
         }
 
+        /// <summary> 保存图像 </summary>
+        public void SaveImage(HObject imgTemp, string filePath)
+        {
+            try
+            {
+                // 验证图像参数
+                if (imgTemp == null || !imgTemp.IsInitialized())
+                {
+                    throw new ArgumentNullException(nameof(imgTemp), "传入的图像为空或未初始化！");
+                }
+
+                // 从文件路径中提取扩展名作为图像格式
+                // Path.GetExtension 返回带点的扩展名，如 ".png"，TrimStart('.') 去掉点
+                string imageType = Path.GetExtension(filePath)?.TrimStart('.').ToLowerInvariant();
+
+                // 验证图片格式
+                string[] validImageTypes = { "bmp", "tiff", "png", "jpg", "jpeg" };
+                if (!Array.Exists(validImageTypes, format => format.Equals(imageType, StringComparison.OrdinalIgnoreCase)))
+                {
+                    throw new ArgumentException($"不支持的图片格式: {imageType}", nameof(imageType));
+                }
+
+                // 生成文件名 时间戳
+                string fileName = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss_fffff"); // 更直观的日期时间格式
+
+                // 确保文件夹存在
+                Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+
+                // 保存图像
+                HOperatorSet.WriteImage(imgTemp, imageType, 0, filePath);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"保存图像: {ex.Message}\n{ex.StackTrace}");
+            }
+        }
+
         /// <summary>
         /// 保存图像
         /// </summary>

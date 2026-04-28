@@ -54,22 +54,6 @@ namespace DotNet.Drawing
             return new Point2f((float)point.X, (float)point.Y);
         }
 
-        /// <summary>
-        /// 隐式转换为 Vec2f
-        /// </summary>
-        public static implicit operator Vec2f(Point2f point)
-        {
-            return new Vec2f(point.X, point.Y);
-        }
-
-        /// <summary>
-        /// 隐式从 Vec2f 转换
-        /// </summary>
-        public static implicit operator Point2f(Vec2f vec)
-        {
-            return new Point2f(vec.Item0, vec.Item1);
-        }
-
         #endregion
 
         #region Operators

@@ -84,7 +84,7 @@
     <Compile Include="CvMode\CvLine.cs" />
     <Compile Include="CvMode\CvModel.cs" />
     <Compile Include="CvMode\CvRegion.cs" />
-    <Compile Include="CvMode\HashCodeHelper.cs" />
+    <Compile Include="CvMode\HashCode.cs" />
     <Compile Include="CvMode\ICvShape.cs" />
     <Compile Include="CvMode\MathHelper.cs" />
     <Compile Include="CvMode\TransExpV2.cs" />
@@ -101,13 +101,6 @@
     <Compile Include="OpenCvSharp\Scalar.cs" />
     <Compile Include="OpenCvSharp\Size2d.cs" />
     <Compile Include="OpenCvSharp\Size2f.cs" />
-    <Compile Include="OpenCvSharp\Vec\IVec.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec2b.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec2d.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec2f.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec2i.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec2s.cs" />
-    <Compile Include="OpenCvSharp\Vec\Vec2w.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Serialize\JsonConvertHObject.cs" />
     <Compile Include="Serialize\SerializeConvert.cs" />

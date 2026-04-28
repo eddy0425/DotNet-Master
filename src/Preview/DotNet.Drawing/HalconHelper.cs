@@ -152,6 +152,12 @@ namespace DotNet.Drawing
             controller.FileExists(filePath);
         }
 
+        /// <summary> 保存图像 </summary>
+        public static void SaveImage(HObject imgTemp, string filePath)
+        {
+            controller.SaveImage(imgTemp, filePath);
+        }
+
         /// <summary>
         /// 保存图像
         /// </summary>
