@@ -107,52 +107,56 @@ namespace DotNet.HalconAlgo
 
         #endregion
 
-        #region 属性
+        #region 绘图模式
 
-        // 绘图处理器相关
         private DrawEnum _drawType = DrawEnum.None;
         private IDrawHandler _currentHandler;
-        private DrawHandlerFactory _handlerFactory;
+        private readonly DrawHandlerFactory _handlerFactory = new DrawHandlerFactory();
+
+        /// <summary> 当前绘图类型. setter 中切换 handler 实例 </summary>
+        public DrawEnum DrawType
+        {
+            get { return _drawType; }
+            set
+            {
+                if (_drawType == value && _currentHandler != null) return;
+                _drawType = value;
+                _currentHandler = _handlerFactory.Create(value);
+            }
+        }
 
         #endregion
 
-        #region HWindowMouse - 插件模式
-
-        /// <summary> 当前绘图类型 </summary>
-        public DrawEnum DrawType
-        {
-            get => _drawType;
-            set
-            {
-                if (_drawType != value)
-                {
-                    _drawType = value;
-                    _currentHandler = _handlerFactory.GetHandler(value);
-                }
-            }
-        }
+        #region 构造 + 鼠标事件路由
 
         public DisplayUI()
         {
             InitializeComponent();
             this.Dock = DockStyle.Fill;
 
-            HMouseDown += WindowMouse_HMouseDown;
-            HMouseUp += WindowMouse_HMouseUp;
+            HMouseDown  += WindowMouse_HMouseDown;
+            HMouseUp    += WindowMouse_HMouseUp;
             HMouseWheel += WindowMouse_HMouseWheel;
-            HMouseMove += WindowMouse_HMouseMove;
+            HMouseMove  += WindowMouse_HMouseMove;
 
-            _handlerFactory = new DrawHandlerFactory();
-            _currentHandler = _handlerFactory.GetHandler(DrawEnum.None);
+            _currentHandler = _handlerFactory.Create(DrawEnum.None);
 
-            RectangleEvent += _drawContext_RectangleEvent;
-            PolygonEvent += _drawContext_PolygonEvent;
-            SynthethicEvent += _drawContext_SynthethicEvent;
+            // 控件销毁时主动释放 HObject, 避免依赖 GC + finalizer 的滞后回收
+            HandleDestroyed += DisplayUI_HandleDestroyed;
 
-            ShrContour = new HObject(); HOperatorSet.GenEmptyObj(out ShrContour); // 创建初始空对象
+            ShrRegion = new CvRegion();
+            HOperatorSet.GenEmptyObj(out ShrContour);
         }
 
-        #region HMouse
+        private void DisplayUI_HandleDestroyed(object sender, EventArgs e)
+        {
+            if (ShrContour != null)
+            {
+                ShrContour.Dispose();
+                ShrContour = null;
+            }
+        }
+
         private void WindowMouse_HMouseDown(object sender, HMouseEventArgs e)
         {
             ReDisplay();
@@ -192,80 +196,65 @@ namespace DotNet.HalconAlgo
         /// <summary> 由 XLD 轮廓生成"白底黑色填充"的掩膜图像 </summary>
         public void GetContourImage(HObject contour, out HObject ho_ResultImage)
         {
-            HObject ho_Region; HOperatorSet.GenEmptyObj(out ho_Region);
-            HObject ho_WhiteImage; HOperatorSet.GenEmptyObj(out ho_WhiteImage);
-            HOperatorSet.GenEmptyObj(out ho_ResultImage);
+            HObject ho_Region = null;
+            HObject ho_WhiteImage = null;
+            ho_ResultImage = null;
             try
             {
-                // 获取源图像尺寸
-                HOperatorSet.GetImageSize(HoImage, out HTuple hv_Width, out HTuple hv_Height);
-
-                // 将 XLD 轮廓转换为区域（"filled" 表示填充内部）
-                ho_Region.Dispose();
                 HOperatorSet.GenRegionContourXld(contour, out ho_Region, "filled");
-
-                // 创建白色背景图像（灰度值 255）
-                ho_WhiteImage.Dispose();
                 HOperatorSet.GenImageProto(HoImage, out ho_WhiteImage, 255);
-
-                // 将轮廓区域涂黑（灰度值 0）
-                ho_ResultImage.Dispose();
                 HOperatorSet.PaintRegion(ho_Region, ho_WhiteImage, out ho_ResultImage, 0, "fill");
-
-                //// 显示结果图像
-                //DispImage(ho_ResultImage);
-
-                // 可选：保存结果图像
-                // HOperatorSet.WriteImage(ho_ResultImage, "png", 0, "MaskImage.png");
-
             }
             finally
             {
-                ho_Region.Dispose();
-                ho_WhiteImage.Dispose();
+                if (ho_Region      != null) ho_Region.Dispose();
+                if (ho_WhiteImage  != null) ho_WhiteImage.Dispose();
             }
         }
 
-        #endregion
-
         /// <summary>
-        /// 注册自定义绘图处理器
-        /// 用于扩展新的绘图类型
+        /// 注册 / 替换某 DrawType 的处理器实例 (兼容旧 API).
+        /// 推荐使用 <see cref="RegisterDrawHandler(DrawEnum, Func{IDrawHandler})"/> 工厂版本.
         /// </summary>
-        /// <param name="type">绘图类型</param>
-        /// <param name="handler">处理器实例</param>
         public void RegisterDrawHandler(DrawEnum type, IDrawHandler handler)
         {
             _handlerFactory.Register(type, handler);
         }
 
         /// <summary>
-        /// 设置绘图模式
+        /// 注册 / 替换某 DrawType 的处理器工厂 (推荐: 每次切换都创建新实例).
         /// </summary>
-        /// <param name="type">绘图类型</param>
+        public void RegisterDrawHandler(DrawEnum type, Func<IDrawHandler> factory)
+        {
+            _handlerFactory.Register(type, factory);
+        }
+
+        /// <summary> 设置绘图模式 </summary>
         public void SetDrawMode(string algoName, DrawEnum type)
         {
             DrawType = type;
             AlgoName = algoName;
-            SetUp = SetUpEnum.None;        //设置步骤
-            CycleMove = CycleMoveEnum.None;   //循环移动状态
+            SetUp = SetUpEnum.None;
+            CycleMove = CycleMoveEnum.None;
 
             ReDisplay();
             Reset();
             _currentHandler.SetUp(this);
         }
 
-        /// <summary>
-        /// 设置绘图模式
-        /// </summary>
-        /// <param name="type">绘图类型</param>
+        /// <summary> 设置绘图模式 + 共享区域 </summary>
         public void SetDrawMode(string algoName, CvRegion hRegion, DrawEnum type)
         {
-            DrawType = type;
-            AlgoName = algoName;
-            ShrRegion = hRegion;
-            SetUp = SetUpEnum.None;           //设置步骤
-            CycleMove = CycleMoveEnum.None;      //循环移动状态
+            if (hRegion != CvRegion.Empty && hRegion != null)
+            {
+                ShrRegion.Update2Point(hRegion.TopLeft, hRegion.BottomRight);
+                ShrRegion.GenRegion();
+            }
+ 
+            DrawType  = type;
+            AlgoName  = algoName;
+            SetUp     = SetUpEnum.None;
+            CycleMove = CycleMoveEnum.None;
 
             ReDisplay();
             Reset();
@@ -273,5 +262,6 @@ namespace DotNet.HalconAlgo
         }
 
         #endregion
+
     }
 }

@@ -194,9 +194,10 @@ namespace DotNet.HalconAlgo
         {
             try
             {
-                HOperatorSet.GenEmptyObj(out display.ShrRegion.InRegion);
-                HOperatorSet.GenRectangle1(out display.ShrRegion.InRegion, Y1, X1, Y2, X2);
-                display.DispRegion(display.ShrRegion.InRegion, color);
+                HOperatorSet.GenRectangle1(out HObject rectangle, Y1, X1, Y2, X2);
+                display.ShrRegion.HoRegion.Dispose();
+                display.ShrRegion.HoRegion = rectangle;
+                display.DispRegion(display.ShrRegion, color);
 
                 var p = HalconHelper.Cal2P(X1, Y1, X2, Y2);
                 display.DispPoint(p.X, p.Y, HColor.Orange, 100);

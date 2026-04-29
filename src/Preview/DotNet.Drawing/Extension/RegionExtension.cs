@@ -12,46 +12,63 @@ namespace DotNet.Drawing
         public static void GenRegion(this CvRegion hRegion)
         {
             if (hRegion == null) return;
-            HOperatorSet.GenEmptyObj(out hRegion.InRegion);
             switch (hRegion.Type)
             {
                 case RectEnum.Rectangle:
                     {
-                        HOperatorSet.GenRectangle1(out hRegion.InRegion, hRegion.TopLeft.Y, hRegion.TopLeft.X,
+                        HOperatorSet.GenRectangle1(out HObject rectangle, hRegion.TopLeft.Y, hRegion.TopLeft.X,
                                                hRegion.BottomRight.Y, hRegion.BottomRight.X);
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = rectangle;
                     }
                     break;
                 case RectEnum.AffRect:
                     {
-                        HOperatorSet.GenRectangle2(out hRegion.InRegion, hRegion.CenterY, hRegion.CenterX, hRegion.Phi,
+                        HOperatorSet.GenRectangle2(out HObject rectangle, hRegion.CenterY, hRegion.CenterX, hRegion.Phi,
                                                hRegion.Width / 2, hRegion.Height / 2);
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = rectangle;
                     }
                     break;
                 case RectEnum.Circle:
                     {
-                        HOperatorSet.GenCircle(out hRegion.InRegion, hRegion.CenterY, hRegion.CenterX, hRegion.Width / 2);
+                        HOperatorSet.GenCircle(out HObject circle, hRegion.CenterY, hRegion.CenterX, hRegion.Width / 2);
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = circle;
                     }
                     break;
                 case RectEnum.Ellipse:
                     {
-                        HOperatorSet.GenEllipse(out hRegion.InRegion, hRegion.CenterY, hRegion.CenterX, hRegion.Phi,
+                        HOperatorSet.GenEllipse(out HObject ellipse, hRegion.CenterY, hRegion.CenterX, hRegion.Phi,
                                                hRegion.Width / 2, hRegion.Height / 2);
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = ellipse;
                     }
                     break;
                 case RectEnum.Polygon:
                     {
-                        HOperatorSet.GenRegionPolygon(out hRegion.InRegion, hRegion.PolygonX, hRegion.PolygonY);
+                        HOperatorSet.GenRegionPolygon(out HObject region, hRegion.PolygonX, hRegion.PolygonY);
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = region;
                     }
                     break;
                 case RectEnum.Ring:
                     {
                         HObject circle1 = new HObject(); HOperatorSet.GenEmptyObj(out circle1);
                         HObject circle2 = new HObject(); HOperatorSet.GenEmptyObj(out circle2);
-                        HOperatorSet.GenCircle(out circle1, hRegion.CenterY, hRegion.CenterX, hRegion.MaxRadius);
-                        HOperatorSet.GenCircle(out circle2, hRegion.CenterY, hRegion.CenterX, hRegion.MinRadius);
-                        HOperatorSet.Difference(circle1, circle2, out hRegion.InRegion);
-                        circle1.Dispose();
-                        circle2.Dispose();
+                        try
+                        {
+                            HOperatorSet.GenCircle(out circle1, hRegion.CenterY, hRegion.CenterX, hRegion.MaxRadius);
+                            HOperatorSet.GenCircle(out circle2, hRegion.CenterY, hRegion.CenterX, hRegion.MinRadius);
+                            HOperatorSet.Difference(circle1, circle2, out HObject region);
+                            hRegion.HoRegion.Dispose();
+                            hRegion.HoRegion = region;
+                        }
+                        finally
+                        {
+                            circle1.Dispose();
+                            circle2.Dispose();
+                        }
                     }
                     break;
             }
@@ -63,23 +80,28 @@ namespace DotNet.Drawing
         public static void GenCoordsRegion(this CvRegion hRegion, List<CvCoord> coords)
         {
             if (coords == null) return;
+            HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
 
-            HObject imgReduced = new HObject(); 
-            HOperatorSet.GenEmptyObj(out hRegion.InRegion);
-
-            for (int i = 0; i < coords.Count; i++)
+            try
             {
-                HTuple row1 = coords[i].Y - hRegion.Height / 2;
-                HTuple column1 = coords[i].X - hRegion.Width / 2;
-                HTuple row2 = coords[i].Y + hRegion.Height / 2;
-                HTuple column2 = coords[i].X + hRegion.Width / 2;
+                for (int i = 0; i < coords.Count; i++)
+                {
+                    HTuple row1 = coords[i].Y - hRegion.Height / 2;
+                    HTuple column1 = coords[i].X - hRegion.Width / 2;
+                    HTuple row2 = coords[i].Y + hRegion.Height / 2;
+                    HTuple column2 = coords[i].X + hRegion.Width / 2;
 
-                HOperatorSet.GenEmptyObj(out imgReduced);
-                HOperatorSet.GenRectangle1(out imgReduced, row1, column1, row2, column2);
-                HOperatorSet.Union2(hRegion.HoRegion, imgReduced, out hRegion.InRegion);
+                    imgReduced.Dispose();
+                    HOperatorSet.GenRectangle1(out imgReduced, row1, column1, row2, column2);
+                    HOperatorSet.Union2(hRegion.HoRegion, imgReduced, out HObject regionUnion);
+                    hRegion.HoRegion.Dispose();
+                    hRegion.HoRegion = regionUnion;
+                }
             }
-
-            imgReduced.Dispose();
+            finally
+            {
+                imgReduced.Dispose();
+            }
         }
 
         /// <summary>

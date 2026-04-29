@@ -19,6 +19,7 @@ namespace DotNet.HalconAlgo
         {
             try
             {
+                HOperatorSet.GenEmptyObj(out inPara.Image);
                 ImagePaths = HalconHelper.GetPaths(inPara.ImageFolder);
             }
             catch (Exception ex)
@@ -53,7 +54,7 @@ namespace DotNet.HalconAlgo
 
                 if (Index >= ImagePaths.Length) Index = 0;
 
-                HOperatorSet.GenEmptyObj(out inPara.Image);
+                inPara.Image.Dispose();
                 HOperatorSet.ReadImage(out inPara.Image, ImagePaths[Index]);
 
                 //判断图像是否为空
@@ -66,26 +67,34 @@ namespace DotNet.HalconAlgo
                 if (inPara.Rotate != 0)
                 {
                     double pi = Convert.ToDouble(inPara.Rotate);
-                    HOperatorSet.RotateImage(inPara.Image, out inPara.Image, pi, "constant");
+                    HOperatorSet.RotateImage(inPara.Image, out HObject imgRotated, pi, "constant");
+                    inPara.Image.Dispose();
+                    inPara.Image = imgRotated;
                 }
 
                 //镜像
                 switch (inPara.Mirror)
                 {
                     case "行镜像":
-                        HOperatorSet.MirrorImage(inPara.Image, out inPara.Image, "row");
+                        HOperatorSet.MirrorImage(inPara.Image, out HObject imgMirrored1, "row");
+                        inPara.Image.Dispose();
+                        inPara.Image = imgMirrored1;
                         break;
                     case "列镜像":
-                        HOperatorSet.MirrorImage(inPara.Image, out inPara.Image, "column");
+                        HOperatorSet.MirrorImage(inPara.Image, out HObject imgMirrored2, "column");
+                        inPara.Image.Dispose();
+                        inPara.Image = imgMirrored2;
                         break;
                     case "原点镜像":
-                        HOperatorSet.MirrorImage(inPara.Image, out inPara.Image, "diagonal");
+                        HOperatorSet.MirrorImage(inPara.Image, out HObject imgMirrored3, "diagonal");
+                        inPara.Image.Dispose();
+                        inPara.Image = imgMirrored3;
                         break;
                     default: break;
                 }
 
                 var message = $"{Name} : W:{display.HoWidth} H:{display.HoHeight} Index:{Index}/{ImagePaths.Length}";
-                
+
                 display.DispImage(inPara.Image);
                 display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
 
@@ -115,7 +124,7 @@ namespace DotNet.HalconAlgo
 
         public override void SavePara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
-            inPara.Rotate = VsControls["cmb_Rotate"].Value;
+            inPara.Rotate = Convert.ToInt16(VsControls["cmb_Rotate"].Text);
             inPara.Mirror = VsControls["cmb_Mirror"].Text;
             inPara.ImageFolder = VsControls["cmb_ImageFolder"].Text;
 

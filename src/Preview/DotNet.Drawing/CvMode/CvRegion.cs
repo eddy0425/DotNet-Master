@@ -29,7 +29,7 @@ namespace DotNet.Drawing
         {
             // 注意：这里不能改成 InRegion = new HObject() —— 后续以 out 形式覆盖时旧实例会被丢弃但未释放。
             // GenEmptyObj 内部会创建并初始化句柄，等价的最简形式即一行调用。
-            HOperatorSet.GenEmptyObj(out InRegion);
+            HOperatorSet.GenEmptyObj(out HoRegion);
         }
 
         #region Geometry / Shape Parameters
@@ -79,23 +79,10 @@ namespace DotNet.Drawing
         #region Halcon HObject
 
         /// <summary>
-        /// 区域 (Halcon HObject)
-        /// </summary>
-        /// <remarks>
-        /// 公有字段（非属性）是有意而为：上层算法需要以 <c>out region.InRegion</c> 形式调用 HOperatorSet 系列方法。
-        /// </remarks>
-        [JsonIgnore]
-        public HObject? InRegion;
-
-        /// <summary>
         /// JSON 序列化用属性，与 <see cref="InRegion"/> 共享底层句柄
         /// </summary>
         [JsonConverter(typeof(JsonConvertHObject))]
-        public HObject? HoRegion
-        {
-            get => InRegion;
-            set => InRegion = value;
-        }
+        public HObject HoRegion;
 
         #endregion
 
@@ -205,10 +192,10 @@ namespace DotNet.Drawing
 
             // 释放 HObject（HalconDotNet 自身具备 finalizer，但显式 Dispose 能确保 native 句柄即时回收，
             // 避免在 GC 压力大的场景下 native 资源滞留）
-            if (InRegion != null)
+            if (HoRegion != null)
             {
-                InRegion.Dispose();
-                InRegion = null;
+                HoRegion.Dispose();
+                HoRegion = null;
             }
 
             _disposed = true;

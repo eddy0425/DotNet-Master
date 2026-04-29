@@ -43,6 +43,8 @@ namespace DotNet.Drawing
             _hWindowImage = new HWindowImage(hWindow, _hWindowControl);
             _hWindowMouse = new HWindowMouse(hWindow, _hWindowControl, _hWindowImage);
 
+            HOperatorSet.GenEmptyObj(out srcImage);
+
             InitHWindow();
         }
 
@@ -98,8 +100,8 @@ namespace DotNet.Drawing
         {
             try
             {
-                HOperatorSet.GenEmptyObj(out srcImage); srcImage.Dispose();
-                srcImage = image.Clone();
+                srcImage.Dispose();
+                HOperatorSet.CopyImage(image, out srcImage);
                 DispImage(srcImage, Adaptive);
             }
             catch

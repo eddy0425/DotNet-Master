@@ -188,9 +188,10 @@ namespace DotNet.HalconUI
         {
             try
             {
-                HOperatorSet.GenEmptyObj(out display.ShrRegion.InRegion);
-                HOperatorSet.GenRectangle1(out display.ShrRegion.InRegion, y1, x1, y2, x2);
-                display.DispRegion(display.ShrRegion.InRegion, color);
+                HOperatorSet.GenRectangle1(out HObject rectangle, y1, x1, y2, x2);
+                display.ShrRegion.HoRegion.Dispose();
+                display.ShrRegion.HoRegion = rectangle;
+                display.DispRegion(display.ShrRegion.HoRegion, color);
 
                 var p = HalconHelper.Cal2P(x1, y1, x2, y2);
                 display.DispPoint(p.X, p.Y, HColor.Orange, 100);
