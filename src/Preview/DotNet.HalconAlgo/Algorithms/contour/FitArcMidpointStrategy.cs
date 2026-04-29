@@ -34,6 +34,7 @@ namespace DotNet.HalconAlgo
 
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
+            HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
             HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
             HObject contourFitting = new HObject(); HOperatorSet.GenEmptyObj(out contourFitting);
             HObject arcContour = new HObject(); HOperatorSet.GenEmptyObj(out arcContour);
@@ -52,13 +53,26 @@ namespace DotNet.HalconAlgo
                 else
                     ho_Rect = strategys.ResolveFrom<HObject>(inPara.RegionIn);
 
-                HOperatorSet.ReduceDomain(ho_Image, ho_Rect, out imgReduced);
-                display.DispRegion(ho_Rect, HColor.Blue);
+                HTuple fixRow = inPara.HoRect.Center.Y;
+                HTuple fixCol = inPara.HoRect.Center.X;
+                if (inPara.CoordIn == "默认")
+                {
+                    HOperatorSet.ReduceDomain(ho_Image, ho_Rect, out imgReduced);
+                    if (inPara.DispRegion) display.DispRegion(ho_Rect, HColor.Blue);
+                }
+                else
+                {
+                    var inCoord = strategys.ResolveFrom<CvCoord>(inPara.CoordIn);
+                    var tmplPoint = strategys.ResolveFrom<Point2d>(inPara.CoordIn.ToTmplPoint());
+                    HalconHelper.TransRegion(tmplPoint, inCoord.Center, ho_Rect, out regionGet);
+                    HalconHelper.TransPixel(tmplPoint, inCoord.Center, fixRow, fixCol, out fixRow, out fixCol);
+
+                    HOperatorSet.ReduceDomain(ho_Image, regionGet, out imgReduced);
+                    if (inPara.DispRegion) display.DispRegion(regionGet, HColor.Blue);
+                }
 
                 #region 变量
                 HTuple fixAgl = inPara.HoRect.Phi;
-                HTuple fixRow = inPara.HoRect.Center.Y;
-                HTuple fixCol = inPara.HoRect.Center.X;
                 HTuple fixLen1 = inPara.HoRect.Width / 2;
                 HTuple fixLen2 = inPara.HoRect.Height / 2;
                 HTuple imgWid = display.HoWidth;

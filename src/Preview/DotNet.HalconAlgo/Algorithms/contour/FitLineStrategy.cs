@@ -55,7 +55,6 @@ namespace DotNet.HalconAlgo
 
                 HTuple fixRow = inPara.HoRect.Center.Y;
                 HTuple fixCol = inPara.HoRect.Center.X;
-
                 if (inPara.CoordIn == "默认")
                 {
                     HOperatorSet.ReduceDomain(ho_Image, ho_Rect, out imgReduced);
@@ -66,11 +65,10 @@ namespace DotNet.HalconAlgo
                     var inCoord = strategys.ResolveFrom<CvCoord>(inPara.CoordIn);
                     var tmplPoint = strategys.ResolveFrom<Point2d>(inPara.CoordIn.ToTmplPoint());
                     HalconHelper.TransRegion(tmplPoint, inCoord.Center, ho_Rect, out regionGet);
+                    HalconHelper.TransPixel(tmplPoint, inCoord.Center, fixRow, fixCol, out fixRow, out fixCol);
 
                     HOperatorSet.ReduceDomain(ho_Image, regionGet, out imgReduced);
                     if (inPara.DispRegion) display.DispRegion(regionGet, HColor.Blue);
-
-                    HalconHelper.TransPixel(tmplPoint, inCoord.Center, inPara.HoRect.Center.Y, inPara.HoRect.Center.X, out fixRow, out fixCol);
                 }
 
                 #region 变量
@@ -112,7 +110,7 @@ namespace DotNet.HalconAlgo
                         HOperatorSet.MeasurePos(imgReduced, hMHandle, inPara.Sigma, inPara.Threshold,
                             transition, measureSelect, out mRow, out mCol, out mAmp, out mDis);
 
-                        if (inPara.DispRegion)
+                        if (inPara.DispFixRegion)
                         {
                             display.DispRectangle2(rowNew, colNew, fixAgl, fixLen1, stepWid, HColor.Blue);
                         }
@@ -206,7 +204,7 @@ namespace DotNet.HalconAlgo
 
                 #region Display
 
-                if (inPara.DispFittingPoint)
+                if (inPara.DispFixPoint)
                 {
                     for (int i = 0; i < rowRemoved.Count; i++)
                     {
@@ -380,9 +378,7 @@ namespace DotNet.HalconAlgo
         /// <summary> 过渡方向 </summary>
         public string Transition { set; get; } = "由黑到白";
 
-        /// <summary>
-        /// 获取过渡方向
-        /// </summary>
+        /// <summary> 获取过渡方向 </summary>
         internal string GetTransition
         {
             get
@@ -397,9 +393,7 @@ namespace DotNet.HalconAlgo
         /// <summary> 选择 </summary>
         public string ContourType { set; get; } = "第一条边";
 
-        /// <summary>
-        /// 获取选择
-        /// </summary>
+        /// <summary> 获取选择 </summary>
         internal string GetContourType
         {
             get
@@ -440,13 +434,17 @@ namespace DotNet.HalconAlgo
         /// <summary> 显示区域 </summary>
         public bool DispRegion { set; get; } = false;
 
+        /// <summary> 显示拟合点 </summary>
+        public bool DispFixPoint { set; get; } = true;
+
+        /// <summary> 显示拟合区域 </summary>
+        public bool DispFixRegion { set; get; } = false;
+
         /// <summary> 显示结果 </summary>
         public bool DispResult { set; get; } = true;
 
         /// <summary> 显示文本 </summary>
         public bool DispText { set; get; } = false;
 
-        /// <summary> 拟合点 </summary>
-        public bool DispFittingPoint { set; get; } = true;
     }
 }

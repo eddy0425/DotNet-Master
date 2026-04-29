@@ -69,7 +69,10 @@ namespace DotNet.HalconAlgo
                 if (display.SetUp == SetUpEnum.Step1)
                 {
                     // 右键完成编辑
-                    display.ShrContour = HalconHelper.GenContours(display.ShrPolygons);
+                    HalconHelper.GenContours(display.ShrPolygons, out HObject contour);
+                    display.ShrContour.Dispose();
+                    display.ShrContour = contour;
+
                     display.DrawPolygon(display.ShrContour);
                     display.SetUp = SetUpEnum.Step2;
                 }

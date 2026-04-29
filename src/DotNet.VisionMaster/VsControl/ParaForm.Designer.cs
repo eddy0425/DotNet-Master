@@ -34,7 +34,7 @@
             this.cmb_ImageFolder = new System.Windows.Forms.ComboBox();
             this.btn_openPath = new System.Windows.Forms.Button();
             this.btn_setPath = new System.Windows.Forms.Button();
-            this.groupBox6 = new System.Windows.Forms.GroupBox();
+            this.grb_Image = new System.Windows.Forms.GroupBox();
             this.cmb_Rotate = new System.Windows.Forms.ComboBox();
             this.label1 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
@@ -78,7 +78,7 @@
             this.lbl_110 = new System.Windows.Forms.Label();
             this.cmb_110 = new System.Windows.Forms.ComboBox();
             this.tabPage2 = new System.Windows.Forms.TabPage();
-            this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.grb_Rect = new System.Windows.Forms.GroupBox();
             this.btn_rectangle2 = new System.Windows.Forms.RadioButton();
             this.btn_polygon = new System.Windows.Forms.RadioButton();
             this.btn_circle = new System.Windows.Forms.RadioButton();
@@ -86,7 +86,7 @@
             this.btn_rectangle1 = new System.Windows.Forms.RadioButton();
             this.but_updataRegion = new System.Windows.Forms.Button();
             this.btn_setCoordIn = new System.Windows.Forms.Button();
-            this.grb_Graph = new System.Windows.Forms.GroupBox();
+            this.grb_RectInfo = new System.Windows.Forms.GroupBox();
             this.cmb_Width = new System.Windows.Forms.ComboBox();
             this.lbl_Fix4 = new System.Windows.Forms.Label();
             this.cmb_Height = new System.Windows.Forms.ComboBox();
@@ -105,14 +105,14 @@
             this.panel1 = new System.Windows.Forms.Panel();
             this.but_editModel = new System.Windows.Forms.Button();
             this.btn_newModel = new System.Windows.Forms.Button();
-            this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.grb_ModeRect = new System.Windows.Forms.GroupBox();
             this.btn_rectangle2_2 = new System.Windows.Forms.RadioButton();
             this.btn_polygon_2 = new System.Windows.Forms.RadioButton();
             this.btn_circle_2 = new System.Windows.Forms.RadioButton();
             this.btn_oval_2 = new System.Windows.Forms.RadioButton();
             this.btn_rectangle1_2 = new System.Windows.Forms.RadioButton();
             this.tabPage4 = new System.Windows.Forms.TabPage();
-            this.groupBox5 = new System.Windows.Forms.GroupBox();
+            this.grb_Font = new System.Windows.Forms.GroupBox();
             this.label2 = new System.Windows.Forms.Label();
             this.CB_PointSize = new System.Windows.Forms.ComboBox();
             this.CB_FontSize = new System.Windows.Forms.ComboBox();
@@ -121,7 +121,7 @@
             this.lbl_121 = new System.Windows.Forms.Label();
             this.CB_FontX = new System.Windows.Forms.ComboBox();
             this.lbl_120 = new System.Windows.Forms.Label();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.grb_Display = new System.Windows.Forms.GroupBox();
             this.ckb_disp5 = new System.Windows.Forms.CheckBox();
             this.ckb_disp2 = new System.Windows.Forms.CheckBox();
             this.ckb_disp4 = new System.Windows.Forms.CheckBox();
@@ -130,16 +130,16 @@
             this.ckb_disp3 = new System.Windows.Forms.CheckBox();
             this.tabControl1.SuspendLayout();
             this.tabPage0.SuspendLayout();
-            this.groupBox6.SuspendLayout();
+            this.grb_Image.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();
-            this.groupBox4.SuspendLayout();
-            this.grb_Graph.SuspendLayout();
+            this.grb_Rect.SuspendLayout();
+            this.grb_RectInfo.SuspendLayout();
             this.tabPage3.SuspendLayout();
-            this.groupBox3.SuspendLayout();
+            this.grb_ModeRect.SuspendLayout();
             this.tabPage4.SuspendLayout();
-            this.groupBox5.SuspendLayout();
-            this.groupBox1.SuspendLayout();
+            this.grb_Font.SuspendLayout();
+            this.grb_Display.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControl1
@@ -165,7 +165,7 @@
             this.tabPage0.Controls.Add(this.cmb_ImageFolder);
             this.tabPage0.Controls.Add(this.btn_openPath);
             this.tabPage0.Controls.Add(this.btn_setPath);
-            this.tabPage0.Controls.Add(this.groupBox6);
+            this.tabPage0.Controls.Add(this.grb_Image);
             this.tabPage0.Controls.Add(this.label4);
             this.tabPage0.Font = new System.Drawing.Font("Arial Narrow", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.tabPage0.Location = new System.Drawing.Point(4, 26);
@@ -220,20 +220,20 @@
             this.btn_setPath.UseVisualStyleBackColor = false;
             this.btn_setPath.Click += new System.EventHandler(this.btn_setPath_Click);
             // 
-            // groupBox6
+            // grb_Image
             // 
-            this.groupBox6.Controls.Add(this.cmb_Rotate);
-            this.groupBox6.Controls.Add(this.label1);
-            this.groupBox6.Controls.Add(this.label3);
-            this.groupBox6.Controls.Add(this.cmb_Mirror);
-            this.groupBox6.Font = new System.Drawing.Font("Arial Narrow", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.groupBox6.ForeColor = System.Drawing.Color.White;
-            this.groupBox6.Location = new System.Drawing.Point(19, 69);
-            this.groupBox6.Name = "groupBox6";
-            this.groupBox6.Size = new System.Drawing.Size(232, 110);
-            this.groupBox6.TabIndex = 201;
-            this.groupBox6.TabStop = false;
-            this.groupBox6.Text = "图片处理";
+            this.grb_Image.Controls.Add(this.cmb_Rotate);
+            this.grb_Image.Controls.Add(this.label1);
+            this.grb_Image.Controls.Add(this.label3);
+            this.grb_Image.Controls.Add(this.cmb_Mirror);
+            this.grb_Image.Font = new System.Drawing.Font("Arial Narrow", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.grb_Image.ForeColor = System.Drawing.Color.White;
+            this.grb_Image.Location = new System.Drawing.Point(19, 69);
+            this.grb_Image.Name = "grb_Image";
+            this.grb_Image.Size = new System.Drawing.Size(232, 110);
+            this.grb_Image.TabIndex = 201;
+            this.grb_Image.TabStop = false;
+            this.grb_Image.Text = "图片处理";
             // 
             // cmb_Rotate
             // 
@@ -805,10 +805,10 @@
             // tabPage2
             // 
             this.tabPage2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(40)))), ((int)(((byte)(30)))));
-            this.tabPage2.Controls.Add(this.groupBox4);
+            this.tabPage2.Controls.Add(this.grb_Rect);
             this.tabPage2.Controls.Add(this.but_updataRegion);
             this.tabPage2.Controls.Add(this.btn_setCoordIn);
-            this.tabPage2.Controls.Add(this.grb_Graph);
+            this.tabPage2.Controls.Add(this.grb_RectInfo);
             this.tabPage2.Controls.Add(this.btn_drawRegion);
             this.tabPage2.Controls.Add(this.lbl_CoordIn);
             this.tabPage2.Controls.Add(this.cmb_CoordIn);
@@ -819,23 +819,23 @@
             this.tabPage2.TabIndex = 6;
             this.tabPage2.Text = "区域设置";
             // 
-            // groupBox4
+            // grb_Rect
             // 
-            this.groupBox4.Controls.Add(this.btn_rectangle2);
-            this.groupBox4.Controls.Add(this.btn_polygon);
-            this.groupBox4.Controls.Add(this.btn_circle);
-            this.groupBox4.Controls.Add(this.btn_oval);
-            this.groupBox4.Controls.Add(this.btn_rectangle1);
-            this.groupBox4.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.groupBox4.ForeColor = System.Drawing.Color.White;
-            this.groupBox4.Location = new System.Drawing.Point(29, 41);
-            this.groupBox4.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Padding = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.groupBox4.Size = new System.Drawing.Size(124, 148);
-            this.groupBox4.TabIndex = 352;
-            this.groupBox4.TabStop = false;
-            this.groupBox4.Text = "区域形状";
+            this.grb_Rect.Controls.Add(this.btn_rectangle2);
+            this.grb_Rect.Controls.Add(this.btn_polygon);
+            this.grb_Rect.Controls.Add(this.btn_circle);
+            this.grb_Rect.Controls.Add(this.btn_oval);
+            this.grb_Rect.Controls.Add(this.btn_rectangle1);
+            this.grb_Rect.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.grb_Rect.ForeColor = System.Drawing.Color.White;
+            this.grb_Rect.Location = new System.Drawing.Point(29, 41);
+            this.grb_Rect.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.grb_Rect.Name = "grb_Rect";
+            this.grb_Rect.Padding = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.grb_Rect.Size = new System.Drawing.Size(124, 148);
+            this.grb_Rect.TabIndex = 352;
+            this.grb_Rect.TabStop = false;
+            this.grb_Rect.Text = "区域形状";
             // 
             // btn_rectangle2
             // 
@@ -929,28 +929,28 @@
             this.btn_setCoordIn.UseVisualStyleBackColor = false;
             this.btn_setCoordIn.Click += new System.EventHandler(this.btn_setCoordIn_Click);
             // 
-            // grb_Graph
+            // grb_RectInfo
             // 
-            this.grb_Graph.Controls.Add(this.cmb_Width);
-            this.grb_Graph.Controls.Add(this.lbl_Fix4);
-            this.grb_Graph.Controls.Add(this.cmb_Height);
-            this.grb_Graph.Controls.Add(this.cmb_Center);
-            this.grb_Graph.Controls.Add(this.lbl_Fix1);
-            this.grb_Graph.Controls.Add(this.lbl_Fix3);
-            this.grb_Graph.Controls.Add(this.lbl_Fix0);
-            this.grb_Graph.Controls.Add(this.cmb_BottomRight);
-            this.grb_Graph.Controls.Add(this.cmb_TopLeft);
-            this.grb_Graph.Controls.Add(this.lbl_Fix2);
-            this.grb_Graph.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.grb_Graph.ForeColor = System.Drawing.Color.White;
-            this.grb_Graph.Location = new System.Drawing.Point(288, 10);
-            this.grb_Graph.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.grb_Graph.Name = "grb_Graph";
-            this.grb_Graph.Padding = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.grb_Graph.Size = new System.Drawing.Size(200, 185);
-            this.grb_Graph.TabIndex = 349;
-            this.grb_Graph.TabStop = false;
-            this.grb_Graph.Text = "区域信息";
+            this.grb_RectInfo.Controls.Add(this.cmb_Width);
+            this.grb_RectInfo.Controls.Add(this.lbl_Fix4);
+            this.grb_RectInfo.Controls.Add(this.cmb_Height);
+            this.grb_RectInfo.Controls.Add(this.cmb_Center);
+            this.grb_RectInfo.Controls.Add(this.lbl_Fix1);
+            this.grb_RectInfo.Controls.Add(this.lbl_Fix3);
+            this.grb_RectInfo.Controls.Add(this.lbl_Fix0);
+            this.grb_RectInfo.Controls.Add(this.cmb_BottomRight);
+            this.grb_RectInfo.Controls.Add(this.cmb_TopLeft);
+            this.grb_RectInfo.Controls.Add(this.lbl_Fix2);
+            this.grb_RectInfo.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.grb_RectInfo.ForeColor = System.Drawing.Color.White;
+            this.grb_RectInfo.Location = new System.Drawing.Point(288, 10);
+            this.grb_RectInfo.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.grb_RectInfo.Name = "grb_RectInfo";
+            this.grb_RectInfo.Padding = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.grb_RectInfo.Size = new System.Drawing.Size(200, 185);
+            this.grb_RectInfo.TabIndex = 349;
+            this.grb_RectInfo.TabStop = false;
+            this.grb_RectInfo.Text = "区域信息";
             // 
             // cmb_Width
             // 
@@ -1118,7 +1118,7 @@
             this.tabPage3.Controls.Add(this.panel1);
             this.tabPage3.Controls.Add(this.but_editModel);
             this.tabPage3.Controls.Add(this.btn_newModel);
-            this.tabPage3.Controls.Add(this.groupBox3);
+            this.tabPage3.Controls.Add(this.grb_ModeRect);
             this.tabPage3.Location = new System.Drawing.Point(4, 26);
             this.tabPage3.Name = "tabPage3";
             this.tabPage3.Padding = new System.Windows.Forms.Padding(3);
@@ -1178,23 +1178,23 @@
             this.btn_newModel.UseVisualStyleBackColor = false;
             this.btn_newModel.Click += new System.EventHandler(this.btn_newModel_Click);
             // 
-            // groupBox3
+            // grb_ModeRect
             // 
-            this.groupBox3.Controls.Add(this.btn_rectangle2_2);
-            this.groupBox3.Controls.Add(this.btn_polygon_2);
-            this.groupBox3.Controls.Add(this.btn_circle_2);
-            this.groupBox3.Controls.Add(this.btn_oval_2);
-            this.groupBox3.Controls.Add(this.btn_rectangle1_2);
-            this.groupBox3.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.groupBox3.ForeColor = System.Drawing.Color.White;
-            this.groupBox3.Location = new System.Drawing.Point(14, 16);
-            this.groupBox3.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Padding = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.groupBox3.Size = new System.Drawing.Size(149, 172);
-            this.groupBox3.TabIndex = 346;
-            this.groupBox3.TabStop = false;
-            this.groupBox3.Text = "区域形状";
+            this.grb_ModeRect.Controls.Add(this.btn_rectangle2_2);
+            this.grb_ModeRect.Controls.Add(this.btn_polygon_2);
+            this.grb_ModeRect.Controls.Add(this.btn_circle_2);
+            this.grb_ModeRect.Controls.Add(this.btn_oval_2);
+            this.grb_ModeRect.Controls.Add(this.btn_rectangle1_2);
+            this.grb_ModeRect.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.grb_ModeRect.ForeColor = System.Drawing.Color.White;
+            this.grb_ModeRect.Location = new System.Drawing.Point(14, 16);
+            this.grb_ModeRect.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.grb_ModeRect.Name = "grb_ModeRect";
+            this.grb_ModeRect.Padding = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.grb_ModeRect.Size = new System.Drawing.Size(149, 172);
+            this.grb_ModeRect.TabIndex = 346;
+            this.grb_ModeRect.TabStop = false;
+            this.grb_ModeRect.Text = "区域形状";
             // 
             // btn_rectangle2_2
             // 
@@ -1261,8 +1261,8 @@
             // tabPage4
             // 
             this.tabPage4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(40)))), ((int)(((byte)(30)))));
-            this.tabPage4.Controls.Add(this.groupBox5);
-            this.tabPage4.Controls.Add(this.groupBox1);
+            this.tabPage4.Controls.Add(this.grb_Font);
+            this.tabPage4.Controls.Add(this.grb_Display);
             this.tabPage4.Location = new System.Drawing.Point(4, 26);
             this.tabPage4.Name = "tabPage4";
             this.tabPage4.Padding = new System.Windows.Forms.Padding(3);
@@ -1270,24 +1270,25 @@
             this.tabPage4.TabIndex = 2;
             this.tabPage4.Text = "显示输出";
             // 
-            // groupBox5
+            // grb_Font
             // 
-            this.groupBox5.Controls.Add(this.label2);
-            this.groupBox5.Controls.Add(this.CB_PointSize);
-            this.groupBox5.Controls.Add(this.CB_FontSize);
-            this.groupBox5.Controls.Add(this.lbl_122);
-            this.groupBox5.Controls.Add(this.CB_FontY);
-            this.groupBox5.Controls.Add(this.lbl_121);
-            this.groupBox5.Controls.Add(this.CB_FontX);
-            this.groupBox5.Controls.Add(this.lbl_120);
-            this.groupBox5.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.groupBox5.ForeColor = System.Drawing.Color.White;
-            this.groupBox5.Location = new System.Drawing.Point(287, 9);
-            this.groupBox5.Name = "groupBox5";
-            this.groupBox5.Size = new System.Drawing.Size(175, 187);
-            this.groupBox5.TabIndex = 292;
-            this.groupBox5.TabStop = false;
-            this.groupBox5.Text = "字体设置";
+            this.grb_Font.Controls.Add(this.ckb_disp5);
+            this.grb_Font.Controls.Add(this.label2);
+            this.grb_Font.Controls.Add(this.CB_PointSize);
+            this.grb_Font.Controls.Add(this.CB_FontSize);
+            this.grb_Font.Controls.Add(this.lbl_122);
+            this.grb_Font.Controls.Add(this.CB_FontY);
+            this.grb_Font.Controls.Add(this.lbl_121);
+            this.grb_Font.Controls.Add(this.CB_FontX);
+            this.grb_Font.Controls.Add(this.lbl_120);
+            this.grb_Font.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.grb_Font.ForeColor = System.Drawing.Color.White;
+            this.grb_Font.Location = new System.Drawing.Point(287, 9);
+            this.grb_Font.Name = "grb_Font";
+            this.grb_Font.Size = new System.Drawing.Size(175, 187);
+            this.grb_Font.TabIndex = 292;
+            this.grb_Font.TabStop = false;
+            this.grb_Font.Text = "字体设置";
             // 
             // label2
             // 
@@ -1295,7 +1296,7 @@
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.label2.ForeColor = System.Drawing.Color.White;
             this.label2.ImageAlign = System.Drawing.ContentAlignment.TopRight;
-            this.label2.Location = new System.Drawing.Point(14, 137);
+            this.label2.Location = new System.Drawing.Point(18, 129);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(43, 15);
             this.label2.TabIndex = 280;
@@ -1306,7 +1307,7 @@
             // 
             this.CB_PointSize.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.CB_PointSize.FormattingEnabled = true;
-            this.CB_PointSize.Location = new System.Drawing.Point(83, 136);
+            this.CB_PointSize.Location = new System.Drawing.Point(83, 124);
             this.CB_PointSize.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.CB_PointSize.Name = "CB_PointSize";
             this.CB_PointSize.Size = new System.Drawing.Size(77, 23);
@@ -1314,7 +1315,7 @@
             // 
             // CB_FontSize
             // 
-            this.CB_FontSize.Location = new System.Drawing.Point(83, 99);
+            this.CB_FontSize.Location = new System.Drawing.Point(83, 91);
             this.CB_FontSize.Margin = new System.Windows.Forms.Padding(2);
             this.CB_FontSize.Name = "CB_FontSize";
             this.CB_FontSize.Size = new System.Drawing.Size(76, 23);
@@ -1323,7 +1324,7 @@
             // lbl_122
             // 
             this.lbl_122.AutoSize = true;
-            this.lbl_122.Location = new System.Drawing.Point(14, 100);
+            this.lbl_122.Location = new System.Drawing.Point(18, 95);
             this.lbl_122.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.lbl_122.Name = "lbl_122";
             this.lbl_122.Size = new System.Drawing.Size(55, 15);
@@ -1332,7 +1333,7 @@
             // 
             // CB_FontY
             // 
-            this.CB_FontY.Location = new System.Drawing.Point(83, 62);
+            this.CB_FontY.Location = new System.Drawing.Point(83, 58);
             this.CB_FontY.Margin = new System.Windows.Forms.Padding(2);
             this.CB_FontY.Name = "CB_FontY";
             this.CB_FontY.Size = new System.Drawing.Size(76, 23);
@@ -1341,7 +1342,7 @@
             // lbl_121
             // 
             this.lbl_121.AutoSize = true;
-            this.lbl_121.Location = new System.Drawing.Point(14, 63);
+            this.lbl_121.Location = new System.Drawing.Point(18, 61);
             this.lbl_121.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.lbl_121.Name = "lbl_121";
             this.lbl_121.Size = new System.Drawing.Size(38, 15);
@@ -1359,38 +1360,37 @@
             // lbl_120
             // 
             this.lbl_120.AutoSize = true;
-            this.lbl_120.Location = new System.Drawing.Point(14, 26);
+            this.lbl_120.Location = new System.Drawing.Point(18, 27);
             this.lbl_120.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.lbl_120.Name = "lbl_120";
             this.lbl_120.Size = new System.Drawing.Size(39, 15);
             this.lbl_120.TabIndex = 1;
             this.lbl_120.Text = "X坐标";
             // 
-            // groupBox1
+            // grb_Display
             // 
-            this.groupBox1.Controls.Add(this.ckb_disp5);
-            this.groupBox1.Controls.Add(this.ckb_disp2);
-            this.groupBox1.Controls.Add(this.ckb_disp4);
-            this.groupBox1.Controls.Add(this.ckb_disp1);
-            this.groupBox1.Controls.Add(this.ckb_disp0);
-            this.groupBox1.Controls.Add(this.ckb_disp3);
-            this.groupBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.groupBox1.ForeColor = System.Drawing.Color.White;
-            this.groupBox1.Location = new System.Drawing.Point(31, 9);
-            this.groupBox1.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Padding = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.groupBox1.Size = new System.Drawing.Size(154, 188);
-            this.groupBox1.TabIndex = 291;
-            this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "显示设置";
+            this.grb_Display.Controls.Add(this.ckb_disp2);
+            this.grb_Display.Controls.Add(this.ckb_disp4);
+            this.grb_Display.Controls.Add(this.ckb_disp1);
+            this.grb_Display.Controls.Add(this.ckb_disp0);
+            this.grb_Display.Controls.Add(this.ckb_disp3);
+            this.grb_Display.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.grb_Display.ForeColor = System.Drawing.Color.White;
+            this.grb_Display.Location = new System.Drawing.Point(31, 9);
+            this.grb_Display.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.grb_Display.Name = "grb_Display";
+            this.grb_Display.Padding = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.grb_Display.Size = new System.Drawing.Size(154, 188);
+            this.grb_Display.TabIndex = 291;
+            this.grb_Display.TabStop = false;
+            this.grb_Display.Text = "显示设置";
             // 
             // ckb_disp5
             // 
             this.ckb_disp5.AutoSize = true;
             this.ckb_disp5.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.ckb_disp5.ForeColor = System.Drawing.Color.White;
-            this.ckb_disp5.Location = new System.Drawing.Point(30, 160);
+            this.ckb_disp5.Location = new System.Drawing.Point(21, 163);
             this.ckb_disp5.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.ckb_disp5.Name = "ckb_disp5";
             this.ckb_disp5.Size = new System.Drawing.Size(74, 19);
@@ -1403,12 +1403,12 @@
             this.ckb_disp2.AutoSize = true;
             this.ckb_disp2.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.ckb_disp2.ForeColor = System.Drawing.Color.White;
-            this.ckb_disp2.Location = new System.Drawing.Point(30, 79);
+            this.ckb_disp2.Location = new System.Drawing.Point(30, 87);
             this.ckb_disp2.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.ckb_disp2.Name = "ckb_disp2";
-            this.ckb_disp2.Size = new System.Drawing.Size(74, 19);
+            this.ckb_disp2.Size = new System.Drawing.Size(82, 19);
             this.ckb_disp2.TabIndex = 2;
-            this.ckb_disp2.Text = "显示结果";
+            this.ckb_disp2.Text = "ckb_disp2";
             this.ckb_disp2.UseVisualStyleBackColor = true;
             // 
             // ckb_disp4
@@ -1416,12 +1416,12 @@
             this.ckb_disp4.AutoSize = true;
             this.ckb_disp4.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.ckb_disp4.ForeColor = System.Drawing.Color.White;
-            this.ckb_disp4.Location = new System.Drawing.Point(30, 133);
+            this.ckb_disp4.Location = new System.Drawing.Point(30, 149);
             this.ckb_disp4.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.ckb_disp4.Name = "ckb_disp4";
-            this.ckb_disp4.Size = new System.Drawing.Size(86, 19);
+            this.ckb_disp4.Size = new System.Drawing.Size(82, 19);
             this.ckb_disp4.TabIndex = 287;
-            this.ckb_disp4.Text = "显示拟合点";
+            this.ckb_disp4.Text = "ckb_disp4";
             this.ckb_disp4.UseVisualStyleBackColor = true;
             // 
             // ckb_disp1
@@ -1429,12 +1429,12 @@
             this.ckb_disp1.AutoSize = true;
             this.ckb_disp1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.ckb_disp1.ForeColor = System.Drawing.Color.White;
-            this.ckb_disp1.Location = new System.Drawing.Point(30, 52);
+            this.ckb_disp1.Location = new System.Drawing.Point(30, 56);
             this.ckb_disp1.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.ckb_disp1.Name = "ckb_disp1";
-            this.ckb_disp1.Size = new System.Drawing.Size(74, 19);
+            this.ckb_disp1.Size = new System.Drawing.Size(82, 19);
             this.ckb_disp1.TabIndex = 1;
-            this.ckb_disp1.Text = "显示中心";
+            this.ckb_disp1.Text = "ckb_disp1";
             this.ckb_disp1.UseVisualStyleBackColor = true;
             // 
             // ckb_disp0
@@ -1445,9 +1445,9 @@
             this.ckb_disp0.Location = new System.Drawing.Point(30, 25);
             this.ckb_disp0.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.ckb_disp0.Name = "ckb_disp0";
-            this.ckb_disp0.Size = new System.Drawing.Size(74, 19);
+            this.ckb_disp0.Size = new System.Drawing.Size(82, 19);
             this.ckb_disp0.TabIndex = 0;
-            this.ckb_disp0.Text = "查找区域";
+            this.ckb_disp0.Text = "ckb_disp0";
             this.ckb_disp0.UseVisualStyleBackColor = true;
             // 
             // ckb_disp3
@@ -1455,12 +1455,12 @@
             this.ckb_disp3.AutoSize = true;
             this.ckb_disp3.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.ckb_disp3.ForeColor = System.Drawing.Color.White;
-            this.ckb_disp3.Location = new System.Drawing.Point(30, 106);
+            this.ckb_disp3.Location = new System.Drawing.Point(30, 118);
             this.ckb_disp3.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.ckb_disp3.Name = "ckb_disp3";
-            this.ckb_disp3.Size = new System.Drawing.Size(86, 19);
+            this.ckb_disp3.Size = new System.Drawing.Size(82, 19);
             this.ckb_disp3.TabIndex = 286;
-            this.ckb_disp3.Text = "显示容差点";
+            this.ckb_disp3.Text = "ckb_disp3";
             this.ckb_disp3.UseVisualStyleBackColor = true;
             // 
             // ParaForm
@@ -1475,25 +1475,25 @@
             this.tabControl1.ResumeLayout(false);
             this.tabPage0.ResumeLayout(false);
             this.tabPage0.PerformLayout();
-            this.groupBox6.ResumeLayout(false);
-            this.groupBox6.PerformLayout();
+            this.grb_Image.ResumeLayout(false);
+            this.grb_Image.PerformLayout();
             this.tabPage1.ResumeLayout(false);
             this.tabPage1.PerformLayout();
             this.tabPage2.ResumeLayout(false);
             this.tabPage2.PerformLayout();
-            this.groupBox4.ResumeLayout(false);
-            this.groupBox4.PerformLayout();
-            this.grb_Graph.ResumeLayout(false);
-            this.grb_Graph.PerformLayout();
+            this.grb_Rect.ResumeLayout(false);
+            this.grb_Rect.PerformLayout();
+            this.grb_RectInfo.ResumeLayout(false);
+            this.grb_RectInfo.PerformLayout();
             this.tabPage3.ResumeLayout(false);
             this.tabPage3.PerformLayout();
-            this.groupBox3.ResumeLayout(false);
-            this.groupBox3.PerformLayout();
+            this.grb_ModeRect.ResumeLayout(false);
+            this.grb_ModeRect.PerformLayout();
             this.tabPage4.ResumeLayout(false);
-            this.groupBox5.ResumeLayout(false);
-            this.groupBox5.PerformLayout();
-            this.groupBox1.ResumeLayout(false);
-            this.groupBox1.PerformLayout();
+            this.grb_Font.ResumeLayout(false);
+            this.grb_Font.PerformLayout();
+            this.grb_Display.ResumeLayout(false);
+            this.grb_Display.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -1540,7 +1540,7 @@
         private System.Windows.Forms.ComboBox cmb_110;
         private System.Windows.Forms.TabPage tabPage4;
         private System.Windows.Forms.TabPage tabPage2;
-        private System.Windows.Forms.GroupBox groupBox4;
+        private System.Windows.Forms.GroupBox grb_Rect;
         private System.Windows.Forms.RadioButton btn_rectangle2;
         private System.Windows.Forms.RadioButton btn_polygon;
         private System.Windows.Forms.RadioButton btn_circle;
@@ -1548,7 +1548,7 @@
         private System.Windows.Forms.RadioButton btn_rectangle1;
         private System.Windows.Forms.Button but_updataRegion;
         private System.Windows.Forms.Button btn_setCoordIn;
-        private System.Windows.Forms.GroupBox grb_Graph;
+        private System.Windows.Forms.GroupBox grb_RectInfo;
         private System.Windows.Forms.ComboBox cmb_Width;
         private System.Windows.Forms.Label lbl_Fix4;
         private System.Windows.Forms.ComboBox cmb_Height;
@@ -1567,13 +1567,13 @@
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Button but_editModel;
         private System.Windows.Forms.Button btn_newModel;
-        private System.Windows.Forms.GroupBox groupBox3;
+        private System.Windows.Forms.GroupBox grb_ModeRect;
         private System.Windows.Forms.RadioButton btn_rectangle2_2;
         private System.Windows.Forms.RadioButton btn_polygon_2;
         private System.Windows.Forms.RadioButton btn_circle_2;
         private System.Windows.Forms.RadioButton btn_oval_2;
         private System.Windows.Forms.RadioButton btn_rectangle1_2;
-        private System.Windows.Forms.GroupBox groupBox5;
+        private System.Windows.Forms.GroupBox grb_Font;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.ComboBox CB_PointSize;
         private System.Windows.Forms.ComboBox CB_FontSize;
@@ -1582,7 +1582,7 @@
         private System.Windows.Forms.Label lbl_121;
         private System.Windows.Forms.ComboBox CB_FontX;
         private System.Windows.Forms.Label lbl_120;
-        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.GroupBox grb_Display;
         private System.Windows.Forms.CheckBox ckb_disp5;
         private System.Windows.Forms.CheckBox ckb_disp2;
         private System.Windows.Forms.CheckBox ckb_disp4;
@@ -1593,7 +1593,7 @@
         private System.Windows.Forms.ComboBox cmb_ImageFolder;
         private System.Windows.Forms.Button btn_openPath;
         private System.Windows.Forms.Button btn_setPath;
-        private System.Windows.Forms.GroupBox groupBox6;
+        private System.Windows.Forms.GroupBox grb_Image;
         private System.Windows.Forms.ComboBox cmb_Rotate;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label3;

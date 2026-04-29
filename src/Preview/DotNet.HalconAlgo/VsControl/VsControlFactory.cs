@@ -28,9 +28,9 @@ namespace DotNet.HalconAlgo
                         tabControl1.TabPages.Add((TabPage)form.GetControl("tabPage0"));
                         break;
                     case TabPageEnum.Parameter:
-                        var tabPage = (TabPage)form.GetControl("tabPage1");
-                        tabControl1.TabPages.Add(tabPage);
-                        foreach (Control itemt in tabPage.Controls) itemt.Visible = false;  //关闭对应的显示
+                        var tabPage1 = (TabPage)form.GetControl("tabPage1");
+                        tabControl1.TabPages.Add(tabPage1);
+                        foreach (Control itemt in tabPage1.Controls) itemt.Visible = false;  //关闭对应的显示
                         break;
                     case TabPageEnum.Region:
                         tabControl1.TabPages.Add((TabPage)form.GetControl("tabPage2"));

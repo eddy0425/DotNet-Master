@@ -55,43 +55,35 @@ namespace DotNet.Drawing
         }
 
         /// <summary>
-        /// 根据点坐标生成 XLD 轮廓
+        /// 根据点坐标生成 XLD 轮廓 (Point2d: X=Column, Y=Row)
         /// </summary>
-        /// <param name="points">坐标数组 (X=Column, Y=Row)</param>
-        /// <returns>生成的 XLD 轮廓对象</returns>
-        public HObject GenContours(List<Point2d> points)
+        public void GenContours(List<Point2d> points, out HObject contour)
         {
-            HObject contour;
             HOperatorSet.GenEmptyObj(out contour);
-
-            if (points == null || points.Count < 2) return contour;
+            if (points == null || points.Count < 2) return;
 
             try
             {
-                // 提取所有点的坐标 (Point2d: X=Column, Y=Row)
                 double[] rows = new double[points.Count];
                 double[] columns = new double[points.Count];
-
                 for (int i = 0; i < points.Count; i++)
                 {
-                    rows[i] = points[i].Y;      // Row
-                    columns[i] = points[i].X;   // Column
+                    rows[i] = points[i].Y;
+                    columns[i] = points[i].X;
                 }
 
-                // 将 double[] 转换为 HTuple
-                HTuple hv_Rows = new HTuple(rows);
-                HTuple hv_Columns = new HTuple(columns);
-
-                // 使用 gen_contour_polygon_xld 生成闭合的多边形轮廓
                 contour.Dispose();
-                HOperatorSet.GenContourPolygonXld(out contour, hv_Rows, hv_Columns);
+                HOperatorSet.GenContourPolygonXld(out contour, new HTuple(rows), new HTuple(columns));
             }
             catch (Exception ex)
             {
+                // 异常路径下保证 contour 始终是可被调用方安全 Dispose 的有效空对象
+                if (contour == null || !contour.IsInitialized())
+                {
+                    HOperatorSet.GenEmptyObj(out contour);
+                }
                 System.Diagnostics.Debug.WriteLine($"GenContours Error: {ex.Message}");
             }
-
-            return contour;
         }
 
         /// <summary>
@@ -116,13 +108,13 @@ namespace DotNet.Drawing
 
         #region AffineTrans
 
-        /// <summary> 获取反射变换矩阵 </summary>
+        /// <summary> 获取仿射变换矩阵 </summary>
         public void VectorAngleToRigid(Point2d point, Point2d pointTrans, out HTuple hv_HomMat2D)
         {
             HOperatorSet.VectorAngleToRigid(point.Y, point.X, 0, pointTrans.Y, pointTrans.X, 0, out hv_HomMat2D);
         }
 
-        /// <summary> 获取反射变换矩阵 </summary>
+        /// <summary> 获取仿射变换矩阵 </summary>
         public void VectorAngleToRigid(CvCoord coord, CvCoord coordTrans, out HTuple hv_HomMat2D)
         {
             HOperatorSet.VectorAngleToRigid(coord.Y, coord.X, coord.Angle.ToRadians(),
@@ -130,49 +122,49 @@ namespace DotNet.Drawing
                                             out hv_HomMat2D);
         }
 
-        /// <summary> 获取反射变换点 </summary>
+        /// <summary> 获取仿射变换点 </summary>
         public void TransPixel(Point2d point, Point2d pointTrans, HTuple row, HTuple col, out HTuple rowTrans, out HTuple colTrans)
         {
             VectorAngleToRigid(point, pointTrans, out HTuple hv_HomMat2D);
             HOperatorSet.AffineTransPixel(hv_HomMat2D, row, col, out rowTrans, out colTrans);
         }
 
-        /// <summary> 获取反射变换点 </summary>
+        /// <summary> 获取仿射变换点 </summary>
         public void TransPixel(CvCoord coord, CvCoord coordTrans, HTuple row, HTuple col, out HTuple rowTrans, out HTuple colTrans)
         {
             VectorAngleToRigid(coord, coordTrans, out HTuple hv_HomMat2D);
             HOperatorSet.AffineTransPixel(hv_HomMat2D, row, col, out rowTrans, out colTrans);
         }
 
-        /// <summary> 获取反射变换区域 </summary>
+        /// <summary> 获取仿射变换区域 </summary>
         public void TransRegion(Point2d point, Point2d pointTrans, HObject region, out HObject regionTrans)
         {
             VectorAngleToRigid(point, pointTrans, out HTuple hv_HomMat2D);
             HOperatorSet.AffineTransRegion(region, out regionTrans, hv_HomMat2D, "nearest_neighbor");
         }
 
-        /// <summary> 获取反射变换区域 </summary>
+        /// <summary> 获取仿射变换区域 </summary>
         public void TransRegion(CvCoord coord, CvCoord coordTrans, HObject region, out HObject regionTrans)
         {
             VectorAngleToRigid(coord, coordTrans, out HTuple hv_HomMat2D);
             HOperatorSet.AffineTransRegion(region, out regionTrans, hv_HomMat2D, "nearest_neighbor");
         }
 
-        /// <summary> 获取反射变换轮廓 </summary>
+        /// <summary> 获取仿射变换轮廓 </summary>
         public void TransContourXld(Point2d point, Point2d pointTrans, HObject contours, out HObject contoursTrans)
         {
             VectorAngleToRigid(point, pointTrans, out HTuple hv_HomMat2D);
             HOperatorSet.AffineTransContourXld(contours, out contoursTrans, hv_HomMat2D);
         }
 
-        /// <summary> 获取反射变换轮廓 </summary>
+        /// <summary> 获取仿射变换轮廓 </summary>
         public void TransContourXld(CvCoord coord, CvCoord coordTrans, HObject contours, out HObject contoursTrans)
         {
             VectorAngleToRigid(coord, coordTrans, out HTuple hv_HomMat2D);
             HOperatorSet.AffineTransContourXld(contours, out contoursTrans, hv_HomMat2D);
         }
 
-        /// <summary> 获取反射变换区域和点 </summary>
+        /// <summary> 获取仿射变换区域和点 </summary>
         public void TransRegionAndPixel(Point2d point, Point2d pointTrans, HObject inRegion, out HObject outRegion, HTuple row, HTuple col, out HTuple rowTrans, out HTuple colTrans)
         {
             VectorAngleToRigid(point, pointTrans, out HTuple hv_HomMat2D);
@@ -180,7 +172,7 @@ namespace DotNet.Drawing
             HOperatorSet.AffineTransPixel(hv_HomMat2D, row, col, out rowTrans, out colTrans);
         }
 
-        /// <summary> 获取反射变换区域和点 </summary>
+        /// <summary> 获取仿射变换区域和点 </summary>
         public void TransRegionAndPixel(CvCoord coord, CvCoord coordTrans, HObject inRegion, out HObject outRegion, HTuple row, HTuple col, out HTuple rowTrans, out HTuple colTrans)
         {
             VectorAngleToRigid(coord, coordTrans, out HTuple hv_HomMat2D);
@@ -191,10 +183,6 @@ namespace DotNet.Drawing
         /// <summary>
         /// 计算经过刚体变换后的坐标
         /// </summary>
-        /// <param name="follow">初始参考点</param>
-        /// <param name="matching">目标参考点</param>
-        /// <param name="target">需要变换的目标点</param>
-        /// <param name="result">输出变换后的点</param>
         public void GetTransformedCoord(Point2d point, Point2d pointTrans, CvCoord target, out CvCoord result)
         {
             // 计算角度差（弧度）
@@ -220,10 +208,6 @@ namespace DotNet.Drawing
         /// <summary>
         /// 计算经过刚体变换后的坐标
         /// </summary>
-        /// <param name="follow">初始参考点</param>
-        /// <param name="matching">目标参考点</param>
-        /// <param name="target">需要变换的目标点</param>
-        /// <param name="result">输出变换后的点</param>
         public void GetTransformedCoord(CvCoord coord, CvCoord coordTrans, CvCoord target, out CvCoord result)
         {
             // 计算角度差（弧度）
@@ -333,7 +317,7 @@ namespace DotNet.Drawing
             }
             catch (Exception ex)
             {
-                throw new Exception($"保存图像: {ex.Message}\n{ex.StackTrace}");
+                throw new Exception($"保存图像失败：{ex.Message}", ex);
             }
         }
 
@@ -372,7 +356,7 @@ namespace DotNet.Drawing
             }
             catch (Exception ex)
             {
-                throw new Exception($"保存图像: {ex.Message}\n{ex.StackTrace}");
+                throw new Exception($"保存图像失败：{ex.Message}", ex);
             }
         }
 
@@ -425,10 +409,9 @@ namespace DotNet.Drawing
         }
 
         /// <summary> 获取窗体图像 </summary>
-        public void GetCropWindow(HTuple hWindowHandle, out HObject image, string imageType = "tiff")
+        public void GetCropWindow(HTuple hWindowHandle, out HObject croppedImage, string imageType = "tiff")
         {
-            // 初始化输出图像
-            image = new HObject(); HOperatorSet.GenEmptyObj(out image);
+            HOperatorSet.GenEmptyObj(out croppedImage);
 
             try
             {
@@ -446,10 +429,11 @@ namespace DotNet.Drawing
                 }
 
                 // 从窗口裁剪图像
-                HOperatorSet.DumpWindowImage(out image, hWindowHandle);
+                croppedImage.Dispose();
+                HOperatorSet.DumpWindowImage(out croppedImage, hWindowHandle);
 
                 // 验证裁剪结果
-                if (image == null || !image.IsInitialized())
+                if (croppedImage == null || !croppedImage.IsInitialized())
                 {
                     throw new InvalidOperationException("无法从指定的窗口句柄裁剪图像！");
                 }
@@ -458,7 +442,7 @@ namespace DotNet.Drawing
             }
             catch (Exception ex)
             {
-                if (image.NotNull()) image.Dispose();
+                if (croppedImage.NotNull()) croppedImage.Dispose();
                 throw new Exception($"获取裁剪图像: {ex.Message}\n{ex.StackTrace}");
             }
         }
@@ -488,6 +472,7 @@ namespace DotNet.Drawing
                 }
 
                 // 从窗口裁剪图像
+                croppedImage.Dispose();
                 HOperatorSet.DumpWindowImage(out croppedImage, hWindowHandle);
 
                 // 验证裁剪结果
@@ -556,6 +541,7 @@ namespace DotNet.Drawing
                 Directory.CreateDirectory(Path.GetDirectoryName(savePath));
 
                 // 在 Halcon 中利用 DumpWindowImage 提取窗口中的图像
+                croppedImage.Dispose();
                 HOperatorSet.DumpWindowImage(out croppedImage, hWindowHandle);
 
                 // 保存图像到目标路径
@@ -564,7 +550,7 @@ namespace DotNet.Drawing
             }
             catch (Exception ex)
             {
-                throw new Exception($"截取窗口图像: {ex.Message}\n{ex.StackTrace}");
+                throw new Exception($"裁剪窗体图像失败：{ex.Message}", ex);
             }
             finally
             {
@@ -575,31 +561,37 @@ namespace DotNet.Drawing
         /// <summary>
         /// 保存小区域图像
         /// </summary>
-        /// <param name="imgReduced">小区域</param>
-        /// <param name="hImage">原图</param>
-        /// <param name="ModelPath">保存路径</param>
-        /// <param name="format">图片格式："bmp", "tiff", "png", etc.</param>
         public void SaveSmallestRectImage(HObject hImage, HObject imgReduced, string ModelPath, string format = "bmp")
         {
-            HObject saveImg = new HObject(); HOperatorSet.GenEmptyObj(out saveImg);
+            HObject rectangle = new HObject(); HOperatorSet.GenEmptyObj(out rectangle);
+            HObject imageReduced = new HObject(); HOperatorSet.GenEmptyObj(out imageReduced);
+            HObject imagePart = new HObject(); HOperatorSet.GenEmptyObj(out imagePart);
 
             try
             {
                 HOperatorSet.SmallestRectangle1(imgReduced, out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2);
-                HOperatorSet.GenRectangle1(out imgReduced, row1 - 20, column1 - 20, row2 + 20, column2 + 20);
-                HOperatorSet.ReduceDomain(hImage, imgReduced, out saveImg);
+               
+                rectangle.Dispose();
+                HOperatorSet.GenRectangle1(out rectangle, row1 - 20, column1 - 20, row2 + 20, column2 + 20);
 
-                HOperatorSet.CropDomain(saveImg, out saveImg);
+                imageReduced.Dispose();
+                HOperatorSet.ReduceDomain(hImage, rectangle, out imageReduced);
+
+                imagePart.Dispose();
+                HOperatorSet.CropDomain(imageReduced, out imagePart);
+
                 FileExists(ModelPath);
-                HOperatorSet.WriteImage(saveImg, format, 0, ModelPath);
+                HOperatorSet.WriteImage(imagePart, format, 0, ModelPath);
             }
             catch (Exception ex)
             {
-                throw new Exception($"保存小区域图像: {ex.Message}\n{ex.StackTrace}");
+                throw new Exception($"保存小区域图像失败：{ex.Message}", ex);
             }
             finally
             {
-                saveImg.Dispose();
+                rectangle.Dispose();
+                imageReduced.Dispose();
+                imagePart.Dispose();
             }
         }
 

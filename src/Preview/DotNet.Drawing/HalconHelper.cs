@@ -33,13 +33,11 @@ namespace DotNet.Drawing
         }
 
         /// <summary>
-        /// 根据点坐标生成 XLD 轮廓
+        /// 根据点坐标生成 XLD 轮廓 (Point2d: X=Column, Y=Row)
         /// </summary>
-        /// <param name="points">坐标数组 (X=Column, Y=Row)</param>
-        /// <returns>生成的 XLD 轮廓对象</returns>
-        public static HObject GenContours(List<Point2d> points)
+        public static void GenContours(List<Point2d> points, out HObject contour)
         {
-            return controller.GenContours(points);
+            GenContours(points, out contour);
         }
 
         /// <summary>
