@@ -25,10 +25,6 @@ namespace DotNet.HalconAlgo
 
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
-            // 释放上一次的图像句柄，避免泄漏
-            inPara.Image?.Dispose();
-            HOperatorSet.GenEmptyObj(out inPara.Image);
-
             try
             {
                 HObject ho_Image;
@@ -64,8 +60,8 @@ namespace DotNet.HalconAlgo
 
                 HOperatorSet.HomMat2dIdentity(out HTuple HomMat2D);
                 HOperatorSet.HomMat2dRotate(HomMat2D, rotateAngle, centerRow, centerCol, out HTuple HomMat2DRotate);
+                inPara.Image.Dispose();
                 HOperatorSet.AffineTransImage(ho_Image, out inPara.Image, HomMat2DRotate, "constant", "false");
-
                 double angleDeg = rotateAngle * 180.0 / Math.PI;
                 string strResult = $"直线旋转 : 对齐:{inPara.AlignAxis} 旋转:{angleDeg:F2}°";
 
@@ -117,6 +113,11 @@ namespace DotNet.HalconAlgo
 
     public class LineRotImage
     {
+        public LineRotImage() 
+        {
+            HOperatorSet.GenEmptyObj(out Image);
+        }
+
         /// <summary> 图像来源 </summary>
         public string ImageIn { set; get; } = "默认";
 

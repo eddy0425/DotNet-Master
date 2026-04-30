@@ -77,7 +77,7 @@ namespace DotNet.HalconAlgo
 
                 for (int j = 0; j < ho_Rect.CountObj(); j++)
                 {
-                    HOperatorSet.GenEmptyObj(out imgReduced);
+                    imgReduced.Dispose();
                     HOperatorSet.ReduceDomain(ho_Image, ho_Rect.SelectObj(j + 1), out imgReduced);
 
                     //查找模板
@@ -92,10 +92,12 @@ namespace DotNet.HalconAlgo
                         inPara.Coord = new CvCoord(result.X, result.Y, result.Angle);
 
                         HTuple hv_HomMat2D = new HTuple();
-                        HOperatorSet.GenEmptyObj(out inPara.HoContour);
+                        inPara.HoContour.Dispose();
                         HOperatorSet.GetNccModelRegion(out inPara.HoContour, inPara.ModelID);
                         HOperatorSet.VectorAngleToRigid(0, 0, 0, result.Row, result.Column, result.Angle, out hv_HomMat2D);
-                        HOperatorSet.AffineTransRegion(inPara.HoContour, out inPara.HoContour, hv_HomMat2D, "nearest_neighbor");
+                        HOperatorSet.AffineTransRegion(inPara.HoContour, out HObject regionAffineTrans, hv_HomMat2D, "nearest_neighbor");
+                        inPara.HoContour.Dispose();
+                        inPara.HoContour = regionAffineTrans;
 
                         display.DispRegion(inPara.HoContour, HColor.Green);
                         display.DispCross(result.Coord, HColor.Red);
@@ -205,6 +207,7 @@ namespace DotNet.HalconAlgo
                 var savelPath = AlgoPaths.JobDir + RunIndex + "\\matching.bmp";
                 var hImage = display.HoImage;
 
+                imgReduced.Dispose();
                 HOperatorSet.ReduceDomain(hImage, inPara.ModeRect.HoRegion, out imgReduced);
 
                 //制作模板
@@ -219,10 +222,12 @@ namespace DotNet.HalconAlgo
 
                 var result = new ModelResult(row, column, angle, score);
                 HTuple hv_HomMat2D = new HTuple();
-                HOperatorSet.GenEmptyObj(out ho_Contour);
+                ho_Contour.Dispose();
                 HOperatorSet.GetNccModelRegion(out ho_Contour, modelID);
                 HOperatorSet.VectorAngleToRigid(0, 0, 0, result.Row, result.Column, result.Angle, out hv_HomMat2D);
-                HOperatorSet.AffineTransRegion(ho_Contour, out ho_Contour, hv_HomMat2D, "nearest_neighbor");
+                HOperatorSet.AffineTransRegion(ho_Contour, out HObject regionAffineTrans, hv_HomMat2D, "nearest_neighbor");
+                ho_Contour.Dispose();
+                ho_Contour = regionAffineTrans;
 
                 HalconHelper.SaveSmallestRectImage(hImage, imgReduced, savelPath);
 
@@ -258,6 +263,11 @@ namespace DotNet.HalconAlgo
 
     public class NccModel
     {
+        public NccModel()
+        {
+            HOperatorSet.GenEmptyObj(out HoContour);
+        }
+
         /// <summary> 图像来源 </summary>
         public string ImageIn { set; get; } = "默认";
 

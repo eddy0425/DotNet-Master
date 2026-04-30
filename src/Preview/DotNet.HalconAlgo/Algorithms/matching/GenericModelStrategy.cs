@@ -87,7 +87,6 @@ namespace DotNet.HalconAlgo
                     // 释放上一次循环创建的对象，避免 HObject 句柄泄漏
                     imgReduced?.Dispose();
                     ho_SelRect?.Dispose();
-
                     HOperatorSet.SelectObj(ho_Rect, out ho_SelRect, j + 1);
                     HOperatorSet.ReduceDomain(ho_Image, ho_SelRect, out imgReduced);
 
@@ -112,7 +111,6 @@ namespace DotNet.HalconAlgo
 
                         // 取该匹配实例对应的轮廓；先释放旧句柄，避免泄漏
                         inPara.HoContour?.Dispose();
-                        HOperatorSet.GenEmptyObj(out inPara.HoContour);
                         HOperatorSet.GetGenericShapeModelResultObject(out inPara.HoContour, matchResultID, i, "contours");
 
                         display.DispRegion(inPara.HoContour, HColor.Green);
@@ -250,6 +248,7 @@ namespace DotNet.HalconAlgo
                 var savelPath = AlgoPaths.JobDir + RunIndex + "\\matching.bmp";
                 var hImage = display.HoImage;
 
+                imgReduced.Dispose();
                 HOperatorSet.ReduceDomain(hImage, inPara.ModeRect.HoRegion, out imgReduced);
 
                 // 注:CvHalconDotNet 22.11 未暴露 ClearGenericShapeModel,
@@ -311,7 +310,6 @@ namespace DotNet.HalconAlgo
                     var result = new ModelResult(row, column, angle, score);
 
                     ho_Contour?.Dispose();
-                    HOperatorSet.GenEmptyObj(out ho_Contour);
                     HOperatorSet.GetGenericShapeModelResultObject(out ho_Contour, matchResultID, 0, "contours");
 
                     display.DispRegion(ho_Contour, HColor.Green);
@@ -342,6 +340,11 @@ namespace DotNet.HalconAlgo
 
     public class GenericModel
     {
+        public GenericModel() 
+        {
+            HOperatorSet.GenEmptyObj(out HoContour);
+        }
+
         /// <summary> 图像来源 </summary>
         public string ImageIn { set; get; } = "默认";
 

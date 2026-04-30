@@ -12,7 +12,6 @@ namespace DotNet.HalconAlgo
         public override AlgoEnum Algorithm => AlgoEnum.RotateImage;
         public override string Name { get; set; } = "旋转图像";
         public override int RunIndex { get; set; }
-
         public override void GenTreeNode(TreeVisualizer tree)
         {
             tree.Branch(Name, branch => branch
@@ -25,10 +24,6 @@ namespace DotNet.HalconAlgo
 
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
-            // 释放上一次的图像句柄，避免泄漏
-            inPara.Image?.Dispose();
-            HOperatorSet.GenEmptyObj(out inPara.Image);
-
             try
             {
                 HObject ho_Image;
@@ -47,10 +42,12 @@ namespace DotNet.HalconAlgo
                     if (inPara.RotateAngle != 0)
                     {
                         // HALCON rotate_image: Phi 单位为度
+                        inPara.Image.Dispose();
                         HOperatorSet.RotateImage(ho_Image, out inPara.Image, inPara.RotateAngle, "constant");
                     }
                     else
                     {
+                        inPara.Image.Dispose();
                         HOperatorSet.CopyObj(ho_Image, out inPara.Image, 1, 1);
                     }
                     strResult = $"图像旋转 : 方式:{inPara.RotateType} 角度:{inPara.RotateAngle}°";
@@ -82,6 +79,7 @@ namespace DotNet.HalconAlgo
 
                     HOperatorSet.HomMat2dIdentity(out HTuple HomMat2D);
                     HOperatorSet.HomMat2dRotate(HomMat2D, baseAglDeg.ToRadians(), baseRow, baseCol, out HTuple HomMat2DRotate);
+                    inPara.Image.Dispose();
                     HOperatorSet.AffineTransImage(ho_Image, out inPara.Image, HomMat2DRotate, "constant", "false");
 
                     strResult = $"图像旋转 : 方式:{inPara.RotateType} 坐标:({baseCol:F2},{baseRow:F2}) 角度:{baseAglDeg:F2}°";
@@ -153,6 +151,11 @@ namespace DotNet.HalconAlgo
 
     public class RotateImage
     {
+        public RotateImage() 
+        {
+            HOperatorSet.GenEmptyObj(out Image);
+        }
+
         /// <summary> 图像来源 </summary>
         public string ImageIn { set; get; } = "默认";
 
