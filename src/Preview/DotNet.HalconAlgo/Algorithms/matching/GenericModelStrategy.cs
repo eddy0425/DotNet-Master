@@ -25,6 +25,14 @@ namespace DotNet.HalconAlgo
         {
             display.RectangleEvent -= RectEvent;
             display.SetModelEvent -= SetModelEvent;
+            display.DispModelEvent -= DispModelEvent;
+
+            inPara.HoContour?.Dispose();
+            inPara.HoRect?.Dispose();
+            inPara.ModeRect?.Dispose();
+            // 注: CvHalconDotNet 22.11 未暴露 ClearGenericShapeModel,
+            // 旧模板句柄由 HALCON 内部生命周期管理。
+            inPara.ModelID = null;
         }
         private void RectEvent(object sender, DrawRectangleArgs e)
         {
@@ -66,17 +74,13 @@ namespace DotNet.HalconAlgo
 
             try
             {
-                HObject ho_Image;
-                if (inPara.ImageIn == "默认")
-                    ho_Image = display.HoImage;
-                else
-                    ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
+                HObject ho_Image = (inPara.ImageIn == "默认")
+                    ? display.HoImage
+                    : strategys.ResolveFrom<HObject>(inPara.ImageIn);
 
-                HObject ho_Rect;
-                if (inPara.RegionIn == "默认")
-                    ho_Rect = inPara.HoRect.HoRegion;
-                else
-                    ho_Rect = strategys.ResolveFrom<HObject>(inPara.RegionIn);
+                HObject ho_Rect = (inPara.RegionIn == "默认")
+                    ? inPara.HoRect.HoRegion
+                    : strategys.ResolveFrom<HObject>(inPara.RegionIn);
 
                 display.DispRegion(ho_Rect, HColor.Blue);
 

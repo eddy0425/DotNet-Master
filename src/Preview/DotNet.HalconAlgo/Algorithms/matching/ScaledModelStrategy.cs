@@ -24,6 +24,17 @@ namespace DotNet.HalconAlgo
         {
             display.RectangleEvent -= RectEvent;
             display.SetModelEvent -= SetModelEvent;
+            display.DispModelEvent -= DispModelEvent;
+
+            inPara.HoContour?.Dispose();
+            inPara.HoRect?.Dispose();
+            inPara.ModeRect?.Dispose();
+            if (inPara.ModelID != null && inPara.ModelID.Length > 0)
+            {
+                // ClearShapeModel 同时适用于 ScaledShapeModel
+                HOperatorSet.ClearShapeModel(inPara.ModelID);
+                inPara.ModelID = null;
+            }
         }
         private void RectEvent(object sender, DrawRectangleArgs e)
         {
@@ -55,20 +66,17 @@ namespace DotNet.HalconAlgo
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
             HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
+            HObject ho_SelRect = new HObject(); HOperatorSet.GenEmptyObj(out ho_SelRect);
 
             try
             {
-                HObject ho_Image;
-                if (inPara.ImageIn == "默认")
-                    ho_Image = display.HoImage;
-                else
-                    ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
+                HObject ho_Image = (inPara.ImageIn == "默认")
+                    ? display.HoImage
+                    : strategys.ResolveFrom<HObject>(inPara.ImageIn);
 
-                HObject ho_Rect;
-                if (inPara.RegionIn == "默认")
-                    ho_Rect = inPara.HoRect.HoRegion;
-                else
-                    ho_Rect = strategys.ResolveFrom<HObject>(inPara.RegionIn);
+                HObject ho_Rect = (inPara.RegionIn == "默认")
+                    ? inPara.HoRect.HoRegion
+                    : strategys.ResolveFrom<HObject>(inPara.RegionIn);
 
                 display.DispRegion(ho_Rect, HColor.Blue);
 
@@ -76,8 +84,11 @@ namespace DotNet.HalconAlgo
 
                 for (int j = 0; j < ho_Rect.CountObj(); j++)
                 {
+                    ho_SelRect.Dispose();
+                    HOperatorSet.SelectObj(ho_Rect, out ho_SelRect, j + 1);
+
                     imgReduced.Dispose();
-                    HOperatorSet.ReduceDomain(ho_Image, ho_Rect.SelectObj(j + 1), out imgReduced);
+                    HOperatorSet.ReduceDomain(ho_Image, ho_SelRect, out imgReduced);
 
                     //查找模板
                     HOperatorSet.FindScaledShapeModel(imgReduced, inPara.ModelID, inPara.AngleStart.TupleRad(), inPara.AngleExtent.TupleRad(),
@@ -91,10 +102,9 @@ namespace DotNet.HalconAlgo
                         inPara.Results.Add(result);
                         inPara.Coord = new CvCoord(result.X, result.Y, result.Angle);
 
-                        HTuple hv_HomMat2D = new HTuple();
                         inPara.HoContour.Dispose();
                         HOperatorSet.GetShapeModelContours(out inPara.HoContour, inPara.ModelID, 1);
-                        HOperatorSet.VectorAngleToRigid(0, 0, 0, result.Row, result.Column, result.Angle, out hv_HomMat2D);
+                        HOperatorSet.VectorAngleToRigid(0, 0, 0, result.Row, result.Column, result.Angle, out HTuple hv_HomMat2D);
                         HOperatorSet.AffineTransContourXld(inPara.HoContour, out HObject contoursAffineTrans, hv_HomMat2D);
                         inPara.HoContour.Dispose();
                         inPara.HoContour = contoursAffineTrans;
@@ -112,6 +122,7 @@ namespace DotNet.HalconAlgo
             finally
             {
                 imgReduced.Dispose();
+                ho_SelRect.Dispose();
             }
         }
         public override void GenTreeNode(TreeVisualizer tree)
@@ -221,6 +232,12 @@ namespace DotNet.HalconAlgo
                 //制作模板
                 HOperatorSet.CreateScaledShapeModel(imgReduced, inPara.NumLevels, inPara.AngleStart.TupleRad(), inPara.AngleExtent.TupleRad(), "auto", inPara.ScaleMin, inPara.ScaleMax,
                                         "auto", "auto", "use_polarity", "auto", "auto", out HTuple modelID);
+
+                // 立即转移所有权：先释放旧模板，再装入新模板
+                if (inPara.ModelID != null && inPara.ModelID.Length > 0)
+                {
+                    HOperatorSet.ClearShapeModel(inPara.ModelID);
+                }
                 inPara.ModelID = modelID;
 
                 HOperatorSet.FindScaledShapeModel(imgReduced, inPara.ModelID, inPara.AngleStart.TupleRad(), inPara.AngleExtent.TupleRad(),
@@ -229,10 +246,9 @@ namespace DotNet.HalconAlgo
                                             out HTuple row, out HTuple column, out HTuple angle, out HTuple scale, out HTuple score);
 
                 var result = new ModelResult(row, column, angle, score);
-                HTuple hv_HomMat2D = new HTuple();
                 ho_Contour.Dispose();
                 HOperatorSet.GetShapeModelContours(out ho_Contour, modelID, 1);
-                HOperatorSet.VectorAngleToRigid(0, 0, 0, result.Row, result.Column, result.Angle, out hv_HomMat2D);
+                HOperatorSet.VectorAngleToRigid(0, 0, 0, result.Row, result.Column, result.Angle, out HTuple hv_HomMat2D);
                 HOperatorSet.AffineTransContourXld(ho_Contour, out HObject contoursAffineTrans, hv_HomMat2D);
                 ho_Contour.Dispose();
                 ho_Contour = contoursAffineTrans;
