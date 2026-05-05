@@ -111,9 +111,9 @@ namespace DotNet.HalconAlgo
         }
     }
 
-    public class LineRotImage
+    public class LineRotImage : AlgoFont
     {
-        public LineRotImage() 
+        public LineRotImage()
         {
             HOperatorSet.GenEmptyObj(out Image);
         }
@@ -129,17 +129,5 @@ namespace DotNet.HalconAlgo
 
         /// <summary> 对齐轴 </summary>
         public string AlignAxis { set; get; } = "平行X轴";
-
-        /// <summary> 显示文本 </summary>
-        public bool DispText { set; get; } = true;
-
-        /// <summary> 字体X坐标 </summary>
-        public int FontX { set; get; } = 50;
-
-        /// <summary> 字体Y坐标 </summary>
-        public int FontY { set; get; } = 50;
-
-        /// <summary> 字体大小 </summary>
-        public int FontSize { set; get; } = 15;
     }
 }

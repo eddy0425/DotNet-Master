@@ -20,6 +20,7 @@ namespace DotNet.HalconAlgo
         public override void Close(DisplayUI display)
         {
             display.AffRectEvent -= AffRectEvent;
+            inPara.HoRect.Dispose();
         }
         private void AffRectEvent(object sender, DrawAffRectArgs e)
         {
@@ -57,6 +58,7 @@ namespace DotNet.HalconAlgo
                 HTuple fixCol = inPara.HoRect.Center.X;
                 if (inPara.CoordIn == "默认")
                 {
+                    imgReduced.Dispose();
                     HOperatorSet.ReduceDomain(ho_Image, ho_Rect, out imgReduced);
                     if (inPara.DispRegion) display.DispRegion(ho_Rect, HColor.Blue);
                 }
@@ -64,9 +66,11 @@ namespace DotNet.HalconAlgo
                 {
                     var inCoord = strategys.ResolveFrom<CvCoord>(inPara.CoordIn);
                     var tmplPoint = strategys.ResolveFrom<Point2d>(inPara.CoordIn.ToTmplPoint());
+                    regionGet.Dispose();
                     HalconHelper.TransRegion(tmplPoint, inCoord.Center, ho_Rect, out regionGet);
                     HalconHelper.TransPixel(tmplPoint, inCoord.Center, fixRow, fixCol, out fixRow, out fixCol);
 
+                    imgReduced.Dispose();
                     HOperatorSet.ReduceDomain(ho_Image, regionGet, out imgReduced);
                     if (inPara.DispRegion) display.DispRegion(regionGet, HColor.Blue);
                 }
@@ -248,7 +252,7 @@ namespace DotNet.HalconAlgo
                 if (inPara.DispRegion) display.DispRegion(ho_Rect, HColor.Blue);
                 if (inPara.DispResult)
                 {
-                    arcContour.Dispose(); HOperatorSet.GenEmptyObj(out arcContour);
+                    arcContour.Dispose();
                     HOperatorSet.GenCircleContourXld(out arcContour,
                         circRow, circCol, circRadius, circStartPhi, circEndPhi, circPointOrder, 1);
                     display.DispRegion(arcContour, HColor.Red);
@@ -276,7 +280,6 @@ namespace DotNet.HalconAlgo
         private static void RebuildContour(ref HObject contour, List<double> rowList, List<double> colList)
         {
             contour.Dispose();
-            HOperatorSet.GenEmptyObj(out contour);
             HOperatorSet.GenContourPolygonXld(out contour, rowList.ToArray(), colList.ToArray());
         }
 
@@ -310,254 +313,6 @@ namespace DotNet.HalconAlgo
                 double span = startPhi - endPhi;
                 if (span < 0) span += twoPi;
                 return startPhi - span * 0.5;
-            }
-        }
-
-        public bool Fun_action2(DisplayUI display, List<IParaStrategy> strategys)
-        {
-            HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
-            HObject contourFitting = new HObject(); HOperatorSet.GenEmptyObj(out contourFitting);
-            HObject arcContour = new HObject(); HOperatorSet.GenEmptyObj(out arcContour);
-
-            try
-            {
-                HObject ho_Image;
-                if (inPara.ImageIn == "默认")
-                    ho_Image = display.HoImage;
-                else
-                    ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
-
-                HObject ho_Rect;
-                if (inPara.RegionIn == "默认")
-                    ho_Rect = inPara.HoRect.HoRegion;
-                else
-                    ho_Rect = strategys.ResolveFrom<HObject>(inPara.RegionIn);
-
-                HOperatorSet.ReduceDomain(ho_Image, ho_Rect, out imgReduced);
-                display.DispRegion(ho_Rect, HColor.Blue);
-
-                #region 变量
-                HTuple fixAgl = inPara.HoRect.Phi;
-                HTuple fixRow = inPara.HoRect.Center.Y;
-                HTuple fixCol = inPara.HoRect.Center.X;
-                HTuple fixLen1 = inPara.HoRect.Width / 2;
-                HTuple fixLen2 = inPara.HoRect.Height / 2;
-                HTuple imgWid = display.HoWidth;
-                HTuple imgHei = display.HoHeight;
-                #endregion
-
-                #region 边缘查找
-                double stepPace = Convert.ToDouble(inPara.StepPace); if (stepPace < 1) stepPace = 1;
-                double stepWid = Convert.ToDouble(inPara.StepWidth) / 2; if (stepWid < 1) stepWid = 1;
-                string transition = inPara.GetTransition;
-                string select = inPara.GetContourType;
-
-                HTuple mRow = new HTuple(), mCol = new HTuple(), mAmp = new HTuple(), mDis = new HTuple();
-                HTuple rowNew = new HTuple(), colNew = new HTuple();
-                HTuple hMHandle;
-                double[] rowFitting = new double[0];
-                double[] colFitting = new double[0];
-                int loop_cnt = (int)(fixLen2.D / stepPace + 0.5); if (loop_cnt < 1) loop_cnt = 1;
-                double cosLen2 = fixLen2 * Math.Cos(fixAgl) / ((double)(loop_cnt));
-                double sinLen2 = fixLen2 * Math.Sin(fixAgl) / ((double)(loop_cnt));
-
-                for (float s = -1 * loop_cnt; s <= loop_cnt; s++)
-                {
-                    rowNew = fixRow + s * cosLen2;
-                    colNew = fixCol + s * sinLen2;
-                    HOperatorSet.GenMeasureRectangle2(rowNew, colNew, fixAgl, fixLen1, stepWid, imgWid, imgHei, "nearest_neighbor", out hMHandle);
-                    if (select != "second")
-                    {
-                        HOperatorSet.MeasurePos(imgReduced, hMHandle, inPara.Sigma, inPara.Threshold, transition, select, out mRow, out mCol, out mAmp, out mDis);
-                    }
-                    else
-                    {
-                        HOperatorSet.MeasurePos(imgReduced, hMHandle, inPara.Sigma, inPara.Threshold, transition, "all", out mRow, out mCol, out mAmp, out mDis);
-                    }
-                    if (inPara.DispRegion)
-                    {
-                        display.DispRectangle2(rowNew, colNew, fixAgl, fixLen1, stepWid, HColor.Blue);
-                    }
-                    if (mRow.Length > 0 && select != "second")
-                    {
-                        Array.Resize(ref rowFitting, rowFitting.Length + 1); rowFitting[rowFitting.Length - 1] = mRow.TupleSelect(0).D;
-                        Array.Resize(ref colFitting, colFitting.Length + 1); colFitting[colFitting.Length - 1] = mCol.TupleSelect(0).D;
-                    }
-                    else if (mRow.Length > 1 && select == "second")
-                    {
-                        Array.Resize(ref rowFitting, rowFitting.Length + 1); rowFitting[rowFitting.Length - 1] = mRow.TupleSelect(1).D;
-                        Array.Resize(ref colFitting, colFitting.Length + 1); colFitting[colFitting.Length - 1] = mCol.TupleSelect(1).D;
-                    }
-                    HOperatorSet.CloseMeasure(hMHandle);
-                }
-                #endregion
-
-                #region 拟合圆弧中点
-                if (rowFitting.Length >= 3)
-                {
-                    HOperatorSet.GenContourPolygonXld(out contourFitting, rowFitting, colFitting);
-
-                    #region Stage 1：用 gauss 鲁棒直线拟合先剔除严重跑偏的点
-                    double maxErr = inPara.MaxErr; if (maxErr < 0) maxErr = 0;
-                    // 直线粗滤阈值适度放宽以容纳弧的凸量 (sagitta)
-                    double lineGate = Math.Max(maxErr * 3.0, 15.0);
-
-                    List<double> rowList = new List<double>(rowFitting);
-                    List<double> colList = new List<double>(colFitting);
-                    List<double> rowRemoved = new List<double>();
-                    List<double> colRemoved = new List<double>();
-
-                    HTuple lineRowBegin, lineColBegin, lineRowEnd, lineColEnd, lineNr, lineNc, lineDist;
-                    HOperatorSet.FitLineContourXld(contourFitting, "gauss", -1, 0, 5, 1.345,
-                        out lineRowBegin, out lineColBegin, out lineRowEnd, out lineColEnd,
-                        out lineNr, out lineNc, out lineDist);
-
-                    for (int i = rowList.Count - 1; i >= 0; i--)
-                    {
-                        HTuple curdis;
-                        HOperatorSet.DistancePl(rowList[i], colList[i],
-                            lineRowBegin, lineColBegin, lineRowEnd, lineColEnd, out curdis);
-                        if (Math.Abs(curdis.D) > lineGate)
-                        {
-                            rowRemoved.Add(rowList[i]);
-                            colRemoved.Add(colList[i]);
-                            rowList.RemoveAt(i);
-                            colList.RemoveAt(i);
-                        }
-                    }
-
-                    if (rowList.Count < 3)
-                    {
-                        throw new NullReferenceException("直线粗滤后有效点不足，无法拟合圆弧！");
-                    }
-                    #endregion
-
-                    #region Stage 2：atukey 圆拟合 + 径向距离迭代精滤
-                    contourFitting.Dispose(); HOperatorSet.GenEmptyObj(out contourFitting);
-                    HOperatorSet.GenContourPolygonXld(out contourFitting, rowList.ToArray(), colList.ToArray());
-
-                    HTuple circRow, circCol, circRadius, circStartPhi, circEndPhi, circPointOrder;
-                    HOperatorSet.FitCircleContourXld(contourFitting, "atukey", -1, 0, 0, 5, 2,
-                        out circRow, out circCol, out circRadius, out circStartPhi, out circEndPhi, out circPointOrder);
-
-                    int safety = rowList.Count;
-                    for (int iter = 0; iter < safety; iter++)
-                    {
-                        int worstIdx = -1;
-                        double worstErr = 0;
-                        for (int i = 0; i < rowList.Count; i++)
-                        {
-                            double dRow = rowList[i] - circRow.D;
-                            double dCol = colList[i] - circCol.D;
-                            double err = Math.Abs(Math.Sqrt(dRow * dRow + dCol * dCol) - circRadius.D);
-                            if (err > worstErr) { worstErr = err; worstIdx = i; }
-                        }
-
-                        if (worstIdx < 0 || worstErr <= maxErr) break;
-                        if (rowList.Count <= 3) break;
-
-                        rowRemoved.Add(rowList[worstIdx]);
-                        colRemoved.Add(colList[worstIdx]);
-                        rowList.RemoveAt(worstIdx);
-                        colList.RemoveAt(worstIdx);
-
-                        contourFitting.Dispose(); HOperatorSet.GenEmptyObj(out contourFitting);
-                        HOperatorSet.GenContourPolygonXld(out contourFitting, rowList.ToArray(), colList.ToArray());
-                        HOperatorSet.FitCircleContourXld(contourFitting, "atukey", -1, 0, 0, 5, 2,
-                            out circRow, out circCol, out circRadius, out circStartPhi, out circEndPhi, out circPointOrder);
-                    }
-
-                    if (rowList.Count < 3)
-                    {
-                        throw new NullReferenceException("最大偏差筛选后有效点不足，无法拟合圆弧！");
-                    }
-                    #endregion
-
-                    #region Stage 3：可选裁剪筛选后首尾点并重新拟合
-                    if (inPara.IsTrimEnds && rowList.Count >= 5)
-                    {
-                        rowRemoved.Add(rowList[0]);
-                        colRemoved.Add(colList[0]);
-                        rowRemoved.Add(rowList[rowList.Count - 1]);
-                        colRemoved.Add(colList[colList.Count - 1]);
-
-                        rowList.RemoveAt(rowList.Count - 1);
-                        colList.RemoveAt(colList.Count - 1);
-                        rowList.RemoveAt(0);
-                        colList.RemoveAt(0);
-
-                        contourFitting.Dispose(); HOperatorSet.GenEmptyObj(out contourFitting);
-                        HOperatorSet.GenContourPolygonXld(out contourFitting, rowList.ToArray(), colList.ToArray());
-                        HOperatorSet.FitCircleContourXld(contourFitting, "atukey", -1, 0, 0, 5, 2,
-                            out circRow, out circCol, out circRadius, out circStartPhi, out circEndPhi, out circPointOrder);
-                    }
-
-                    rowFitting = rowList.ToArray();
-                    colFitting = colList.ToArray();
-                    #endregion
-
-                    if (inPara.DispFittingPoint)
-                    {
-                        for (int i = 0; i < rowRemoved.Count; i++)
-                        {
-                            display.DispPoint(colRemoved[i], rowRemoved[i], HColor.Red, inPara.PointSize);
-                        }
-                        for (int i = 0; i < rowFitting.Length; i++)
-                        {
-                            display.DispPoint(colFitting[i], rowFitting[i], HColor.Green, inPara.PointSize);
-                        }
-                    }
-
-                    double startPhi = circStartPhi.D;
-                    double endPhi = circEndPhi.D;
-                    string pointOrder = circPointOrder.S;
-
-                    double arcSpan, arcMidPhi;
-                    if (pointOrder == "positive")
-                    {
-                        arcSpan = endPhi >= startPhi
-                            ? (endPhi - startPhi)
-                            : (2 * Math.PI + endPhi - startPhi);
-                        arcMidPhi = startPhi + arcSpan / 2.0;
-                    }
-                    else
-                    {
-                        arcSpan = startPhi >= endPhi
-                            ? (startPhi - endPhi)
-                            : (2 * Math.PI + startPhi - endPhi);
-                        arcMidPhi = startPhi - arcSpan / 2.0;
-                    }
-
-                    double midRow = circRow.D - circRadius.D * Math.Sin(arcMidPhi);
-                    double midCol = circCol.D + circRadius.D * Math.Cos(arcMidPhi);
-                    inPara.ArcMidpoint = new Point2d(midCol, midRow);
-
-                    if (inPara.DispRegion) display.DispRegion(ho_Rect, HColor.Blue);
-                    if (inPara.DispResult)
-                    {
-                        HOperatorSet.GenCircleContourXld(out arcContour,
-                            circRow, circCol, circRadius, circStartPhi, circEndPhi, circPointOrder, 1);
-                        display.DispRegion(arcContour, HColor.Red);
-                        display.DispPoint(midCol, midRow, HColor.OrangeRed, inPara.PointSize + 50);
-                    }
-                }
-                else
-                {
-                    throw new NullReferenceException("未找到足够的轮廓点！");
-                }
-                #endregion
-
-                return true;
-            }
-            catch
-            {
-                throw;
-            }
-            finally
-            {
-                imgReduced.Dispose();
-                contourFitting.Dispose();
-                arcContour.Dispose();
             }
         }
 

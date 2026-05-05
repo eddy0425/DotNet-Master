@@ -56,6 +56,7 @@
   <ItemGroup>
     <Compile Include="Algorithms\AlgoEnum.cs" />
     <Compile Include="AlgoPaths.cs" />
+    <Compile Include="Algorithms\AlgoFont.cs" />
     <Compile Include="Algorithms\contour\FitCircleStrategy.cs" />
     <Compile Include="Algorithms\geometry\CreateCoordStrategy.cs" />
     <Compile Include="Algorithms\geometry\LineOffsetStrategy.cs" />

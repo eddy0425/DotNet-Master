@@ -122,7 +122,6 @@
             this.CB_FontX = new System.Windows.Forms.ComboBox();
             this.lbl_120 = new System.Windows.Forms.Label();
             this.grb_Display = new System.Windows.Forms.GroupBox();
-            this.ckb_disp5 = new System.Windows.Forms.CheckBox();
             this.ckb_disp2 = new System.Windows.Forms.CheckBox();
             this.ckb_disp4 = new System.Windows.Forms.CheckBox();
             this.ckb_disp1 = new System.Windows.Forms.CheckBox();
@@ -1272,7 +1271,6 @@
             // 
             // grb_Font
             // 
-            this.grb_Font.Controls.Add(this.ckb_disp5);
             this.grb_Font.Controls.Add(this.label2);
             this.grb_Font.Controls.Add(this.CB_PointSize);
             this.grb_Font.Controls.Add(this.CB_FontSize);
@@ -1384,19 +1382,6 @@
             this.grb_Display.TabIndex = 291;
             this.grb_Display.TabStop = false;
             this.grb_Display.Text = "显示设置";
-            // 
-            // ckb_disp5
-            // 
-            this.ckb_disp5.AutoSize = true;
-            this.ckb_disp5.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.ckb_disp5.ForeColor = System.Drawing.Color.White;
-            this.ckb_disp5.Location = new System.Drawing.Point(21, 163);
-            this.ckb_disp5.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.ckb_disp5.Name = "ckb_disp5";
-            this.ckb_disp5.Size = new System.Drawing.Size(74, 19);
-            this.ckb_disp5.TabIndex = 4;
-            this.ckb_disp5.Text = "显示文本";
-            this.ckb_disp5.UseVisualStyleBackColor = true;
             // 
             // ckb_disp2
             // 
@@ -1583,7 +1568,6 @@
         private System.Windows.Forms.ComboBox CB_FontX;
         private System.Windows.Forms.Label lbl_120;
         private System.Windows.Forms.GroupBox grb_Display;
-        private System.Windows.Forms.CheckBox ckb_disp5;
         private System.Windows.Forms.CheckBox ckb_disp2;
         private System.Windows.Forms.CheckBox ckb_disp4;
         private System.Windows.Forms.CheckBox ckb_disp1;

@@ -20,6 +20,7 @@ namespace DotNet.HalconAlgo
         public override void Close(DisplayUI display)
         {
             display.AffRectEvent -= AffRectEvent;
+            inPara.HoRect.Dispose();
         }
         private void AffRectEvent(object sender, DrawAffRectArgs e)
         {
@@ -335,6 +336,13 @@ namespace DotNet.HalconAlgo
             VsControls.ShowLabel(form, "lbl_113", "裁剪首尾");
             VsControls.ShowComboBoxList(form, "cmb_113", inPara.TrimEnds, new[] { "否", "是" });
             VsControls.ShowButton(form, "btn_113", false);
+
+            //------------------------------------------
+            VsControls.ShowCheckBox(form, "ckb_disp0", "显示文本", inPara.DispText);
+            VsControls.ShowCheckBox(form, "ckb_disp1", "查找区域", inPara.DispRegion);
+            VsControls.ShowCheckBox(form, "ckb_disp2", "拟合区域", inPara.DispFixRegion);
+            VsControls.ShowCheckBox(form, "ckb_disp3", "拟合点", inPara.DispFixPoint);
+            VsControls.ShowCheckBox(form, "ckb_disp4", "显示结果", inPara.DispResult);
         }
         public override void SavePara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
@@ -350,6 +358,13 @@ namespace DotNet.HalconAlgo
             inPara.StepWidth = Convert.ToInt16(VsControls["cmb_111"].Text);
             inPara.MaxErr = Convert.ToInt16(VsControls["cmb_112"].Text);
             inPara.TrimEnds = VsControls["cmb_113"].Text;
+
+            //------------------------------------------
+            inPara.DispText = VsControls["ckb_disp0"].Checked;
+            inPara.DispRegion = VsControls["ckb_disp1"].Checked;
+            inPara.DispFixRegion = VsControls["ckb_disp2"].Checked;
+            inPara.DispFixPoint = VsControls["ckb_disp3"].Checked;
+            inPara.DispResult = VsControls["ckb_disp4"].Checked;
         }
         public override void DispROI(DisplayUI display)
         {

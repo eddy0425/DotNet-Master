@@ -40,12 +40,16 @@ namespace DotNet.HalconAlgo
                         break;
                     case TabPageEnum.Display:
                         tabControl1.TabPages.Add((TabPage)form.GetControl("tabPage4"));
+                        T Get<T>(string name) where T : Control => (T)form.GetControl(name);
+                        foreach (var name in new[] { "ckb_disp0", "ckb_disp1", "ckb_disp2", "ckb_disp3", "ckb_disp4" })
+                            Get<CheckBox>(name).Visible = false;
                         break;
                 }
             }
 
             // 默认显示第一个 TabPage
             tabControl1.SelectedIndex = 0;
+          
         }
 
         /// <summary>
@@ -130,6 +134,12 @@ namespace DotNet.HalconAlgo
             con.Visible = true;
             con.Text = text;
             controls.Add(name, new VsControlModel(form, name, "CheckBox", text, true, _checked));
+        }
+        
+        public static void ShowGroupBox(this Dictionary<string, VsControlModel> controls, Form form, string name)
+        {
+            var con = (GroupBox)form.GetControl(name);
+            con.Visible = true;
         }
 
         public static void ShowRadioButton(this Dictionary<string, VsControlModel> controls, Form form, string name, string text, bool visible, bool _checked)

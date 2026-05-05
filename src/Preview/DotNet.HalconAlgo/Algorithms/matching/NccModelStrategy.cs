@@ -14,54 +14,25 @@ namespace DotNet.HalconAlgo
         public override string Name { get; set; } = "灰度匹配";
         public override int RunIndex { get; set; }
 
-        public override void Init(DisplayUI display)
+        public override void GenTreeNode(TreeVisualizer tree)
         {
-            display.RectangleEvent += RectEvent;
-            display.SetModelEvent += SetModelEvent;
-            display.DispModelEvent += DispModelEvent;
-        }
+            tree.Branch(Name, branch => branch
+                       .Node("坐标系", OutEnum.Coord, line => line
+                           .Branch("原点", pt => pt
+                               .Node("行", OutEnum.Number)
+                               .Node("列", OutEnum.Number)
+                           )
+                           .Node("角度", OutEnum.Array)
+                       )
+                   );
 
-        public override void Close(DisplayUI display)
-        {
-            display.RectangleEvent -= RectEvent;
-            display.SetModelEvent -= SetModelEvent;
-            display.DispModelEvent -= DispModelEvent;
-
-            inPara.HoContour?.Dispose();
-            inPara.HoRect?.Dispose();
-            inPara.ModeRect?.Dispose();
-            if (inPara.ModelID != null && inPara.ModelID.Length > 0)
-            {
-                HOperatorSet.ClearNccModel(inPara.ModelID);
-                inPara.ModelID = null;
-            }
-        }
-        private void RectEvent(object sender, DrawRectangleArgs e)
-        {
-            if (e.Name == Name)
-            {
-                inPara.HoRect.Update2Point(e.TopLeft, e.BottomRight);
-                inPara.HoRect.GenRegion();
-            }
-        }
-        private void SetModelEvent(object sender, DrawSetModelArgs e)
-        {
-            if (e.Name == Name)
-            {
-                inPara.ModeRect.Update2Point(e.TopLeft, e.BottomRight);
-                inPara.ModeRect.GenRegion();
-
-                SetTemplate(e.Display);
-            }
-        }
-        private void DispModelEvent(object sender, DrawDispModelArgs e)
-        {
-            if (e.Name == Name)
-            {
-                e.Display.DispRegion(inPara.HoRect, HColor.Blue);
-                e.Display.DispRegion(inPara.HoContour, HColor.Green);
-                e.Display.DispCross(inPara.Coord, HColor.OrangeRed);
-            }
+            ClearResolvers();
+            RegisterOutput("TmplPoint", () => inPara.TmplPoint);
+            RegisterOutput("坐标系", () => inPara.Coord);
+            RegisterOutput("坐标系/原点", () => inPara.Coord.Center);
+            RegisterOutput("坐标系/原点/行", () => inPara.Coord.Y);
+            RegisterOutput("坐标系/原点/列", () => inPara.Coord.X);
+            RegisterOutput("坐标系/角度", () => inPara.Coord.Angle);
         }
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
@@ -78,7 +49,7 @@ namespace DotNet.HalconAlgo
                     ? inPara.HoRect.HoRegion
                     : strategys.ResolveFrom<HObject>(inPara.RegionIn);
 
-                display.DispRegion(ho_Rect, HColor.Blue);
+                if (inPara.DispRegion) display.DispRegion(ho_Rect, HColor.Blue);
 
                 inPara.Results = new List<ModelResult>();
 
@@ -108,8 +79,8 @@ namespace DotNet.HalconAlgo
                         inPara.HoContour.Dispose();
                         inPara.HoContour = regionAffineTrans;
 
-                        display.DispRegion(inPara.HoContour, HColor.Green);
-                        display.DispCross(result.Coord, HColor.Red);
+                        if (inPara.DispContour) display.DispRegion(inPara.HoContour, HColor.Green);
+                        if (inPara.DispPoint) display.DispCross(result.Coord, HColor.Red);
                     }
                 }
                 return true;
@@ -123,26 +94,6 @@ namespace DotNet.HalconAlgo
                 imgReduced.Dispose();
                 ho_SelRect.Dispose();
             }
-        }
-        public override void GenTreeNode(TreeVisualizer tree)
-        {
-            tree.Branch(Name, branch => branch
-                       .Node("坐标系", OutEnum.Coord, line => line
-                           .Branch("原点", pt => pt
-                               .Node("行", OutEnum.Number)
-                               .Node("列", OutEnum.Number)
-                           )
-                           .Node("角度", OutEnum.Array)
-                       )
-                   );
-
-            ClearResolvers();
-            RegisterOutput("TmplPoint", () => inPara.TmplPoint);
-            RegisterOutput("坐标系", () => inPara.Coord);
-            RegisterOutput("坐标系/原点", () => inPara.Coord.Center);
-            RegisterOutput("坐标系/原点/行", () => inPara.Coord.Y);
-            RegisterOutput("坐标系/原点/列", () => inPara.Coord.X);
-            RegisterOutput("坐标系/角度", () => inPara.Coord.Angle);
         }
         public override void DispPara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
@@ -187,6 +138,12 @@ namespace DotNet.HalconAlgo
 
             VsControls.ShowLabel(form, "lbl_112", "金字塔");
             VsControls.ShowComboBoxList(form, "cmb_112", inPara.NumLevels.ToString(), new[] { "0", "2" });
+
+            //------------------------------------------
+            VsControls.ShowCheckBox(form, "ckb_disp0", "显示文本", inPara.DispText);
+            VsControls.ShowCheckBox(form, "ckb_disp1", "查找区域", inPara.DispRegion);
+            VsControls.ShowCheckBox(form, "ckb_disp2", "显示轮廓", inPara.DispContour);
+            VsControls.ShowCheckBox(form, "ckb_disp3", "显示点", inPara.DispPoint);
         }
         public override void SavePara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
@@ -201,12 +158,17 @@ namespace DotNet.HalconAlgo
             inPara.NumMatches = VsControls["cmb_110"].Text == "多个" ? 0 : Convert.ToInt32(VsControls["cmb_110"].Text);
             inPara.MinScore = Convert.ToDouble(VsControls["cmb_111"].Text);
             inPara.NumLevels = Convert.ToInt16(VsControls["cmb_112"].Text);
+
+            //------------------------------------------
+            inPara.DispText = VsControls["ckb_disp0"].Checked;
+            inPara.DispRegion = VsControls["ckb_disp1"].Checked;
+            inPara.DispContour = VsControls["ckb_disp2"].Checked;
+            inPara.DispPoint = VsControls["ckb_disp3"].Checked;
         }
         public override void DispROI(DisplayUI display)
         {
             display.SetDrawMode(Name, inPara.HoRect, DrawEnum.DispRect);
         }
-
         private void SetTemplate(DisplayForm display)  //模板设置
         {
             HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
@@ -272,10 +234,57 @@ namespace DotNet.HalconAlgo
                 ho_Contour?.Dispose();
             }
         }
+        public override void Init(DisplayUI display)
+        {
+            display.RectangleEvent += RectEvent;
+            display.SetModelEvent += SetModelEvent;
+            display.DispModelEvent += DispModelEvent;
+        }
+        public override void Close(DisplayUI display)
+        {
+            display.RectangleEvent -= RectEvent;
+            display.SetModelEvent -= SetModelEvent;
+            display.DispModelEvent -= DispModelEvent;
 
+            inPara.HoContour?.Dispose();
+            inPara.HoRect?.Dispose();
+            inPara.ModeRect?.Dispose();
+            if (inPara.ModelID != null && inPara.ModelID.Length > 0)
+            {
+                HOperatorSet.ClearNccModel(inPara.ModelID);
+                inPara.ModelID = null;
+            }
+        }
+        private void RectEvent(object sender, DrawRectangleArgs e)
+        {
+            if (e.Name == Name)
+            {
+                inPara.HoRect.Update2Point(e.TopLeft, e.BottomRight);
+                inPara.HoRect.GenRegion();
+            }
+        }
+        private void SetModelEvent(object sender, DrawSetModelArgs e)
+        {
+            if (e.Name == Name)
+            {
+                inPara.ModeRect.Update2Point(e.TopLeft, e.BottomRight);
+                inPara.ModeRect.GenRegion();
+
+                SetTemplate(e.Display);
+            }
+        }
+        private void DispModelEvent(object sender, DrawDispModelArgs e)
+        {
+            if (e.Name == Name)
+            {
+                e.Display.DispRegion(inPara.HoRect, HColor.Blue);
+                e.Display.DispRegion(inPara.HoContour, HColor.Green);
+                e.Display.DispCross(inPara.Coord, HColor.OrangeRed);
+            }
+        }
     }
 
-    public class NccModel
+    public class NccModel : AlgoFont
     {
         public NccModel()
         {
@@ -336,6 +345,15 @@ namespace DotNet.HalconAlgo
         public HTuple NumLevels { get; set; } = 0;
 
         public List<ModelResult> Results { get; set; }
+
+        /// <summary> 显示区域 </summary>
+        public bool DispRegion { set; get; } = true;
+     
+        /// <summary> 显示轮廓 </summary>
+        public bool DispContour { set; get; } = true;
+
+        /// <summary> 显示点 </summary>
+        public bool DispPoint { set; get; } = true;
 
     }
 }

@@ -247,6 +247,7 @@ namespace DotNet.HalconAlgo
         {
             if (hRegion != CvRegion.Empty && hRegion != null)
             {
+                ShrRegion.Type = hRegion.Type;
                 ShrRegion.Update2Point(hRegion.TopLeft, hRegion.BottomRight);
                 ShrRegion.GenRegion();
             }
