@@ -1,4 +1,5 @@
 using System;
+using DotNet.HalconUI;
 using DotNet.HalconAlgo;
 using System.Windows.Forms;
 using System.Collections.Generic;

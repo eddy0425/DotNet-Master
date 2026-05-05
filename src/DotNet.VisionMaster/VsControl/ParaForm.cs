@@ -1,8 +1,10 @@
-using System;
+using DotNet.Drawing;
 using DotNet.HalconAlgo;
-using System.Windows.Forms;
-using System.Collections.Generic;
 using DotNet.HalconUI;
+using HalconDotNet;
+using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
 
 
 namespace DotNet.VisionMaster
@@ -12,15 +14,29 @@ namespace DotNet.VisionMaster
         int _index;
         List<IParaStrategy> _strategys;
         DisplayUI _disPlay;
+        HModelForm _hModel;
         ValueForm _form_Value;
+        EditModelForm _editModel;
 
         public ParaForm(DisplayUI displayUI)
         {
             InitializeComponent();
 
             _disPlay = displayUI;
+            _hModel = new HModelForm();
+            _editModel = new EditModelForm();
             _form_Value = new ValueForm();
+
+            panel1.Controls.Add(_hModel);
+            _disPlay.ModelEvent += _disPlay_ModelEvent;
+            _disPlay.DrawDoneEvent += _disPlay_DrawDoneEvent;
         }
+
+        private void _disPlay_ModelEvent(object sender, DrawModelArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
         private void btn_setPath_Click(object sender, EventArgs e)
         {
             Button button = (Button)sender;
@@ -212,33 +228,59 @@ namespace DotNet.VisionMaster
             }
             catch (Exception ex) { MessageBox.Show(ex.Message); }
 
-            #region
-            //Edit_savePara();
+        }
 
-            ////Matching inPara = jobPara.jobInfo.ListMatchings[ListIndex];
-            //DisplayForm display = jobPara.disPlay;
-
-            //if (btn_rectangle1_2.Checked) inPara.SetROI.Type = DrawForm.����;
-            //else if (btn_rectangle2_2.Checked) inPara.SetROI.Type = DrawForm.�������;
-            //else if (btn_circle_2.Checked) inPara.SetROI.Type = DrawForm.Բ;
-            //else if (btn_oval_2.Checked) inPara.SetROI.Type = DrawForm.��Բ;
-            //else if (btn_polygon_2.Checked) inPara.SetROI.Type = DrawForm.�����;
-
-            //if (inPara.SetROI.IsDefault())
-            //{
-            //    Point2d centre = new Point2d(display.ho_Width / 2, display.ho_Height / 2);
-            //    Size2d size = new Size2d(display.ho_Width / 4, display.ho_Height / 4);
-            //    inPara.SetROI.UpdateCentre(centre, size);
-            //}
-
-            //display.DrawDispRegion(inPara.SetROI);
-            //SetTemplate(display, inPara.SetROI, inPara.ModelInfo);
-
-            #endregion
+        private void _disPlay_DrawDoneEvent(object sender, DrawSetModelUIArgs e)
+        {
+            try
+            {
+                var strategy = _strategys[_index];
+                switch (strategy.Algorithm)
+                {
+                    case AlgoEnum.ShapeModel:
+                        {
+                            var inPara = ((ShapeModelStrategy)strategy).inPara;
+                            var modelPath = inPara.ModelPath;
+                            _hModel.DisplayModel2(modelPath, e.HoModeRect, e.HoContour, e.Result);
+                        }
+                        break;
+                    case AlgoEnum.NccModel:
+                        {
+                            var inPara = ((NccModelStrategy)strategy).inPara;
+                            var modelPath = inPara.ModelPath;
+                            var modelID = inPara.ModelID;
+                            var hoContour = inPara.HoContour;
+                            var point = new Point2d(inPara.Results[0].X, inPara.Results[0].Y);
+                            _hModel.DisplayModel(modelPath, point, hoContour, modelID, ModelType.NccModel);
+                        }
+                        break;
+                    case AlgoEnum.ScaledModel:
+                        {
+                            var inPara = ((ScaledModelStrategy)strategy).inPara;
+                            var modelPath = inPara.ModelPath;
+                            var modelID = inPara.ModelID;
+                            var hoContour = inPara.HoContour;
+                            var point = new Point2d(inPara.Results[0].X, inPara.Results[0].Y);
+                            _hModel.DisplayModel(modelPath, point, hoContour, modelID, ModelType.ScaledModel);
+                        }
+                        break;
+                    case AlgoEnum.GenericModel:
+                        {
+                            var inPara = ((GenericModelStrategy)strategy).inPara;
+                            var modelPath = inPara.ModelPath;
+                            var modelID = inPara.ModelID;
+                            var hoContour = inPara.HoContour;
+                            var point = new Point2d(inPara.Results[0].X, inPara.Results[0].Y);
+                            _hModel.DisplayModel(modelPath, point, hoContour, modelID, ModelType.GenericModel);
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex) { MessageBox.Show(ex.Message); }
 
         }
 
-        EditModelForm editModelForm = new EditModelForm();
+
         private void but_editModel_Click(object sender, EventArgs e)
         {
             try
@@ -249,8 +291,8 @@ namespace DotNet.VisionMaster
                 {
                     case AlgoEnum.ShapeModel:
                         {
-                            editModelForm.Show();
-                            editModelForm.ShowModifyTemplate(filePath);
+                            _editModel.Show();
+                            _editModel.ShowModifyTemplate(filePath);
                             //_disPlay.SetDrawMode(strategy.Name, DrawEnum.NewAffRect);
                         }
                         break;

@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
-            this.display = new DotNet.HalconUI.DisplayForm();
+            this.display = new DotNet.HalconUI.DisplayUI();
             this.panel2 = new System.Windows.Forms.Panel();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.CB_LockCenter = new System.Windows.Forms.CheckBox();
@@ -317,6 +317,6 @@
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Button but_addRegion;
         private System.Windows.Forms.ComboBox CB_ModifyShape;
-        private DisplayForm display;
+        private DisplayUI display;
     }
 }

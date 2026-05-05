@@ -54,61 +54,33 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Algorithms\AlgoEnum.cs" />
+    <Compile Include="AlgoEnum.cs" />
     <Compile Include="AlgoPaths.cs" />
-    <Compile Include="Algorithms\AlgoFont.cs" />
-    <Compile Include="Algorithms\contour\FitCircleStrategy.cs" />
-    <Compile Include="Algorithms\geometry\CreateCoordStrategy.cs" />
-    <Compile Include="Algorithms\geometry\LineOffsetStrategy.cs" />
-    <Compile Include="Algorithms\Identification\BarCodeStrategy.cs" />
-    <Compile Include="Algorithms\Identification\QRCodeStrategy.cs" />
-    <Compile Include="Algorithms\image\CaptureWinStrategy.cs" />
-    <Compile Include="Algorithms\image\IndexImageStrategy.cs" />
-    <Compile Include="Algorithms\image\RGBToGrayStrategy.cs" />
-    <Compile Include="Algorithms\image\SaveRegionImgStrategy.cs" />
-    <Compile Include="Algorithms\region\CreateROIStrategy.cs" />
-    <Compile Include="Algorithms\image\FileImageStrategy.cs" />
-    <Compile Include="Algorithms\contour\FitArcMidpointStrategy.cs" />
-    <Compile Include="Algorithms\contour\FitLineStrategy.cs" />
-    <Compile Include="Algorithms\image\LineRotImageStrategy.cs" />
-    <Compile Include="Algorithms\image\RotateImageStrategy.cs" />
-    <Compile Include="Algorithms\image\SaveImageStrategy.cs" />
-    <Compile Include="Algorithms\matching\GenericModelStrategy.cs" />
-    <Compile Include="Algorithms\IParaStrategy.cs" />
-    <Compile Include="Algorithms\region\MergeRegionStrategy.cs" />
-    <Compile Include="Algorithms\matching\NccModelStrategy.cs" />
-    <Compile Include="Algorithms\matching\ScaledModelStrategy.cs" />
-    <Compile Include="Algorithms\matching\ShapeModelStrategy.cs" />
-    <Compile Include="Algorithms\region\SaveRegionStrategy.cs" />
-    <Compile Include="Drawing\ModelResult.cs" />
+    <Compile Include="AlgoFont.cs" />
+    <Compile Include="contour\FitCircleStrategy.cs" />
+    <Compile Include="geometry\CreateCoordStrategy.cs" />
+    <Compile Include="geometry\LineOffsetStrategy.cs" />
+    <Compile Include="Identification\BarCodeStrategy.cs" />
+    <Compile Include="Identification\QRCodeStrategy.cs" />
+    <Compile Include="image\CaptureWinStrategy.cs" />
+    <Compile Include="image\IndexImageStrategy.cs" />
+    <Compile Include="image\RGBToGrayStrategy.cs" />
+    <Compile Include="image\SaveRegionImgStrategy.cs" />
+    <Compile Include="region\CreateROIStrategy.cs" />
+    <Compile Include="image\FileImageStrategy.cs" />
+    <Compile Include="contour\FitArcMidpointStrategy.cs" />
+    <Compile Include="contour\FitLineStrategy.cs" />
+    <Compile Include="image\LineRotImageStrategy.cs" />
+    <Compile Include="image\RotateImageStrategy.cs" />
+    <Compile Include="image\SaveImageStrategy.cs" />
+    <Compile Include="matching\GenericModelStrategy.cs" />
+    <Compile Include="IParaStrategy.cs" />
+    <Compile Include="region\MergeRegionStrategy.cs" />
+    <Compile Include="matching\NccModelStrategy.cs" />
+    <Compile Include="matching\ScaledModelStrategy.cs" />
+    <Compile Include="matching\ShapeModelStrategy.cs" />
+    <Compile Include="region\SaveRegionStrategy.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="DrawWindow\DisplayUI.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="DrawWindow\DisplayUI.Designer.cs">
-      <DependentUpon>DisplayUI.cs</DependentUpon>
-    </Compile>
-    <Compile Include="DrawWindow\DrawEnum.cs" />
-    <Compile Include="DrawWindow\DrawEvent.cs" />
-    <Compile Include="DrawWindow\DrawHandlerFactory.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\DispModelHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\DispRectHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\NewAffRectHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\NewRectHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\NoneHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\PolygonEditDrawHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\PolygonNewDrawHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\RectEditHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\SetModelHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\ShapeModelHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\SynthethicDrawHandler.cs" />
-    <Compile Include="DrawWindow\IDrawHandler.cs" />
-    <Compile Include="TreeNode\OutEnum.cs" />
-    <Compile Include="TreeNode\TreeVisualizer.cs" />
-    <Compile Include="VsControl\TabPageEnum.cs" />
-    <Compile Include="VsControl\VsControlBindingStrategy.cs" />
-    <Compile Include="VsControl\VsControlFactory.cs" />
-    <Compile Include="VsControl\VsControlModel.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -118,9 +90,6 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <EmbeddedResource Include="DrawWindow\DisplayUI.resx">
-      <DependentUpon>DisplayUI.cs</DependentUpon>
-    </EmbeddedResource>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

@@ -39,6 +39,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>C:\DotNet\.dll\Halcon\halcondotnet.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\DotNet\.dll\Newtonsoft.Json\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -52,18 +56,40 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DisplayForm.cs">
+    <Compile Include="DrawWindow\DisplayUI.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="DisplayForm.Designer.cs">
-      <DependentUpon>DisplayForm.cs</DependentUpon>
+    <Compile Include="DrawWindow\DisplayUI.Designer.cs">
+      <DependentUpon>DisplayUI.cs</DependentUpon>
     </Compile>
-    <Compile Include="DrawWindow\Handlers\EraseRectHandler.cs" />
-    <Compile Include="DrawWindow\Handlers\NewRectHandler.cs" />
-    <Compile Include="DrawWindow\Handlers\NoneHandler.cs" />
-    <Compile Include="DrawWindow\ModelEvent.cs" />
-    <Compile Include="DrawWindow\ModelHandlerFactory.cs" />
-    <Compile Include="DrawWindow\IModelHandler.cs" />
+    <Compile Include="DrawWindow\DrawEnum.cs" />
+    <Compile Include="DrawWindow\DrawEvent.cs" />
+    <Compile Include="DrawWindow\DrawHandlerFactory.cs" />
+    <Compile Include="DrawWindow\DrawHandlers\DispModelHandler.cs" />
+    <Compile Include="DrawWindow\DrawHandlers\DispRectHandler.cs" />
+    <Compile Include="DrawWindow\DrawHandlers\NewAffRectHandler.cs" />
+    <Compile Include="DrawWindow\DrawHandlers\NewRectHandler.cs" />
+    <Compile Include="DrawWindow\DrawHandlers\NoneHandler.cs" />
+    <Compile Include="DrawWindow\DrawHandlers\PolygonEditDrawHandler.cs" />
+    <Compile Include="DrawWindow\DrawHandlers\PolygonNewDrawHandler.cs" />
+    <Compile Include="DrawWindow\DrawHandlers\SetModelHandler.cs" />
+    <Compile Include="DrawWindow\DrawHandlers\ShapeModelHandler.cs" />
+    <Compile Include="DrawWindow\DrawHandlers\SynthethicDrawHandler.cs" />
+    <Compile Include="DrawWindow\IDrawHandler.cs" />
+    <Compile Include="HModelForm.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="HModelForm.Designer.cs">
+      <DependentUpon>HModelForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="HDisplayForm.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="HDisplayForm.Designer.cs">
+      <DependentUpon>HDisplayForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DrawWindow\Handlers\EditEraseRectHandler.cs" />
+    <Compile Include="DrawWindow\Handlers\EditNewRectHandler.cs" />
     <Compile Include="EditModelExtension.cs" />
     <Compile Include="EditModelForm.cs">
       <SubType>Form</SubType>
@@ -71,9 +97,24 @@
     <Compile Include="EditModelForm.Designer.cs">
       <DependentUpon>EditModelForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="HModel\ModelExtension.cs" />
+    <Compile Include="HModel\ModelType.cs" />
+    <Compile Include="HModel\ModelResult.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="DisplayForm.resx">
-      <DependentUpon>DisplayForm.cs</DependentUpon>
+    <Compile Include="TreeNode\OutEnum.cs" />
+    <Compile Include="TreeNode\TreeVisualizer.cs" />
+    <Compile Include="VsControl\TabPageEnum.cs" />
+    <Compile Include="VsControl\VsControlBindingStrategy.cs" />
+    <Compile Include="VsControl\VsControlFactory.cs" />
+    <Compile Include="VsControl\VsControlModel.cs" />
+    <EmbeddedResource Include="DrawWindow\DisplayUI.resx">
+      <DependentUpon>DisplayUI.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="HModelForm.resx">
+      <DependentUpon>HModelForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="HDisplayForm.resx">
+      <DependentUpon>HDisplayForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="EditModelForm.resx">
       <DependentUpon>EditModelForm.cs</DependentUpon>
