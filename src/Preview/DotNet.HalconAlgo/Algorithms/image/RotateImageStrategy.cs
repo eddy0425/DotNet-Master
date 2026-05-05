@@ -12,6 +12,7 @@ namespace DotNet.HalconAlgo
         public override AlgoEnum Algorithm => AlgoEnum.RotateImage;
         public override string Name { get; set; } = "旋转图像";
         public override int RunIndex { get; set; }
+
         public override void GenTreeNode(TreeVisualizer tree)
         {
             tree.Branch(Name, branch => branch
@@ -21,7 +22,6 @@ namespace DotNet.HalconAlgo
             ClearResolvers();
             RegisterOutput("图像", () => inPara.Image);
         }
-
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
             try
@@ -87,8 +87,7 @@ namespace DotNet.HalconAlgo
 
                 display.DispImage(inPara.Image);
 
-                if (inPara.DispText)
-                    display.DispText(strResult, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
+                if (inPara.DispText) display.DispText(strResult, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
 
                 return true;
             }
@@ -97,7 +96,6 @@ namespace DotNet.HalconAlgo
                 throw;
             }
         }
-
         public override void DispPara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
             form.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Display);
@@ -123,11 +121,13 @@ namespace DotNet.HalconAlgo
                 VsControls.ShowButton(form, "btn_102", true);
             }
 
-            VsControls.ShowComboBoxList(form, "CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
-            VsControls.ShowComboBoxList(form, "CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
-            VsControls.ShowComboBoxList(form, "CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
-        }
+            //------------------------------------------
+            VsControls.ShowCheckBox(form, "ckb_disp0", "显示文本", inPara.DispText);
 
+            VsControls.ShowComboBoxDropDown(form, "CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
+            VsControls.ShowComboBoxDropDown(form, "CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
+            VsControls.ShowComboBoxDropDown(form, "CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
+        }
         public override void SavePara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
             inPara.ImageIn = VsControls["cmb_100"].Text;
@@ -143,10 +143,14 @@ namespace DotNet.HalconAlgo
                 inPara.CoordIn = VsControls["cmb_102"].Text;
             }
 
+            //------------------------------------------
+            inPara.DispText = VsControls["ckb_disp0"].Checked;
+
             inPara.FontX = Convert.ToInt16(VsControls["CB_FontX"].Text);
             inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
             inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
         }
+
     }
 
     public class RotateImage : AlgoFont

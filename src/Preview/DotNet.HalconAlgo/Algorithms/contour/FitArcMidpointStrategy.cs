@@ -13,26 +13,21 @@ namespace DotNet.HalconAlgo
         public override string Name { get; set; } = "圆弧中点";
         public override int RunIndex { get; set; }
 
-        public override void Init(DisplayUI display)
+        public override void GenTreeNode(TreeVisualizer tree)
         {
-            display.AffRectEvent += AffRectEvent;
-        }
-        public override void Close(DisplayUI display)
-        {
-            display.AffRectEvent -= AffRectEvent;
-            inPara.HoRect.Dispose();
-        }
-        private void AffRectEvent(object sender, DrawAffRectArgs e)
-        {
-            if (e.Name == Name)
-            {
-                inPara.HoRect.UpdateCenter(e.Center, e.RectSize);
-                inPara.HoRect.Phi = e.Phi;
-                inPara.HoRect.Type = RectEnum.AffRect;
-                inPara.HoRect.GenRegion();
-            }
-        }
+            tree.Branch(Name, branch => branch
+                       .Node("中点", OutEnum.Point, pt => pt
+                               .Node("行", OutEnum.Number)
+                               .Node("列", OutEnum.Number)
+                           )
+                       .CommonNodes()
+                   );
 
+            ClearResolvers();
+            RegisterOutput("中点", () => inPara.ArcMidpoint);
+            RegisterOutput("中点/行", () => inPara.ArcMidpoint.Y);
+            RegisterOutput("中点/列", () => inPara.ArcMidpoint.X);
+        }
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
             HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
@@ -114,7 +109,7 @@ namespace DotNet.HalconAlgo
                         HOperatorSet.MeasurePos(imgReduced, hMHandle, inPara.Sigma, inPara.Threshold,
                             transition, measureSelect, out mRow, out mCol, out mAmp, out mDis);
 
-                        if (inPara.DispRegion)
+                        if (inPara.DispFixRegion)
                         {
                             display.DispRectangle2(rowNew, colNew, fixAgl, fixLen1, stepWid, HColor.Blue);
                         }
@@ -146,7 +141,8 @@ namespace DotNet.HalconAlgo
                 List<double> colRemoved = new List<double>();
 
                 #region Stage 1：gauss 鲁棒直线拟合剔除严重跑偏的点
-                RebuildContour(ref contourFitting, rowList, colList);
+                contourFitting.Dispose();
+                HOperatorSet.GenContourPolygonXld(out contourFitting, rowList.ToArray(), colList.ToArray());
 
                 HTuple lineRowBegin, lineColBegin, lineRowEnd, lineColEnd, lineNr, lineNc, lineDist;
                 HOperatorSet.FitLineContourXld(contourFitting, "gauss", -1, 0, 5, 1.345,
@@ -232,7 +228,16 @@ namespace DotNet.HalconAlgo
                 }
                 #endregion
 
-                if (inPara.DispFittingPoint)
+                double arcMidPhi = ComputeArcMidPhi(circStartPhi.D, circEndPhi.D, circPointOrder.S);
+                double midRow = circRow.D - circRadius.D * Math.Sin(arcMidPhi);
+                double midCol = circCol.D + circRadius.D * Math.Cos(arcMidPhi);
+                inPara.ArcMidpoint = new Point2d(midCol, midRow);
+
+                #endregion
+
+                #region Display
+
+                if (inPara.DispFixPoint)
                 {
                     for (int i = 0; i < rowRemoved.Count; i++)
                     {
@@ -244,12 +249,6 @@ namespace DotNet.HalconAlgo
                     }
                 }
 
-                double arcMidPhi = ComputeArcMidPhi(circStartPhi.D, circEndPhi.D, circPointOrder.S);
-                double midRow = circRow.D - circRadius.D * Math.Sin(arcMidPhi);
-                double midCol = circCol.D + circRadius.D * Math.Cos(arcMidPhi);
-                inPara.ArcMidpoint = new Point2d(midCol, midRow);
-
-                if (inPara.DispRegion) display.DispRegion(ho_Rect, HColor.Blue);
                 if (inPara.DispResult)
                 {
                     arcContour.Dispose();
@@ -258,6 +257,7 @@ namespace DotNet.HalconAlgo
                     display.DispRegion(arcContour, HColor.Red);
                     display.DispPoint(midCol, midRow, HColor.OrangeRed, inPara.PointSize + 50);
                 }
+
                 #endregion
 
                 return true;
@@ -275,22 +275,14 @@ namespace DotNet.HalconAlgo
         }
 
         /// <summary>
-        /// 释放旧轮廓并按给定点集重建 XLD 多边形轮廓。
-        /// </summary>
-        private static void RebuildContour(ref HObject contour, List<double> rowList, List<double> colList)
-        {
-            contour.Dispose();
-            HOperatorSet.GenContourPolygonXld(out contour, rowList.ToArray(), colList.ToArray());
-        }
-
-        /// <summary>
         /// 重建轮廓并用 atukey 鲁棒圆拟合，得到圆心/半径/起止角与点序。
         /// </summary>
         private static void FitArcFromPoints(ref HObject contour, List<double> rowList, List<double> colList,
             out HTuple circRow, out HTuple circCol, out HTuple circRadius,
             out HTuple circStartPhi, out HTuple circEndPhi, out HTuple circPointOrder)
         {
-            RebuildContour(ref contour, rowList, colList);
+            contour.Dispose();
+            HOperatorSet.GenContourPolygonXld(out contour, rowList.ToArray(), colList.ToArray());
             HOperatorSet.FitCircleContourXld(contour, "atukey", -1, 0, 0, 5, 2,
                 out circRow, out circCol, out circRadius,
                 out circStartPhi, out circEndPhi, out circPointOrder);
@@ -314,22 +306,6 @@ namespace DotNet.HalconAlgo
                 if (span < 0) span += twoPi;
                 return startPhi - span * 0.5;
             }
-        }
-
-        public override void GenTreeNode(TreeVisualizer tree)
-        {
-            tree.Branch(Name, branch => branch
-                       .Node("中点", OutEnum.Point, pt => pt
-                               .Node("行", OutEnum.Number)
-                               .Node("列", OutEnum.Number)
-                           )
-                       .CommonNodes()
-                   );
-
-            ClearResolvers();
-            RegisterOutput("中点", () => inPara.ArcMidpoint);
-            RegisterOutput("中点/行", () => inPara.ArcMidpoint.Y);
-            RegisterOutput("中点/列", () => inPara.ArcMidpoint.X);
         }
         public override void DispPara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
@@ -368,8 +344,6 @@ namespace DotNet.HalconAlgo
             VsControls.ShowComboBoxDropDown(form, "cmb_105", inPara.Threshold.ToString(), new[] { "30", "50" });
             VsControls.ShowButton(form, "btn_105", false);
 
-
-
             VsControls.ShowLabel(form, "lbl_110", "步距");
             VsControls.ShowComboBoxDropDown(form, "cmb_110", inPara.StepPace.ToString(), new[] { "2", "5", "10" });
 
@@ -383,6 +357,16 @@ namespace DotNet.HalconAlgo
             VsControls.ShowComboBoxList(form, "cmb_113", inPara.TrimEnds, new[] { "否", "是" });
             VsControls.ShowButton(form, "btn_113", false);
 
+            //------------------------------------------
+            VsControls.ShowCheckBox(form, "ckb_disp0", "显示文本", inPara.DispText);
+            VsControls.ShowCheckBox(form, "ckb_disp1", "查找区域", inPara.DispRegion);
+            VsControls.ShowCheckBox(form, "ckb_disp2", "拟合区域", inPara.DispFixRegion);
+            VsControls.ShowCheckBox(form, "ckb_disp3", "拟合点", inPara.DispFixPoint);
+            VsControls.ShowCheckBox(form, "ckb_disp4", "显示结果", inPara.DispResult);
+
+            VsControls.ShowComboBoxDropDown(form, "CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
+            VsControls.ShowComboBoxDropDown(form, "CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
+            VsControls.ShowComboBoxDropDown(form, "CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
         }
         public override void SavePara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
@@ -399,15 +383,45 @@ namespace DotNet.HalconAlgo
             inPara.StepWidth = Convert.ToInt16(VsControls["cmb_111"].Text);
             inPara.MaxErr = Convert.ToInt16(VsControls["cmb_112"].Text);
             inPara.TrimEnds = VsControls["cmb_113"].Text;
+
+            //------------------------------------------
+            inPara.DispText = VsControls["ckb_disp0"].Checked;
+            inPara.DispRegion = VsControls["ckb_disp1"].Checked;
+            inPara.DispFixRegion = VsControls["ckb_disp2"].Checked;
+            inPara.DispFixPoint = VsControls["ckb_disp3"].Checked;
+            inPara.DispResult = VsControls["ckb_disp4"].Checked;
+
+            inPara.FontX = Convert.ToInt16(VsControls["CB_FontX"].Text);
+            inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
+            inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
         }
         public override void DispROI(DisplayUI display)
         {
             display.SetDrawMode(Name, inPara.HoRect, DrawEnum.DispRect);
         }
+        public override void Init(DisplayUI display)
+        {
+            display.AffRectEvent += AffRectEvent;
+        }
+        public override void Close(DisplayUI display)
+        {
+            display.AffRectEvent -= AffRectEvent;
+            inPara.HoRect.Dispose();
+        }
+        private void AffRectEvent(object sender, DrawAffRectArgs e)
+        {
+            if (e.Name == Name)
+            {
+                inPara.HoRect.UpdateCenter(e.Center, e.RectSize);
+                inPara.HoRect.Phi = e.Phi;
+                inPara.HoRect.Type = RectEnum.AffRect;
+                inPara.HoRect.GenRegion();
+            }
+        }
 
     }
 
-    public class FitArcMidpoint
+    public class FitArcMidpoint : AlgoFont
     {
         /// <summary> 图像来源 </summary>
         public string ImageIn { set; get; } = "默认";
@@ -481,20 +495,20 @@ namespace DotNet.HalconAlgo
 
         internal bool IsTrimEnds => TrimEnds == "是";
 
-        /// <summary> 点大小 </summary>
+         /// <summary> 点大小 </summary>
         public int PointSize { set; get; } = 15;
 
         /// <summary> 显示区域 </summary>
-        public bool DispRegion { set; get; } = false;
+        public bool DispRegion { set; get; } = true;
+
+        /// <summary> 显示拟合点 </summary>
+        public bool DispFixPoint { set; get; } = true;
+
+        /// <summary> 显示拟合区域 </summary>
+        public bool DispFixRegion { set; get; } = false;
 
         /// <summary> 显示结果 </summary>
         public bool DispResult { set; get; } = true;
-
-        /// <summary> 显示文本 </summary>
-        public bool DispText { set; get; } = false;
-
-        /// <summary> 拟合点 </summary>
-        public bool DispFittingPoint { set; get; } = true;
 
     }
 }

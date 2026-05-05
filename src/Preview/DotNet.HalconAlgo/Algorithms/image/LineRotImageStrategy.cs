@@ -22,7 +22,6 @@ namespace DotNet.HalconAlgo
             ClearResolvers();
             RegisterOutput("图像", () => inPara.Image);
         }
-
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
             try
@@ -63,12 +62,14 @@ namespace DotNet.HalconAlgo
                 inPara.Image.Dispose();
                 HOperatorSet.AffineTransImage(ho_Image, out inPara.Image, HomMat2DRotate, "constant", "false");
                 double angleDeg = rotateAngle * 180.0 / Math.PI;
-                string strResult = $"直线旋转 : 对齐:{inPara.AlignAxis} 旋转:{angleDeg:F2}°";
-
+              
                 display.DispImage(inPara.Image);
 
                 if (inPara.DispText)
-                    display.DispText(strResult, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
+                {
+                    string message = $"直线旋转 : 对齐:{inPara.AlignAxis} 旋转:{angleDeg:F2}°";
+                    display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
+                }
 
                 return true;
             }
@@ -77,7 +78,6 @@ namespace DotNet.HalconAlgo
                 throw;
             }
         }
-
         public override void DispPara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
             form.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Display);
@@ -94,21 +94,27 @@ namespace DotNet.HalconAlgo
             VsControls.ShowComboBoxList(form, "cmb_102", inPara.AlignAxis, new[] { "平行X轴", "平行Y轴" });
             VsControls.ShowButton(form, "btn_102", false);
 
-            VsControls.ShowComboBoxList(form, "CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
-            VsControls.ShowComboBoxList(form, "CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
-            VsControls.ShowComboBoxList(form, "CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
-        }
+            //------------------------------------------
+            VsControls.ShowCheckBox(form, "ckb_disp0", "显示文本", inPara.DispText);
 
+            VsControls.ShowComboBoxDropDown(form, "CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
+            VsControls.ShowComboBoxDropDown(form, "CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
+            VsControls.ShowComboBoxDropDown(form, "CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
+        }
         public override void SavePara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
             inPara.ImageIn = VsControls["cmb_100"].Text;
             inPara.LineIn = VsControls["cmb_101"].Text;
             inPara.AlignAxis = VsControls["cmb_102"].Text;
 
+            //------------------------------------------
+            inPara.DispText = VsControls["ckb_disp0"].Checked;
+
             inPara.FontX = Convert.ToInt16(VsControls["CB_FontX"].Text);
             inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
             inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
         }
+
     }
 
     public class LineRotImage : AlgoFont

@@ -15,22 +15,6 @@ namespace DotNet.HalconAlgo
 
         private int Index  = 0;       //图像下标
         private string[] ImagePaths;   //图像路径
-        public override void Init(DisplayUI display)
-        {
-            try
-            {
-                HOperatorSet.GenEmptyObj(out inPara.Image);
-                ImagePaths = HalconHelper.GetPaths(inPara.ImageFolder);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-        }
-        public override void Close(DisplayUI displayw)
-        {
-           
-        }
 
         public override void GenTreeNode(TreeVisualizer tree)
         {
@@ -42,7 +26,6 @@ namespace DotNet.HalconAlgo
             RegisterOutput("图像", () => inPara.Image);
 
         }
-
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
             try
@@ -93,10 +76,12 @@ namespace DotNet.HalconAlgo
                     default: break;
                 }
 
-                var message = $"{Name} : W:{display.HoWidth} H:{display.HoHeight} Index:{Index}/{ImagePaths.Length}";
-
                 display.DispImage(inPara.Image);
-                display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
+                if (inPara.DispText)
+                {
+                    var message = $"{Name} : W:{display.HoWidth} H:{display.HoHeight} Index:{Index}/{ImagePaths.Length}";
+                    display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
+                } 
 
                 Index++;
                 return true;
@@ -107,7 +92,6 @@ namespace DotNet.HalconAlgo
                 throw;
             }
         }
-
         public override void DispPara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
             form.ShowTabs(TabPageEnum.FileImage, TabPageEnum.Display);
@@ -116,26 +100,46 @@ namespace DotNet.HalconAlgo
             VsControls.ShowComboBoxList(form, "cmb_Mirror", inPara.Mirror, new[] { "无", "行镜像", "列镜像", "原点镜像" });
             VsControls.ShowComboBox(form, "cmb_ImageFolder", inPara.ImageFolder, true);
 
+            //------------------------------------------
+            VsControls.ShowCheckBox(form, "ckb_disp0", "显示文本", inPara.DispText);
 
-            VsControls.ShowComboBoxList(form, "CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
-            VsControls.ShowComboBoxList(form, "CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
-            VsControls.ShowComboBoxList(form, "CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
+            VsControls.ShowComboBoxDropDown(form, "CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
+            VsControls.ShowComboBoxDropDown(form, "CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
+            VsControls.ShowComboBoxDropDown(form, "CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
         }
-
         public override void SavePara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
             inPara.Rotate = Convert.ToInt16(VsControls["cmb_Rotate"].Text);
             inPara.Mirror = VsControls["cmb_Mirror"].Text;
             inPara.ImageFolder = VsControls["cmb_ImageFolder"].Text;
 
+            //------------------------------------------
+            inPara.DispText = VsControls["ckb_disp0"].Checked;
+
             inPara.FontX = Convert.ToInt16(VsControls["CB_FontX"].Text);
             inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
             inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
         }
+        public override void Init(DisplayUI display)
+        {
+            try
+            {
+                HOperatorSet.GenEmptyObj(out inPara.Image);
+                ImagePaths = HalconHelper.GetPaths(inPara.ImageFolder);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+        public override void Close(DisplayUI displayw)
+        {
+
+        }
 
     }
 
-    public class FileImage
+    public class FileImage : AlgoFont
     {
         /// <summary> 图像 </summary>
         public HObject Image = new HObject();
@@ -148,15 +152,6 @@ namespace DotNet.HalconAlgo
 
         /// <summary> 图像文件夹 </summary>
         public string ImageFolder { get; set; }
-
-        /// <summary> 字体X坐标 </summary>
-        public int FontX { set; get; } = 50;
-
-        /// <summary> 字体Y坐标 </summary>
-        public int FontY { set; get; } = 50;
-
-        /// <summary> 字体大小 </summary>
-        public int FontSize { set; get; } = 15;
 
     }
 }

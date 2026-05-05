@@ -13,24 +13,31 @@ namespace DotNet.HalconAlgo
         public override string Name { get; set; } = "拟合直线";
         public override int RunIndex { get; set; }
 
-        public override void Init(DisplayUI display)
+        public override void GenTreeNode(TreeVisualizer tree)
         {
-            display.AffRectEvent += AffRectEvent;
-        }
-        public override void Close(DisplayUI display)
-        {
-            display.AffRectEvent -= AffRectEvent;
-            inPara.HoRect.Dispose();
-        }
-        private void AffRectEvent(object sender, DrawAffRectArgs e)
-        {
-            if (e.Name == Name)
-            {
-                inPara.HoRect.UpdateCenter(e.Center, e.RectSize);
-                inPara.HoRect.Phi = e.Phi;
-                inPara.HoRect.Type = RectEnum.AffRect;
-                inPara.HoRect.GenRegion();
-            }
+            tree.Branch(Name, branch => branch
+                       .Node("直线", OutEnum.Line, line => line
+                           .Branch("起点", pt => pt
+                               .Node("行", OutEnum.Number)
+                               .Node("列", OutEnum.Number)
+                           )
+                           .Branch("终点", pt => pt
+                               .Node("行", OutEnum.Number)
+                               .Node("列", OutEnum.Number)
+                           )
+                       )
+                       .CommonNodes()
+                   );
+
+            ClearResolvers();
+            RegisterOutput("直线", () => inPara.Line);
+            RegisterOutput("直线/起点", () => inPara.Line.Start);
+            RegisterOutput("直线/起点/行", () => inPara.Line.Start.Y);
+            RegisterOutput("直线/起点/列", () => inPara.Line.Start.X);
+            RegisterOutput("直线/终点", () => inPara.Line.End);
+            RegisterOutput("直线/终点/行", () => inPara.Line.End.Y);
+            RegisterOutput("直线/终点/列", () => inPara.Line.End.X);
+
         }
         public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
         {
@@ -201,6 +208,9 @@ namespace DotNet.HalconAlgo
                         out nr, out nc, out lineDist);
                 }
                 #endregion
+
+                inPara.Line = new CvLine(colBegin.D, rowBegin.D, colEnd.D, rowEnd.D);
+
                 #endregion
 
                 #region Display
@@ -217,9 +227,6 @@ namespace DotNet.HalconAlgo
                     }
                 }
 
-                inPara.Line = new CvLine(colBegin.D, rowBegin.D, colEnd.D, rowEnd.D);
-
-                //if (inPara.DispRegion) display.DispRegion(ho_Rect, HColor.Blue);
                 if (inPara.DispResult) display.DispArrow(inPara.Line, HColor.Red, 2);
 
                 #endregion
@@ -240,52 +247,16 @@ namespace DotNet.HalconAlgo
         }
 
         /// <summary>
-        /// 释放旧轮廓并按给定点集重建 XLD 多边形轮廓。
-        /// </summary>
-        private static void RebuildContour(ref HObject contour, List<double> rowList, List<double> colList)
-        {
-            contour.Dispose();
-            HOperatorSet.GenEmptyObj(out contour);
-            HOperatorSet.GenContourPolygonXld(out contour, rowList.ToArray(), colList.ToArray());
-        }
-
-        /// <summary>
         /// 重建轮廓并用 gauss 鲁棒直线拟合，得到端点与 Hesse 法线参数。
         /// </summary>
         private static void FitLineFromPoints(ref HObject contour, List<double> rowList, List<double> colList,
             out HTuple rowBegin, out HTuple colBegin, out HTuple rowEnd, out HTuple colEnd,
             out HTuple nr, out HTuple nc, out HTuple dist)
         {
-            RebuildContour(ref contour, rowList, colList);
+            contour.Dispose();
+            HOperatorSet.GenContourPolygonXld(out contour, rowList.ToArray(), colList.ToArray());
             HOperatorSet.FitLineContourXld(contour, "gauss", -1, 0, 5, 1.345,
                 out rowBegin, out colBegin, out rowEnd, out colEnd, out nr, out nc, out dist);
-        }
-
-        public override void GenTreeNode(TreeVisualizer tree)
-        {
-            tree.Branch(Name, branch => branch
-                       .Node("直线", OutEnum.Line, line => line
-                           .Branch("起点", pt => pt
-                               .Node("行", OutEnum.Number)
-                               .Node("列", OutEnum.Number)
-                           )
-                           .Branch("终点", pt => pt
-                               .Node("行", OutEnum.Number)
-                               .Node("列", OutEnum.Number)
-                           )
-                       )
-                       .CommonNodes()
-                   );
-
-            ClearResolvers();
-            RegisterOutput("直线", () => inPara.Line);
-            RegisterOutput("直线/起点", () => inPara.Line.Start);
-            RegisterOutput("直线/起点/行", () => inPara.Line.Start.Y);
-            RegisterOutput("直线/起点/列", () => inPara.Line.Start.X);
-            RegisterOutput("直线/终点", () => inPara.Line.End);
-            RegisterOutput("直线/终点/行", () => inPara.Line.End.Y);
-            RegisterOutput("直线/终点/列", () => inPara.Line.End.X);
-
         }
         public override void DispPara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
@@ -343,6 +314,10 @@ namespace DotNet.HalconAlgo
             VsControls.ShowCheckBox(form, "ckb_disp2", "拟合区域", inPara.DispFixRegion);
             VsControls.ShowCheckBox(form, "ckb_disp3", "拟合点", inPara.DispFixPoint);
             VsControls.ShowCheckBox(form, "ckb_disp4", "显示结果", inPara.DispResult);
+
+            VsControls.ShowComboBoxDropDown(form, "CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
+            VsControls.ShowComboBoxDropDown(form, "CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
+            VsControls.ShowComboBoxDropDown(form, "CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
         }
         public override void SavePara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
@@ -365,15 +340,38 @@ namespace DotNet.HalconAlgo
             inPara.DispFixRegion = VsControls["ckb_disp2"].Checked;
             inPara.DispFixPoint = VsControls["ckb_disp3"].Checked;
             inPara.DispResult = VsControls["ckb_disp4"].Checked;
+
+            inPara.FontX = Convert.ToInt16(VsControls["CB_FontX"].Text);
+            inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
+            inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
         }
         public override void DispROI(DisplayUI display)
         {
             display.SetDrawMode(Name, inPara.HoRect, DrawEnum.DispRect);
         }
+        public override void Init(DisplayUI display)
+        {
+            display.AffRectEvent += AffRectEvent;
+        }
+        public override void Close(DisplayUI display)
+        {
+            display.AffRectEvent -= AffRectEvent;
+            inPara.HoRect.Dispose();
+        }
+        private void AffRectEvent(object sender, DrawAffRectArgs e)
+        {
+            if (e.Name == Name)
+            {
+                inPara.HoRect.UpdateCenter(e.Center, e.RectSize);
+                inPara.HoRect.Phi = e.Phi;
+                inPara.HoRect.Type = RectEnum.AffRect;
+                inPara.HoRect.GenRegion();
+            }
+        }
 
     }
 
-    public class FitLine
+    public class FitLine : AlgoFont
     {
         /// <summary> 图像来源 </summary>
         public string ImageIn { set; get; } = "默认";
@@ -447,7 +445,7 @@ namespace DotNet.HalconAlgo
         public int PointSize { set; get; } = 15;
 
         /// <summary> 显示区域 </summary>
-        public bool DispRegion { set; get; } = false;
+        public bool DispRegion { set; get; } = true;
 
         /// <summary> 显示拟合点 </summary>
         public bool DispFixPoint { set; get; } = true;
@@ -457,9 +455,6 @@ namespace DotNet.HalconAlgo
 
         /// <summary> 显示结果 </summary>
         public bool DispResult { set; get; } = true;
-
-        /// <summary> 显示文本 </summary>
-        public bool DispText { set; get; } = false;
 
     }
 }

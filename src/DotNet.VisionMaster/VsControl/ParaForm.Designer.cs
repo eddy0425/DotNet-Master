@@ -1325,9 +1325,9 @@
             this.lbl_122.Location = new System.Drawing.Point(18, 95);
             this.lbl_122.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.lbl_122.Name = "lbl_122";
-            this.lbl_122.Size = new System.Drawing.Size(55, 15);
+            this.lbl_122.Size = new System.Drawing.Size(43, 15);
             this.lbl_122.TabIndex = 5;
-            this.lbl_122.Text = "字体大小";
+            this.lbl_122.Text = "字大小";
             // 
             // CB_FontY
             // 

@@ -1,5 +1,6 @@
 ﻿using DotNet.Drawing;
 using HalconDotNet;
+using System;
 using System.Windows.Forms;
 using System.Collections.Generic;
 
@@ -12,59 +13,6 @@ namespace DotNet.HalconAlgo
         public override string Name { get; set; } = "创建ROI";
         public override int RunIndex { get; set; }
 
-        public override void Init(DisplayUI display)
-        {
-            display.RectangleEvent += RectEvent;
-        }
-        public override void Close(DisplayUI display)
-        {
-            display.RectangleEvent -= RectEvent;
-        }
-        private void RectEvent(object sender, DrawRectangleArgs e)
-        {
-            if (e.Name == Name)
-            {
-                inPara.HoRect.Update2Point(e.TopLeft, e.BottomRight);
-                inPara.HoRect.GenRegion();
-            }
-        }
-        public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
-        {
-            HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
-
-            try
-            {
-                inPara.Coord = new CvCoord();
-                var ho_ROI = inPara.HoRect;
-
-                if (inPara.CoordIn == "默认")
-                {
-                    inPara.Coord = new CvCoord(ho_ROI.Center);
-                    display.DispRegion(ho_ROI, HColor.Blue);
-                }
-                else
-                {
-                    var coordIn = inPara.CoordIn;
-                    var pointIn = coordIn.ToTmplPoint();
-                    var inCoord = strategys.ResolveFrom<CvCoord>(coordIn);
-                    var tmplPoint = strategys.ResolveFrom<Point2d>(pointIn);
-
-                    HalconHelper.TransRegion(tmplPoint, inCoord.Center, ho_ROI.HoRegion, out regionGet);
-                    HOperatorSet.AreaCenter(regionGet, out _, out HTuple row, out HTuple column);
-                    inPara.Coord = new CvCoord(new Point2d(column, row));
-                    display.DispRegion(regionGet, HColor.Blue);
-                }
-                return true;
-            }
-            catch
-            {
-                throw;
-            }
-            finally
-            {
-                regionGet.Dispose();
-            }
-        }
         public override void GenTreeNode(TreeVisualizer tree)
         {
             tree.Branch(Name, branch => branch
@@ -87,6 +35,40 @@ namespace DotNet.HalconAlgo
             RegisterOutput("区域", () => inPara.HoRect);
 
         }
+        public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
+        {
+            HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
+
+            try
+            {
+                inPara.Coord = new CvCoord();
+                var ho_ROI = inPara.HoRect;
+
+                if (inPara.CoordIn == "默认")
+                {
+                    inPara.Coord = new CvCoord(ho_ROI.Center);
+                    if (inPara.DispRegion) display.DispRegion(ho_ROI, HColor.Blue);
+                }
+                else
+                {
+                    var inCoord = strategys.ResolveFrom<CvCoord>(inPara.CoordIn);
+                    var tmplPoint = strategys.ResolveFrom<Point2d>(inPara.CoordIn.ToTmplPoint());
+                    HalconHelper.TransRegion(tmplPoint, inCoord.Center, ho_ROI.HoRegion, out regionGet);
+                    HOperatorSet.AreaCenter(regionGet, out _, out HTuple row, out HTuple column);
+                    inPara.Coord = new CvCoord(new Point2d(column, row));
+                    if (inPara.DispRegion) display.DispRegion(regionGet, HColor.Blue);
+                }
+                return true;
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                regionGet.Dispose();
+            }
+        }
         public override void DispPara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
             form.ShowTabs(TabPageEnum.Region, TabPageEnum.Display);
@@ -99,19 +81,51 @@ namespace DotNet.HalconAlgo
             VsControls.ShowComboBox(form, "cmb_TopLeft", $"{hRegion.TopLeft.X};{hRegion.TopLeft.Y}", false);
             VsControls.ShowComboBox(form, "cmb_BottomRight", $"{hRegion.BottomRight.X};{hRegion.BottomRight.Y}", false);
             VsControls.ShowComboBox(form, "cmb_Center", $"{hRegion.Center.X};{hRegion.Center.Y}", false);
+
+            //------------------------------------------
+            VsControls.ShowCheckBox(form, "ckb_disp0", "显示文本", inPara.DispText);
+            VsControls.ShowCheckBox(form, "ckb_disp1", "查找区域", inPara.DispRegion);
+
+            VsControls.ShowComboBoxDropDown(form, "CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
+            VsControls.ShowComboBoxDropDown(form, "CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
+            VsControls.ShowComboBoxDropDown(form, "CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
         }
         public override void SavePara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
             inPara.CoordIn = VsControls["cmb_CoordIn"].Text;
+
+            //------------------------------------------
+            inPara.DispText = VsControls["ckb_disp0"].Checked;
+            inPara.DispRegion = VsControls["ckb_disp1"].Checked;
+
+            inPara.FontX = Convert.ToInt16(VsControls["CB_FontX"].Text);
+            inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
+            inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
         }
         public override void DispROI(DisplayUI display)
         {
             display.SetDrawMode(Name, inPara.HoRect, DrawEnum.DispRect);
         }
+        public override void Init(DisplayUI display)
+        {
+            display.RectangleEvent += RectEvent;
+        }
+        public override void Close(DisplayUI display)
+        {
+            display.RectangleEvent -= RectEvent;
+        }
+        private void RectEvent(object sender, DrawRectangleArgs e)
+        {
+            if (e.Name == Name)
+            {
+                inPara.HoRect.Update2Point(e.TopLeft, e.BottomRight);
+                inPara.HoRect.GenRegion();
+            }
+        }
 
     }
 
-    public class CreateROI
+    public class CreateROI : AlgoFont
     {
         /// <summary> 跟随坐标 </summary>
         public string CoordIn { set; get; } = "默认";
@@ -122,5 +136,7 @@ namespace DotNet.HalconAlgo
         /// <summary> 区域 </summary>
         public CvRegion HoRect { set; get; } = new CvRegion();
 
+        /// <summary> 显示区域 </summary>
+        public bool DispRegion { set; get; } = true;
     }
 }

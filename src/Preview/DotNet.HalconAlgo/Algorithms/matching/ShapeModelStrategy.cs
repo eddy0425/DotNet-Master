@@ -146,6 +146,10 @@ namespace DotNet.HalconAlgo
             VsControls.ShowCheckBox(form, "ckb_disp1", "查找区域", inPara.DispRegion);
             VsControls.ShowCheckBox(form, "ckb_disp2", "显示轮廓", inPara.DispContour);
             VsControls.ShowCheckBox(form, "ckb_disp3", "显示点", inPara.DispPoint);
+
+            VsControls.ShowComboBoxDropDown(form, "CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
+            VsControls.ShowComboBoxDropDown(form, "CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
+            VsControls.ShowComboBoxDropDown(form, "CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
         }
         public override void SavePara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
@@ -166,6 +170,10 @@ namespace DotNet.HalconAlgo
             inPara.DispRegion = VsControls["ckb_disp1"].Checked;
             inPara.DispContour = VsControls["ckb_disp2"].Checked;
             inPara.DispPoint = VsControls["ckb_disp3"].Checked;
+
+            inPara.FontX = Convert.ToInt16(VsControls["CB_FontX"].Text);
+            inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
+            inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
         }
         public override void DispROI(DisplayUI display)
         {

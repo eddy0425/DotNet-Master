@@ -1,5 +1,6 @@
 using DotNet.Drawing;
 using HalconDotNet;
+using System;
 using System.Windows.Forms;
 using System.Collections.Generic;
 
@@ -12,28 +13,6 @@ namespace DotNet.HalconAlgo
         public override string Name { get; set; } = "区域合并";
         public override int RunIndex { get; set; }
 
-        public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
-        {
-            HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
-            HObject imgReduce = new HObject(); HOperatorSet.GenEmptyObj(out imgReduce);
-
-            try
-            {
-                var region = strategys.ResolveFrom<CvRegion>(inPara.RegionIn);
-                var coord = strategys.ResolveFrom<CvCoord>(inPara.CoordIn);
-
-                return true;
-            }
-            catch
-            {
-                throw;
-            }
-            finally
-            {
-                regionGet.Dispose();
-                imgReduce.Dispose();
-            }
-        }
         public override void GenTreeNode(TreeVisualizer tree)
         {
             tree.Branch(Name, branch => branch
@@ -57,6 +36,28 @@ namespace DotNet.HalconAlgo
             RegisterOutput("区域", () => inPara.HoRect);
 
         }
+        public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
+        {
+            HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
+            HObject imgReduce = new HObject(); HOperatorSet.GenEmptyObj(out imgReduce);
+
+            try
+            {
+                var region = strategys.ResolveFrom<CvRegion>(inPara.RegionIn);
+                var coord = strategys.ResolveFrom<CvCoord>(inPara.CoordIn);
+
+                return true;
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                regionGet.Dispose();
+                imgReduce.Dispose();
+            }
+        }
         public override void DispPara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
             form.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Display);
@@ -70,6 +71,14 @@ namespace DotNet.HalconAlgo
                 VsControls.ShowComboBox(form, $"cmb_{id}", inPara.RegionSources[i], false);
                 VsControls.ShowButton(form, $"btn_{id}", true);
             }
+
+            //------------------------------------------
+            VsControls.ShowCheckBox(form, "ckb_disp0", "显示文本", inPara.DispText);
+            VsControls.ShowCheckBox(form, "ckb_disp1", "查找区域", inPara.DispRegion);
+
+            VsControls.ShowComboBoxDropDown(form, "CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
+            VsControls.ShowComboBoxDropDown(form, "CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
+            VsControls.ShowComboBoxDropDown(form, "CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
         }
         public override void SavePara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
@@ -80,11 +89,19 @@ namespace DotNet.HalconAlgo
             {
                 inPara.RegionSources[i] = VsControls[$"cmb_{100 + i}"].Text;
             }
+
+            //------------------------------------------
+            inPara.DispText = VsControls["ckb_disp0"].Checked;
+            inPara.DispRegion = VsControls["ckb_disp1"].Checked;
+
+            inPara.FontX = Convert.ToInt16(VsControls["CB_FontX"].Text);
+            inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
+            inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
         }
 
     }
 
-    public class RegionMerge
+    public class RegionMerge : AlgoFont
     {
         /// <summary> 跟随坐标 </summary>
         public string CoordIn { set; get; } = "默认";
@@ -100,6 +117,9 @@ namespace DotNet.HalconAlgo
 
         /// <summary> 区域 </summary>
         public CvRegion HoRect { set; get; } = new CvRegion();
+
+        /// <summary> 显示区域 </summary>
+        public bool DispRegion { set; get; } = true;
     }
 
 }
