@@ -258,6 +258,12 @@ namespace DotNet.HalconAlgo
                     display.DispPoint(midCol, midRow, HColor.OrangeRed, inPara.PointSize + 50);
                 }
 
+                if (inPara.DispText)
+                {
+                    string message = $"{Name} : 中点:({inPara.ArcMidpoint.X:F2},{inPara.ArcMidpoint.Y:F2}) 半径:{circRadius.D:F2} 用点:{rowList.Count}";
+                    display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
+                }
+
                 #endregion
 
                 return true;

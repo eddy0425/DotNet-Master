@@ -46,6 +46,21 @@ namespace DotNet.HalconAlgo
                 var region = strategys.ResolveFrom<CvRegion>(inPara.RegionIn);
                 var coord = strategys.ResolveFrom<CvCoord>(inPara.CoordIn);
 
+                int srcCnt = 0;
+                if (inPara.RegionSources != null)
+                {
+                    for (int i = 0; i < inPara.RegionSources.Length; i++)
+                    {
+                        if (!string.IsNullOrWhiteSpace(inPara.RegionSources[i])) srcCnt++;
+                    }
+                }
+
+                if (inPara.DispText)
+                {
+                    string message = $"{Name} : 输入数量:{srcCnt} 跟随坐标:{inPara.CoordIn}";
+                    display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
+                }
+
                 return true;
             }
             catch

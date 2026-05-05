@@ -83,6 +83,15 @@ namespace DotNet.HalconAlgo
                         if (inPara.DispPoint) display.DispCross(result.Coord, HColor.Red);
                     }
                 }
+
+                if (inPara.DispText)
+                {
+                    int cnt = inPara.Results.Count;
+                    double bestScore = cnt > 0 ? inPara.Results[0].Score : 0;
+                    string message = $"{Name} : 数量:{cnt} 最佳得分:{bestScore:F3} 角度范围:[{inPara.AngleStart}°,{(inPara.AngleStart.D + inPara.AngleExtent.D)}°]";
+                    display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
+                }
+
                 return true;
             }
             catch

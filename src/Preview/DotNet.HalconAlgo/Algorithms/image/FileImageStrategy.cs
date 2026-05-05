@@ -77,11 +77,12 @@ namespace DotNet.HalconAlgo
                 }
 
                 display.DispImage(inPara.Image);
+
                 if (inPara.DispText)
                 {
-                    var message = $"{Name} : W:{display.HoWidth} H:{display.HoHeight} Index:{Index}/{ImagePaths.Length}";
+                    string message = $"{Name} : W:{display.HoWidth} H:{display.HoHeight} 索引:{Index}/{ImagePaths.Length}";
                     display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
-                } 
+                }
 
                 Index++;
                 return true;

@@ -229,6 +229,12 @@ namespace DotNet.HalconAlgo
 
                 if (inPara.DispResult) display.DispArrow(inPara.Line, HColor.Red, 2);
 
+                if (inPara.DispText)
+                {
+                    string message = $"{Name} : 起点:({inPara.Line.Start.X:F2},{inPara.Line.Start.Y:F2}) 终点:({inPara.Line.End.X:F2},{inPara.Line.End.Y:F2}) 角度:{inPara.Line.AngleDegrees:F2}° 用点:{rowList.Count}";
+                    display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
+                }
+
                 #endregion
 
                 return true;

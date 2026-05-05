@@ -58,6 +58,13 @@ namespace DotNet.HalconAlgo
                     inPara.Coord = new CvCoord(new Point2d(column, row));
                     if (inPara.DispRegion) display.DispRegion(regionGet, HColor.Blue);
                 }
+
+                if (inPara.DispText)
+                {
+                    string message = $"{Name} : 中心:({inPara.Coord.X:F2},{inPara.Coord.Y:F2}) 宽:{ho_ROI.Width:F0} 高:{ho_ROI.Height:F0} 跟随坐标:{inPara.CoordIn}";
+                    display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
+                }
+
                 return true;
             }
             catch

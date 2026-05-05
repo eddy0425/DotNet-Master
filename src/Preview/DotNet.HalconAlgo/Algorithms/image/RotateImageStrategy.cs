@@ -35,7 +35,7 @@ namespace DotNet.HalconAlgo
                 if (ho_Image == null || !ho_Image.NotNull())
                     throw new NullReferenceException("图像来源为空！");
 
-                string strResult;
+                string message;
 
                 if (inPara.RotateType == "图像中心")
                 {
@@ -50,7 +50,7 @@ namespace DotNet.HalconAlgo
                         inPara.Image.Dispose();
                         HOperatorSet.CopyObj(ho_Image, out inPara.Image, 1, 1);
                     }
-                    strResult = $"图像旋转 : 方式:{inPara.RotateType} 角度:{inPara.RotateAngle}°";
+                    message = $"{Name} : 方式:{inPara.RotateType} 角度:{inPara.RotateAngle:F2}°";
                 }
                 else
                 {
@@ -82,12 +82,15 @@ namespace DotNet.HalconAlgo
                     inPara.Image.Dispose();
                     HOperatorSet.AffineTransImage(ho_Image, out inPara.Image, HomMat2DRotate, "constant", "false");
 
-                    strResult = $"图像旋转 : 方式:{inPara.RotateType} 坐标:({baseCol:F2},{baseRow:F2}) 角度:{baseAglDeg:F2}°";
+                    message = $"{Name} : 方式:{inPara.RotateType} 坐标:({baseCol:F2},{baseRow:F2}) 角度:{baseAglDeg:F2}°";
                 }
 
                 display.DispImage(inPara.Image);
 
-                if (inPara.DispText) display.DispText(strResult, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
+                if (inPara.DispText)
+                {
+                    display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
+                }
 
                 return true;
             }

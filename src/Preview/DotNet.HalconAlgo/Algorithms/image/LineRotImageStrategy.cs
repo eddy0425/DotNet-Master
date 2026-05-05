@@ -67,7 +67,7 @@ namespace DotNet.HalconAlgo
 
                 if (inPara.DispText)
                 {
-                    string message = $"直线旋转 : 对齐:{inPara.AlignAxis} 旋转:{angleDeg:F2}°";
+                    string message = $"{Name} : 对齐:{inPara.AlignAxis} 旋转:{angleDeg:F2}°";
                     display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
                 }
 
