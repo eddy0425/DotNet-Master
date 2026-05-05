@@ -5,15 +5,13 @@ using System.Windows.Forms;
 
 namespace DotNet.HalconUI
 {
-    public partial class EditModelForm : Form
+    public partial class HEditForm : Form
     {
         public string ShrColor => CB_ApplyColor.Text;
         public int ShrLineWidth => CB_ApplyLineWidth.Text.ExtractNumber();
-
-
         public DisplayUI GetDisplay() => display;
 
-        public EditModelForm()
+        public HEditForm()
         {
             InitializeComponent();
         }

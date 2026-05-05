@@ -15,11 +15,11 @@ namespace DotNet.HalconUI
         public event HMouseEventHandler HMouseDown { add => hWindowControl.HMouseDown += value; remove => hWindowControl.HMouseDown -= value; }
         public event HMouseEventHandler HMouseWheel { add => hWindowControl.HMouseWheel += value; remove => hWindowControl.HMouseWheel -= value; }
 
-        public event EventHandler<DrawSetModelUIArgs> DrawDoneEvent;
-        public void DrawDone(HObject ho_ModeRect, HObject Ho_Contour, ModelResult result)
+        public event EventHandler<DrawModelUIArgs> DrawDoneEvent;
+        public void DrawDone(string modelPath, HObject ho_ModeRect, HObject ho_Contour, ModelResult result)
         {
             var handler = DrawDoneEvent;
-            if (handler != null) handler(this, new DrawSetModelUIArgs(ho_ModeRect, Ho_Contour, result));
+            if (handler != null) handler(this, new DrawModelUIArgs(modelPath, ho_ModeRect, ho_Contour, result));
         }
 
         #region 属性

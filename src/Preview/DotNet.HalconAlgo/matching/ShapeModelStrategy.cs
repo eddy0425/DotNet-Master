@@ -233,9 +233,7 @@ namespace DotNet.HalconAlgo
                 display.DispRegion(ho_Contour, HColor.Green);
                 display.DispCross(result.Column, result.Row, result.Angle.ToDegrees(), HColor.Red, 50);
 
-                //m_dispModel.ShowModel(imgReduced, modeRect.HoRect, contourModel, result, type);
-
-                display.DrawDone(inPara.ModeRect.HoRegion, ho_Contour, result);
+                display.DrawDone(inPara.ModelPath, inPara.ModeRect.HoRegion, ho_Contour, result);
 
                 if (score.Length > 0)
                 {

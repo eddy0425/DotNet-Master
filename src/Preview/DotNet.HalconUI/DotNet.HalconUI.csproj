@@ -65,16 +65,16 @@
     <Compile Include="DrawWindow\DrawEnum.cs" />
     <Compile Include="DrawWindow\DrawEvent.cs" />
     <Compile Include="DrawWindow\DrawHandlerFactory.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\DispModelHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\DispRectHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\NewAffRectHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\NewRectHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\NoneHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\PolygonEditDrawHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\PolygonNewDrawHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\SetModelHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\ShapeModelHandler.cs" />
-    <Compile Include="DrawWindow\DrawHandlers\SynthethicDrawHandler.cs" />
+    <Compile Include="DrawWindow\Handlers\DispModelHandler.cs" />
+    <Compile Include="DrawWindow\Handlers\DispRectHandler.cs" />
+    <Compile Include="DrawWindow\Handlers\NewAffRectHandler.cs" />
+    <Compile Include="DrawWindow\Handlers\NewRectHandler.cs" />
+    <Compile Include="DrawWindow\Handlers\NoneHandler.cs" />
+    <Compile Include="DrawWindow\Handlers\PolygonEditDrawHandler.cs" />
+    <Compile Include="DrawWindow\Handlers\PolygonNewDrawHandler.cs" />
+    <Compile Include="DrawWindow\Handlers\SetModelHandler.cs" />
+    <Compile Include="DrawWindow\Handlers\ShapeModelHandler.cs" />
+    <Compile Include="DrawWindow\Handlers\SynthethicDrawHandler.cs" />
     <Compile Include="DrawWindow\IDrawHandler.cs" />
     <Compile Include="HModelForm.cs">
       <SubType>UserControl</SubType>
@@ -90,12 +90,11 @@
     </Compile>
     <Compile Include="DrawWindow\Handlers\EditEraseRectHandler.cs" />
     <Compile Include="DrawWindow\Handlers\EditNewRectHandler.cs" />
-    <Compile Include="EditModelExtension.cs" />
-    <Compile Include="EditModelForm.cs">
+    <Compile Include="HEditForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="EditModelForm.Designer.cs">
-      <DependentUpon>EditModelForm.cs</DependentUpon>
+    <Compile Include="HEditForm.Designer.cs">
+      <DependentUpon>HEditForm.cs</DependentUpon>
     </Compile>
     <Compile Include="HModel\ModelExtension.cs" />
     <Compile Include="HModel\ModelType.cs" />
@@ -116,8 +115,8 @@
     <EmbeddedResource Include="HDisplayForm.resx">
       <DependentUpon>HDisplayForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="EditModelForm.resx">
-      <DependentUpon>EditModelForm.cs</DependentUpon>
+    <EmbeddedResource Include="HEditForm.resx">
+      <DependentUpon>HEditForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

@@ -128,14 +128,18 @@ namespace DotNet.HalconUI
         public DisplayUI Display { get; private set; }
     }
 
-    public class DrawSetModelUIArgs : EventArgs
+    public class DrawModelUIArgs : EventArgs
     {
-        public DrawSetModelUIArgs(HObject ho_ModeRect, HObject ho_Contour, ModelResult result)
+        public DrawModelUIArgs(string modelPath, HObject ho_ModeRect, HObject ho_Contour, ModelResult result)
         {
+            ModelPath = modelPath;
             HoModeRect = ho_ModeRect;
             HoContour = ho_Contour;
             Result = result;
         }
+
+        /// <summary> 模版路径 </summary>
+        public string ModelPath { get; set; }
 
         /// <summary> 模版区域 </summary>
         public HObject HoModeRect { get; private set; }

@@ -16,7 +16,7 @@ namespace DotNet.VisionMaster
         DisplayUI _disPlay;
         HModelForm _hModel;
         ValueForm _form_Value;
-        EditModelForm _editModel;
+        HEditForm _editModel;
 
         public ParaForm(DisplayUI displayUI)
         {
@@ -24,7 +24,7 @@ namespace DotNet.VisionMaster
 
             _disPlay = displayUI;
             _hModel = new HModelForm();
-            _editModel = new EditModelForm();
+            _editModel = new HEditForm();
             _form_Value = new ValueForm();
 
             panel1.Controls.Add(_hModel);
@@ -230,7 +230,7 @@ namespace DotNet.VisionMaster
 
         }
 
-        private void _disPlay_DrawDoneEvent(object sender, DrawSetModelUIArgs e)
+        private void _disPlay_DrawDoneEvent(object sender, DrawModelUIArgs e)
         {
             try
             {
@@ -240,38 +240,25 @@ namespace DotNet.VisionMaster
                     case AlgoEnum.ShapeModel:
                         {
                             var inPara = ((ShapeModelStrategy)strategy).inPara;
-                            var modelPath = inPara.ModelPath;
-                            _hModel.DisplayModel2(modelPath, e.HoModeRect, e.HoContour, e.Result);
+                            _hModel.DisplayModel(inPara.ModelPath, e.HoModeRect, e.HoContour, e.Result);
                         }
                         break;
                     case AlgoEnum.NccModel:
                         {
                             var inPara = ((NccModelStrategy)strategy).inPara;
-                            var modelPath = inPara.ModelPath;
-                            var modelID = inPara.ModelID;
-                            var hoContour = inPara.HoContour;
-                            var point = new Point2d(inPara.Results[0].X, inPara.Results[0].Y);
-                            _hModel.DisplayModel(modelPath, point, hoContour, modelID, ModelType.NccModel);
+                            _hModel.DisplayModel(inPara.ModelPath, e.HoModeRect, e.HoContour, e.Result);
                         }
                         break;
                     case AlgoEnum.ScaledModel:
                         {
                             var inPara = ((ScaledModelStrategy)strategy).inPara;
-                            var modelPath = inPara.ModelPath;
-                            var modelID = inPara.ModelID;
-                            var hoContour = inPara.HoContour;
-                            var point = new Point2d(inPara.Results[0].X, inPara.Results[0].Y);
-                            _hModel.DisplayModel(modelPath, point, hoContour, modelID, ModelType.ScaledModel);
+                            _hModel.DisplayModel(inPara.ModelPath, e.HoModeRect, e.HoContour, e.Result);
                         }
                         break;
                     case AlgoEnum.GenericModel:
                         {
                             var inPara = ((GenericModelStrategy)strategy).inPara;
-                            var modelPath = inPara.ModelPath;
-                            var modelID = inPara.ModelID;
-                            var hoContour = inPara.HoContour;
-                            var point = new Point2d(inPara.Results[0].X, inPara.Results[0].Y);
-                            _hModel.DisplayModel(modelPath, point, hoContour, modelID, ModelType.GenericModel);
+                            _hModel.DisplayModel(inPara.ModelPath, e.HoModeRect, e.HoContour, e.Result);
                         }
                         break;
                 }

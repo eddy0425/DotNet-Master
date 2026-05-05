@@ -1,6 +1,6 @@
 ﻿namespace DotNet.HalconUI
 {
-    partial class EditModelForm
+    partial class HEditForm
     {
         /// <summary>
         /// Required designer variable.

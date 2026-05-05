@@ -69,20 +69,20 @@
             this.hWindowControl.BackColor = System.Drawing.Color.Black;
             this.hWindowControl.BorderColor = System.Drawing.Color.Black;
             this.hWindowControl.ImagePart = new System.Drawing.Rectangle(0, 0, 640, 480);
-            this.hWindowControl.Location = new System.Drawing.Point(18, 21);
+            this.hWindowControl.Location = new System.Drawing.Point(11, 9);
             this.hWindowControl.Margin = new System.Windows.Forms.Padding(0);
             this.hWindowControl.Name = "hWindowControl";
-            this.hWindowControl.Size = new System.Drawing.Size(283, 214);
+            this.hWindowControl.Size = new System.Drawing.Size(300, 240);
             this.hWindowControl.TabIndex = 1;
-            this.hWindowControl.WindowSize = new System.Drawing.Size(283, 214);
+            this.hWindowControl.WindowSize = new System.Drawing.Size(300, 240);
             // 
             // HModelForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(323, 255);
             this.Controls.Add(this.tableLayoutPanel_floor);
             this.Name = "HModelForm";
+            this.Size = new System.Drawing.Size(323, 255);
             this.tableLayoutPanel_floor.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
             this.ResumeLayout(false);

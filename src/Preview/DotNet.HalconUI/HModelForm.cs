@@ -1,6 +1,5 @@
 ﻿using DotNet.Drawing;
 using HalconDotNet;
-using System;
 using System.Windows.Forms;
 
 
@@ -8,100 +7,61 @@ namespace DotNet.HalconUI
 {
     public partial class HModelForm : UserControl
     {
-        HObject srcImage;
+        HObject _srcImage;
+        HObject _modeRect;
+        HObject _contour;
         HDisplayCore display;
-
-        #region 属性
-
-        public HObject HoImage => display.HoImage;  //图像
-        public HWindow HoWindow => hWindowControl.HalconWindow;  //窗体句柄
-
-        #endregion
 
         public HModelForm()
         {
             InitializeComponent();
+            this.Dock = DockStyle.Fill;
             display = new HDisplayCore(hWindowControl);
 
-            this.Dock = DockStyle.Fill;
-
-            HOperatorSet.GenEmptyObj(out srcImage);
+            HOperatorSet.GenEmptyObj(out _srcImage);
+            HOperatorSet.GenEmptyObj(out _modeRect);
+            HOperatorSet.GenEmptyObj(out _contour);
         }
 
-        public void Reset()
+        public void DisplayModel(string modelPath, HObject ho_ModeRect, HObject ho_Contour, ModelResult result)
         {
             hWindowControl.Focus();
+
+            _srcImage.Dispose();
+            HOperatorSet.ReadImage(out _srcImage, modelPath);
+            display.DispImage(_srcImage);
+
+            Point2d from = result.Coord.Center;
+            Point2d to = display.Centre;
+
+            _modeRect.Dispose();
+            TransObject(from, to, ho_ModeRect, out _modeRect);
+            display.DispRegion(_modeRect, HColor.Blue);
+
+            _contour.Dispose();
+            TransObject(from, to, ho_Contour, out _contour);
+            display.DispRegion(_contour, HColor.Green);
+
+            HalconHelper.TransPixel(from, to, result.Row, result.Column, out HTuple rowTrans, out HTuple colTrans);
+            display.DispCross(colTrans, rowTrans, result.Angle, HColor.Red);
         }
 
-        public void SetDraw(HTuple mode)
+        private static void TransObject(Point2d from, Point2d to, HObject obj, out HObject objTrans)
         {
-            HOperatorSet.SetDraw(HoWindow, mode);
-        }
-
-        public void DisplayModel(string modelPath, Point2d point, HObject ho_Contour, HTuple modelID, ModelType type)
-        {
-            HObject region; HOperatorSet.GenEmptyObj(out region);
-            HObject regionTrans1; HOperatorSet.GenEmptyObj(out regionTrans1);
-            HObject regionTrans2; HOperatorSet.GenEmptyObj(out regionTrans2);
-
-            try
+            if (obj == null || !obj.IsInitialized() || obj.CountObj() <= 0)
             {
-                srcImage.Dispose();
-                HOperatorSet.ReadImage(out srcImage, modelPath);
-                display.DispImage(srcImage);
-
-                regionTrans1.Dispose();
-                HalconHelper.TransRegion(point, new Point2d(), ho_Contour, out regionTrans1);
-
-                regionTrans2.Dispose();
-                HalconHelper.TransRegion(new Point2d(), display.Centre, ho_Contour, out regionTrans2);
-
-                //ho_Contours.Dispose();
-                //type.GetModelContours(modelID,new ModelResult(),out ho_Contours);
-                display.DispRegion(regionTrans2);
+                HOperatorSet.GenEmptyObj(out objTrans);
+                return;
             }
-            catch(Exception ex)
+
+            HOperatorSet.GetObjClass(obj, out HTuple objClass);
+            if (objClass.S.StartsWith("xld"))
             {
-                MessageBox.Show(ex.Message);
+                HalconHelper.TransContourXld(from, to, obj, out objTrans);
             }
-            finally
+            else
             {
-                regionTrans1.Dispose();
-                regionTrans2.Dispose();
-            }
-        }
-
-        public void DisplayModel2(string modelPath, HObject ho_ModeRect, HObject ho_Contour, ModelResult result)
-        {
-            HObject region; HOperatorSet.GenEmptyObj(out region);
-            HObject regionTrans1; HOperatorSet.GenEmptyObj(out regionTrans1);
-            HObject regionTrans2; HOperatorSet.GenEmptyObj(out regionTrans2);
-
-            try
-            {
-                srcImage.Dispose();
-                HOperatorSet.ReadImage(out srcImage, modelPath);
-                display.DispImage(srcImage);
-                display.DispRegion(ho_ModeRect);
-
-                //regionTrans1.Dispose();
-                //HalconHelper.TransRegion(point, new Point2d(), ho_Contour, out regionTrans1);
-
-                regionTrans2.Dispose();
-                HalconHelper.TransRegion(result.Coord.Center, display.Centre, ho_Contour, out regionTrans2);
-
-                //ho_Contours.Dispose();
-                //type.GetModelContours(modelID,new ModelResult(),out ho_Contours);
-                display.DispRegion(regionTrans2);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-            finally
-            {
-                regionTrans1.Dispose();
-                regionTrans2.Dispose();
+                HalconHelper.TransRegion(from, to, obj, out objTrans);
             }
         }
     }
