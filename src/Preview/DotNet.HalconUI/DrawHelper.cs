@@ -64,6 +64,11 @@ namespace DotNet.HalconUI
         // 缓存窗口像素尺寸, 避免 OnMouseMove 内反复 PInvoke 计算
         private double _cachedPixelSize = 1;
 
+        // 进入绘图会话前的窗口/系统状态, End 时还原
+        private HTuple _savedFlush;
+        private HTuple _savedAutodraw;
+        private bool _windowConfigured;
+
         private const double NearThreshold = 10;
 
         #endregion
@@ -184,8 +189,10 @@ namespace DotNet.HalconUI
                 _type = type,
                 _phase = Phase.Idle,
             };
-            // 先 Capture 再发布到 _active, 防止 OnMouseMove 在背景未就绪时进入 RestoreBackground
+            // 顺序: Capture 背景 -> 配置窗口为双缓冲 -> 发布到 _active.
+            // 在 SetupWindow 之前 Capture, 因为 DumpWindowImage 必须在 flush=true 下能看到当前画面.
             h.CaptureBackground();
+            h.SetupWindow();
             _active = h;
             return h;
         }
@@ -194,10 +201,13 @@ namespace DotNet.HalconUI
         {
             try
             {
+                // RestoreBackground 在 flush=false 下绘制到 backbuffer
                 h.RestoreBackground();
             }
             finally
             {
+                // RestoreWindow 内部会把 flush 切回 true, 自动触发一次 swap, 让背景可见
+                h.RestoreWindow();
                 h.ReleaseBackground();
                 // 身份校验: 仅当当前活动实例仍是 h 时才清空, 防止 Application.DoEvents
                 // 重入触发新的 Draw* 后, 旧的 End 错误地把新 _active 置空
@@ -219,6 +229,8 @@ namespace DotNet.HalconUI
                 case DrawType.Ellipse: Down_Ellipse(e); break;
                 case DrawType.Region: Down_Region(e); break;
             }
+            // Down 中可能新增多边形顶点等需要立刻可见的状态, 触发一次 flush
+            FlushBuffer();
         }
 
         public void OnMouseUp(HMouseEventArgs e)
@@ -231,11 +243,13 @@ namespace DotNet.HalconUI
                 case DrawType.Ellipse: Up_Ellipse(e); break;
                 case DrawType.Region: Up_Region(e); break;
             }
+            FlushBuffer();
         }
 
         public void OnMouseMove(HMouseEventArgs e)
         {
-            SetFlush(false);
+            // 进入会话时已设置 flush=false + autodraw=false, 所有绘图都在 backbuffer 中累积.
+            // 这里不再切换 flush 状态, 避免 SetWindowParam("flush",...) 反复触发隐式刷新导致闪烁.
             try
             {
                 // 单次刷新内只计算一次, 避免每个 WDispCross/IsNear 都触发 GetPart+GetWindowExtents
@@ -249,7 +263,11 @@ namespace DotNet.HalconUI
                     case DrawType.Region: Move_Region(e); break;
                 }
             }
-            finally { SetFlush(true); }
+            finally
+            {
+                // 一帧的全部 disp 操作完成后, 一次性把 backbuffer 提交到屏幕 (双缓冲核心)
+                FlushBuffer();
+            }
         }
 
         public void OnMouseWheel(HMouseEventArgs e) { }
@@ -1030,9 +1048,59 @@ namespace DotNet.HalconUI
             catch { return 1; }
         }
 
-        private void SetFlush(bool on)
+        // 进入交互会话: 一次性切换为双缓冲模式, 整个会话保持稳定.
+        // - flush=false : 禁用自动刷新, 所有 disp_* 累积到 backbuffer
+        // - autodraw=false : 阻止 set_part 等操作触发 Halcon 内部的隐式 redraw
+        // 参考 Halcon 官方文档 set_window_param 中关于 'flush' 的双缓冲建议.
+        private void SetupWindow()
         {
-            try { HOperatorSet.SetWindowParam(_windowHandle, "flush", on ? "true" : "false"); } catch { }
+            if (_windowConfigured) return;
+
+            try { HOperatorSet.GetSystem("autodraw", out _savedAutodraw); }
+            catch { _savedAutodraw = null; }
+
+            try { HOperatorSet.GetWindowParam(_windowHandle, "flush", out _savedFlush); }
+            catch { _savedFlush = null; }
+
+            try { HOperatorSet.SetSystem("autodraw", "false"); } catch { }
+            try { HOperatorSet.SetWindowParam(_windowHandle, "flush", "false"); } catch { }
+
+            _windowConfigured = true;
+        }
+
+        // 离开交互会话: 还原 flush / autodraw. 把 flush 切回 'true' 会顺带触发一次刷新,
+        // 让 RestoreBackground 恢复的背景立即可见.
+        private void RestoreWindow()
+        {
+            if (!_windowConfigured) return;
+
+            try
+            {
+                if (_savedFlush != null)
+                    HOperatorSet.SetWindowParam(_windowHandle, "flush", _savedFlush);
+                else
+                    HOperatorSet.SetWindowParam(_windowHandle, "flush", "true");
+            }
+            catch { }
+
+            try
+            {
+                if (_savedAutodraw != null)
+                    HOperatorSet.SetSystem("autodraw", _savedAutodraw);
+            }
+            catch { }
+
+            _savedFlush = null;
+            _savedAutodraw = null;
+            _windowConfigured = false;
+        }
+
+        // 一帧绘制完毕, 把 backbuffer 一次性 swap 到屏幕.
+        // 这是 Halcon 推荐的"双缓冲"操作 (set_window_param flush=false + flush_buffer).
+        private void FlushBuffer()
+        {
+            if (!_windowConfigured) return;
+            try { HOperatorSet.FlushBuffer(_windowHandle); } catch { }
         }
 
         /// <summary> 沿 phi 方向的端点: (cos(phi), -sin(phi)) </summary>
