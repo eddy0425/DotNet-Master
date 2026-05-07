@@ -59,7 +59,10 @@ namespace DotNet.HalconUI
         // Region (polygon)
         private readonly List<double> _polyCols = new List<double>();
         private readonly List<double> _polyRows = new List<double>();
-        private int _polyEditIdx;
+        private int _polyEditIdx = -1;
+
+        // 缓存窗口像素尺寸, 避免 OnMouseMove 内反复 PInvoke 计算
+        private double _cachedPixelSize = 1;
 
         private const double NearThreshold = 10;
 
@@ -134,36 +137,42 @@ namespace DotNet.HalconUI
 
         public static void DrawRegion(out HObject region, HTuple windowHandle)
         {
+            // 默认输出空 region, 即使中间步骤抛异常调用方也能拿到可释放对象
             HOperatorSet.GenEmptyRegion(out region);
             CancelDraw();
             var h = Begin(windowHandle, DrawType.Region);
+            HObject contour = null;
             try
             {
                 h.BlockUntilDone();
                 if (h._completed && h._polyRows.Count >= 3)
                 {
-                    region.Dispose();
                     HTuple rows = new HTuple(h._polyRows.ToArray());
                     HTuple cols = new HTuple(h._polyCols.ToArray());
                     rows = rows.TupleConcat(h._polyRows[0]);
                     cols = cols.TupleConcat(h._polyCols[0]);
-                    HOperatorSet.GenContourPolygonXld(out HObject contour, rows, cols);
+                    HOperatorSet.GenContourPolygonXld(out contour, rows, cols);
+                    var oldRegion = region;
                     HOperatorSet.GenRegionContourXld(contour, out region, "filled");
-                    contour.Dispose();
+                    try { oldRegion.Dispose(); } catch { }
                 }
             }
-            finally { End(h); }
+            finally
+            {
+                if (contour != null) { try { contour.Dispose(); } catch { } }
+                End(h);
+            }
         }
 
         /// <summary> 取消当前绘图操作 </summary>
         public static void CancelDraw()
         {
             try { HalconAPI.CancelDraw(); } catch { }
-            if (_active != null)
+            // 仅标记取消, 资源释放统一交给 End(h), 避免与正在执行的 RestoreBackground/重入逻辑竞争
+            var current = _active;
+            if (current != null)
             {
-                _active._cancelled = true;
-                _active.ReleaseBackground();
-                _active = null;
+                current._cancelled = true;
             }
         }
 
@@ -175,16 +184,25 @@ namespace DotNet.HalconUI
                 _type = type,
                 _phase = Phase.Idle,
             };
-            _active = h;
+            // 先 Capture 再发布到 _active, 防止 OnMouseMove 在背景未就绪时进入 RestoreBackground
             h.CaptureBackground();
+            _active = h;
             return h;
         }
 
         private static void End(DrawHelper h)
         {
-            h.RestoreBackground();
-            h.ReleaseBackground();
-            _active = null;
+            try
+            {
+                h.RestoreBackground();
+            }
+            finally
+            {
+                h.ReleaseBackground();
+                // 身份校验: 仅当当前活动实例仍是 h 时才清空, 防止 Application.DoEvents
+                // 重入触发新的 Draw* 后, 旧的 End 错误地把新 _active 置空
+                if (_active == h) _active = null;
+            }
         }
 
         #endregion
@@ -217,14 +235,21 @@ namespace DotNet.HalconUI
 
         public void OnMouseMove(HMouseEventArgs e)
         {
-            switch (_type)
+            SetFlush(false);
+            try
             {
-                case DrawType.Rect1: Move_Rect1(e); break;
-                case DrawType.Rect2: Move_Rect2(e); break;
-                case DrawType.Circle: Move_Circle(e); break;
-                case DrawType.Ellipse: Move_Ellipse(e); break;
-                case DrawType.Region: Move_Region(e); break;
+                // 单次刷新内只计算一次, 避免每个 WDispCross/IsNear 都触发 GetPart+GetWindowExtents
+                _cachedPixelSize = ComputePixelSize();
+                switch (_type)
+                {
+                    case DrawType.Rect1: Move_Rect1(e); break;
+                    case DrawType.Rect2: Move_Rect2(e); break;
+                    case DrawType.Circle: Move_Circle(e); break;
+                    case DrawType.Ellipse: Move_Ellipse(e); break;
+                    case DrawType.Region: Move_Region(e); break;
+                }
             }
+            finally { SetFlush(true); }
         }
 
         public void OnMouseWheel(HMouseEventArgs e) { }
@@ -242,6 +267,12 @@ namespace DotNet.HalconUI
                 _x1 = e.X; _y1 = e.Y;
                 _phase = Phase.Drawing;
             }
+            else if (_phase == Phase.Drawing)
+            {
+                _x2 = e.X; _y2 = e.Y;
+                _cx = (_x1 + _x2) / 2; _cy = (_y1 + _y2) / 2;
+                _phase = Phase.Editing;
+            }
             else if (_phase == Phase.Editing && _hover != Handle.None)
             {
                 _dragging = true;
@@ -252,11 +283,10 @@ namespace DotNet.HalconUI
         {
             if (e.Button == MouseButtons.Left)
             {
-                if (_phase == Phase.Drawing)
+                if (_phase == Phase.Drawing && Dist(_x1, _y1, e.X, e.Y) > 2)
                 {
                     _x2 = e.X; _y2 = e.Y;
-                    _cx = (_x1 + _x2) / 2;
-                    _cy = (_y1 + _y2) / 2;
+                    _cx = (_x1 + _x2) / 2; _cy = (_y1 + _y2) / 2;
                     _phase = Phase.Editing;
                 }
                 else if (_phase == Phase.Editing)
@@ -278,12 +308,12 @@ namespace DotNet.HalconUI
             switch (_phase)
             {
                 case Phase.Idle:
-                    WDispCross(e.X, e.Y, "yellow");
+                    WDispCross(e.X, e.Y, "orange");
                     break;
 
                 case Phase.Drawing:
-                    WDispCross(_x1, _y1, "yellow");
-                    WDispCross(e.X, e.Y, "yellow");
+                    WDispCross(_x1, _y1, "orange");
+                    WDispCross(e.X, e.Y, "orange");
                     WDispRect1(_x1, _y1, e.X, e.Y, "red");
                     break;
 
@@ -350,6 +380,15 @@ namespace DotNet.HalconUI
                 _phi = 0; _halfLen1 = 0; _halfLen2 = 0;
                 _phase = Phase.Drawing;
             }
+            else if (_phase == Phase.Drawing)
+            {
+                double dx = e.X - _cx, dy = e.Y - _cy;
+                double len = Math.Sqrt(dx * dx + dy * dy);
+                _halfLen1 = Math.Max(1, len);
+                _phi = len > 1 ? Math.Atan2(_cy - e.Y, e.X - _cx) : 0;
+                _halfLen2 = _halfLen1 / 3;
+                _phase = Phase.Adjusting;
+            }
             else if (_phase == Phase.Adjusting)
             {
                 _phase = Phase.Editing;
@@ -368,18 +407,13 @@ namespace DotNet.HalconUI
                 {
                     double dx = e.X - _cx, dy = e.Y - _cy;
                     double len = Math.Sqrt(dx * dx + dy * dy);
-                    if (len > 1)
+                    if (len > 2)
                     {
                         _halfLen1 = len;
                         _phi = Math.Atan2(_cy - e.Y, e.X - _cx);
+                        _halfLen2 = _halfLen1 / 3;
+                        _phase = Phase.Adjusting;
                     }
-                    else
-                    {
-                        _halfLen1 = 10;
-                        _phi = 0;
-                    }
-                    _halfLen2 = _halfLen1 / 3;
-                    _phase = Phase.Adjusting;
                 }
                 else if (_phase == Phase.Editing)
                 {
@@ -401,14 +435,14 @@ namespace DotNet.HalconUI
             switch (_phase)
             {
                 case Phase.Idle:
-                    WDispCross(e.X, e.Y, "yellow");
+                    WDispCross(e.X, e.Y, "orange");
                     break;
 
                 case Phase.Drawing:
                     {
                         double dx = e.X - _cx, dy = e.Y - _cy;
                         double len = Math.Sqrt(dx * dx + dy * dy);
-                        WDispCross(_cx, _cy, "yellow");
+                        WDispCross(_cx, _cy, "orange");
                         if (len > 1)
                         {
                             double phi = Math.Atan2(_cy - e.Y, e.X - _cx);
@@ -422,7 +456,7 @@ namespace DotNet.HalconUI
                     {
                         double dx = e.X - _cx, dy = e.Y - _cy;
                         _halfLen2 = Math.Max(1, Math.Abs(-dx * Math.Sin(_phi) - dy * Math.Cos(_phi)));
-                        WDispCross(_cx, _cy, "yellow");
+                        WDispCross(_cx, _cy, "orange");
                         WDispRect2(_cx, _cy, _phi, _halfLen1, _halfLen2, "red");
                     }
                     break;
@@ -485,6 +519,11 @@ namespace DotNet.HalconUI
                 _circR = 0;
                 _phase = Phase.Drawing;
             }
+            else if (_phase == Phase.Drawing)
+            {
+                _circR = Math.Max(1, Dist(_circCX, _circCY, e.X, e.Y));
+                _phase = Phase.Editing;
+            }
             else if (_phase == Phase.Editing && _hover != Handle.None)
             {
                 _dragging = true;
@@ -495,7 +534,7 @@ namespace DotNet.HalconUI
         {
             if (e.Button == MouseButtons.Left)
             {
-                if (_phase == Phase.Drawing)
+                if (_phase == Phase.Drawing && Dist(_circCX, _circCY, e.X, e.Y) > 2)
                 {
                     _circR = Math.Max(1, Dist(_circCX, _circCY, e.X, e.Y));
                     _phase = Phase.Editing;
@@ -519,13 +558,13 @@ namespace DotNet.HalconUI
             switch (_phase)
             {
                 case Phase.Idle:
-                    WDispCross(e.X, e.Y, "yellow");
+                    WDispCross(e.X, e.Y, "orange");
                     break;
 
                 case Phase.Drawing:
                     {
                         double r = Math.Max(1, Dist(_circCX, _circCY, e.X, e.Y));
-                        WDispCross(_circCX, _circCY, "yellow");
+                        WDispCross(_circCX, _circCY, "orange");
                         WDispCircle(_circCX, _circCY, r, "red");
                     }
                     break;
@@ -580,6 +619,15 @@ namespace DotNet.HalconUI
                 _ellPhi = 0; _ellR1 = 0; _ellR2 = 0;
                 _phase = Phase.Drawing;
             }
+            else if (_phase == Phase.Drawing)
+            {
+                double dx = e.X - _ellCX, dy = e.Y - _ellCY;
+                double len = Math.Sqrt(dx * dx + dy * dy);
+                _ellR1 = Math.Max(1, len);
+                _ellPhi = len > 1 ? Math.Atan2(_ellCY - e.Y, e.X - _ellCX) : 0;
+                _ellR2 = _ellR1 / 2;
+                _phase = Phase.Adjusting;
+            }
             else if (_phase == Phase.Adjusting)
             {
                 _phase = Phase.Editing;
@@ -597,10 +645,14 @@ namespace DotNet.HalconUI
                 if (_phase == Phase.Drawing)
                 {
                     double dx = e.X - _ellCX, dy = e.Y - _ellCY;
-                    _ellR1 = Math.Max(1, Math.Sqrt(dx * dx + dy * dy));
-                    _ellPhi = Math.Atan2(_ellCY - e.Y, e.X - _ellCX);
-                    _ellR2 = _ellR1 / 2;
-                    _phase = Phase.Adjusting;
+                    double len = Math.Sqrt(dx * dx + dy * dy);
+                    if (len > 2)
+                    {
+                        _ellR1 = len;
+                        _ellPhi = Math.Atan2(_ellCY - e.Y, e.X - _ellCX);
+                        _ellR2 = _ellR1 / 2;
+                        _phase = Phase.Adjusting;
+                    }
                 }
                 else if (_phase == Phase.Editing)
                 {
@@ -622,7 +674,7 @@ namespace DotNet.HalconUI
             switch (_phase)
             {
                 case Phase.Idle:
-                    WDispCross(e.X, e.Y, "yellow");
+                    WDispCross(e.X, e.Y, "orange");
                     break;
 
                 case Phase.Drawing:
@@ -632,7 +684,7 @@ namespace DotNet.HalconUI
                         if (r1 > 1)
                         {
                             double phi = Math.Atan2(_ellCY - e.Y, e.X - _ellCX);
-                            WDispCross(_ellCX, _ellCY, "yellow");
+                            WDispCross(_ellCX, _ellCY, "orange");
                             WDispEllipse(_ellCX, _ellCY, phi, r1, r1 / 2, "red");
                         }
                     }
@@ -642,7 +694,7 @@ namespace DotNet.HalconUI
                     {
                         double dx = e.X - _ellCX, dy = e.Y - _ellCY;
                         _ellR2 = Math.Max(1, Math.Abs(-dx * Math.Sin(_ellPhi) - dy * Math.Cos(_ellPhi)));
-                        WDispCross(_ellCX, _ellCY, "yellow");
+                        WDispCross(_ellCX, _ellCY, "orange");
                         WDispEllipse(_ellCX, _ellCY, _ellPhi, _ellR1, _ellR2, "red");
                     }
                     break;
@@ -734,7 +786,7 @@ namespace DotNet.HalconUI
             switch (_phase)
             {
                 case Phase.Idle:
-                    WDispCross(e.X, e.Y, "yellow");
+                    WDispCross(e.X, e.Y, "orange");
                     break;
 
                 case Phase.Drawing:
@@ -795,25 +847,41 @@ namespace DotNet.HalconUI
 
         private void CaptureBackground()
         {
+            // 使用临时变量, 避免 DumpWindowImage 抛出后 _bgImage 处于不确定状态
+            HObject img = null;
             try
             {
                 HOperatorSet.GetPart(_windowHandle, out _partR1, out _partC1, out _partR2, out _partC2);
-                HOperatorSet.DumpWindowImage(out _bgImage, _windowHandle);
+                HOperatorSet.DumpWindowImage(out img, _windowHandle);
+                _bgImage = img;
+                img = null;
             }
-            catch { _bgImage = null; }
+            catch
+            {
+                _bgImage = null;
+            }
+            finally
+            {
+                if (img != null) { try { img.Dispose(); } catch { } }
+            }
         }
 
         private void RestoreBackground()
         {
             if (_bgImage == null) return;
+            // 重新捕获时使用临时变量, 防止 DumpWindowImage 异常导致 _bgImage 引用泄漏或悬空
+            HObject newImg = null;
             try
             {
                 HOperatorSet.GetPart(_windowHandle, out HTuple r1, out HTuple c1, out HTuple r2, out HTuple c2);
                 if (r1.D != _partR1.D || c1.D != _partC1.D || r2.D != _partR2.D || c2.D != _partC2.D)
                 {
+                    HOperatorSet.DumpWindowImage(out newImg, _windowHandle);
+                    var old = _bgImage;
+                    _bgImage = newImg;
+                    newImg = null;
                     _partR1 = r1; _partC1 = c1; _partR2 = r2; _partC2 = c2;
-                    _bgImage.Dispose();
-                    HOperatorSet.DumpWindowImage(out _bgImage, _windowHandle);
+                    try { old.Dispose(); } catch { }
                 }
 
                 HOperatorSet.GetImageSize(_bgImage, out HTuple w, out HTuple h);
@@ -822,14 +890,19 @@ namespace DotNet.HalconUI
                 HOperatorSet.SetPart(_windowHandle, _partR1, _partC1, _partR2, _partC2);
             }
             catch { }
+            finally
+            {
+                if (newImg != null) { try { newImg.Dispose(); } catch { } }
+            }
         }
 
         private void ReleaseBackground()
         {
-            if (_bgImage != null)
+            var img = _bgImage;
+            _bgImage = null;
+            if (img != null)
             {
-                _bgImage.Dispose();
-                _bgImage = null;
+                try { img.Dispose(); } catch { }
             }
         }
 
@@ -885,6 +958,7 @@ namespace DotNet.HalconUI
 
         private void WDispEllipse(double cx, double cy, double phi, double r1, double r2, string color)
         {
+            HObject region = null;
             try
             {
                 double major = Math.Max(r1, r2);
@@ -892,11 +966,14 @@ namespace DotNet.HalconUI
                 double adjPhi = r1 >= r2 ? phi : phi + Math.PI / 2;
                 HOperatorSet.SetColor(_windowHandle, color);
                 HOperatorSet.SetDraw(_windowHandle, "margin");
-                HOperatorSet.GenEllipse(out HObject region, cy, cx, adjPhi, major, minor);
+                HOperatorSet.GenEllipse(out region, cy, cx, adjPhi, major, minor);
                 HOperatorSet.DispObj(region, _windowHandle);
-                region.Dispose();
             }
             catch { }
+            finally
+            {
+                if (region != null) { try { region.Dispose(); } catch { } }
+            }
         }
 
         private void WDispLine(double col1, double row1, double col2, double row2, string color)
@@ -915,10 +992,11 @@ namespace DotNet.HalconUI
 
         private void BlockUntilDone()
         {
+            // 提升 sleep 到 10ms (~100Hz) 即可流畅响应鼠标, 同时显著降低 CPU 占用
             while (!_completed && !_cancelled)
             {
                 Application.DoEvents();
-                System.Threading.Thread.Sleep(5);
+                System.Threading.Thread.Sleep(10);
             }
         }
 
@@ -930,13 +1008,16 @@ namespace DotNet.HalconUI
 
         private bool IsNear(double x1, double y1, double x2, double y2)
         {
-            double px = GetPixelSize();
-            double threshold = NearThreshold * px;
+            double threshold = NearThreshold * _cachedPixelSize;
             double dx = x1 - x2, dy = y1 - y2;
             return dx * dx + dy * dy < threshold * threshold;
         }
 
-        private double GetPixelSize()
+        // 读取缓存值 (由 OnMouseMove 在每帧开头刷新一次)
+        private double GetPixelSize() => _cachedPixelSize;
+
+        // 实际通过 PInvoke 计算窗口缩放比例, 比较昂贵
+        private double ComputePixelSize()
         {
             try
             {
@@ -947,6 +1028,11 @@ namespace DotNet.HalconUI
                 return Math.Max(scaleX, scaleY);
             }
             catch { return 1; }
+        }
+
+        private void SetFlush(bool on)
+        {
+            try { HOperatorSet.SetWindowParam(_windowHandle, "flush", on ? "true" : "false"); } catch { }
         }
 
         /// <summary> 沿 phi 方向的端点: (cos(phi), -sin(phi)) </summary>
