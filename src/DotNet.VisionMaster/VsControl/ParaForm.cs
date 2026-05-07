@@ -1,10 +1,8 @@
-using DotNet.Drawing;
-using DotNet.HalconAlgo;
 using DotNet.HalconUI;
-using HalconDotNet;
+using DotNet.HalconAlgo;
 using System;
-using System.Collections.Generic;
 using System.Windows.Forms;
+using System.Collections.Generic;
 
 
 namespace DotNet.VisionMaster
@@ -28,13 +26,8 @@ namespace DotNet.VisionMaster
             _form_Value = new ValueForm();
 
             panel1.Controls.Add(_hModel);
-            _disPlay.ModelEvent += _disPlay_ModelEvent;
             _disPlay.DrawDoneEvent += _disPlay_DrawDoneEvent;
-        }
 
-        private void _disPlay_ModelEvent(object sender, DrawModelArgs e)
-        {
-            throw new NotImplementedException();
         }
 
         private void btn_setPath_Click(object sender, EventArgs e)
@@ -267,25 +260,61 @@ namespace DotNet.VisionMaster
 
         }
 
-
         private void but_editModel_Click(object sender, EventArgs e)
         {
             try
             {
-                var filePath = AlgoPaths.JobDir + _index + "\\matching.bmp";
                 var strategy = _strategys[_index];
                 switch (strategy.Algorithm)
                 {
                     case AlgoEnum.ShapeModel:
                         {
+                            var inPara = ((ShapeModelStrategy)strategy).inPara;
+                            var modelPath = inPara.ModelPath;
+                            var modeRect = inPara.ModeRect.HoRegion;
+                            var contour = inPara.HoContour;
+                            var result = inPara.Results[0];
                             _editModel.Show();
-                            _editModel.ShowModifyTemplate(filePath);
-                            //_disPlay.SetDrawMode(strategy.Name, DrawEnum.NewAffRect);
+                            _editModel.DisplayModel(modelPath, modeRect, contour, result);
+                        }
+                        break;
+                    case AlgoEnum.NccModel:
+                        {
+                            var inPara = ((NccModelStrategy)strategy).inPara;
+                            var modelPath = inPara.ModelPath;
+                            var modeRect = inPara.ModeRect.HoRegion;
+                            var contour = inPara.HoContour;
+                            var result = inPara.Results[0];
+                            _editModel.Show();
+                            _editModel.DisplayModel(modelPath, modeRect, contour, result);
+                        }
+                        break;
+                    case AlgoEnum.ScaledModel:
+                        {
+                            var inPara = ((ScaledModelStrategy)strategy).inPara;
+                            var modelPath = inPara.ModelPath;
+                            var modeRect = inPara.ModeRect.HoRegion;
+                            var contour = inPara.HoContour;
+                            var result = inPara.Results[0];
+                            _editModel.Show();
+                            _editModel.DisplayModel(modelPath, modeRect, contour, result);
+                        }
+                        break;
+                    case AlgoEnum.GenericModel:
+                        {
+                            var inPara = ((GenericModelStrategy)strategy).inPara;
+                            var modelPath = inPara.ModelPath;
+                            var modeRect = inPara.ModeRect.HoRegion;
+                            var contour = inPara.HoContour;
+                            var result = inPara.Results[0];
+                            _editModel.Show();
+                            _editModel.DisplayModel(modelPath, modeRect, contour, result);
                         }
                         break;
                 }
             }
             catch (Exception ex) { MessageBox.Show(ex.Message); }
         }
+
     }
 }

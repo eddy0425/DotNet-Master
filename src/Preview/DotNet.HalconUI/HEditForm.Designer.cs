@@ -277,16 +277,16 @@
             this.CB_ModifyShape.Size = new System.Drawing.Size(106, 23);
             this.CB_ModifyShape.TabIndex = 356;
             // 
-            // EditModelForm
+            // HEditForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(623, 486);
             this.Controls.Add(this.tableLayoutPanel1);
-            this.Name = "EditModelForm";
-            this.Text = "EditModelForm";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.EditModelForm_FormClosing);
-            this.Load += new System.EventHandler(this.EditModelForm_Load);
+            this.Name = "HEditForm";
+            this.Text = "HEditForm";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.HEditForm_FormClosing);
+            this.Load += new System.EventHandler(this.HEditForm_Load);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.panel2.ResumeLayout(false);
             this.groupBox3.ResumeLayout(false);

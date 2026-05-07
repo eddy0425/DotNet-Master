@@ -293,7 +293,10 @@ namespace DotNet.HalconAlgo
                     HOperatorSet.GetGenericShapeModelResult(matchResultID, 0, "angle", out HTuple angle);
                     HOperatorSet.GetGenericShapeModelResult(matchResultID, 0, "score", out HTuple score);
 
+                    inPara.Results = new List<ModelResult>();
                     var result = new ModelResult(row, column, angle, score);
+                    result.ResultID = matchResultID;
+                    inPara.Results.Add(result);
 
                     ho_Contour?.Dispose();
                     HOperatorSet.GetGenericShapeModelResultObject(out ho_Contour, matchResultID, 0, "contours");

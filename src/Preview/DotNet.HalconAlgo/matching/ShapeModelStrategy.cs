@@ -217,7 +217,9 @@ namespace DotNet.HalconAlgo
                                             inPara.MinScore, 1, inPara.MaxOverlap, inPara.SubPixel, inPara.NumLevels, inPara.Greediness,
                                             out HTuple row, out HTuple column, out HTuple angle, out HTuple score);
 
+                inPara.Results = new List<ModelResult>();
                 var result = new ModelResult(row, column, angle, score);
+                inPara.Results.Add(result);
                 ho_Contour.Dispose();
                 HOperatorSet.GetShapeModelContours(out ho_Contour, modelID, 1);
                 HOperatorSet.VectorAngleToRigid(0, 0, 0, result.Row, result.Column, result.Angle, out HTuple hv_HomMat2D);

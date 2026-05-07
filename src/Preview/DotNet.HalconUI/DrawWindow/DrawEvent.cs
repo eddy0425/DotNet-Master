@@ -86,25 +86,6 @@ namespace DotNet.HalconUI
         public double Phi { get; private set; }
     }
 
-    public class DrawModelArgs : EventArgs
-    {
-        public DrawModelArgs(string name, string modePath, HTuple modelID)
-        {
-            Name = name;
-            ModePath = modePath;
-            ModelID = modelID;
-        }
-
-        /// <summary> 名称 </summary>
-        public string Name { get; private set; }
-
-        /// <summary> 模版路径 </summary>
-        public string ModePath { get; private set; }
-
-        /// <summary> 模板ID </summary>
-        public HTuple ModelID { get; set; }
-    }
-
     public class DrawSetModelArgs : EventArgs
     {
         public DrawSetModelArgs(string name, Point2d topLeft, Point2d bottomRight, DisplayUI display)

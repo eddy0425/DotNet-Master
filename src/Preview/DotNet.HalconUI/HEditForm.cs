@@ -9,20 +9,28 @@ namespace DotNet.HalconUI
     {
         public string ShrColor => CB_ApplyColor.Text;
         public int ShrLineWidth => CB_ApplyLineWidth.Text.ExtractNumber();
+
+        HObject _srcImage;
+        HObject _modeRect;
+        HObject _contour;
         public DisplayUI GetDisplay() => display;
 
         public HEditForm()
         {
             InitializeComponent();
+
+            HOperatorSet.GenEmptyObj(out _srcImage);
+            HOperatorSet.GenEmptyObj(out _modeRect);
+            HOperatorSet.GenEmptyObj(out _contour);
         }
 
-        private void EditModelForm_FormClosing(object sender, FormClosingEventArgs e)
+        private void HEditForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             this.Hide();
             e.Cancel = true;
         }
 
-        private void EditModelForm_Load(object sender, System.EventArgs e)
+        private void HEditForm_Load(object sender, System.EventArgs e)
         {
             CB_ModifyShape.Items.Clear();
             CB_ModifyShape.Items.Add("矩形"); CB_ModifyShape.Items.Add("仿射矩形"); CB_ModifyShape.Items.Add("圆"); CB_ModifyShape.Items.Add("椭圆"); CB_ModifyShape.Items.Add("多边型");
@@ -50,49 +58,45 @@ namespace DotNet.HalconUI
             display.SetDrawMode("", DrawEnum.EraseRect);
         }
 
-        public void ShowModifyTemplate(string modelPath)
+        public void DisplayModel(string modelPath, HObject ho_ModeRect, HObject ho_Contour, ModelResult result)
         {
-            HObject srcImage; HOperatorSet.GenEmptyObj(out srcImage);
-            try
+            display.Reset();
+
+            _srcImage.Dispose();
+            HOperatorSet.ReadImage(out _srcImage, modelPath);
+            display.DispImage(_srcImage);
+
+            Point2d from = result.Coord.Center;
+            Point2d to = display.HoCentre;
+
+            _modeRect.Dispose();
+            TransObject(from, to, ho_ModeRect, out _modeRect);
+            display.DispRegion(_modeRect, HColor.Blue);
+
+            _contour.Dispose();
+            TransObject(from, to, ho_Contour, out _contour);
+            display.DispRegion(_contour, HColor.Green);
+
+            HalconHelper.TransPixel(from, to, result.Row, result.Column, out HTuple rowTrans, out HTuple colTrans);
+            display.DispCross(colTrans, rowTrans, result.Angle, HColor.Red);
+        }
+
+        private static void TransObject(Point2d from, Point2d to, HObject obj, out HObject objTrans)
+        {
+            if (obj == null || !obj.IsInitialized() || obj.CountObj() <= 0)
             {
-                //IsOk = false;
-                //if (this.Visible)
-                //{
-                //    this.Close();
-                //}
-
-                //this.Show();
-                //info = _info;
-                //CB_LockCenter.Checked = _info.LockCenter;
-                //m_type = _type;
-
-                //if (srcImage.NotNull()) { srcImage.Dispose(); HOperatorSet.GenEmptyObj(out srcImage); }
-
-                srcImage.Dispose();
-                HOperatorSet.ReadImage(out srcImage, modelPath);
-                display.DispImage(srcImage);
-
-                //findModeRegion = _findRegion;
-                //setModeCenter = _setModeCenter;
-
-                //CvOperatorSet.TransRegion(setModeCenter, disPlay.HoCentre, findModeRegion.HoRegion, out findModeRegion.InRegion);
-
-                ////参数备份
-                //oldModelID = info.modelID.Clone();
-
-                //m_type.FindModel2(srcImage, info, 1, out ModelResult oldResult); if (oldResult.score.Length <= 0) throw new Exception($"查找模板失败！!");
-                //LockCenter = new CvCoord(oldResult.X, oldResult.Y, oldResult.angle);
-
-                //SetTemplate(srcImage, findModeRegion, info, m_type);
+                HOperatorSet.GenEmptyObj(out objTrans);
+                return;
             }
-            catch
+
+            HOperatorSet.GetObjClass(obj, out HTuple objClass);
+            if (objClass.S.StartsWith("xld"))
             {
-                this.Hide();
-                throw;
+                HalconHelper.TransContourXld(from, to, obj, out objTrans);
             }
-            finally
+            else
             {
-                srcImage.Dispose();
+                HalconHelper.TransRegion(from, to, obj, out objTrans);
             }
         }
     }

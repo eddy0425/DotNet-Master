@@ -20,7 +20,6 @@ namespace DotNet.HalconUI
         public event EventHandler<DrawPolygonArgs>    PolygonEvent;
         public event EventHandler<DrawRectangleArgs>  RectangleEvent;
         public event EventHandler<DrawAffRectArgs>    AffRectEvent;
-        public event EventHandler<DrawModelArgs>      ModelEvent;
         public event EventHandler<DrawSetModelArgs>   SetModelEvent;
         public event EventHandler<DrawDispModelArgs>  DispModelEvent;
         public event EventHandler<DrawSynthethicArgs> SynthethicEvent;
@@ -59,12 +58,6 @@ namespace DotNet.HalconUI
         {
             var handler = AffRectEvent;
             if (handler != null) handler(this, new DrawAffRectArgs(name, center, rectSize, phi));
-        }
-
-        public void DrawModel(string name, string modePath, HTuple modelID)
-        {
-            var handler = ModelEvent;
-            if (handler != null) handler(this, new DrawModelArgs(name, modePath, modelID));
         }
 
         public void DrawSetModel(string name, Point2d topLeft, Point2d bottomRight, DisplayUI display)
