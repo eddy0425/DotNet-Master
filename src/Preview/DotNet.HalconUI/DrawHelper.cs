@@ -45,6 +45,7 @@ namespace DotNet.HalconUI
         private bool _dragging;
         private bool _completed;
         private bool _cancelled;
+        private int _ended;
 
         // Rect1/2 (e.X=Col, e.Y=Row)
         private double _x1, _y1, _x2, _y2;
@@ -87,8 +88,10 @@ namespace DotNet.HalconUI
             try
             {
                 h.BlockUntilDone();
-                row1 = h._y1; column1 = h._x1;
-                row2 = h._y2; column2 = h._x2;
+                NormalizeRect1(h._x1, h._y1, h._x2, h._y2,
+                    out double left, out double top, out double right, out double bottom);
+                row1 = top; column1 = left;
+                row2 = bottom; column2 = right;
             }
             finally { End(h); }
         }
@@ -173,11 +176,13 @@ namespace DotNet.HalconUI
         public static void CancelDraw()
         {
             try { HalconAPI.CancelDraw(); } catch { }
-            // 仅标记取消, 资源释放统一交给 End(h), 避免与正在执行的 RestoreBackground/重入逻辑竞争
+            // DoEvents 允许在旧 Draw* 尚未退出时重入新的 Draw*。
+            // 这里立即结束旧会话，避免 flush/autodraw 状态被新旧会话交叉还原。
             var current = _active;
             if (current != null)
             {
                 current._cancelled = true;
+                End(current);
             }
         }
 
@@ -199,6 +204,9 @@ namespace DotNet.HalconUI
 
         private static void End(DrawHelper h)
         {
+            if (h == null || System.Threading.Interlocked.Exchange(ref h._ended, 1) == 1)
+                return;
+
             try
             {
                 // RestoreBackground 在 flush=false 下绘制到 backbuffer
@@ -889,10 +897,11 @@ namespace DotNet.HalconUI
             if (_bgImage == null) return;
             // 重新捕获时使用临时变量, 防止 DumpWindowImage 异常导致 _bgImage 引用泄漏或悬空
             HObject newImg = null;
+            bool shouldRestorePart = false;
             try
             {
                 HOperatorSet.GetPart(_windowHandle, out HTuple r1, out HTuple c1, out HTuple r2, out HTuple c2);
-                if (r1.D != _partR1.D || c1.D != _partC1.D || r2.D != _partR2.D || c2.D != _partC2.D)
+                if (!IsSamePart(r1, c1, r2, c2, _partR1, _partC1, _partR2, _partC2))
                 {
                     HOperatorSet.DumpWindowImage(out newImg, _windowHandle);
                     var old = _bgImage;
@@ -904,12 +913,16 @@ namespace DotNet.HalconUI
 
                 HOperatorSet.GetImageSize(_bgImage, out HTuple w, out HTuple h);
                 HOperatorSet.SetPart(_windowHandle, 0, 0, h - 1, w - 1);
+                shouldRestorePart = true;
                 HOperatorSet.DispObj(_bgImage, _windowHandle);
-                HOperatorSet.SetPart(_windowHandle, _partR1, _partC1, _partR2, _partC2);
             }
             catch { }
             finally
             {
+                if (shouldRestorePart)
+                {
+                    try { HOperatorSet.SetPart(_windowHandle, _partR1, _partC1, _partR2, _partC2); } catch { }
+                }
                 if (newImg != null) { try { newImg.Dispose(); } catch { } }
             }
         }
@@ -945,9 +958,11 @@ namespace DotNet.HalconUI
         {
             try
             {
+                NormalizeRect1(col1, row1, col2, row2,
+                    out double left, out double top, out double right, out double bottom);
                 HOperatorSet.SetColor(_windowHandle, color);
                 HOperatorSet.SetDraw(_windowHandle, "margin");
-                HOperatorSet.DispRectangle1(_windowHandle, row1, col1, row2, col2);
+                HOperatorSet.DispRectangle1(_windowHandle, top, left, bottom, right);
             }
             catch { }
         }
@@ -976,7 +991,6 @@ namespace DotNet.HalconUI
 
         private void WDispEllipse(double cx, double cy, double phi, double r1, double r2, string color)
         {
-            HObject region = null;
             try
             {
                 double major = Math.Max(r1, r2);
@@ -984,14 +998,9 @@ namespace DotNet.HalconUI
                 double adjPhi = r1 >= r2 ? phi : phi + Math.PI / 2;
                 HOperatorSet.SetColor(_windowHandle, color);
                 HOperatorSet.SetDraw(_windowHandle, "margin");
-                HOperatorSet.GenEllipse(out region, cy, cx, adjPhi, major, minor);
-                HOperatorSet.DispObj(region, _windowHandle);
+                HOperatorSet.DispEllipse(_windowHandle, cy, cx, adjPhi, major, minor);
             }
             catch { }
-            finally
-            {
-                if (region != null) { try { region.Dispose(); } catch { } }
-            }
         }
 
         private void WDispLine(double col1, double row1, double col2, double row2, string color)
@@ -1022,6 +1031,31 @@ namespace DotNet.HalconUI
         {
             double dx = x1 - x2, dy = y1 - y2;
             return Math.Sqrt(dx * dx + dy * dy);
+        }
+
+        private static void NormalizeRect1(double col1, double row1, double col2, double row2,
+            out double left, out double top, out double right, out double bottom)
+        {
+            left = Math.Min(col1, col2);
+            top = Math.Min(row1, row2);
+            right = Math.Max(col1, col2);
+            bottom = Math.Max(row1, row2);
+        }
+
+        private static bool IsSamePart(HTuple r1, HTuple c1, HTuple r2, HTuple c2,
+            HTuple savedR1, HTuple savedC1, HTuple savedR2, HTuple savedC2)
+        {
+            return IsSameTupleValue(r1, savedR1)
+                && IsSameTupleValue(c1, savedC1)
+                && IsSameTupleValue(r2, savedR2)
+                && IsSameTupleValue(c2, savedC2);
+        }
+
+        private static bool IsSameTupleValue(HTuple current, HTuple saved)
+        {
+            return current != null
+                && saved != null
+                && Math.Abs(current.D - saved.D) < 0.000001;
         }
 
         private bool IsNear(double x1, double y1, double x2, double y2)
