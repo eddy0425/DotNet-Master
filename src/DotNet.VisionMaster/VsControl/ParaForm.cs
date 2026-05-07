@@ -3,6 +3,7 @@ using DotNet.HalconAlgo;
 using System;
 using System.Windows.Forms;
 using System.Collections.Generic;
+using HalconDotNet;
 
 
 namespace DotNet.VisionMaster

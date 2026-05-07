@@ -195,15 +195,11 @@ namespace DotNet.HalconUI
         {
             switch (_type)
             {
-                case DrawType.Rect1:
-                case DrawType.Rect2:
-                    Down_Rect(e); break;
-                case DrawType.Circle:
-                    Down_Circle(e); break;
-                case DrawType.Ellipse:
-                    Down_Ellipse(e); break;
-                case DrawType.Region:
-                    Down_Region(e); break;
+                case DrawType.Rect1: Down_Rect1(e); break;
+                case DrawType.Rect2: Down_Rect2(e); break;
+                case DrawType.Circle: Down_Circle(e); break;
+                case DrawType.Ellipse: Down_Ellipse(e); break;
+                case DrawType.Region: Down_Region(e); break;
             }
         }
 
@@ -211,15 +207,11 @@ namespace DotNet.HalconUI
         {
             switch (_type)
             {
-                case DrawType.Rect1:
-                case DrawType.Rect2:
-                    Up_Rect(e); break;
-                case DrawType.Circle:
-                    Up_Circle(e); break;
-                case DrawType.Ellipse:
-                    Up_Ellipse(e); break;
-                case DrawType.Region:
-                    Up_Region(e); break;
+                case DrawType.Rect1: Up_Rect1(e); break;
+                case DrawType.Rect2: Up_Rect2(e); break;
+                case DrawType.Circle: Up_Circle(e); break;
+                case DrawType.Ellipse: Up_Ellipse(e); break;
+                case DrawType.Region: Up_Region(e); break;
             }
         }
 
@@ -227,15 +219,11 @@ namespace DotNet.HalconUI
         {
             switch (_type)
             {
-                case DrawType.Rect1:
-                case DrawType.Rect2:
-                    Move_Rect(e); break;
-                case DrawType.Circle:
-                    Move_Circle(e); break;
-                case DrawType.Ellipse:
-                    Move_Ellipse(e); break;
-                case DrawType.Region:
-                    Move_Region(e); break;
+                case DrawType.Rect1: Move_Rect1(e); break;
+                case DrawType.Rect2: Move_Rect2(e); break;
+                case DrawType.Circle: Move_Circle(e); break;
+                case DrawType.Ellipse: Move_Ellipse(e); break;
+                case DrawType.Region: Move_Region(e); break;
             }
         }
 
@@ -243,16 +231,15 @@ namespace DotNet.HalconUI
 
         #endregion
 
-        #region Rectangle
+        #region Rectangle1
 
-        private void Down_Rect(HMouseEventArgs e)
+        private void Down_Rect1(HMouseEventArgs e)
         {
             if (e.Button != MouseButtons.Left) return;
 
             if (_phase == Phase.Idle)
             {
                 _x1 = e.X; _y1 = e.Y;
-                _phi = 0;
                 _phase = Phase.Drawing;
             }
             else if (_phase == Phase.Editing && _hover != Handle.None)
@@ -261,14 +248,15 @@ namespace DotNet.HalconUI
             }
         }
 
-        private void Up_Rect(HMouseEventArgs e)
+        private void Up_Rect1(HMouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
             {
                 if (_phase == Phase.Drawing)
                 {
                     _x2 = e.X; _y2 = e.Y;
-                    SyncRectCenter();
+                    _cx = (_x1 + _x2) / 2;
+                    _cy = (_y1 + _y2) / 2;
                     _phase = Phase.Editing;
                 }
                 else if (_phase == Phase.Editing)
@@ -283,7 +271,7 @@ namespace DotNet.HalconUI
             }
         }
 
-        private void Move_Rect(HMouseEventArgs e)
+        private void Move_Rect1(HMouseEventArgs e)
         {
             RestoreBackground();
 
@@ -300,92 +288,32 @@ namespace DotNet.HalconUI
                     break;
 
                 case Phase.Editing:
-                    EditRect(e);
+                    EditRect1(e);
                     break;
             }
         }
 
-        private void EditRect(HMouseEventArgs e)
+        private void EditRect1(HMouseEventArgs e)
         {
-            bool rotated = _type == DrawType.Rect2 && _phi != 0;
-
             if (_dragging)
             {
-                if (rotated) DragRect2(e);
-                else DragRect1(e);
-            }
-            else
-            {
-                DetectHoverRect(e, rotated);
-            }
-
-            if (rotated)
-            {
-                GetAxisEnd(_cx, _cy, _phi, _halfLen1, out double ax1, out double ay1);
-                GetAxisEndPerp(_cx, _cy, _phi, _halfLen2, out double ax2, out double ay2);
-                WDispCross(_cx, _cy, _hover == Handle.Center ? "green" : "orange", 50);
-                WDispCross(ax1, ay1, _hover == Handle.AxisEnd1 ? "green" : "orange", 30);
-                WDispCross(ax2, ay2, _hover == Handle.AxisEnd2 ? "green" : "orange", 30);
-                WDispRect2(_cx, _cy, _phi, _halfLen1, _halfLen2, "red");
-            }
-            else
-            {
-                WDispCross(_x1, _y1, _hover == Handle.P1 ? "green" : "orange", 50);
-                WDispCross(_x2, _y2, _hover == Handle.P2 ? "green" : "orange", 50);
-                WDispCross(_cx, _cy, _hover == Handle.Center ? "green" : "orange", 50);
-                WDispRect1(_x1, _y1, _x2, _y2, "red");
-            }
-        }
-
-        private void DragRect1(HMouseEventArgs e)
-        {
-            switch (_hover)
-            {
-                case Handle.P1:
-                    _x1 = e.X; _y1 = e.Y;
-                    SyncRectCenter();
-                    break;
-                case Handle.P2:
-                    _x2 = e.X; _y2 = e.Y;
-                    SyncRectCenter();
-                    break;
-                case Handle.Center:
-                    double dx = e.X - _cx, dy = e.Y - _cy;
-                    _x1 += dx; _y1 += dy;
-                    _x2 += dx; _y2 += dy;
-                    _cx = e.X; _cy = e.Y;
-                    break;
-            }
-        }
-
-        private void DragRect2(HMouseEventArgs e)
-        {
-            double dx = e.X - _cx, dy = e.Y - _cy;
-            switch (_hover)
-            {
-                case Handle.Center:
-                    _cx = e.X; _cy = e.Y;
-                    break;
-                case Handle.AxisEnd1:
-                    _halfLen1 = Math.Max(1, Math.Sqrt(dx * dx + dy * dy));
-                    _phi = Math.Atan2(_cy - e.Y, e.X - _cx);
-                    break;
-                case Handle.AxisEnd2:
-                    _halfLen2 = Math.Max(1, Math.Abs(-dx * Math.Sin(_phi) - dy * Math.Cos(_phi)));
-                    break;
-            }
-        }
-
-        private void DetectHoverRect(HMouseEventArgs e, bool rotated)
-        {
-            if (rotated)
-            {
-                GetAxisEnd(_cx, _cy, _phi, _halfLen1, out double ax1, out double ay1);
-                GetAxisEndPerp(_cx, _cy, _phi, _halfLen2, out double ax2, out double ay2);
-                if (IsNear(_cx, _cy, e.X, e.Y)) _hover = Handle.Center;
-                else if (IsNear(ax1, ay1, e.X, e.Y)) _hover = Handle.AxisEnd1;
-                else if (IsNear(ax2, ay2, e.X, e.Y)) _hover = Handle.AxisEnd2;
-                else _hover = Handle.None;
+                switch (_hover)
+                {
+                    case Handle.P1:
+                        _x1 = e.X; _y1 = e.Y;
+                        _cx = (_x1 + _x2) / 2; _cy = (_y1 + _y2) / 2;
+                        break;
+                    case Handle.P2:
+                        _x2 = e.X; _y2 = e.Y;
+                        _cx = (_x1 + _x2) / 2; _cy = (_y1 + _y2) / 2;
+                        break;
+                    case Handle.Center:
+                        double dx = e.X - _cx, dy = e.Y - _cy;
+                        _x1 += dx; _y1 += dy;
+                        _x2 += dx; _y2 += dy;
+                        _cx = e.X; _cy = e.Y;
+                        break;
+                }
             }
             else
             {
@@ -394,14 +322,153 @@ namespace DotNet.HalconUI
                 else if (IsNear(_cx, _cy, e.X, e.Y)) _hover = Handle.Center;
                 else _hover = Handle.None;
             }
+
+            WDispCross(_x1, _y1, _hover == Handle.P1 ? "green" : "orange", 50);
+            WDispCross(_x2, _y2, _hover == Handle.P2 ? "green" : "orange", 50);
+            WDispCross(_cx, _cy, _hover == Handle.Center ? "green" : "orange", 50);
+            WDispRect1(_x1, _y1, _x2, _y2, "red");
         }
 
-        private void SyncRectCenter()
+        #endregion
+
+        #region Rectangle2 (可旋转矩形)
+
+        /// <summary>
+        /// 交互流程:
+        /// Idle → 左键点击设置中心 → Drawing
+        /// Drawing → 拖拽定义主轴方向(phi)和长度(halfLen1) → 释放 → Adjusting
+        /// Adjusting → 移动定义宽度(halfLen2) → 左键 → Editing
+        /// Editing → 拖拽控制点(中心/轴端点) → 右键确认
+        /// </summary>
+        private void Down_Rect2(HMouseEventArgs e)
         {
-            _cx = (_x1 + _x2) / 2;
-            _cy = (_y1 + _y2) / 2;
-            _halfLen1 = Math.Abs(_x2 - _x1) / 2;
-            _halfLen2 = Math.Abs(_y2 - _y1) / 2;
+            if (e.Button != MouseButtons.Left) return;
+
+            if (_phase == Phase.Idle)
+            {
+                _cx = e.X; _cy = e.Y;
+                _phi = 0; _halfLen1 = 0; _halfLen2 = 0;
+                _phase = Phase.Drawing;
+            }
+            else if (_phase == Phase.Adjusting)
+            {
+                _phase = Phase.Editing;
+            }
+            else if (_phase == Phase.Editing && _hover != Handle.None)
+            {
+                _dragging = true;
+            }
+        }
+
+        private void Up_Rect2(HMouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                if (_phase == Phase.Drawing)
+                {
+                    double dx = e.X - _cx, dy = e.Y - _cy;
+                    double len = Math.Sqrt(dx * dx + dy * dy);
+                    if (len > 1)
+                    {
+                        _halfLen1 = len;
+                        _phi = Math.Atan2(_cy - e.Y, e.X - _cx);
+                    }
+                    else
+                    {
+                        _halfLen1 = 10;
+                        _phi = 0;
+                    }
+                    _halfLen2 = _halfLen1 / 3;
+                    _phase = Phase.Adjusting;
+                }
+                else if (_phase == Phase.Editing)
+                {
+                    _dragging = false;
+                    _hover = Handle.None;
+                }
+            }
+            else if (e.Button == MouseButtons.Right)
+            {
+                if (_phase == Phase.Adjusting || _phase == Phase.Editing)
+                    _completed = true;
+            }
+        }
+
+        private void Move_Rect2(HMouseEventArgs e)
+        {
+            RestoreBackground();
+
+            switch (_phase)
+            {
+                case Phase.Idle:
+                    WDispCross(e.X, e.Y, "yellow");
+                    break;
+
+                case Phase.Drawing:
+                    {
+                        double dx = e.X - _cx, dy = e.Y - _cy;
+                        double len = Math.Sqrt(dx * dx + dy * dy);
+                        WDispCross(_cx, _cy, "yellow");
+                        if (len > 1)
+                        {
+                            double phi = Math.Atan2(_cy - e.Y, e.X - _cx);
+                            WDispLine(_cx, _cy, e.X, e.Y, "orange");
+                            WDispRect2(_cx, _cy, phi, len, Math.Max(1, len / 5), "red");
+                        }
+                    }
+                    break;
+
+                case Phase.Adjusting:
+                    {
+                        double dx = e.X - _cx, dy = e.Y - _cy;
+                        _halfLen2 = Math.Max(1, Math.Abs(-dx * Math.Sin(_phi) - dy * Math.Cos(_phi)));
+                        WDispCross(_cx, _cy, "yellow");
+                        WDispRect2(_cx, _cy, _phi, _halfLen1, _halfLen2, "red");
+                    }
+                    break;
+
+                case Phase.Editing:
+                    EditRect2(e);
+                    break;
+            }
+        }
+
+        private void EditRect2(HMouseEventArgs e)
+        {
+            if (_dragging)
+            {
+                double dx = e.X - _cx, dy = e.Y - _cy;
+                switch (_hover)
+                {
+                    case Handle.Center:
+                        _cx = e.X; _cy = e.Y;
+                        break;
+                    case Handle.AxisEnd1:
+                        _halfLen1 = Math.Max(1, Math.Sqrt(dx * dx + dy * dy));
+                        _phi = Math.Atan2(_cy - e.Y, e.X - _cx);
+                        break;
+                    case Handle.AxisEnd2:
+                        _halfLen2 = Math.Max(1, Math.Abs(-dx * Math.Sin(_phi) - dy * Math.Cos(_phi)));
+                        break;
+                }
+            }
+            else
+            {
+                GetAxisEnd(_cx, _cy, _phi, _halfLen1, out double ax1, out double ay1);
+                GetAxisEndPerp(_cx, _cy, _phi, _halfLen2, out double ax2, out double ay2);
+
+                if (IsNear(_cx, _cy, e.X, e.Y)) _hover = Handle.Center;
+                else if (IsNear(ax1, ay1, e.X, e.Y)) _hover = Handle.AxisEnd1;
+                else if (IsNear(ax2, ay2, e.X, e.Y)) _hover = Handle.AxisEnd2;
+                else _hover = Handle.None;
+            }
+
+            GetAxisEnd(_cx, _cy, _phi, _halfLen1, out double a1x, out double a1y);
+            GetAxisEndPerp(_cx, _cy, _phi, _halfLen2, out double a2x, out double a2y);
+            WDispCross(_cx, _cy, _hover == Handle.Center ? "green" : "orange", 50);
+            WDispCross(a1x, a1y, _hover == Handle.AxisEnd1 ? "green" : "orange", 30);
+            WDispCross(a2x, a2y, _hover == Handle.AxisEnd2 ? "green" : "orange", 30);
+            WDispRect2(_cx, _cy, _phi, _halfLen1, _halfLen2, "red");
         }
 
         #endregion
@@ -741,6 +808,14 @@ namespace DotNet.HalconUI
             if (_bgImage == null) return;
             try
             {
+                HOperatorSet.GetPart(_windowHandle, out HTuple r1, out HTuple c1, out HTuple r2, out HTuple c2);
+                if (r1.D != _partR1.D || c1.D != _partC1.D || r2.D != _partR2.D || c2.D != _partC2.D)
+                {
+                    _partR1 = r1; _partC1 = c1; _partR2 = r2; _partC2 = c2;
+                    _bgImage.Dispose();
+                    HOperatorSet.DumpWindowImage(out _bgImage, _windowHandle);
+                }
+
                 HOperatorSet.GetImageSize(_bgImage, out HTuple w, out HTuple h);
                 HOperatorSet.SetPart(_windowHandle, 0, 0, h - 1, w - 1);
                 HOperatorSet.DispObj(_bgImage, _windowHandle);
@@ -762,11 +837,11 @@ namespace DotNet.HalconUI
 
         #region Window Display Helpers
 
-        private void WDispCross(double col, double row, string color, double size = 20)
+        private void WDispCross(double col, double row, string color, double screenSize = 20)
         {
             try
             {
-                double half = size / 2;
+                double half = screenSize / 2 * GetPixelSize();
                 HOperatorSet.SetColor(_windowHandle, color);
                 HOperatorSet.SetLineWidth(_windowHandle, 1);
                 HOperatorSet.DispLine(_windowHandle, row - half, col, row + half, col);
@@ -853,10 +928,25 @@ namespace DotNet.HalconUI
             return Math.Sqrt(dx * dx + dy * dy);
         }
 
-        private static bool IsNear(double x1, double y1, double x2, double y2)
+        private bool IsNear(double x1, double y1, double x2, double y2)
         {
+            double px = GetPixelSize();
+            double threshold = NearThreshold * px;
             double dx = x1 - x2, dy = y1 - y2;
-            return dx * dx + dy * dy < NearThreshold * NearThreshold;
+            return dx * dx + dy * dy < threshold * threshold;
+        }
+
+        private double GetPixelSize()
+        {
+            try
+            {
+                HOperatorSet.GetPart(_windowHandle, out HTuple r1, out HTuple c1, out HTuple r2, out HTuple c2);
+                HOperatorSet.GetWindowExtents(_windowHandle, out _, out _, out HTuple ww, out HTuple wh);
+                double scaleX = (c2.D - c1.D + 1) / Math.Max(1, ww.D);
+                double scaleY = (r2.D - r1.D + 1) / Math.Max(1, wh.D);
+                return Math.Max(scaleX, scaleY);
+            }
+            catch { return 1; }
         }
 
         /// <summary> 沿 phi 方向的端点: (cos(phi), -sin(phi)) </summary>
