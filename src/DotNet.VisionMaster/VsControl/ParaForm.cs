@@ -28,6 +28,9 @@ namespace DotNet.VisionMaster
             panel1.Controls.Add(_hModel);
             _disPlay.DrawDoneEvent += _disPlay_DrawDoneEvent;
 
+            _disPlay.HMouseDown += (s, e) => DrawHelper.Active?.OnMouseDown(e);
+            _disPlay.HMouseUp += (s, e) => DrawHelper.Active?.OnMouseUp(e);
+            _disPlay.HMouseMove += (s, e) => DrawHelper.Active?.OnMouseMove(e);
         }
 
         private void btn_setPath_Click(object sender, EventArgs e)
