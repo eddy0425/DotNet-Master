@@ -1,7 +1,8 @@
 ﻿using HalconDotNet;
 using System;
-using System.Collections.Generic;
 using System.Windows.Forms;
+using System.Collections.Generic;
+
 
 namespace DotNet.HalconUI
 {
@@ -473,7 +474,7 @@ namespace DotNet.HalconUI
                         {
                             double phi = Math.Atan2(_cy - e.Y, e.X - _cx);
                             WDispLine(_cx, _cy, e.X, e.Y, "orange");
-                            WDispRect2(_cx, _cy, phi, len, Math.Max(1, len / 5), "red");
+                            WDispRect2Arrow(_cx, _cy, phi, len, Math.Max(1, len / 5), "red");
                         }
                     }
                     break;
@@ -483,7 +484,7 @@ namespace DotNet.HalconUI
                         double dx = e.X - _cx, dy = e.Y - _cy;
                         _halfLen2 = Math.Max(1, Math.Abs(-dx * Math.Sin(_phi) - dy * Math.Cos(_phi)));
                         WDispCross(_cx, _cy, "orange");
-                        WDispRect2(_cx, _cy, _phi, _halfLen1, _halfLen2, "red");
+                        WDispRect2Arrow(_cx, _cy, _phi, _halfLen1, _halfLen2, "red");
                     }
                     break;
 
@@ -528,7 +529,7 @@ namespace DotNet.HalconUI
             WDispCross(_cx, _cy, _hover == Handle.Center ? "green" : "orange", 50);
             WDispCross(a1x, a1y, _hover == Handle.AxisEnd1 ? "green" : "orange", 30);
             WDispCross(a2x, a2y, _hover == Handle.AxisEnd2 ? "green" : "orange", 30);
-            WDispRect2(_cx, _cy, _phi, _halfLen1, _halfLen2, "red");
+            WDispRect2Arrow(_cx, _cy, _phi, _halfLen1, _halfLen2, "red");
         }
 
         #endregion
@@ -974,6 +975,30 @@ namespace DotNet.HalconUI
                 HOperatorSet.SetColor(_windowHandle, color);
                 HOperatorSet.SetDraw(_windowHandle, "margin");
                 HOperatorSet.DispRectangle2(_windowHandle, cy, cx, phi, len1, len2);
+            }
+            catch { }
+        }
+
+        // 矩形 + 沿 phi 方向(主轴方向)的箭头: 起点在矩形中心, 终点在主轴端点 (axis end 1)
+        private void WDispRect2Arrow(double cx, double cy, double phi, double len1, double len2, string color)
+        {
+            WDispRect2(cx, cy, phi, len1, len2, color);
+
+            double endCol = cx + len1 * Math.Cos(phi);
+            double endRow = cy - len1 * Math.Sin(phi);
+
+            WDispArrow(cx, cy, endCol, endRow, color);
+        }
+
+        private void WDispArrow(double col1, double row1, double col2, double row2, string color)
+        {
+            try
+            {
+                HOperatorSet.SetColor(_windowHandle, color);
+                HOperatorSet.SetLineWidth(_windowHandle, 1);
+                // disp_arrow 的 Size 为图像坐标下箭头头长度, 用屏幕固定像素换算保持视觉稳定
+                double size = 2 * GetPixelSize();
+                HOperatorSet.DispArrow(_windowHandle, row1, col1, row2, col2, size);
             }
             catch { }
         }
