@@ -68,6 +68,92 @@ namespace DotNet.HalconUI
             HOperatorSet.SetDraw(HoWindow, mode);
         }
 
+        /// <summary> 绘制区域 </summary>
+        public void DrawRegion(RectEnum type, out CvRegion hRegion)
+        {
+            Reset();
+            DrawHelper.CancelDraw();
+            hRegion = new CvRegion();
+            hRegion.Type = type;
+            switch (type)
+            {
+                case RectEnum.Rectangle:
+                    {
+                        DrawHelper.DrawRectangle1(HoWindow, out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2);
+                        HOperatorSet.GenRectangle1(out HObject rectangle, row1, column1, row2, column2);
+
+                        hRegion.Update2Point(row1, column1, row2, column2);
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = rectangle;
+                    }
+                    break;
+                case RectEnum.AffRect:
+                    {
+                        DrawHelper.DrawRectangle2(HoWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
+                        HOperatorSet.GenRectangle2(out HObject rectangle, row, column, phi, length1, length2);
+
+                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(length1.D * 2, length2.D * 2));
+                        hRegion.Phi = phi;
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = rectangle;
+                    }
+                    break;
+                case RectEnum.Circle:
+                    {
+                        DrawHelper.DrawCircle(HoWindow, out HTuple row, out HTuple column, out HTuple radius);
+                        HOperatorSet.GenCircle(out HObject circle, row, column, radius);
+
+                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius.D * 2, radius.D * 2));
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = circle;
+                    }
+                    break;
+                case RectEnum.Ellipse:
+                    {
+                        DrawHelper.DrawEllipse(HoWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2);
+                        HOperatorSet.GenEllipse(out HObject ellipse, row, column, phi, radius1, radius2);
+
+                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius1.D * 2, radius2.D * 2));
+                        hRegion.Phi = phi;
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = ellipse;
+                    }
+                    break;
+                case RectEnum.Polygon:
+                    {
+                        DrawHelper.DrawRegion(out HObject region, HoWindow);
+                        HOperatorSet.GetRegionPolygon(region, 1, out HTuple rows, out HTuple columns);
+                        HOperatorSet.AreaCenter(region, out HTuple area, out HTuple hv_Row, out HTuple hv_Column);
+                        hRegion.PolygonX = columns;
+                        hRegion.PolygonY = rows;
+                        hRegion.Center = new Point2d(hv_Column.D, hv_Row.D);
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = region;
+                    }
+                    break;
+                case RectEnum.Ring:
+                    {
+                        //HObject circle1; HOperatorSet.GenEmptyObj(out circle1);
+                        //HObject circle2; HOperatorSet.GenEmptyObj(out circle2);
+                        //try
+                        //{
+                        //    HOperatorSet.GenCircle(out circle1, hRegion.CenterY, hRegion.CenterX, hRegion.MaxRadius);
+                        //    HOperatorSet.GenCircle(out circle2, hRegion.CenterY, hRegion.CenterX, hRegion.MinRadius);
+                        //    HOperatorSet.Difference(circle1, circle2, out HObject region);
+                        //    hRegion.HoRegion.Dispose();
+                        //    hRegion.HoRegion = region;
+                        //}
+                        //finally
+                        //{
+                        //    circle1.Dispose();
+                        //    circle2.Dispose();
+                        //}
+                    }
+                    break;
+            }
+        }
+
+
         #region IHWindowFont
 
         /// <summary> 获取颜色 </summary>

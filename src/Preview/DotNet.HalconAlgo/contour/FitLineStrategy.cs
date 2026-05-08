@@ -352,6 +352,13 @@ namespace DotNet.HalconAlgo
             inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
             inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
         }
+        public override void DrawROI(DisplayUI display, RectEnum type)
+        {
+            inPara.HoRect.Type = type;
+            display.DrawRegion(type, out CvRegion hRegion);
+            display.DispRegion(hRegion, HColor.Blue);
+            inPara.HoRect = hRegion;
+        }
         public override void DispROI(DisplayUI display)
         {
             display.SetDrawMode(Name, inPara.HoRect, DrawEnum.DispRect);
@@ -380,6 +387,11 @@ namespace DotNet.HalconAlgo
 
     public class FitLine : AlgoFont
     {
+        public FitLine()
+        {
+            HoRect.Type = RectEnum.AffRect;
+        }
+
         /// <summary> 图像来源 </summary>
         public string ImageIn { set; get; } = "默认";
 

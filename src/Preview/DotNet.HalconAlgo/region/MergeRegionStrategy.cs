@@ -114,7 +114,13 @@ namespace DotNet.HalconAlgo
             inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
             inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
         }
-
+        public override void DrawROI(DisplayUI display, RectEnum type)
+        {
+            inPara.HoRect.Type = type;
+            display.DrawRegion(type, out CvRegion hRegion);
+            display.DispRegion(hRegion, HColor.Blue);
+            inPara.HoRect = hRegion;
+        }
     }
 
     public class RegionMerge : AlgoFont

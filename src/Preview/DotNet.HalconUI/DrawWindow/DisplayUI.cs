@@ -189,7 +189,7 @@ namespace DotNet.HalconUI
 
         private void WindowMouse_HMouseMove(object sender, HMouseEventArgs e)
         {
-            ReDisplay();
+            //ReDisplay();
             _currentHandler.OnMouseMove(this, e);
         }
 

@@ -79,11 +79,11 @@
             this.cmb_110 = new System.Windows.Forms.ComboBox();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.grb_Rect = new System.Windows.Forms.GroupBox();
-            this.btn_rectangle2 = new System.Windows.Forms.RadioButton();
-            this.btn_polygon = new System.Windows.Forms.RadioButton();
-            this.btn_circle = new System.Windows.Forms.RadioButton();
-            this.btn_oval = new System.Windows.Forms.RadioButton();
-            this.btn_rectangle1 = new System.Windows.Forms.RadioButton();
+            this.btn_rectAffRect = new System.Windows.Forms.RadioButton();
+            this.btn_rectPolygon = new System.Windows.Forms.RadioButton();
+            this.btn_rectCircle = new System.Windows.Forms.RadioButton();
+            this.btn_rectEllipse = new System.Windows.Forms.RadioButton();
+            this.btn_rectRectangle = new System.Windows.Forms.RadioButton();
             this.but_updataRegion = new System.Windows.Forms.Button();
             this.btn_setCoordIn = new System.Windows.Forms.Button();
             this.grb_RectInfo = new System.Windows.Forms.GroupBox();
@@ -106,11 +106,11 @@
             this.but_editModel = new System.Windows.Forms.Button();
             this.btn_newModel = new System.Windows.Forms.Button();
             this.grb_ModeRect = new System.Windows.Forms.GroupBox();
-            this.btn_rectangle2_2 = new System.Windows.Forms.RadioButton();
-            this.btn_polygon_2 = new System.Windows.Forms.RadioButton();
-            this.btn_circle_2 = new System.Windows.Forms.RadioButton();
-            this.btn_oval_2 = new System.Windows.Forms.RadioButton();
-            this.btn_rectangle1_2 = new System.Windows.Forms.RadioButton();
+            this.btn_modelAffRect = new System.Windows.Forms.RadioButton();
+            this.btn_modelPolygon = new System.Windows.Forms.RadioButton();
+            this.btn_modelCircle = new System.Windows.Forms.RadioButton();
+            this.btn_modelEllipse = new System.Windows.Forms.RadioButton();
+            this.btn_modelRectangle = new System.Windows.Forms.RadioButton();
             this.tabPage4 = new System.Windows.Forms.TabPage();
             this.grb_Font = new System.Windows.Forms.GroupBox();
             this.label2 = new System.Windows.Forms.Label();
@@ -820,83 +820,83 @@
             // 
             // grb_Rect
             // 
-            this.grb_Rect.Controls.Add(this.btn_rectangle2);
-            this.grb_Rect.Controls.Add(this.btn_polygon);
-            this.grb_Rect.Controls.Add(this.btn_circle);
-            this.grb_Rect.Controls.Add(this.btn_oval);
-            this.grb_Rect.Controls.Add(this.btn_rectangle1);
+            this.grb_Rect.Controls.Add(this.btn_rectAffRect);
+            this.grb_Rect.Controls.Add(this.btn_rectPolygon);
+            this.grb_Rect.Controls.Add(this.btn_rectCircle);
+            this.grb_Rect.Controls.Add(this.btn_rectEllipse);
+            this.grb_Rect.Controls.Add(this.btn_rectRectangle);
             this.grb_Rect.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.grb_Rect.ForeColor = System.Drawing.Color.White;
             this.grb_Rect.Location = new System.Drawing.Point(29, 41);
             this.grb_Rect.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.grb_Rect.Name = "grb_Rect";
             this.grb_Rect.Padding = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.grb_Rect.Size = new System.Drawing.Size(124, 148);
+            this.grb_Rect.Size = new System.Drawing.Size(124, 154);
             this.grb_Rect.TabIndex = 352;
             this.grb_Rect.TabStop = false;
             this.grb_Rect.Text = "区域形状";
             // 
-            // btn_rectangle2
+            // btn_rectAffRect
             // 
-            this.btn_rectangle2.AutoSize = true;
-            this.btn_rectangle2.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btn_rectangle2.Location = new System.Drawing.Point(18, 46);
-            this.btn_rectangle2.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.btn_rectangle2.Name = "btn_rectangle2";
-            this.btn_rectangle2.Size = new System.Drawing.Size(49, 19);
-            this.btn_rectangle2.TabIndex = 4;
-            this.btn_rectangle2.Text = "仿矩";
-            this.btn_rectangle2.UseVisualStyleBackColor = true;
+            this.btn_rectAffRect.AutoSize = true;
+            this.btn_rectAffRect.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.btn_rectAffRect.Location = new System.Drawing.Point(18, 46);
+            this.btn_rectAffRect.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.btn_rectAffRect.Name = "btn_rectAffRect";
+            this.btn_rectAffRect.Size = new System.Drawing.Size(49, 19);
+            this.btn_rectAffRect.TabIndex = 4;
+            this.btn_rectAffRect.Text = "仿矩";
+            this.btn_rectAffRect.UseVisualStyleBackColor = true;
             // 
-            // btn_polygon
+            // btn_rectPolygon
             // 
-            this.btn_polygon.AutoSize = true;
-            this.btn_polygon.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btn_polygon.Location = new System.Drawing.Point(18, 126);
-            this.btn_polygon.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.btn_polygon.Name = "btn_polygon";
-            this.btn_polygon.Size = new System.Drawing.Size(61, 19);
-            this.btn_polygon.TabIndex = 3;
-            this.btn_polygon.Text = "多边形";
-            this.btn_polygon.UseVisualStyleBackColor = true;
+            this.btn_rectPolygon.AutoSize = true;
+            this.btn_rectPolygon.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.btn_rectPolygon.Location = new System.Drawing.Point(18, 126);
+            this.btn_rectPolygon.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.btn_rectPolygon.Name = "btn_rectPolygon";
+            this.btn_rectPolygon.Size = new System.Drawing.Size(61, 19);
+            this.btn_rectPolygon.TabIndex = 3;
+            this.btn_rectPolygon.Text = "多边形";
+            this.btn_rectPolygon.UseVisualStyleBackColor = true;
             // 
-            // btn_circle
+            // btn_rectCircle
             // 
-            this.btn_circle.AutoSize = true;
-            this.btn_circle.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btn_circle.Location = new System.Drawing.Point(18, 72);
-            this.btn_circle.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.btn_circle.Name = "btn_circle";
-            this.btn_circle.Size = new System.Drawing.Size(37, 19);
-            this.btn_circle.TabIndex = 2;
-            this.btn_circle.Text = "圆";
-            this.btn_circle.UseVisualStyleBackColor = true;
+            this.btn_rectCircle.AutoSize = true;
+            this.btn_rectCircle.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.btn_rectCircle.Location = new System.Drawing.Point(18, 72);
+            this.btn_rectCircle.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.btn_rectCircle.Name = "btn_rectCircle";
+            this.btn_rectCircle.Size = new System.Drawing.Size(37, 19);
+            this.btn_rectCircle.TabIndex = 2;
+            this.btn_rectCircle.Text = "圆";
+            this.btn_rectCircle.UseVisualStyleBackColor = true;
             // 
-            // btn_oval
+            // btn_rectEllipse
             // 
-            this.btn_oval.AutoSize = true;
-            this.btn_oval.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btn_oval.Location = new System.Drawing.Point(18, 98);
-            this.btn_oval.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.btn_oval.Name = "btn_oval";
-            this.btn_oval.Size = new System.Drawing.Size(49, 19);
-            this.btn_oval.TabIndex = 1;
-            this.btn_oval.Text = "椭圆";
-            this.btn_oval.UseVisualStyleBackColor = true;
+            this.btn_rectEllipse.AutoSize = true;
+            this.btn_rectEllipse.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.btn_rectEllipse.Location = new System.Drawing.Point(18, 98);
+            this.btn_rectEllipse.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.btn_rectEllipse.Name = "btn_rectEllipse";
+            this.btn_rectEllipse.Size = new System.Drawing.Size(49, 19);
+            this.btn_rectEllipse.TabIndex = 1;
+            this.btn_rectEllipse.Text = "椭圆";
+            this.btn_rectEllipse.UseVisualStyleBackColor = true;
             // 
-            // btn_rectangle1
+            // btn_rectRectangle
             // 
-            this.btn_rectangle1.AutoSize = true;
-            this.btn_rectangle1.Checked = true;
-            this.btn_rectangle1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btn_rectangle1.Location = new System.Drawing.Point(18, 18);
-            this.btn_rectangle1.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.btn_rectangle1.Name = "btn_rectangle1";
-            this.btn_rectangle1.Size = new System.Drawing.Size(49, 19);
-            this.btn_rectangle1.TabIndex = 0;
-            this.btn_rectangle1.TabStop = true;
-            this.btn_rectangle1.Text = "矩形";
-            this.btn_rectangle1.UseVisualStyleBackColor = true;
+            this.btn_rectRectangle.AutoSize = true;
+            this.btn_rectRectangle.Checked = true;
+            this.btn_rectRectangle.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.btn_rectRectangle.Location = new System.Drawing.Point(18, 18);
+            this.btn_rectRectangle.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.btn_rectRectangle.Name = "btn_rectRectangle";
+            this.btn_rectRectangle.Size = new System.Drawing.Size(49, 19);
+            this.btn_rectRectangle.TabIndex = 0;
+            this.btn_rectRectangle.TabStop = true;
+            this.btn_rectRectangle.Text = "矩形";
+            this.btn_rectRectangle.UseVisualStyleBackColor = true;
             // 
             // but_updataRegion
             // 
@@ -1179,11 +1179,11 @@
             // 
             // grb_ModeRect
             // 
-            this.grb_ModeRect.Controls.Add(this.btn_rectangle2_2);
-            this.grb_ModeRect.Controls.Add(this.btn_polygon_2);
-            this.grb_ModeRect.Controls.Add(this.btn_circle_2);
-            this.grb_ModeRect.Controls.Add(this.btn_oval_2);
-            this.grb_ModeRect.Controls.Add(this.btn_rectangle1_2);
+            this.grb_ModeRect.Controls.Add(this.btn_modelAffRect);
+            this.grb_ModeRect.Controls.Add(this.btn_modelPolygon);
+            this.grb_ModeRect.Controls.Add(this.btn_modelCircle);
+            this.grb_ModeRect.Controls.Add(this.btn_modelEllipse);
+            this.grb_ModeRect.Controls.Add(this.btn_modelRectangle);
             this.grb_ModeRect.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.grb_ModeRect.ForeColor = System.Drawing.Color.White;
             this.grb_ModeRect.Location = new System.Drawing.Point(14, 16);
@@ -1195,67 +1195,67 @@
             this.grb_ModeRect.TabStop = false;
             this.grb_ModeRect.Text = "区域形状";
             // 
-            // btn_rectangle2_2
+            // btn_modelAffRect
             // 
-            this.btn_rectangle2_2.AutoSize = true;
-            this.btn_rectangle2_2.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btn_rectangle2_2.Location = new System.Drawing.Point(25, 47);
-            this.btn_rectangle2_2.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.btn_rectangle2_2.Name = "btn_rectangle2_2";
-            this.btn_rectangle2_2.Size = new System.Drawing.Size(56, 19);
-            this.btn_rectangle2_2.TabIndex = 4;
-            this.btn_rectangle2_2.Text = "矩形2";
-            this.btn_rectangle2_2.UseVisualStyleBackColor = true;
+            this.btn_modelAffRect.AutoSize = true;
+            this.btn_modelAffRect.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.btn_modelAffRect.Location = new System.Drawing.Point(25, 47);
+            this.btn_modelAffRect.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.btn_modelAffRect.Name = "btn_modelAffRect";
+            this.btn_modelAffRect.Size = new System.Drawing.Size(56, 19);
+            this.btn_modelAffRect.TabIndex = 4;
+            this.btn_modelAffRect.Text = "矩形2";
+            this.btn_modelAffRect.UseVisualStyleBackColor = true;
             // 
-            // btn_polygon_2
+            // btn_modelPolygon
             // 
-            this.btn_polygon_2.AutoSize = true;
-            this.btn_polygon_2.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btn_polygon_2.Location = new System.Drawing.Point(25, 128);
-            this.btn_polygon_2.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.btn_polygon_2.Name = "btn_polygon_2";
-            this.btn_polygon_2.Size = new System.Drawing.Size(61, 19);
-            this.btn_polygon_2.TabIndex = 3;
-            this.btn_polygon_2.Text = "多边形";
-            this.btn_polygon_2.UseVisualStyleBackColor = true;
+            this.btn_modelPolygon.AutoSize = true;
+            this.btn_modelPolygon.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.btn_modelPolygon.Location = new System.Drawing.Point(25, 128);
+            this.btn_modelPolygon.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.btn_modelPolygon.Name = "btn_modelPolygon";
+            this.btn_modelPolygon.Size = new System.Drawing.Size(61, 19);
+            this.btn_modelPolygon.TabIndex = 3;
+            this.btn_modelPolygon.Text = "多边形";
+            this.btn_modelPolygon.UseVisualStyleBackColor = true;
             // 
-            // btn_circle_2
+            // btn_modelCircle
             // 
-            this.btn_circle_2.AutoSize = true;
-            this.btn_circle_2.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btn_circle_2.Location = new System.Drawing.Point(25, 74);
-            this.btn_circle_2.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.btn_circle_2.Name = "btn_circle_2";
-            this.btn_circle_2.Size = new System.Drawing.Size(37, 19);
-            this.btn_circle_2.TabIndex = 2;
-            this.btn_circle_2.Text = "圆";
-            this.btn_circle_2.UseVisualStyleBackColor = true;
+            this.btn_modelCircle.AutoSize = true;
+            this.btn_modelCircle.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.btn_modelCircle.Location = new System.Drawing.Point(25, 74);
+            this.btn_modelCircle.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.btn_modelCircle.Name = "btn_modelCircle";
+            this.btn_modelCircle.Size = new System.Drawing.Size(37, 19);
+            this.btn_modelCircle.TabIndex = 2;
+            this.btn_modelCircle.Text = "圆";
+            this.btn_modelCircle.UseVisualStyleBackColor = true;
             // 
-            // btn_oval_2
+            // btn_modelEllipse
             // 
-            this.btn_oval_2.AutoSize = true;
-            this.btn_oval_2.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btn_oval_2.Location = new System.Drawing.Point(25, 101);
-            this.btn_oval_2.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.btn_oval_2.Name = "btn_oval_2";
-            this.btn_oval_2.Size = new System.Drawing.Size(49, 19);
-            this.btn_oval_2.TabIndex = 1;
-            this.btn_oval_2.Text = "椭圆";
-            this.btn_oval_2.UseVisualStyleBackColor = true;
+            this.btn_modelEllipse.AutoSize = true;
+            this.btn_modelEllipse.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.btn_modelEllipse.Location = new System.Drawing.Point(25, 101);
+            this.btn_modelEllipse.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.btn_modelEllipse.Name = "btn_modelEllipse";
+            this.btn_modelEllipse.Size = new System.Drawing.Size(49, 19);
+            this.btn_modelEllipse.TabIndex = 1;
+            this.btn_modelEllipse.Text = "椭圆";
+            this.btn_modelEllipse.UseVisualStyleBackColor = true;
             // 
-            // btn_rectangle1_2
+            // btn_modelRectangle
             // 
-            this.btn_rectangle1_2.AutoSize = true;
-            this.btn_rectangle1_2.Checked = true;
-            this.btn_rectangle1_2.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btn_rectangle1_2.Location = new System.Drawing.Point(25, 20);
-            this.btn_rectangle1_2.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.btn_rectangle1_2.Name = "btn_rectangle1_2";
-            this.btn_rectangle1_2.Size = new System.Drawing.Size(56, 19);
-            this.btn_rectangle1_2.TabIndex = 0;
-            this.btn_rectangle1_2.TabStop = true;
-            this.btn_rectangle1_2.Text = "矩形1";
-            this.btn_rectangle1_2.UseVisualStyleBackColor = true;
+            this.btn_modelRectangle.AutoSize = true;
+            this.btn_modelRectangle.Checked = true;
+            this.btn_modelRectangle.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.btn_modelRectangle.Location = new System.Drawing.Point(25, 20);
+            this.btn_modelRectangle.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.btn_modelRectangle.Name = "btn_modelRectangle";
+            this.btn_modelRectangle.Size = new System.Drawing.Size(56, 19);
+            this.btn_modelRectangle.TabIndex = 0;
+            this.btn_modelRectangle.TabStop = true;
+            this.btn_modelRectangle.Text = "矩形1";
+            this.btn_modelRectangle.UseVisualStyleBackColor = true;
             // 
             // tabPage4
             // 
@@ -1526,11 +1526,11 @@
         private System.Windows.Forms.TabPage tabPage4;
         private System.Windows.Forms.TabPage tabPage2;
         private System.Windows.Forms.GroupBox grb_Rect;
-        private System.Windows.Forms.RadioButton btn_rectangle2;
-        private System.Windows.Forms.RadioButton btn_polygon;
-        private System.Windows.Forms.RadioButton btn_circle;
-        private System.Windows.Forms.RadioButton btn_oval;
-        private System.Windows.Forms.RadioButton btn_rectangle1;
+        private System.Windows.Forms.RadioButton btn_rectAffRect;
+        private System.Windows.Forms.RadioButton btn_rectPolygon;
+        private System.Windows.Forms.RadioButton btn_rectCircle;
+        private System.Windows.Forms.RadioButton btn_rectEllipse;
+        private System.Windows.Forms.RadioButton btn_rectRectangle;
         private System.Windows.Forms.Button but_updataRegion;
         private System.Windows.Forms.Button btn_setCoordIn;
         private System.Windows.Forms.GroupBox grb_RectInfo;
@@ -1553,11 +1553,11 @@
         private System.Windows.Forms.Button but_editModel;
         private System.Windows.Forms.Button btn_newModel;
         private System.Windows.Forms.GroupBox grb_ModeRect;
-        private System.Windows.Forms.RadioButton btn_rectangle2_2;
-        private System.Windows.Forms.RadioButton btn_polygon_2;
-        private System.Windows.Forms.RadioButton btn_circle_2;
-        private System.Windows.Forms.RadioButton btn_oval_2;
-        private System.Windows.Forms.RadioButton btn_rectangle1_2;
+        private System.Windows.Forms.RadioButton btn_modelAffRect;
+        private System.Windows.Forms.RadioButton btn_modelPolygon;
+        private System.Windows.Forms.RadioButton btn_modelCircle;
+        private System.Windows.Forms.RadioButton btn_modelEllipse;
+        private System.Windows.Forms.RadioButton btn_modelRectangle;
         private System.Windows.Forms.GroupBox grb_Font;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.ComboBox CB_PointSize;

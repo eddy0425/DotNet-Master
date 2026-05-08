@@ -80,6 +80,15 @@ namespace DotNet.HalconUI
         /// <summary> 当前活动的绘图实例，用于转发鼠标事件 </summary>
         public static DrawHelper Active => _active;
 
+        //public static void DrawPoint(HTuple windowHandle, out HTuple row, out HTuple column)
+        //{ 
+        
+        //}
+        //public static void DrawLine(HTuple windowHandle, out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2)
+        //{ 
+        
+        //}
+
         public static void DrawRectangle1(HTuple windowHandle,
             out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2)
         {

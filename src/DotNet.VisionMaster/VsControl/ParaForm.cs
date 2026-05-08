@@ -1,9 +1,11 @@
-using DotNet.HalconUI;
+using DotNet.Drawing;
 using DotNet.HalconAlgo;
+using DotNet.HalconUI;
+using HalconDotNet;
 using System;
+using System.Linq;
 using System.Windows.Forms;
 using System.Collections.Generic;
-using HalconDotNet;
 
 
 namespace DotNet.VisionMaster
@@ -16,6 +18,8 @@ namespace DotNet.VisionMaster
         HModelForm _hModel;
         ValueForm _form_Value;
         HEditForm _editModel;
+
+        Dictionary<RadioButton, RectEnum> _rectDrawMap;
 
         public ParaForm(DisplayUI displayUI)
         {
@@ -32,6 +36,15 @@ namespace DotNet.VisionMaster
             _disPlay.HMouseDown += (s, e) => DrawHelper.Active?.OnMouseDown(e);
             _disPlay.HMouseUp += (s, e) => DrawHelper.Active?.OnMouseUp(e);
             _disPlay.HMouseMove += (s, e) => DrawHelper.Active?.OnMouseMove(e);
+
+            _rectDrawMap = new Dictionary<RadioButton, RectEnum>
+            {
+                { btn_rectRectangle, RectEnum.Rectangle },
+                { btn_rectAffRect,   RectEnum.AffRect },
+                { btn_rectCircle,    RectEnum.Circle },
+                { btn_rectEllipse,   RectEnum.Ellipse },
+                { btn_rectPolygon,   RectEnum.Polygon },
+            };
         }
 
         private void btn_setPath_Click(object sender, EventArgs e)
@@ -88,6 +101,43 @@ namespace DotNet.VisionMaster
         {
             try
             {
+                var strategy = _strategys[_index];
+                switch (strategy.Algorithm)
+                {
+                    case AlgoEnum.FitLine:
+                    case AlgoEnum.FitArcMidpoint:
+                        btn_rectAffRect.Checked = true;
+                        break;
+                    default:
+                        btn_rectRectangle.Checked = true;
+                        break;
+                }
+                var drawType = _rectDrawMap.FirstOrDefault(kv => kv.Key.Checked).Value;
+                _disPlay.ReDispImage();
+                strategy.DrawROI(_disPlay, drawType);
+            }
+            catch (Exception ex) { MessageBox.Show(ex.Message); }
+        }
+
+        private void btn_drawRegion2_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                _disPlay.Reset();
+                DrawHelper.CancelDraw();
+
+                //DrawHelper.DrawRectangle1(_disPlay.HoWindow, out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2);
+
+                DrawHelper.DrawRectangle2(_disPlay.HoWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
+
+                //DrawHelper.DrawCircle(_disPlay.HoWindow, out HTuple row, out HTuple column, out HTuple radius);
+
+                //DrawHelper.DrawEllipse(_disPlay.HoWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2);
+
+                //DrawHelper.DrawRegion(out HObject region, _disPlay.HoWindow);
+
+                return;
+
                 var strategy = _strategys[_index];
                 switch (strategy.Algorithm)
                 {

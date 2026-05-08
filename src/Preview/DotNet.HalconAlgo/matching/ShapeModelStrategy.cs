@@ -4,6 +4,7 @@ using HalconDotNet;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Windows.Forms;
 
 
@@ -184,6 +185,13 @@ namespace DotNet.HalconAlgo
             inPara.FontX = Convert.ToInt16(VsControls["CB_FontX"].Text);
             inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
             inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
+        }
+        public override void DrawROI(DisplayUI display, RectEnum type)
+        {
+            inPara.HoRect.Type = type;
+            display.DrawRegion(type, out CvRegion hRegion);
+            display.DispRegion(hRegion, HColor.Blue);
+            inPara.HoRect = hRegion;
         }
         public override void DispROI(DisplayUI display)
         {

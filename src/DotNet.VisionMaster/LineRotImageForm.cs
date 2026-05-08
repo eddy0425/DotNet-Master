@@ -91,14 +91,14 @@ namespace DotNet.VisionMaster
             {
                 _display.ReDispImage();
 
-                switch (_strategys[_index].Name)
-                {
-                    case "ShapeMode":
-                        {
-                            _display.SetDrawMode("ShapeMode", DrawEnum.DispModel);
-                        }
-                        break;
-                }
+                //switch (_strategys[_index].Name)
+                //{
+                //    case "ShapeMode":
+                //        {
+                //            _display.SetDrawMode("ShapeMode", DrawEnum.DispModel);
+                //        }
+                //        break;
+                //}
 
                 _currentStrategy.SavePara(_formPara, _vsControls);
                 _currentStrategy.Fun_action(_display, _strategys);

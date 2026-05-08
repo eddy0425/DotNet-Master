@@ -1,7 +1,8 @@
-using System;
-using System.Windows.Forms;
-using System.Collections.Generic;
+using DotNet.Drawing;
 using DotNet.HalconUI;
+using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
 
 
 namespace DotNet.HalconAlgo
@@ -24,7 +25,9 @@ namespace DotNet.HalconAlgo
         bool Fun_action(DisplayUI display, List<IParaStrategy> strategys);
         void DispPara(Form form, Dictionary<string, VsControlModel> VsControls);
         void SavePara(Form form, Dictionary<string, VsControlModel> VsControls);
+        void DrawROI(DisplayUI display, RectEnum type);
         void DispROI(DisplayUI display);
+
     }
 
     /// <summary>
@@ -59,6 +62,7 @@ namespace DotNet.HalconAlgo
         public abstract bool Fun_action(DisplayUI display, List<IParaStrategy> strategys);
         public abstract void DispPara(Form form, Dictionary<string, VsControlModel> VsControls);
         public abstract void SavePara(Form form, Dictionary<string, VsControlModel> VsControls);
+        public virtual void DrawROI(DisplayUI display, RectEnum type) { }
         public virtual void DispROI(DisplayUI display) { }
 
     }
