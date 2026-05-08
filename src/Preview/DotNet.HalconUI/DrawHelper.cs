@@ -1,4 +1,4 @@
-﻿using HalconDotNet;
+using HalconDotNet;
 using System;
 using System.Windows.Forms;
 using System.Collections.Generic;
@@ -27,7 +27,7 @@ namespace DotNet.HalconUI
         #region Internal Types
 
         private enum DrawType { None, Rect1, Rect2, Circle, Ellipse, Region }
-        private enum Phase { Idle, Drawing, Adjusting, Editing }
+        private enum Phase { Idle, Drawing, Editing }
         private enum Handle { None, P1, P2, Center, AxisEnd1, AxisEnd2 }
 
         #endregion
@@ -391,10 +391,9 @@ namespace DotNet.HalconUI
         #region Rectangle2 (可旋转矩形)
 
         /// <summary>
-        /// 交互流程:
-        /// Idle → 左键点击设置中心 → Drawing
-        /// Drawing → 拖拽定义主轴方向(phi)和长度(halfLen1) → 释放 → Adjusting
-        /// Adjusting → 移动定义宽度(halfLen2) → 左键 → Editing
+        /// 交互流程 (与 Rect1/Circle 一致):
+        /// Idle → 左键按下设置中心 → Drawing
+        /// Drawing → 拖拽定义主轴方向(phi)和长度(halfLen1) → 释放 → Editing
         /// Editing → 拖拽控制点(中心/轴端点) → 右键确认
         /// </summary>
         private void Down_Rect2(HMouseEventArgs e)
@@ -409,15 +408,14 @@ namespace DotNet.HalconUI
             }
             else if (_phase == Phase.Drawing)
             {
+                // 处理"按下→释放未越过阈值→再次按下"的情况, 直接落定为可编辑矩形
                 double dx = e.X - _cx, dy = e.Y - _cy;
                 double len = Math.Sqrt(dx * dx + dy * dy);
                 _halfLen1 = Math.Max(1, len);
                 _phi = len > 1 ? Math.Atan2(_cy - e.Y, e.X - _cx) : 0;
-                _halfLen2 = _halfLen1 / 3;
-                _phase = Phase.Adjusting;
-            }
-            else if (_phase == Phase.Adjusting)
-            {
+                // 与 Drawing 阶段预览的短轴宽度一致(Move_Rect2 中使用 len / 5),
+                // 避免释放瞬间矩形突然变宽
+                _halfLen2 = Math.Max(1, _halfLen1 / 5);
                 _phase = Phase.Editing;
             }
             else if (_phase == Phase.Editing && _hover != Handle.None)
@@ -438,8 +436,10 @@ namespace DotNet.HalconUI
                     {
                         _halfLen1 = len;
                         _phi = Math.Atan2(_cy - e.Y, e.X - _cx);
-                        _halfLen2 = _halfLen1 / 3;
-                        _phase = Phase.Adjusting;
+                        // 与 Drawing 阶段预览的短轴宽度一致(Move_Rect2 中使用 len / 5),
+                        // 避免释放瞬间矩形突然变宽
+                        _halfLen2 = Math.Max(1, _halfLen1 / 5);
+                        _phase = Phase.Editing;
                     }
                 }
                 else if (_phase == Phase.Editing)
@@ -448,10 +448,9 @@ namespace DotNet.HalconUI
                     _hover = Handle.None;
                 }
             }
-            else if (e.Button == MouseButtons.Right)
+            else if (e.Button == MouseButtons.Right && _phase == Phase.Editing)
             {
-                if (_phase == Phase.Adjusting || _phase == Phase.Editing)
-                    _completed = true;
+                _completed = true;
             }
         }
 
@@ -476,15 +475,6 @@ namespace DotNet.HalconUI
                             WDispLine(_cx, _cy, e.X, e.Y, "orange");
                             WDispRect2Arrow(_cx, _cy, phi, len, Math.Max(1, len / 5), "red");
                         }
-                    }
-                    break;
-
-                case Phase.Adjusting:
-                    {
-                        double dx = e.X - _cx, dy = e.Y - _cy;
-                        _halfLen2 = Math.Max(1, Math.Abs(-dx * Math.Sin(_phi) - dy * Math.Cos(_phi)));
-                        WDispCross(_cx, _cy, "orange");
-                        WDispRect2Arrow(_cx, _cy, _phi, _halfLen1, _halfLen2, "red");
                     }
                     break;
 
@@ -648,15 +638,12 @@ namespace DotNet.HalconUI
             }
             else if (_phase == Phase.Drawing)
             {
+                // 处理"按下→释放未越过阈值→再次按下"的情况, 直接落定为可编辑椭圆
                 double dx = e.X - _ellCX, dy = e.Y - _ellCY;
                 double len = Math.Sqrt(dx * dx + dy * dy);
                 _ellR1 = Math.Max(1, len);
                 _ellPhi = len > 1 ? Math.Atan2(_ellCY - e.Y, e.X - _ellCX) : 0;
                 _ellR2 = _ellR1 / 2;
-                _phase = Phase.Adjusting;
-            }
-            else if (_phase == Phase.Adjusting)
-            {
                 _phase = Phase.Editing;
             }
             else if (_phase == Phase.Editing && _hover != Handle.None)
@@ -678,7 +665,7 @@ namespace DotNet.HalconUI
                         _ellR1 = len;
                         _ellPhi = Math.Atan2(_ellCY - e.Y, e.X - _ellCX);
                         _ellR2 = _ellR1 / 2;
-                        _phase = Phase.Adjusting;
+                        _phase = Phase.Editing;
                     }
                 }
                 else if (_phase == Phase.Editing)
@@ -687,10 +674,9 @@ namespace DotNet.HalconUI
                     _hover = Handle.None;
                 }
             }
-            else if (e.Button == MouseButtons.Right)
+            else if (e.Button == MouseButtons.Right && _phase == Phase.Editing)
             {
-                if (_phase == Phase.Adjusting || _phase == Phase.Editing)
-                    _completed = true;
+                _completed = true;
             }
         }
 
@@ -714,15 +700,6 @@ namespace DotNet.HalconUI
                             WDispCross(_ellCX, _ellCY, "orange");
                             WDispEllipse(_ellCX, _ellCY, phi, r1, r1 / 2, "red");
                         }
-                    }
-                    break;
-
-                case Phase.Adjusting:
-                    {
-                        double dx = e.X - _ellCX, dy = e.Y - _ellCY;
-                        _ellR2 = Math.Max(1, Math.Abs(-dx * Math.Sin(_ellPhi) - dy * Math.Cos(_ellPhi)));
-                        WDispCross(_ellCX, _ellCY, "orange");
-                        WDispEllipse(_ellCX, _ellCY, _ellPhi, _ellR1, _ellR2, "red");
                     }
                     break;
 
