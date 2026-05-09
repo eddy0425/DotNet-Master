@@ -17,7 +17,7 @@ namespace DotNet.VisionMaster
         DisplayUI _disPlay;
         HModelForm _hModel;
         ValueForm _form_Value;
-        HEditForm _editModel;
+        HEditModelForm _editModel;
 
         Dictionary<RadioButton, RectEnum> _rectDrawMap;
         Dictionary<RadioButton, RectEnum> _modelDrawMap;
@@ -28,15 +28,11 @@ namespace DotNet.VisionMaster
 
             _disPlay = displayUI;
             _hModel = new HModelForm();
-            _editModel = new HEditForm();
+            _editModel = new HEditModelForm();
             _form_Value = new ValueForm();
 
             panel1.Controls.Add(_hModel);
             _disPlay.DrawDoneEvent += _disPlay_DrawDoneEvent;
-
-            _disPlay.HMouseDown += (s, e) => DrawHelper.Active?.OnMouseDown(e);
-            _disPlay.HMouseUp += (s, e) => DrawHelper.Active?.OnMouseUp(e);
-            _disPlay.HMouseMove += (s, e) => DrawHelper.Active?.OnMouseMove(e);
 
             _rectDrawMap = new Dictionary<RadioButton, RectEnum>
             {

@@ -41,6 +41,11 @@ namespace DotNet.HalconUI
             InitializeComponent();
             display = new HDisplayCore(hWindowControl);
             display.RefreshUI += Display_RefreshUI;
+
+            HMouseDown += (s, e) => DrawHelper.Active?.OnMouseDown(e);
+            HMouseUp += (s, e) => DrawHelper.Active?.OnMouseUp(e);
+            HMouseMove += (s, e) => DrawHelper.Active?.OnMouseMove(e);
+
         }
 
         private void Display_RefreshUI(HTuple Row, HTuple Column, HTuple egray)

@@ -6,23 +6,26 @@ using System.Windows.Forms;
 
 namespace DotNet.HalconUI
 {
-    public partial class HEditForm : Form
+    public partial class HEditModelForm : Form
     {
         string shrColor => CB_ApplyColor.Text;
         int shrLineWidth => CB_ApplyLineWidth.Text.ExtractNumber();
-        private enum DrawHandle { None, Erase, DisPlay }
+        private enum DrawHandle { None, Erase, DispModel }
 
         HObject _srcImage;
         HObject shrErase;
         HObject shrFindMode;
         HObject _shrContour;
+        CvCoord _shrCoord;
         DrawHandle _hover;
 
-        EraseRectHandler eraseRect;
+        NoneMouse noneMouse;
+        EraseRectMouse eraseRect;
+        DispModelMouse dispModel;
         public DisplayUI GetDisplay() => display;
 
 
-        public HEditForm()
+        public HEditModelForm()
         {
             InitializeComponent();
 
@@ -36,11 +39,9 @@ namespace DotNet.HalconUI
             display.HMouseWheel += OnMouseWheel;
             display.HMouseMove += OnMouseMove;
 
-            display.HMouseDown += (s, e) => DrawHelper.Active?.OnMouseDown(e);
-            display.HMouseUp += (s, e) => DrawHelper.Active?.OnMouseUp(e);
-            display.HMouseMove += (s, e) => DrawHelper.Active?.OnMouseMove(e);
-
-            eraseRect = new EraseRectHandler();
+            noneMouse = new NoneMouse();
+            eraseRect = new EraseRectMouse();
+            dispModel = new DispModelMouse();
         }
 
         private void HEditForm_Load(object sender, System.EventArgs e)
@@ -62,7 +63,9 @@ namespace DotNet.HalconUI
         {
             switch (_hover)
             {
+                case DrawHandle.None: noneMouse.OnMouseDown(e); break;
                 case DrawHandle.Erase: eraseRect.OnMouseDown(e); break;
+                case DrawHandle.DispModel: dispModel.OnMouseDown(e); break;
             }
         }
 
@@ -70,7 +73,9 @@ namespace DotNet.HalconUI
         {
             switch (_hover)
             {
+                case DrawHandle.None: noneMouse.OnMouseUp(e); break;
                 case DrawHandle.Erase: eraseRect.OnMouseUp(e); break;
+                case DrawHandle.DispModel: dispModel.OnMouseUp(e); break;
             }
         }
 
@@ -78,7 +83,9 @@ namespace DotNet.HalconUI
         {
             switch (_hover)
             {
+                case DrawHandle.None: noneMouse.OnMouseWheel(e); break;
                 case DrawHandle.Erase: eraseRect.OnMouseWheel(e); break;
+                case DrawHandle.DispModel: dispModel.OnMouseWheel(e); break;
             }
         }
 
@@ -86,6 +93,8 @@ namespace DotNet.HalconUI
         {
             switch (_hover)
             {
+                case DrawHandle.None: noneMouse.OnMouseMove(e); break;
+                case DrawHandle.DispModel: dispModel.OnMouseMove(e); break;
                 case DrawHandle.Erase:
                     {
                         eraseRect.SetPara(shrColor, shrLineWidth);
@@ -100,19 +109,13 @@ namespace DotNet.HalconUI
         private void but_addRegion_Click(object sender, System.EventArgs e)
         {
             _hover = DrawHandle.None;
-            DrawROI(shrFindMode, true, out HObject region);
-            shrFindMode.Dispose();
-            region = shrFindMode;
-            display.DispRegion(shrFindMode, HColor.Blue);
+            DrawROI(shrFindMode, true);
         }
 
         private void btn_deleteRegion_Click(object sender, System.EventArgs e)
         {
             _hover = DrawHandle.None;
-            DrawROI(shrFindMode, false, out HObject region);
-            shrFindMode.Dispose();
-            region = shrFindMode;
-            display.DispRegion(shrFindMode, HColor.Blue);
+            DrawROI(shrFindMode, false);
         }
 
         private RectEnum GetModifyShape()
@@ -125,45 +128,46 @@ namespace DotNet.HalconUI
             else if (CB_ModifyShape.Text == "多边型") drawForm = RectEnum.Polygon;
             return drawForm;
         }
-        private void DrawROI(HObject findMode, bool IsAdd, out HObject region)
+        private void DrawROI(HObject findMode, bool IsAdd)
         {
-            HOperatorSet.GenEmptyObj(out region);
-            HObject drawRegion; HOperatorSet.GenEmptyObj(out drawRegion);
+            HObject drawRegion = null;
+            HObject regionResult = null;
             try
             {
                 display.Reset();
                 display.ReDispImage();
                 display.DispRegion(findMode, HColor.Blue);
-
                 var drawType = GetModifyShape();
+
+                display.DrawRegion(drawType, out drawRegion);
 
                 if (IsAdd)
                 {
-                    display.DrawRegion(drawType, out drawRegion);
-                    HOperatorSet.Union2(findMode, drawRegion, out region);
-
-                    display.ReDispImage();
-                    display.DispRegion(drawRegion, HColor.Green);
+                    HOperatorSet.Union2(findMode, drawRegion, out regionResult);
                 }
                 else
                 {
-                    display.DrawRegion(drawType, out drawRegion);
-                    HOperatorSet.Difference(findMode, drawRegion, out region);
-
-                    display.ReDispImage();
-                    display.DispRegion(drawRegion, HColor.Red);
+                    HOperatorSet.Difference(findMode, drawRegion, out regionResult);
                 }
+
+                shrFindMode.Dispose();
+                shrFindMode = regionResult;
+                regionResult = null;
+
+                display.ReDispImage();
+                display.DispRegion(shrFindMode, HColor.Green);
             }
             finally
             {
-                drawRegion.Dispose();
+                drawRegion?.Dispose();
+                regionResult?.Dispose();
             }
         }
 
         private void but_ApplyRegion_Click(object sender, System.EventArgs e)
         {
-            _hover = DrawHandle.Erase;
             eraseRect.SetUp(display, shrErase, shrFindMode, shrColor, shrLineWidth);
+            _hover = DrawHandle.Erase;
         }
 
         public void DisplayModel(string modelPath, HObject ho_ModeRect, HObject ho_Contour, ModelResult result)
@@ -186,7 +190,11 @@ namespace DotNet.HalconUI
             display.DispRegion(_shrContour, HColor.Green);
 
             HalconHelper.TransPixel(from, to, result.Row, result.Column, out HTuple rowTrans, out HTuple colTrans);
+            _shrCoord = new CvCoord(colTrans, rowTrans, result.Angle);
             display.DispCross(colTrans, rowTrans, result.Angle, HColor.Red);
+
+            dispModel.SetUp(display, shrFindMode, _shrContour, _shrCoord);
+            _hover = DrawHandle.DispModel;
         }
 
         private static void TransObject(Point2d from, Point2d to, HObject obj, out HObject objTrans)

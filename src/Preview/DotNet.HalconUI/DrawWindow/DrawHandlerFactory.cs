@@ -56,7 +56,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary>
-        /// 创建对应类型的处理器实例; 未注册时返回 <see cref="NoneHandler"/>.
+        /// 创建对应类型的处理器实例; 未注册时返回 <see cref="NoneMouse"/>.
         /// </summary>
         public IDrawHandler Create(DrawEnum type)
         {

@@ -9,7 +9,7 @@ namespace DotNet.HalconUI
     /// 擦除矩形处理器
     /// 通过左键拖动以圆形画笔擦除区域
     /// </summary>
-    public class EraseRectHandler : IMouseHandler
+    public class EraseRectMouse : IMouseHandler
     {
         private enum Phase { Idle, Drawing, Editing }
 
