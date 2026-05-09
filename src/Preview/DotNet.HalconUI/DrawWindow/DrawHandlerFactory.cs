@@ -27,15 +27,9 @@ namespace DotNet.HalconUI
         private void RegisterDefaults()
         {
             Register(DrawEnum.None,        () => new NoneHandler());
-            Register(DrawEnum.SetModel,    () => new SetModelHandler());
-            Register(DrawEnum.DispModel,   () => new DispModelHandler());
-            Register(DrawEnum.NewRect,     () => new NewRectHandler());
-            Register(DrawEnum.NewAffRect,  () => new NewAffRectHandler());
             Register(DrawEnum.DispRect,    () => new DispRectHandler());
-            Register(DrawEnum.NewPolygon,  () => new PolygonNewDrawHandler());
-            Register(DrawEnum.EditPolygon, () => new PolygonEditDrawHandler());
+            Register(DrawEnum.DispModel,   () => new DispModelHandler());
             Register(DrawEnum.Synthethic,  () => new SynthethicDrawHandler());
-            Register(DrawEnum.ShapeModel,  () => new ShapeModelHandler());
             // EditRect 暂未实现, 留空; Create 时会回落到 NoneHandler.
         }
 

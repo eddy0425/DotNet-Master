@@ -4,16 +4,9 @@
     public enum DrawEnum
     {
         None,
-        SetModel,
-        DispModel,
-        NewRect,
-        NewAffRect,
-        EditRect,
         DispRect,
-        NewPolygon,
-        EditPolygon,
+        DispModel,
         Synthethic,
-        ShapeModel,
         EraseRect
     }
 

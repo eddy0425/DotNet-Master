@@ -45,7 +45,7 @@ namespace DotNet.HalconUI
 
         private void but_addRegion_Click(object sender, System.EventArgs e)
         {
-            display.SetDrawMode("", DrawEnum.NewRect);
+            //display.SetDrawMode("", DrawEnum.NewRect);
         }
 
         private void btn_deleteRegion_Click(object sender, System.EventArgs e)

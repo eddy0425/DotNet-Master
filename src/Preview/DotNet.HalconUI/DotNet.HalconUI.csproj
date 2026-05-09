@@ -68,13 +68,7 @@
     <Compile Include="DrawWindow\DrawHandlerFactory.cs" />
     <Compile Include="DrawWindow\Handlers\DispModelHandler.cs" />
     <Compile Include="DrawWindow\Handlers\DispRectHandler.cs" />
-    <Compile Include="DrawWindow\Handlers\NewAffRectHandler.cs" />
-    <Compile Include="DrawWindow\Handlers\NewRectHandler.cs" />
     <Compile Include="DrawWindow\Handlers\NoneHandler.cs" />
-    <Compile Include="DrawWindow\Handlers\PolygonEditDrawHandler.cs" />
-    <Compile Include="DrawWindow\Handlers\PolygonNewDrawHandler.cs" />
-    <Compile Include="DrawWindow\Handlers\SetModelHandler.cs" />
-    <Compile Include="DrawWindow\Handlers\ShapeModelHandler.cs" />
     <Compile Include="DrawWindow\Handlers\SynthethicDrawHandler.cs" />
     <Compile Include="DrawWindow\IDrawHandler.cs" />
     <Compile Include="HModelForm.cs">
