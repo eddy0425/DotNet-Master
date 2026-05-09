@@ -194,17 +194,21 @@ namespace DotNet.HalconAlgo
         }
         public override void DrawROI(DisplayUI display, RectEnum type)
         {
-            inPara.HoRect.Type = type;
             display.DrawRegion(type, out CvRegion hRegion);
             display.DispRegion(hRegion, HColor.Blue);
+            inPara.HoRect.Dispose();
             inPara.HoRect = hRegion;
         }
         public override void DispROI(DisplayUI display)
         {
             display.SetDrawMode(Name, inPara.HoRect, DrawEnum.DispRect);
         }
-        private void SetTemplate(HDisplayForm display)  //模板设置
+        public override void SetTemplate(HDisplayForm display, RectEnum type)
         {
+            display.DrawRegion(type, out CvRegion hRegion);
+            inPara.ModeRect.Dispose();
+            inPara.ModeRect = hRegion;
+
             HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
             HObject ho_Contour = new HObject(); HOperatorSet.GenEmptyObj(out ho_Contour);
 
@@ -273,14 +277,14 @@ namespace DotNet.HalconAlgo
         }
         public override void Init(DisplayUI display)
         {
-            display.RectangleEvent += RectEvent;
-            display.SetModelEvent += SetModelEvent;
+            //display.RectangleEvent += RectEvent;
+            //display.SetModelEvent += SetModelEvent;
             display.DispModelEvent += DispModelEvent;
         }
         public override void Close(DisplayUI display)
         {
-            display.RectangleEvent -= RectEvent;
-            display.SetModelEvent -= SetModelEvent;
+            //display.RectangleEvent -= RectEvent;
+            //display.SetModelEvent -= SetModelEvent;
             display.DispModelEvent -= DispModelEvent;
 
             inPara.HoContour?.Dispose();
@@ -293,24 +297,24 @@ namespace DotNet.HalconAlgo
                 inPara.ModelID = null;
             }
         }
-        private void RectEvent(object sender, DrawRectangleArgs e)
-        {
-            if (e.Name == Name)
-            {
-                inPara.HoRect.Update2Point(e.TopLeft, e.BottomRight);
-                inPara.HoRect.GenRegion();
-            }
-        }
-        private void SetModelEvent(object sender, DrawSetModelArgs e)
-        {
-            if (e.Name == Name)
-            {
-                inPara.ModeRect.Update2Point(e.TopLeft, e.BottomRight);
-                inPara.ModeRect.GenRegion();
+        //private void RectEvent(object sender, DrawRectangleArgs e)
+        //{
+        //    if (e.Name == Name)
+        //    {
+        //        inPara.HoRect.Update2Point(e.TopLeft, e.BottomRight);
+        //        inPara.HoRect.GenRegion();
+        //    }
+        //}
+        //private void SetModelEvent(object sender, DrawSetModelArgs e)
+        //{
+        //    if (e.Name == Name)
+        //    {
+        //        inPara.ModeRect.Update2Point(e.TopLeft, e.BottomRight);
+        //        inPara.ModeRect.GenRegion();
 
-                SetTemplate(e.Display);
-            }
-        }
+        //        SetTemplate(e.Display);
+        //    }
+        //}
         private void DispModelEvent(object sender, DrawDispModelArgs e)
         {
             if (e.Name == Name)

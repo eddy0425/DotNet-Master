@@ -20,6 +20,7 @@ namespace DotNet.VisionMaster
         HEditForm _editModel;
 
         Dictionary<RadioButton, RectEnum> _rectDrawMap;
+        Dictionary<RadioButton, RectEnum> _modelDrawMap;
 
         public ParaForm(DisplayUI displayUI)
         {
@@ -45,6 +46,16 @@ namespace DotNet.VisionMaster
                 { btn_rectEllipse,   RectEnum.Ellipse },
                 { btn_rectPolygon,   RectEnum.Polygon },
             };
+
+            _modelDrawMap = new Dictionary<RadioButton, RectEnum>
+            {
+                { btn_modelRectangle, RectEnum.Rectangle },
+                { btn_modelAffRect,   RectEnum.AffRect },
+                { btn_modelCircle,    RectEnum.Circle },
+                { btn_modelEllipse,   RectEnum.Ellipse },
+                { btn_modelPolygon,   RectEnum.Polygon },
+            };
+
         }
 
         private void btn_setPath_Click(object sender, EventArgs e)
@@ -261,17 +272,9 @@ namespace DotNet.VisionMaster
             try
             {
                 var strategy = _strategys[_index];
-                switch (strategy.Algorithm)
-                {
-                    case AlgoEnum.ShapeModel:
-                    case AlgoEnum.NccModel:
-                    case AlgoEnum.ScaledModel:
-                    case AlgoEnum.GenericModel:
-                        {
-                            _disPlay.SetDrawMode(strategy.Name, DrawEnum.SetModel);
-                        }
-                        break;
-                }
+                var drawType = _modelDrawMap.FirstOrDefault(kv => kv.Key.Checked).Value;
+                _disPlay.ReDispImage();
+                strategy.SetTemplate(_disPlay, drawType);
             }
             catch (Exception ex) { MessageBox.Show(ex.Message); }
 

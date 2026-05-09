@@ -27,7 +27,7 @@ namespace DotNet.HalconAlgo
         void SavePara(Form form, Dictionary<string, VsControlModel> VsControls);
         void DrawROI(DisplayUI display, RectEnum type);
         void DispROI(DisplayUI display);
-
+        void SetTemplate(HDisplayForm display, RectEnum type);
     }
 
     /// <summary>
@@ -64,6 +64,7 @@ namespace DotNet.HalconAlgo
         public abstract void SavePara(Form form, Dictionary<string, VsControlModel> VsControls);
         public virtual void DrawROI(DisplayUI display, RectEnum type) { }
         public virtual void DispROI(DisplayUI display) { }
+        public virtual void SetTemplate(HDisplayForm display, RectEnum type) { }
 
     }
 
