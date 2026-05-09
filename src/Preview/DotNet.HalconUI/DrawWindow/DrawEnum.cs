@@ -6,8 +6,7 @@
         None,
         DispRect,
         DispModel,
-        Synthethic,
-        EraseRect
+        Synthethic
     }
 
     /// <summary> 设置步骤枚举 </summary>

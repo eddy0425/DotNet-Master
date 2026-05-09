@@ -71,6 +71,7 @@
     <Compile Include="DrawWindow\Handlers\NoneHandler.cs" />
     <Compile Include="DrawWindow\Handlers\SynthethicDrawHandler.cs" />
     <Compile Include="DrawWindow\IDrawHandler.cs" />
+    <Compile Include="MouseHandler\IMouseHandler.cs" />
     <Compile Include="HModelForm.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -83,7 +84,7 @@
     <Compile Include="HDisplayForm.Designer.cs">
       <DependentUpon>HDisplayForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="DrawWindow\Handlers\EditEraseRectHandler.cs" />
+    <Compile Include="MouseHandler\EraseRectHandler.cs" />
     <Compile Include="DrawWindow\Handlers\EditNewRectHandler.cs" />
     <Compile Include="HEditForm.cs">
       <SubType>Form</SubType>

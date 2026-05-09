@@ -2,9 +2,9 @@
 using DotNet.HalconUI;
 using HalconDotNet;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
+using System.Collections.Generic;
 
 
 namespace DotNet.HalconAlgo
@@ -205,15 +205,15 @@ namespace DotNet.HalconAlgo
         }
         public override void SetTemplate(HDisplayForm display, RectEnum type)
         {
-            display.DrawRegion(type, out CvRegion hRegion);
-            inPara.ModeRect.Dispose();
-            inPara.ModeRect = hRegion;
-
             HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
             HObject ho_Contour = new HObject(); HOperatorSet.GenEmptyObj(out ho_Contour);
 
             try
             {
+                display.DrawRegion(type, out CvRegion hRegion);
+                inPara.ModeRect.Dispose();
+                inPara.ModeRect = hRegion;
+
                 inPara.ModelPath = Path.Combine(AlgoPaths.JobDir, RunIndex.ToString(), "matching.bmp");
                 var hImage = display.HoImage;
 
@@ -277,14 +277,10 @@ namespace DotNet.HalconAlgo
         }
         public override void Init(DisplayUI display)
         {
-            //display.RectangleEvent += RectEvent;
-            //display.SetModelEvent += SetModelEvent;
             display.DispModelEvent += DispModelEvent;
         }
         public override void Close(DisplayUI display)
         {
-            //display.RectangleEvent -= RectEvent;
-            //display.SetModelEvent -= SetModelEvent;
             display.DispModelEvent -= DispModelEvent;
 
             inPara.HoContour?.Dispose();
@@ -297,24 +293,7 @@ namespace DotNet.HalconAlgo
                 inPara.ModelID = null;
             }
         }
-        //private void RectEvent(object sender, DrawRectangleArgs e)
-        //{
-        //    if (e.Name == Name)
-        //    {
-        //        inPara.HoRect.Update2Point(e.TopLeft, e.BottomRight);
-        //        inPara.HoRect.GenRegion();
-        //    }
-        //}
-        //private void SetModelEvent(object sender, DrawSetModelArgs e)
-        //{
-        //    if (e.Name == Name)
-        //    {
-        //        inPara.ModeRect.Update2Point(e.TopLeft, e.BottomRight);
-        //        inPara.ModeRect.GenRegion();
-
-        //        SetTemplate(e.Display);
-        //    }
-        //}
+        
         private void DispModelEvent(object sender, DrawDispModelArgs e)
         {
             if (e.Name == Name)
@@ -324,6 +303,7 @@ namespace DotNet.HalconAlgo
                 e.Display.DispCross(inPara.Coord, HColor.OrangeRed);
             }
         }
+
     }
 
     public class ScaledModel : AlgoFont

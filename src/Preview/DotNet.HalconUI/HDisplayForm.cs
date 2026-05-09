@@ -153,6 +153,46 @@ namespace DotNet.HalconUI
             }
         }
 
+        /// <summary> 绘制区域 </summary>
+        public void DrawRegion(RectEnum type, out HObject rectangle)
+        {
+            Reset();
+            DrawHelper.CancelDraw();
+            HOperatorSet.GenEmptyObj(out rectangle);
+
+            switch (type)
+            {
+                case RectEnum.Rectangle:
+                    {
+                        DrawHelper.DrawRectangle1(HoWindow, out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2);
+                        HOperatorSet.GenRectangle1(out rectangle, row1, column1, row2, column2);
+                    }
+                    break;
+                case RectEnum.AffRect:
+                    {
+                        DrawHelper.DrawRectangle2(HoWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
+                        HOperatorSet.GenRectangle2(out rectangle, row, column, phi, length1, length2);
+                    }
+                    break;
+                case RectEnum.Circle:
+                    {
+                        DrawHelper.DrawCircle(HoWindow, out HTuple row, out HTuple column, out HTuple radius);
+                        HOperatorSet.GenCircle(out rectangle, row, column, radius);
+                    }
+                    break;
+                case RectEnum.Ellipse:
+                    {
+                        DrawHelper.DrawEllipse(HoWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2);
+                        HOperatorSet.GenEllipse(out rectangle, row, column, phi, radius1, radius2);
+                    }
+                    break;
+                case RectEnum.Polygon:
+                    {
+                        DrawHelper.DrawRegion(out rectangle, HoWindow);
+                    }
+                    break;
+            }
+        }
 
         #region IHWindowFont
 
