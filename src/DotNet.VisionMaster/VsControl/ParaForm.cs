@@ -271,6 +271,9 @@ namespace DotNet.VisionMaster
                 var drawType = _modelDrawMap.FirstOrDefault(kv => kv.Key.Checked).Value;
                 _disPlay.ReDispImage();
                 strategy.SetTemplate(_disPlay, drawType);
+
+
+                _disPlay.SetDrawMode(strategy.Name, DrawEnum.DispModel);
             }
             catch (Exception ex) { MessageBox.Show(ex.Message); }
 

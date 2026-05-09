@@ -8,6 +8,9 @@ namespace DotNet.HalconUI
     /// </summary>
     public interface IDrawHandler
     {
+        //private enum SetUpEnum { None, Step1, Step2, Step3, Step4, Step5 }
+        //private enum CycleMoveEnum { None, Start, StartMove, End, EndMove, Center, CenterMove }
+
         /// <summary>
         /// 获取是否需要重绘图像
         /// </summary>

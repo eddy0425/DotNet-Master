@@ -87,12 +87,6 @@ namespace DotNet.HalconUI
         /// <summary> 算法名称 </summary>
         public string AlgoName;
 
-        /// <summary> 当前设置步骤 </summary>
-        public SetUpEnum SetUp = SetUpEnum.None;
-
-        /// <summary> 当前循环移动状态 </summary>
-        public CycleMoveEnum CycleMove = CycleMoveEnum.None;
-
         /// <summary> 共享中心 </summary>
         public Point2d ShrCenter;
 
@@ -113,25 +107,21 @@ namespace DotNet.HalconUI
 
         #endregion
 
-        public string ShrColor;
-
-        public int ShrLineWidth;
-
         #region 绘图模式
 
         private DrawEnum _drawType = DrawEnum.None;
-        private IDrawHandler _currentHandler;
-        private readonly DrawHandlerFactory _handlerFactory = new DrawHandlerFactory();
-
-        /// <summary> 当前绘图类型. setter 中切换 handler 实例 </summary>
-        public DrawEnum DrawType
+        private IDrawHandler drawHandler
         {
-            get { return _drawType; }
-            set
+            get 
             {
-                if (_drawType == value && _currentHandler != null) return;
-                _drawType = value;
-                _currentHandler = _handlerFactory.Create(value);
+                switch (_drawType)
+                {
+                    case DrawEnum.None: return noneHandler;
+                    case DrawEnum.DispRect: return dispRect;
+                    case DrawEnum.DispModel: return dispModel;
+                    case DrawEnum.Synthethic: return synthethic;
+                }
+                return noneHandler;
             }
         }
 
@@ -139,17 +129,27 @@ namespace DotNet.HalconUI
 
         #region 构造 + 鼠标事件路由
 
+        NoneHandler noneHandler;
+        DispRectHandler dispRect;
+        DispModelHandler dispModel;
+        SynthethicDrawHandler synthethic;
+
         public DisplayUI()
         {
             InitializeComponent();
             this.Dock = DockStyle.Fill;
 
+            // 各绘图模式 handler 与本控件生命周期对齐, 一次性创建,
+            // 避免在 drawHandler.get 中按需 new 造成状态丢失.
+            noneHandler = new NoneHandler();
+            dispRect    = new DispRectHandler();
+            dispModel   = new DispModelHandler();
+            synthethic  = new SynthethicDrawHandler();
+
             HMouseDown  += WindowMouse_HMouseDown;
             HMouseUp    += WindowMouse_HMouseUp;
             HMouseWheel += WindowMouse_HMouseWheel;
             HMouseMove  += WindowMouse_HMouseMove;
-
-            _currentHandler = _handlerFactory.Create(DrawEnum.None);
 
             // 控件销毁时主动释放 HObject, 避免依赖 GC + finalizer 的滞后回收
             HandleDestroyed += DisplayUI_HandleDestroyed;
@@ -158,6 +158,8 @@ namespace DotNet.HalconUI
             HOperatorSet.GenEmptyObj(out ShrContour);
             HOperatorSet.GenEmptyObj(out ShrErase);
             HOperatorSet.GenEmptyObj(out ShrFindMode);
+
+
         }
 
         private void DisplayUI_HandleDestroyed(object sender, EventArgs e)
@@ -171,34 +173,26 @@ namespace DotNet.HalconUI
 
         private void WindowMouse_HMouseDown(object sender, HMouseEventArgs e)
         {
-            ReDisplay();
-            _currentHandler.OnMouseDown(this, e);
+            ReDispImage();
+            drawHandler.OnMouseDown(this, e);
         }
 
         private void WindowMouse_HMouseUp(object sender, HMouseEventArgs e)
         {
-            ReDisplay();
-            _currentHandler.OnMouseUp(this, e);
+            ReDispImage();
+            drawHandler.OnMouseUp(this, e);
         }
 
         private void WindowMouse_HMouseWheel(object sender, HMouseEventArgs e)
         {
-            ReDisplay();
-            _currentHandler.OnMouseWheel(this, e);
+            ReDispImage();
+            drawHandler.OnMouseWheel(this, e);
         }
 
         private void WindowMouse_HMouseMove(object sender, HMouseEventArgs e)
         {
-            //ReDisplay();
-            _currentHandler.OnMouseMove(this, e);
-        }
-
-        private void ReDisplay()
-        {
-            if (_currentHandler != null && _currentHandler.NeedReDisp)
-            {
-                ReDispImage();
-            }
+            //ReDispImage();
+            drawHandler.OnMouseMove(this, e);
         }
 
         #endregion
@@ -224,34 +218,15 @@ namespace DotNet.HalconUI
             }
         }
 
-        /// <summary>
-        /// 注册 / 替换某 DrawType 的处理器实例 (兼容旧 API).
-        /// 推荐使用 <see cref="RegisterDrawHandler(DrawEnum, Func{IDrawHandler})"/> 工厂版本.
-        /// </summary>
-        public void RegisterDrawHandler(DrawEnum type, IDrawHandler handler)
-        {
-            _handlerFactory.Register(type, handler);
-        }
-
-        /// <summary>
-        /// 注册 / 替换某 DrawType 的处理器工厂 (推荐: 每次切换都创建新实例).
-        /// </summary>
-        public void RegisterDrawHandler(DrawEnum type, Func<IDrawHandler> factory)
-        {
-            _handlerFactory.Register(type, factory);
-        }
-
-        /// <summary> 设置绘图模式 </summary>
+        /// <summary> 设置绘图模式 + 共享区域 </summary>
         public void SetDrawMode(string algoName, DrawEnum type)
         {
-            DrawType = type;
+            _drawType = type;
             AlgoName = algoName;
-            SetUp = SetUpEnum.None;
-            CycleMove = CycleMoveEnum.None;
 
-            ReDisplay();
             Reset();
-            _currentHandler.SetUp(this);
+            ReDispImage();
+            drawHandler.SetUp(this);
         }
 
         /// <summary> 设置绘图模式 + 共享区域 </summary>
@@ -263,15 +238,13 @@ namespace DotNet.HalconUI
                 ShrRegion.Update2Point(hRegion.TopLeft, hRegion.BottomRight);
                 ShrRegion.GenRegion();
             }
- 
-            DrawType  = type;
-            AlgoName  = algoName;
-            SetUp     = SetUpEnum.None;
-            CycleMove = CycleMoveEnum.None;
 
-            ReDisplay();
+            _drawType = type;
+            AlgoName  = algoName;
+
             Reset();
-            _currentHandler.SetUp(this);
+            ReDispImage();
+            drawHandler.SetUp(this);
         }
 
         #endregion

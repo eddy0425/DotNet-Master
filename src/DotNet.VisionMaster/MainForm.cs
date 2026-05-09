@@ -94,7 +94,7 @@ namespace DotNet.VisionMaster
                 {
                     case "ShapeMode":
                         {
-                            _display.SetDrawMode("ShapeMode", DrawEnum.DispModel);
+                            //_display.SetDrawMode("ShapeMode", DrawEnum.DispModel);
                         }
                         break;
                 }

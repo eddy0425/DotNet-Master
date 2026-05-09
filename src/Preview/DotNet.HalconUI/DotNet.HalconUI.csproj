@@ -65,7 +65,6 @@
     </Compile>
     <Compile Include="DrawWindow\DrawEnum.cs" />
     <Compile Include="DrawWindow\DrawEvent.cs" />
-    <Compile Include="DrawWindow\DrawHandlerFactory.cs" />
     <Compile Include="DrawWindow\Handlers\DispModelHandler.cs" />
     <Compile Include="DrawWindow\Handlers\DispRectHandler.cs" />
     <Compile Include="DrawWindow\Handlers\NoneHandler.cs" />

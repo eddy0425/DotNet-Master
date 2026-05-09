@@ -11,10 +11,12 @@ namespace DotNet.HalconUI
     public class DispRectHandler : IDrawHandler
     {
         public bool NeedReDisp => true;
-
+        private enum SetUpEnum { None, Step1, Step2, Step3, Step4, Step5 }
+        private SetUpEnum _phase;
         public void SetUp(DisplayUI display)
         {
-            if (display.SetUp == SetUpEnum.None)
+            _phase = SetUpEnum.None;
+            if (_phase == SetUpEnum.None)
             {
                 Point2d TopLeft = display.ShrRegion.TopLeft;
                 Point2d BottomRight = display.ShrRegion.BottomRight;
@@ -27,7 +29,7 @@ namespace DotNet.HalconUI
 
                 display.DispRegion(display.ShrRegion, HColor.Blue);
 
-                display.SetUp = SetUpEnum.Step1;
+                _phase = SetUpEnum.Step1;
             }
         }
 
@@ -39,7 +41,7 @@ namespace DotNet.HalconUI
 
         public void OnMouseMove(DisplayUI display, HMouseEventArgs e)
         {
-            switch (display.SetUp)
+            switch (_phase)
             {
                 case SetUpEnum.Step1:
                     {

@@ -10,14 +10,16 @@ namespace DotNet.HalconUI
     public class DispModelHandler : IDrawHandler
     {
         public bool NeedReDisp => false;
-
+        private enum SetUpEnum { None, Step1, Step2, Step3, Step4, Step5 }
+        private SetUpEnum _phase;
         public void SetUp(DisplayUI display)
         {
-            if (display.SetUp == SetUpEnum.None)
+            _phase = SetUpEnum.None;
+            if (_phase == SetUpEnum.None)
             {
                 display.Reset();
                 display.ReDispImage();
-                display.SetUp = SetUpEnum.Step1;
+                _phase = SetUpEnum.Step1;
             }
         }
 
@@ -38,7 +40,7 @@ namespace DotNet.HalconUI
 
         public void OnMouseMove(DisplayUI display, HMouseEventArgs e)
         {
-            switch (display.SetUp)
+            switch (_phase)
             {
                 case SetUpEnum.Step1:
                     display.DrawDispModel(display.AlgoName, display);

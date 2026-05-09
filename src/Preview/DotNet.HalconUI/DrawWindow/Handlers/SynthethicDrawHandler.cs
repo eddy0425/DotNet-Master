@@ -11,6 +11,11 @@ namespace DotNet.HalconUI
     public class SynthethicDrawHandler : IDrawHandler
     {
         public bool NeedReDisp => true;
+        private enum SetUpEnum { None, Step1, Step2, Step3, Step4, Step5 }
+        private enum CycleMoveEnum { None, Start, StartMove, End, EndMove, Center, CenterMove }
+
+        private SetUpEnum _phase;
+        private CycleMoveEnum _cycle;
 
         public double LeftLong = 1.425;   //mm
         public double MediumLong = 1.15;  //mm
@@ -32,7 +37,10 @@ namespace DotNet.HalconUI
 
         public void SetUp(DisplayUI display)
         {
-            if (display.SetUp == SetUpEnum.None)
+            _phase = SetUpEnum.None;
+            _cycle = CycleMoveEnum.None;
+
+            if (_phase == SetUpEnum.None)
             {
                 display.Reset();
                 display.ReDispImage();
@@ -44,7 +52,7 @@ namespace DotNet.HalconUI
                 display.DispPoint(RegBottomRight, HColor.OrangeRed, 100);
                 display.DispPoint(RegCenter, HColor.OrangeRed, 100);
 
-                display.SetUp = SetUpEnum.Step1;
+                _phase = SetUpEnum.Step1;
             }
         }
 
@@ -52,19 +60,19 @@ namespace DotNet.HalconUI
         {
             if (e.Button == MouseButtons.Left)
             {
-                if (display.SetUp == SetUpEnum.Step1)
+                if (_phase == SetUpEnum.Step1)
                 {
-                    switch (display.CycleMove)
+                    switch (_cycle)
                     {
                         // 开始移动选中的顶点
                         case CycleMoveEnum.Start:
-                            display.CycleMove = CycleMoveEnum.StartMove;
+                            _cycle = CycleMoveEnum.StartMove;
                             break;
                         case CycleMoveEnum.End:
-                            display.CycleMove = CycleMoveEnum.EndMove;
+                            _cycle = CycleMoveEnum.EndMove;
                             break;
                         case CycleMoveEnum.Center:
-                            display.CycleMove = CycleMoveEnum.CenterMove;
+                            _cycle = CycleMoveEnum.CenterMove;
                             break;
                     }
                 }
@@ -75,26 +83,26 @@ namespace DotNet.HalconUI
         {
             if (e.Button == MouseButtons.Left)
             {
-                if (display.SetUp == SetUpEnum.Step1)
+                if (_phase == SetUpEnum.Step1)
                 {
-                    switch (display.CycleMove)
+                    switch (_cycle)
                     {
                         // 结束顶点移动
                         case CycleMoveEnum.StartMove:
                         case CycleMoveEnum.EndMove:
                         case CycleMoveEnum.CenterMove:
-                            display.CycleMove = CycleMoveEnum.None;
+                            _cycle = CycleMoveEnum.None;
                             break;
                     }
                 }
             }
             else if (e.Button == MouseButtons.Right)
             {
-                if (display.SetUp == SetUpEnum.Step1)
+                if (_phase == SetUpEnum.Step1)
                 {
                     // 右键完成编辑
                     display.DrawSynthethicn(display.ShrContour, RegTopLeft, RegBottomRight);
-                    display.SetUp = SetUpEnum.Step2;
+                    _phase = SetUpEnum.Step2;
                 }
             }
         }
@@ -108,11 +116,11 @@ namespace DotNet.HalconUI
         {
             OnReDisplay(display);
 
-            switch (display.SetUp)
+            switch (_phase)
             {
                 case SetUpEnum.Step1:
                     {
-                        switch (display.CycleMove)
+                        switch (_cycle)
                         {
                             case CycleMoveEnum.StartMove:
                                 RegTopLeft = new Point2d(e.X, e.Y);
@@ -137,7 +145,7 @@ namespace DotNet.HalconUI
                                     {
                                         // 高亮显示靠近的顶点
                                         display.DispPoint(RegTopLeft, HColor.Yellow);
-                                        display.CycleMove = CycleMoveEnum.Start;
+                                        _cycle = CycleMoveEnum.Start;
                                         break;
                                     }
 
@@ -145,7 +153,7 @@ namespace DotNet.HalconUI
                                     {
                                         // 高亮显示靠近的顶点
                                         display.DispPoint(RegBottomRight, HColor.Yellow);
-                                        display.CycleMove = CycleMoveEnum.End;
+                                        _cycle = CycleMoveEnum.End;
                                         break;
                                     }
 
@@ -153,7 +161,7 @@ namespace DotNet.HalconUI
                                     {
                                         // 高亮显示靠近的顶点
                                         display.DispPoint(RegCenter, HColor.Yellow);
-                                        display.CycleMove = CycleMoveEnum.Center;
+                                        _cycle = CycleMoveEnum.Center;
                                         break;
                                     }
                                 }
@@ -166,7 +174,7 @@ namespace DotNet.HalconUI
 
         public void OnReDisplay(DisplayUI display)
         {
-            switch (display.SetUp)
+            switch (_phase)
             {
                 case SetUpEnum.Step1:
                     {
