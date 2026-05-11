@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Windows.Forms;
+using DotNet.Drawing;
 using HalconDotNet;
 
-namespace DotNet.Drawing
+namespace DotNet.HalconUI
 {
     public class HWindowMouse
     {

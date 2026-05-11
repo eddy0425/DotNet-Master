@@ -33,6 +33,8 @@
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="halcondotnet, Version=22.11.0.0, Culture=neutral, PublicKeyToken=4973bed59ddbf2b8, processorArchitecture=MSIL">
@@ -56,13 +58,22 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="HMouse\DrawEvent.cs" />
-    <Compile Include="HMouse\DrawEnum.cs" />
-    <Compile Include="HMouse\DrawHelper.cs" />
-    <Compile Include="HMouse\old\SynthethicHandler.cs" />
-    <Compile Include="HMouse\Handlers\DispModelMouse.cs" />
-    <Compile Include="HMouse\Handlers\DispRectMouse.cs" />
-    <Compile Include="HMouse\IMouseHandler.cs" />
+    <Compile Include="HWindows\HDisplay\HDisplay.cs" />
+    <Compile Include="HWindows\HDisplay\IHDisplay.cs" />
+    <Compile Include="HWindows\HFont\HWindowFont2018.cs" />
+    <Compile Include="HWindows\HFont\HWindowFont2022.cs" />
+    <Compile Include="HWindows\HFont\IHWindowFont.cs" />
+    <Compile Include="HModel\ZoomImage.cs" />
+    <Compile Include="HWindows\HMouse\DrawEvent.cs" />
+    <Compile Include="HWindows\HMouse\DrawEnum.cs" />
+    <Compile Include="HWindows\HMouse\DrawHelper.cs" />
+    <Compile Include="HWindows\HMouse\Handlers\SynthethicHandler.cs" />
+    <Compile Include="HWindows\HMouse\Handlers\DispModelMouse.cs" />
+    <Compile Include="HWindows\HMouse\Handlers\DispRectMouse.cs" />
+    <Compile Include="HWindows\HMouse\IMouseHandler.cs" />
+    <Compile Include="HWindows\HDisplayCore.cs" />
+    <Compile Include="HWindows\HWindowImage.cs" />
+    <Compile Include="HWindows\HWindowMouse.cs" />
     <Compile Include="ModelControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -75,7 +86,7 @@
     <Compile Include="HDisplayUI.Designer.cs">
       <DependentUpon>HDisplayUI.cs</DependentUpon>
     </Compile>
-    <Compile Include="HMouse\Handlers\EraseRectMouse.cs" />
+    <Compile Include="HWindows\HMouse\Handlers\EraseRectMouse.cs" />
     <Compile Include="HEditModelUI.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -85,7 +96,7 @@
     <Compile Include="HModel\ModelExtension.cs" />
     <Compile Include="HModel\ModelType.cs" />
     <Compile Include="HModel\ModelResult.cs" />
-    <Compile Include="HMouse\Handlers\NoneMouse.cs" />
+    <Compile Include="HWindows\HMouse\Handlers\NoneMouse.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TreeNode\OutEnum.cs" />
     <Compile Include="TreeNode\TreeVisualizer.cs" />

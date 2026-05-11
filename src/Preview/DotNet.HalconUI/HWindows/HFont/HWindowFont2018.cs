@@ -1,6 +1,6 @@
 ﻿using HalconDotNet;
 
-namespace DotNet.Drawing
+namespace DotNet.HalconUI
 {
     public class HWindowFont2018 : IHWindowFont
     {

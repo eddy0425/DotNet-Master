@@ -1,7 +1,8 @@
 ﻿using System;
+using DotNet.Drawing;
 using HalconDotNet;
 
-namespace DotNet.Drawing
+namespace DotNet.HalconUI
 {
     public class HWindowImage : IDisposable
     {

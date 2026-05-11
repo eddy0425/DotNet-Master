@@ -1,7 +1,7 @@
 ﻿using System.Drawing;
 using HalconDotNet;
 
-namespace DotNet.Drawing
+namespace DotNet.HalconUI
 {
     /// <summary>
     /// 图像缩放信息载体

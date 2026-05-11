@@ -1,7 +1,8 @@
-﻿using HalconDotNet;
+﻿using DotNet.Drawing;
+using HalconDotNet;
 using System.Collections.Generic;
 
-namespace DotNet.Drawing
+namespace DotNet.HalconUI
 {
     public interface IHDisplay
     {
