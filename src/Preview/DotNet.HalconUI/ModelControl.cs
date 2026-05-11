@@ -5,14 +5,14 @@ using System.Windows.Forms;
 
 namespace DotNet.HalconUI
 {
-    public partial class HModelControl : UserControl
+    public partial class ModelControl : UserControl
     {
         HObject _srcImage;
         HObject _modeRect;
         HObject _contour;
         HDisplayCore display;
 
-        public HModelControl()
+        public ModelControl()
         {
             InitializeComponent();
             this.Dock = DockStyle.Fill;

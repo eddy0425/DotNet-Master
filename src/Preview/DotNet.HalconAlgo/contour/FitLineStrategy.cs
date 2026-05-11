@@ -40,7 +40,7 @@ namespace DotNet.HalconAlgo
             RegisterOutput("直线/终点/列", () => inPara.Line.End.X);
 
         }
-        public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
+        public override bool Fun_action(HDisplayUI display, List<IParaStrategy> strategys)
         {
             HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
             HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
@@ -352,37 +352,23 @@ namespace DotNet.HalconAlgo
             inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
             inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
         }
-        public override void DrawROI(DisplayUI display, RectEnum type)
+        public override void DrawROI(HDisplayUI display, RectEnum type)
         {
             inPara.HoRect.Type = type;
             display.DrawRegion(type, out CvRegion hRegion);
             display.DispRegion(hRegion, HColor.Blue);
             inPara.HoRect = hRegion;
         }
-        public override void DispROI(DisplayUI display)
+        public override void DispROI(HDisplayUI display)
         {
-            display.SetDrawMode(Name, inPara.HoRect, DrawEnum.DispRect);
-        }
-        public override void Init(DisplayUI display)
-        {
-            display.AffRectEvent += AffRectEvent;
-        }
-        public override void Close(DisplayUI display)
-        {
-            display.AffRectEvent -= AffRectEvent;
-            inPara.HoRect.Dispose();
-        }
-        private void AffRectEvent(object sender, DrawAffRectArgs e)
-        {
-            if (e.Name == Name)
-            {
-                inPara.HoRect.UpdateCenter(e.Center, e.RectSize);
-                inPara.HoRect.Phi = e.Phi;
-                inPara.HoRect.Type = RectEnum.AffRect;
-                inPara.HoRect.GenRegion();
-            }
+            inPara.HoRect.Type = RectEnum.AffRect;
+            display.SetRectPara(inPara.HoRect);
         }
 
+        public override void Close(HDisplayUI display)
+        {
+            inPara.HoRect.Dispose();
+        }
     }
 
     public class FitLine : AlgoFont

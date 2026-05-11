@@ -214,5 +214,12 @@ namespace DotNet.Drawing
         }
 
         #endregion
+
+        /// <summary> 由 XLD 轮廓生成"白底黑色填充"的掩膜图像 </summary>
+        public static void GetContourImage(HObject hImage, HObject contour, out HObject ho_ResultImage)
+        {
+            controller.GetContourImage(hImage, contour, out ho_ResultImage);
+        }
+
     }
 }

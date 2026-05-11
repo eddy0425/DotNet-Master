@@ -36,7 +36,7 @@ namespace DotNet.HalconAlgo
             RegisterOutput("区域", () => inPara.HoRect);
 
         }
-        public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
+        public override bool Fun_action(HDisplayUI display, List<IParaStrategy> strategys)
         {
             HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
 
@@ -110,34 +110,17 @@ namespace DotNet.HalconAlgo
             inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
             inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
         }
-        public override void DrawROI(DisplayUI display, RectEnum type)
+        public override void DrawROI(HDisplayUI display, RectEnum type)
         {
             inPara.HoRect.Type = type;
             display.DrawRegion(type, out CvRegion hRegion);
             display.DispRegion(hRegion, HColor.Blue);
             inPara.HoRect = hRegion;
         }
-        public override void DispROI(DisplayUI display)
+        public override void DispROI(HDisplayUI display)
         {
-            display.SetDrawMode(Name, inPara.HoRect, DrawEnum.DispRect);
+            display.SetRectPara(inPara.HoRect);
         }
-        public override void Init(DisplayUI display)
-        {
-            display.RectangleEvent += RectEvent;
-        }
-        public override void Close(DisplayUI display)
-        {
-            display.RectangleEvent -= RectEvent;
-        }
-        private void RectEvent(object sender, DrawRectangleArgs e)
-        {
-            if (e.Name == Name)
-            {
-                inPara.HoRect.Update2Point(e.TopLeft, e.BottomRight);
-                inPara.HoRect.GenRegion();
-            }
-        }
-
     }
 
     public class CreateROI : AlgoFont

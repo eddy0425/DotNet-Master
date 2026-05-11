@@ -596,5 +596,24 @@ namespace DotNet.Drawing
         }
 
         #endregion
+
+        /// <summary> 由 XLD 轮廓生成"白底黑色填充"的掩膜图像 </summary>
+        public void GetContourImage(HObject hImage, HObject contour, out HObject ho_ResultImage)
+        {
+            HObject ho_Region = null;
+            HObject ho_WhiteImage = null;
+            ho_ResultImage = null;
+            try
+            {
+                HOperatorSet.GenRegionContourXld(contour, out ho_Region, "filled");
+                HOperatorSet.GenImageProto(hImage, out ho_WhiteImage, 255);
+                HOperatorSet.PaintRegion(ho_Region, ho_WhiteImage, out ho_ResultImage, 0, "fill");
+            }
+            finally
+            {
+                if (ho_Region != null) ho_Region.Dispose();
+                if (ho_WhiteImage != null) ho_WhiteImage.Dispose();
+            }
+        }
     }
 }

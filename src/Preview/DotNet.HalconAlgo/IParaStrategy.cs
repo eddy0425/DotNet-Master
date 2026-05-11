@@ -18,16 +18,16 @@ namespace DotNet.HalconAlgo
         object ResolveOutput(string[] path);
         T ResolveOutput<T>(string[] path);
 
-        void Init(DisplayUI display);
-        void Close(DisplayUI display);
+        void Init(HDisplayUI display);
+        void Close(HDisplayUI display);
         void GenTreeNode(TreeVisualizer tree);
 
-        bool Fun_action(DisplayUI display, List<IParaStrategy> strategys);
+        bool Fun_action(HDisplayUI display, List<IParaStrategy> strategys);
         void DispPara(Form form, Dictionary<string, VsControlModel> VsControls);
         void SavePara(Form form, Dictionary<string, VsControlModel> VsControls);
-        void DrawROI(DisplayUI display, RectEnum type);
-        void DispROI(DisplayUI display);
-        void SetTemplate(HDisplayControl display, RectEnum type);
+        void DrawROI(HDisplayUI display, RectEnum type);
+        void DispROI(HDisplayUI display);
+        void SetTemplate(HDisplayUI display, RectEnum type);
     }
 
     /// <summary>
@@ -55,16 +55,16 @@ namespace DotNet.HalconAlgo
             return null;
         }
 
-        public virtual void Init(DisplayUI display) { }
-        public virtual void Close(DisplayUI display) { }
+        public virtual void Init(HDisplayUI display) { }
+        public virtual void Close(HDisplayUI display) { }
         public abstract void GenTreeNode(TreeVisualizer tree);
   
-        public abstract bool Fun_action(DisplayUI display, List<IParaStrategy> strategys);
+        public abstract bool Fun_action(HDisplayUI display, List<IParaStrategy> strategys);
         public abstract void DispPara(Form form, Dictionary<string, VsControlModel> VsControls);
         public abstract void SavePara(Form form, Dictionary<string, VsControlModel> VsControls);
-        public virtual void DrawROI(DisplayUI display, RectEnum type) { }
-        public virtual void DispROI(DisplayUI display) { }
-        public virtual void SetTemplate(HDisplayControl display, RectEnum type) { }
+        public virtual void DrawROI(HDisplayUI display, RectEnum type) { }
+        public virtual void DispROI(HDisplayUI display) { }
+        public virtual void SetTemplate(HDisplayUI display, RectEnum type) { }
 
     }
 

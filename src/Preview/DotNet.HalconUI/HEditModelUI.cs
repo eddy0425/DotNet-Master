@@ -1,31 +1,27 @@
 ﻿using DotNet.Drawing;
 using HalconDotNet;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Windows.Forms;
 
 
 namespace DotNet.HalconUI
 {
-    public partial class HEditModelForm : Form
+    public partial class HEditModelUI : Form
     {
-        string shrColor => CB_ApplyColor.Text;
-        int shrLineWidth => CB_ApplyLineWidth.Text.ExtractNumber();
-        private enum DrawHandle { None, Erase, DispModel }
-
         HObject _srcImage;
         HObject shrErase;
         HObject shrFindMode;
         HObject _shrContour;
         CvCoord _shrCoord;
-        DrawHandle _hover;
+        public HDisplayUI GetDisplay() => display;
 
-        NoneMouse noneMouse;
-        EraseRectMouse eraseRect;
-        DispModelMouse dispModel;
-        public DisplayUI GetDisplay() => display;
+        string shrColor => CB_ApplyColor.Text;
+        int shrLineWidth => CB_ApplyLineWidth.Text.ExtractNumber();
+        DrawEnum _drawType { get => display.drawType; set => display.drawType = value; }
+        EraseRectMouse eraseRect = new EraseRectMouse();
 
-
-        public HEditModelForm()
+        public HEditModelUI()
         {
             InitializeComponent();
 
@@ -38,10 +34,6 @@ namespace DotNet.HalconUI
             display.HMouseUp += OnMouseUp;
             display.HMouseWheel += OnMouseWheel;
             display.HMouseMove += OnMouseMove;
-
-            noneMouse = new NoneMouse();
-            eraseRect = new EraseRectMouse();
-            dispModel = new DispModelMouse();
         }
 
         private void HEditForm_Load(object sender, System.EventArgs e)
@@ -61,41 +53,33 @@ namespace DotNet.HalconUI
 
         public void OnMouseDown(object sender, HMouseEventArgs e)
         {
-            switch (_hover)
+            switch (_drawType)
             {
-                case DrawHandle.None: noneMouse.OnMouseDown(e); break;
-                case DrawHandle.Erase: eraseRect.OnMouseDown(e); break;
-                case DrawHandle.DispModel: dispModel.OnMouseDown(e); break;
+                case DrawEnum.Erase: eraseRect.OnMouseDown(e); break;
             }
         }
 
         public void OnMouseUp(object sender, HMouseEventArgs e)
         {
-            switch (_hover)
+            switch (_drawType)
             {
-                case DrawHandle.None: noneMouse.OnMouseUp(e); break;
-                case DrawHandle.Erase: eraseRect.OnMouseUp(e); break;
-                case DrawHandle.DispModel: dispModel.OnMouseUp(e); break;
+                case DrawEnum.Erase: eraseRect.OnMouseUp(e); break;
             }
         }
 
         public void OnMouseWheel(object sender, HMouseEventArgs e)
         {
-            switch (_hover)
+            switch (_drawType)
             {
-                case DrawHandle.None: noneMouse.OnMouseWheel(e); break;
-                case DrawHandle.Erase: eraseRect.OnMouseWheel(e); break;
-                case DrawHandle.DispModel: dispModel.OnMouseWheel(e); break;
+                case DrawEnum.Erase: eraseRect.OnMouseWheel(e); break;
             }
         }
 
         public void OnMouseMove(object sender, HMouseEventArgs e)
         {
-            switch (_hover)
+            switch (_drawType)
             {
-                case DrawHandle.None: noneMouse.OnMouseMove(e); break;
-                case DrawHandle.DispModel: dispModel.OnMouseMove(e); break;
-                case DrawHandle.Erase:
+                case DrawEnum.Erase:
                     {
                         eraseRect.SetPara(shrColor, shrLineWidth);
                         eraseRect.OnMouseMove(e);
@@ -108,13 +92,13 @@ namespace DotNet.HalconUI
 
         private void but_addRegion_Click(object sender, System.EventArgs e)
         {
-            _hover = DrawHandle.None;
+            _drawType = DrawEnum.None;
             DrawROI(shrFindMode, true);
         }
 
         private void btn_deleteRegion_Click(object sender, System.EventArgs e)
         {
-            _hover = DrawHandle.None;
+            _drawType = DrawEnum.None;
             DrawROI(shrFindMode, false);
         }
 
@@ -167,7 +151,7 @@ namespace DotNet.HalconUI
         private void but_ApplyRegion_Click(object sender, System.EventArgs e)
         {
             eraseRect.SetUp(display, shrErase, shrFindMode, shrColor, shrLineWidth);
-            _hover = DrawHandle.Erase;
+            _drawType = DrawEnum.Erase;
         }
 
         public void DisplayModel(string modelPath, HObject ho_ModeRect, HObject ho_Contour, ModelResult result)
@@ -193,8 +177,8 @@ namespace DotNet.HalconUI
             _shrCoord = new CvCoord(colTrans, rowTrans, result.Angle);
             display.DispCross(colTrans, rowTrans, result.Angle, HColor.Red);
 
-            dispModel.SetUp(display, shrFindMode, _shrContour, _shrCoord);
-            _hover = DrawHandle.DispModel;
+            display.SetModelPara(shrFindMode, _shrContour, _shrCoord);
+            _drawType = DrawEnum.DispModel;
         }
 
         private static void TransObject(Point2d from, Point2d to, HObject obj, out HObject objTrans)

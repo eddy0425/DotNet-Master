@@ -35,7 +35,7 @@ namespace DotNet.HalconAlgo
             RegisterOutput("坐标系/原点/列", () => inPara.Coord.X);
             RegisterOutput("坐标系/角度", () => inPara.Coord.Angle);
         }
-        public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
+        public override bool Fun_action(HDisplayUI display, List<IParaStrategy> strategys)
         {
             HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
             HObject ho_SelRect = new HObject(); HOperatorSet.GenEmptyObj(out ho_SelRect);
@@ -183,18 +183,18 @@ namespace DotNet.HalconAlgo
             inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
             inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
         }
-        public override void DrawROI(DisplayUI display, RectEnum type)
+        public override void DrawROI(HDisplayUI display, RectEnum type)
         {
             display.DrawRegion(type, out CvRegion hRegion);
             display.DispRegion(hRegion, HColor.Blue);
             inPara.HoRect.Dispose();
             inPara.HoRect = hRegion;
         }
-        public override void DispROI(DisplayUI display)
+        public override void DispROI(HDisplayUI display)
         {
-            display.SetDrawMode(Name, inPara.HoRect, DrawEnum.DispRect);
+            display.SetModelPara(inPara.HoRect.HoRegion, inPara.HoContour, inPara.Coord);
         }
-        public override void SetTemplate(HDisplayControl display, RectEnum type)
+        public override void SetTemplate(HDisplayUI display, RectEnum type)
         {
             HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
             HObject ho_Contour = new HObject(); HOperatorSet.GenEmptyObj(out ho_Contour);
@@ -243,7 +243,9 @@ namespace DotNet.HalconAlgo
                 display.DispRegion(ho_Contour, HColor.Green);
                 display.DispCross(result.Column, result.Row, result.Angle.ToDegrees(), HColor.Red, 50);
 
-                //m_dispModel.ShowModel(imgReduced, modeRect.HoRect, contourModel, result, type);
+                display.DrawDone(inPara.ModelPath, inPara.ModeRect.HoRegion, ho_Contour, result);
+                inPara.Coord = new CvCoord(result.X, result.Y, result.Angle);
+                display.SetModelPara(inPara.HoRect.HoRegion, inPara.HoContour, inPara.Coord);
 
                 if (score.Length > 0)
                 {
@@ -265,14 +267,9 @@ namespace DotNet.HalconAlgo
                 ho_Contour?.Dispose();
             }
         }
-        public override void Init(DisplayUI display)
-        {
-            display.DispModelEvent += DispModelEvent;
-        }
-        public override void Close(DisplayUI display)
-        {
-            display.DispModelEvent -= DispModelEvent;
 
+        public override void Close(HDisplayUI display)
+        {
             inPara.HoContour?.Dispose();
             inPara.HoRect?.Dispose();
             inPara.ModeRect?.Dispose();
@@ -283,15 +280,6 @@ namespace DotNet.HalconAlgo
             }
         }
 
-        private void DispModelEvent(object sender, DrawDispModelArgs e)
-        {
-            if (e.Name == Name)
-            {
-                e.Display.DispRegion(inPara.HoRect, HColor.Blue);
-                e.Display.DispRegion(inPara.HoContour, HColor.Green);
-                e.Display.DispCross(inPara.Coord, HColor.OrangeRed);
-            }
-        }
     }
 
     public class NccModel : AlgoFont

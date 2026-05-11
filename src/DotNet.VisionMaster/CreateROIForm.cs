@@ -9,7 +9,7 @@ namespace DotNet.VisionMaster
 {
     public partial class CreateROIForm : Form
     {
-        DisplayUI _display;
+        HDisplayUI _display;
         ParaForm _formPara;
         private int _index;
         private IParaStrategy _currentStrategy => _strategys[_index];
@@ -22,7 +22,7 @@ namespace DotNet.VisionMaster
             InitializeComponent();
             AlgoPaths.UIBlock = false;
 
-            _display = new DisplayUI();
+            _display = new HDisplayUI();
             panel1.Controls.Add(_display);
 
             _formPara = new ParaForm(_display);

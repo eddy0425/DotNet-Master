@@ -27,7 +27,7 @@ namespace DotNet.HalconAlgo
             RegisterOutput("图像", () => inPara.Image);
 
         }
-        public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
+        public override bool Fun_action(HDisplayUI display, List<IParaStrategy> strategys)
         {
             try
             {
@@ -122,7 +122,7 @@ namespace DotNet.HalconAlgo
             inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
             inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
         }
-        public override void Init(DisplayUI display)
+        public override void Init(HDisplayUI display)
         {
             try
             {
@@ -134,7 +134,7 @@ namespace DotNet.HalconAlgo
                 MessageBox.Show(ex.Message);
             }
         }
-        public override void Close(DisplayUI displayw)
+        public override void Close(HDisplayUI displayw)
         {
 
         }

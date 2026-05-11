@@ -56,46 +56,36 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="MouseHandler\DrawHelper.cs" />
-    <Compile Include="DrawWindow\DisplayUI.cs">
+    <Compile Include="HMouse\DrawEvent.cs" />
+    <Compile Include="HMouse\DrawEnum.cs" />
+    <Compile Include="HMouse\DrawHelper.cs" />
+    <Compile Include="HMouse\Handlers\SynthethicHandler.cs" />
+    <Compile Include="HMouse\Handlers\DispModelMouse.cs" />
+    <Compile Include="HMouse\Handlers\DispRectMouse.cs" />
+    <Compile Include="HMouse\IMouseHandler.cs" />
+    <Compile Include="ModelControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="DrawWindow\DisplayUI.Designer.cs">
-      <DependentUpon>DisplayUI.cs</DependentUpon>
+    <Compile Include="ModelControl.Designer.cs">
+      <DependentUpon>ModelControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="DrawWindow\DrawEnum.cs" />
-    <Compile Include="DrawWindow\DrawEvent.cs" />
-    <Compile Include="DrawWindow\Handlers\DispModelHandler.cs" />
-    <Compile Include="DrawWindow\Handlers\DispRectHandler.cs" />
-    <Compile Include="DrawWindow\Handlers\NoneHandler.cs" />
-    <Compile Include="DrawWindow\Handlers\SynthethicDrawHandler.cs" />
-    <Compile Include="DrawWindow\IDrawHandler.cs" />
-    <Compile Include="MouseHandler\Handlers\DispModelMouse.cs" />
-    <Compile Include="MouseHandler\Handlers\DispRectMouse.cs" />
-    <Compile Include="MouseHandler\IMouseHandler.cs" />
-    <Compile Include="HModelForm.cs">
+    <Compile Include="HDisplayUI.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="HModelForm.Designer.cs">
-      <DependentUpon>HModelForm.cs</DependentUpon>
+    <Compile Include="HDisplayUI.Designer.cs">
+      <DependentUpon>HDisplayUI.cs</DependentUpon>
     </Compile>
-    <Compile Include="HDisplayForm.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="HDisplayForm.Designer.cs">
-      <DependentUpon>HDisplayForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="MouseHandler\Handlers\EraseRectMouse.cs" />
-    <Compile Include="HEditModelForm.cs">
+    <Compile Include="HMouse\Handlers\EraseRectMouse.cs" />
+    <Compile Include="HEditModelUI.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="HEditModelForm.Designer.cs">
-      <DependentUpon>HEditModelForm.cs</DependentUpon>
+    <Compile Include="HEditModelUI.Designer.cs">
+      <DependentUpon>HEditModelUI.cs</DependentUpon>
     </Compile>
     <Compile Include="HModel\ModelExtension.cs" />
     <Compile Include="HModel\ModelType.cs" />
     <Compile Include="HModel\ModelResult.cs" />
-    <Compile Include="MouseHandler\Handlers\NoneMouse.cs" />
+    <Compile Include="HMouse\Handlers\NoneMouse.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TreeNode\OutEnum.cs" />
     <Compile Include="TreeNode\TreeVisualizer.cs" />
@@ -103,17 +93,14 @@
     <Compile Include="VsControl\VsControlBindingStrategy.cs" />
     <Compile Include="VsControl\VsControlFactory.cs" />
     <Compile Include="VsControl\VsControlModel.cs" />
-    <EmbeddedResource Include="DrawWindow\DisplayUI.resx">
-      <DependentUpon>DisplayUI.cs</DependentUpon>
+    <EmbeddedResource Include="ModelControl.resx">
+      <DependentUpon>ModelControl.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="HModelForm.resx">
-      <DependentUpon>HModelForm.cs</DependentUpon>
+    <EmbeddedResource Include="HDisplayUI.resx">
+      <DependentUpon>HDisplayUI.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="HDisplayForm.resx">
-      <DependentUpon>HDisplayForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="HEditModelForm.resx">
-      <DependentUpon>HEditModelForm.cs</DependentUpon>
+    <EmbeddedResource Include="HEditModelUI.resx">
+      <DependentUpon>HEditModelUI.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -143,5 +130,6 @@
       <Name>DotNet.Drawing</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

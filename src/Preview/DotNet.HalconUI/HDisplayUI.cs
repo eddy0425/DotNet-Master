@@ -7,7 +7,7 @@ using System.Windows.Forms;
 
 namespace DotNet.HalconUI
 {
-    public partial class HDisplayForm : UserControl
+    public partial class HDisplayUI : UserControl
     {
         HDisplayCore display;
         public event HMouseEventHandler HMouseUp { add => hWindowControl.HMouseUp += value; remove => hWindowControl.HMouseUp -= value; }
@@ -36,9 +36,16 @@ namespace DotNet.HalconUI
 
         #endregion
 
-        public HDisplayForm()
+        public DrawEnum drawType = DrawEnum.None;
+        NoneMouse dispNone = new NoneMouse();
+        DispRectMouse dispRect = new DispRectMouse();
+        DispModelMouse dispModel = new DispModelMouse();
+
+        public HDisplayUI()
         {
             InitializeComponent();
+            this.Dock = DockStyle.Fill;
+
             display = new HDisplayCore(hWindowControl);
             display.RefreshUI += Display_RefreshUI;
 
@@ -46,6 +53,12 @@ namespace DotNet.HalconUI
             HMouseUp += (s, e) => DrawHelper.Active?.OnMouseUp(e);
             HMouseMove += (s, e) => DrawHelper.Active?.OnMouseMove(e);
 
+            HMouseDown  += OnMouseDown;
+            HMouseUp    += OnMouseUp;
+            HMouseWheel += OnMouseWheel;
+            HMouseMove  += OnMouseMove;
+            // 控件销毁时主动释放 HObject, 避免依赖 GC + finalizer 的滞后回收
+            HandleDestroyed += UI_HandleDestroyed;
         }
 
         private void Display_RefreshUI(HTuple Row, HTuple Column, HTuple egray)
@@ -71,6 +84,160 @@ namespace DotNet.HalconUI
         public void SetDraw(HTuple mode)
         {
             HOperatorSet.SetDraw(HoWindow, mode);
+        }
+
+        #region Mouse Events
+
+        private void OnMouseDown(object sender, HMouseEventArgs e)
+        {
+            ReDispImage();
+            switch (drawType)
+            {
+                case DrawEnum.None: dispNone.OnMouseDown(e); break;
+                case DrawEnum.DispRect: dispRect.OnMouseDown(e); break;
+                case DrawEnum.DispModel: dispModel.OnMouseDown(e); break;
+            }
+        }
+
+        private void OnMouseUp(object sender, HMouseEventArgs e)
+        {
+            ReDispImage();
+            switch (drawType)
+            {
+                case DrawEnum.None: dispNone.OnMouseUp(e); break;
+                case DrawEnum.DispRect: dispRect.OnMouseUp(e); break;
+                case DrawEnum.DispModel: dispModel.OnMouseUp(e); break;
+            }
+        }
+
+        private void OnMouseWheel(object sender, HMouseEventArgs e)
+        {
+            ReDispImage();
+            switch (drawType)
+            {
+                case DrawEnum.None: dispNone.OnMouseWheel(e); break;
+                case DrawEnum.DispRect: dispRect.OnMouseWheel(e); break;
+                case DrawEnum.DispModel: dispModel.OnMouseWheel(e); break;
+            }
+        }
+
+        private void OnMouseMove(object sender, HMouseEventArgs e)
+        {
+            //ReDispImage();
+            switch (drawType)
+            {
+                case DrawEnum.None: dispNone.OnMouseMove(e); break;
+                case DrawEnum.DispRect: dispRect.OnMouseMove(e); break;
+                case DrawEnum.DispModel: dispModel.OnMouseMove(e); break;
+            }
+        }
+
+        private void UI_HandleDestroyed(object sender, EventArgs e)
+        {
+            HMouseDown -= OnMouseDown;
+            HMouseUp -= OnMouseUp;
+            HMouseWheel -= OnMouseWheel;
+            HMouseMove -= OnMouseMove;
+        }
+
+        public void SetNonePara()
+        {
+            Reset();
+            ReDispImage();
+            drawType = DrawEnum.None;
+        }
+
+        public void SetRectPara(CvRegion shrRegion)
+        {
+            Reset();
+            ReDispImage();
+            drawType = DrawEnum.DispRect;
+            dispRect.SetUp(this, shrRegion);
+        }
+
+        public void SetModelPara(HObject shrFindMode, HObject shrContour, CvCoord shrCoord)
+        {
+            Reset();
+            ReDispImage();
+            drawType = DrawEnum.DispModel;
+            dispModel.SetUp(this, shrFindMode, shrContour, shrCoord);
+        }
+
+        #endregion
+
+        #region IHWindowFont
+
+        /// <summary> 获取颜色 </summary>
+        public string GetColor()
+        {
+            return display.GetColor();
+        }
+
+        /// <summary> 设置颜色 </summary>
+        public void SetColor(string color)
+        {
+            display.SetColor(color);
+        }
+
+        /// <summary> 设置字体大小 </summary>
+        public void SetFontSize(HTuple hv_Size)
+        {
+            display.SetFontSize(hv_Size);
+        }
+
+        /// <summary> 显示字体 </summary>
+        public void DispText(string message, HTuple FontX, HTuple FontY, string color)
+        {
+            display.DispText(message, FontX, FontY, color);
+        }
+
+        /// <summary> 显示字体 </summary>
+        public void DispText(string message, HTuple FontX, HTuple FontY, HTuple size, string color)
+        {
+            display.DispText(message, FontX, FontY, size, color);
+        }
+
+        #endregion
+
+        #region DispImage
+
+        /// <summary> 重新显示图片 </summary>
+        public void ReDispImage()
+        {
+            display.ReDispImage();
+        }
+
+        /// <summary> 显示图片 </summary>
+        public void DispImage(HObject image)
+        {
+            display.DispImage(image);
+        }
+
+        /// <summary> 显示图片 </summary>
+        public void DispImage(HObject image, bool isSetPart)
+        {
+            display.DispImage(image, isSetPart);
+        }
+
+        public void ClearWinDisp(HObject objectVal)
+        {
+            display.ClearWinDisp(objectVal);
+        }
+
+        #endregion
+
+        #region 区域相关
+
+        /// <summary> 显示橡皮筋区域 </summary>
+        public void DispGenRegion(CvRegion hRegion)
+        {
+            display.DispGenRegion(hRegion);
+        }
+
+        /// <summary> 获取坐标区域并显示 </summary>
+        public void GenCoordsRegion(CvRegion hRegion, List<CvCoord> coords)
+        {
+            display.GenCoordsRegion(hRegion, coords);
         }
 
         /// <summary> 绘制区域 </summary>
@@ -197,85 +364,6 @@ namespace DotNet.HalconUI
                     }
                     break;
             }
-        }
-
-        #region IHWindowFont
-
-        /// <summary> 获取颜色 </summary>
-        public string GetColor()
-        {
-            return display.GetColor();
-        }
-
-        /// <summary> 设置颜色 </summary>
-        public void SetColor(string color)
-        {
-            display.SetColor(color);
-        }
-
-        /// <summary> 设置字体大小 </summary>
-        public void SetFontSize(HTuple hv_Size)
-        {
-            display.SetFontSize(hv_Size);
-        }
-
-        /// <summary> 显示字体 </summary>
-        public void DispText(string message, HTuple FontX, HTuple FontY, string color)
-        {
-            display.DispText(message, FontX, FontY, color);
-        }
-
-        /// <summary> 显示字体 </summary>
-        public void DispText(string message, HTuple FontX, HTuple FontY, HTuple size, string color)
-        {
-            display.DispText(message, FontX, FontY, size, color);
-        }
-
-        #endregion
-
-        #region DispImage
-
-        /// <summary> 重新显示图片 </summary>
-        public void ReDispImage()
-        {
-            display.ReDispImage();
-        }
-
-        /// <summary> 显示图片 </summary>
-        public void DispImage(HObject image)
-        {
-            display.DispImage(image);
-        }
-
-        /// <summary> 显示图片 </summary>
-        public void DispImage(HObject image, bool isSetPart)
-        {
-            display.DispImage(image, isSetPart);
-        }
-
-        public void ClearWinDisp(HObject objectVal)
-        {
-            display.ClearWinDisp(objectVal);
-        }
-
-        #endregion
-
-        #region 区域相关
-
-        /// <summary>
-        /// 显示橡皮筋区域
-        /// </summary>
-        public void DispGenRegion(CvRegion hRegion)
-        {
-            display.DispGenRegion(hRegion);
-        }
-
-        /// <summary>
-        /// 获取坐标区域并显示
-        /// </summary>
-        public void GenCoordsRegion(CvRegion hRegion, List<CvCoord> coords)
-        {
-            display.GenCoordsRegion(hRegion, coords);
         }
 
         #endregion

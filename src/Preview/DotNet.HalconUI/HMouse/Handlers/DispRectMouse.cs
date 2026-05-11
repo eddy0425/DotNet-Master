@@ -10,10 +10,10 @@ namespace DotNet.HalconUI
     /// </summary>
     public class DispRectMouse : IMouseHandler
     {
-        private HDisplayControl _display;
+        private HDisplayUI _display;
         private CvRegion _shrRegion;
 
-        public void SetUp(HDisplayControl display, CvRegion shrRegion)
+        public void SetUp(HDisplayUI display, CvRegion shrRegion)
         {
             _display = display;
             _shrRegion = shrRegion;

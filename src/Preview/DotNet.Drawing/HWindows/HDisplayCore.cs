@@ -156,17 +156,13 @@ namespace DotNet.Drawing
 
         #region 区域相关
 
-        /// <summary>
-        /// 显示橡皮筋区域
-        /// </summary>
+        /// <summary> 显示橡皮筋区域 </summary>
         public void DispGenRegion(CvRegion hRegion)
         {
             display.DispGenRegion(hWindow, hRegion);
         }
 
-        /// <summary>
-        /// 获取坐标区域并显示
-        /// </summary>
+        /// <summary> 获取坐标区域并显示 </summary>
         public void GenCoordsRegion(CvRegion hRegion, List<CvCoord> coords)
         {
             display.GenCoordsRegion(hWindow, hRegion, coords);

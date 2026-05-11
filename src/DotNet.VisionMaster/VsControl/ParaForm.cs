@@ -14,21 +14,21 @@ namespace DotNet.VisionMaster
     {
         int _index;
         List<IParaStrategy> _strategys;
-        DisplayUI _disPlay;
-        HModelForm _hModel;
+        HDisplayUI _disPlay;
+        ModelControl _hModel;
         ValueForm _form_Value;
-        HEditModelForm _editModel;
+        HEditModelUI _editModel;
 
         Dictionary<RadioButton, RectEnum> _rectDrawMap;
         Dictionary<RadioButton, RectEnum> _modelDrawMap;
 
-        public ParaForm(DisplayUI displayUI)
+        public ParaForm(HDisplayUI displayUI)
         {
             InitializeComponent();
 
             _disPlay = displayUI;
-            _hModel = new HModelForm();
-            _editModel = new HEditModelForm();
+            _hModel = new ModelControl();
+            _editModel = new HEditModelUI();
             _form_Value = new ValueForm();
 
             panel1.Controls.Add(_hModel);
@@ -271,9 +271,7 @@ namespace DotNet.VisionMaster
                 var drawType = _modelDrawMap.FirstOrDefault(kv => kv.Key.Checked).Value;
                 _disPlay.ReDispImage();
                 strategy.SetTemplate(_disPlay, drawType);
-
-
-                _disPlay.SetDrawMode(strategy.Name, DrawEnum.DispModel);
+                //_disPlay.SetDrawMode(strategy.Name, DrawEnum.DispModel);
             }
             catch (Exception ex) { MessageBox.Show(ex.Message); }
 

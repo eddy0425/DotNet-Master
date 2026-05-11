@@ -37,7 +37,7 @@ namespace DotNet.HalconAlgo
             RegisterOutput("区域", () => inPara.HoRect);
 
         }
-        public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
+        public override bool Fun_action(HDisplayUI display, List<IParaStrategy> strategys)
         {
             HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
             HObject imgReduce = new HObject(); HOperatorSet.GenEmptyObj(out imgReduce);
@@ -114,7 +114,7 @@ namespace DotNet.HalconAlgo
             inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
             inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
         }
-        public override void DrawROI(DisplayUI display, RectEnum type)
+        public override void DrawROI(HDisplayUI display, RectEnum type)
         {
             inPara.HoRect.Type = type;
             display.DrawRegion(type, out CvRegion hRegion);
