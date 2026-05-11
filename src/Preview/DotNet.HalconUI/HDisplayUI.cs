@@ -15,6 +15,8 @@ namespace DotNet.HalconUI
         public event HMouseEventHandler HMouseDown { add => hWindowControl.HMouseDown += value; remove => hWindowControl.HMouseDown -= value; }
         public event HMouseEventHandler HMouseWheel { add => hWindowControl.HMouseWheel += value; remove => hWindowControl.HMouseWheel -= value; }
 
+        public delegate void ShowDelegate();
+        public ShowDelegate OnShow;
         public event EventHandler<DrawModelUIArgs> DrawDoneEvent;
         public void DrawDone(string modelPath, HObject ho_ModeRect, HObject ho_Contour, ModelResult result)
         {
@@ -211,12 +213,14 @@ namespace DotNet.HalconUI
         public void DispImage(HObject image)
         {
             display.DispImage(image);
+            if (OnShow != null) OnShow();
         }
 
         /// <summary> 显示图片 </summary>
         public void DispImage(HObject image, bool isSetPart)
         {
             display.DispImage(image, isSetPart);
+            if (OnShow != null) OnShow();
         }
 
         public void ClearWinDisp(HObject objectVal)
