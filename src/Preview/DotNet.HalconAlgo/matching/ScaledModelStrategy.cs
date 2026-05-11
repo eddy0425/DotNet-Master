@@ -203,7 +203,7 @@ namespace DotNet.HalconAlgo
         {
             display.SetDrawMode(Name, inPara.HoRect, DrawEnum.DispRect);
         }
-        public override void SetTemplate(HDisplayForm display, RectEnum type)
+        public override void SetTemplate(HDisplayControl display, RectEnum type)
         {
             HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
             HObject ho_Contour = new HObject(); HOperatorSet.GenEmptyObj(out ho_Contour);

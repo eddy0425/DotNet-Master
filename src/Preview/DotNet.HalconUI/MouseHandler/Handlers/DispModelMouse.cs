@@ -10,12 +10,12 @@ namespace DotNet.HalconUI
     /// </summary>
     public class DispModelMouse : IMouseHandler
     {
-        private HDisplayForm _display;
+        private HDisplayControl _display;
         private HObject _findMode;
         private HObject _contour;
         private CvCoord _coord;
 
-        public void SetUp(HDisplayForm display, HObject shrFindMode, HObject shrContour, CvCoord shrCoord)
+        public void SetUp(HDisplayControl display, HObject shrFindMode, HObject shrContour, CvCoord shrCoord)
         {
             _display = display;
             _findMode = shrFindMode;

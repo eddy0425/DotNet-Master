@@ -19,9 +19,9 @@ namespace DotNet.HalconUI
         private Phase _phase;
         private string _color;
         private int _lineWidth;
-        private HDisplayForm _display;
+        private HDisplayControl _display;
 
-        public void SetUp(HDisplayForm display, HObject shrErase, HObject shrFindMode, string color, int lineWidth)
+        public void SetUp(HDisplayControl display, HObject shrErase, HObject shrFindMode, string color, int lineWidth)
         {
             //display.Reset();
             //display.ReDispImage();

@@ -1,6 +1,6 @@
 ﻿namespace DotNet.HalconUI
 {
-    partial class HDisplayForm
+    partial class HDisplayControl
     {
         /// <summary>
         /// Required designer variable.

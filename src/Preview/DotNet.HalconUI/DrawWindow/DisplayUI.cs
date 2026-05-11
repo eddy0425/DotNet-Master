@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace DotNet.HalconUI
 {
-    public partial class DisplayUI : HDisplayForm
+    public partial class DisplayUI : HDisplayControl
     {
         #region Events
 
