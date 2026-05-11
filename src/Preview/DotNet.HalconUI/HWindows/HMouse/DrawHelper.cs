@@ -28,7 +28,7 @@ namespace DotNet.HalconUI
 
         private enum DrawType { None, Rect1, Rect2, Circle, Ellipse, Region }
         private enum Phase { Idle, Drawing, Editing }
-        private enum Handle { None, P1, P2, Center, AxisEnd1, AxisEnd2 }
+        private enum Handle { None, P1, P2, Center, AxisEnd1, AxisEnd2, AxisEnd2Neg }
 
         #endregion
 
@@ -247,8 +247,19 @@ namespace DotNet.HalconUI
                 case DrawType.Ellipse: Down_Ellipse(e); break;
                 case DrawType.Region: Down_Region(e); break;
             }
-            // Down 中可能新增多边形顶点等需要立刻可见的状态, 触发一次 flush
-            FlushBuffer();
+            // 宿主 (HDisplayUI.OnMouseDown) 会先 ReDispImage 把纯图像写入 backbuffer (无 ROI).
+            // 若此处只 FlushBuffer, 屏幕会闪过一帧"无 ROI"画面, 直到下一次 MouseMove 才补上.
+            // 因此在 swap 前按当前 phase 重绘一次 ROI, 与下一次 Move 帧无缝衔接.
+            //
+            // 关键: Down_xxx 在 Editing 阶段会把 _dragging 设为 true. 若直接走 EditXxx 的
+            // dragging 分支, 会立即把控制点 "吸附" 到鼠标位置 —— 由于鼠标在 NearThreshold (10px)
+            // 内但并不重合, 控制点会瞬间偏移. 对 Rect2/Ellipse 而言, _phi = Atan2(_cy - e.Y, e.X - _cx)
+            // 在 10px 偏差下可能跳变 10°+, 矩形与箭头瞬间旋转, 这就是 "Rect2 ROI 闪烁" 的根因.
+            // 临时清零 _dragging, 让本帧只按现有几何重绘; 真正的拖拽留给下一次 MouseMove.
+            bool savedDragging = _dragging;
+            _dragging = false;
+            try { RedrawAndFlush(e); }
+            finally { _dragging = savedDragging; }
         }
 
         public void OnMouseUp(HMouseEventArgs e)
@@ -261,13 +272,21 @@ namespace DotNet.HalconUI
                 case DrawType.Ellipse: Up_Ellipse(e); break;
                 case DrawType.Region: Up_Region(e); break;
             }
-            FlushBuffer();
+            // 同 OnMouseDown: HDisplayUI.OnMouseUp 同样会先 ReDispImage, 必须重画 ROI 再 swap, 避免闪烁
+            RedrawAndFlush(e);
         }
 
         public void OnMouseMove(HMouseEventArgs e)
         {
             // 进入会话时已设置 flush=false + autodraw=false, 所有绘图都在 backbuffer 中累积.
             // 这里不再切换 flush 状态, 避免 SetWindowParam("flush",...) 反复触发隐式刷新导致闪烁.
+            RedrawAndFlush(e);
+        }
+
+        // 按当前 phase 把 ROI 完整画到 backbuffer, 再一次性 swap 到屏幕 (双缓冲核心).
+        // OnMouseDown/Up/Move 共用同一条渲染路径, 保证任何鼠标事件后屏幕状态一致, 不会出现"先无 ROI、再有 ROI"的闪烁帧.
+        private void RedrawAndFlush(HMouseEventArgs e)
+        {
             try
             {
                 // 单次刷新内只计算一次, 避免每个 WDispCross/IsNear 都触发 GetPart+GetWindowExtents
@@ -283,7 +302,6 @@ namespace DotNet.HalconUI
             }
             finally
             {
-                // 一帧的全部 disp 操作完成后, 一次性把 backbuffer 提交到屏幕 (双缓冲核心)
                 FlushBuffer();
             }
         }
@@ -508,6 +526,7 @@ namespace DotNet.HalconUI
                         _phi = Math.Atan2(_cy - e.Y, e.X - _cx);
                         break;
                     case Handle.AxisEnd2:
+                    case Handle.AxisEnd2Neg:
                         _halfLen2 = Math.Max(1, Math.Abs(-dx * Math.Sin(_phi) - dy * Math.Cos(_phi)));
                         break;
                 }
@@ -516,18 +535,22 @@ namespace DotNet.HalconUI
             {
                 GetAxisEnd(_cx, _cy, _phi, _halfLen1, out double ax1, out double ay1);
                 GetAxisEndPerp(_cx, _cy, _phi, _halfLen2, out double ax2, out double ay2);
+                GetAxisEndPerp(_cx, _cy, _phi, -_halfLen2, out double ax2n, out double ay2n);
 
                 if (IsNear(_cx, _cy, e.X, e.Y)) _hover = Handle.Center;
                 else if (IsNear(ax1, ay1, e.X, e.Y)) _hover = Handle.AxisEnd1;
                 else if (IsNear(ax2, ay2, e.X, e.Y)) _hover = Handle.AxisEnd2;
+                else if (IsNear(ax2n, ay2n, e.X, e.Y)) _hover = Handle.AxisEnd2Neg;
                 else _hover = Handle.None;
             }
 
             GetAxisEnd(_cx, _cy, _phi, _halfLen1, out double a1x, out double a1y);
             GetAxisEndPerp(_cx, _cy, _phi, _halfLen2, out double a2x, out double a2y);
+            GetAxisEndPerp(_cx, _cy, _phi, -_halfLen2, out double a2nx, out double a2ny);
             WDispCross(_cx, _cy, _hover == Handle.Center ? "green" : "orange", 50);
             WDispCross(a1x, a1y, _hover == Handle.AxisEnd1 ? "green" : "orange", 30);
             WDispCross(a2x, a2y, _hover == Handle.AxisEnd2 ? "green" : "orange", 30);
+            WDispCross(a2nx, a2ny, _hover == Handle.AxisEnd2Neg ? "green" : "orange", 30);
             WDispRect2Arrow(_cx, _cy, _phi, _halfLen1, _halfLen2, "red");
         }
 

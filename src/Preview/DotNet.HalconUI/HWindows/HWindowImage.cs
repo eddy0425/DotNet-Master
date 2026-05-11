@@ -6,13 +6,18 @@ namespace DotNet.HalconUI
 {
     public class HWindowImage : IDisposable
     {
-        HWindow hWindow;
-        HWindowControl hWindowControl;
+        readonly HWindow hWindow;
+        readonly HWindowControl hWindowControl;
 
         ZoomImage getInfo;
         ZoomImage zoomInfo;
 
-        public HObject HoImage;
+        bool _disposed;
+
+        /// <summary>
+        /// 当前显示的图像。所有权由调用方（<see cref="HDisplayCore"/>）持有，本类只引用，不负责释放。
+        /// </summary>
+        public HObject HoImage { get; private set; }
         public double Width { get { return getInfo.width; } }
         public double Height { get { return getInfo.height; } }
 
@@ -29,14 +34,14 @@ namespace DotNet.HalconUI
 
         private void HWindowControl_Resize(object sender, EventArgs e)
         {
-            hWindowControl = (HWindowControl)sender;
+            HWindowControl control = (HWindowControl)sender;
 
-            if (hWindowControl.Visible)
+            if (control.Visible)
             {
-                if (getInfo.parent.Width != hWindowControl.Parent.Width || getInfo.parent.Height != hWindowControl.Parent.Height)
+                if (getInfo.parent.Width != control.Parent.Width || getInfo.parent.Height != control.Parent.Height)
                 {
-                    getInfo.parent.Width = hWindowControl.Parent.Width;
-                    getInfo.parent.Height = hWindowControl.Parent.Height;
+                    getInfo.parent.Width = control.Parent.Width;
+                    getInfo.parent.Height = control.Parent.Height;
 
                     Fun_ZoomImage(getInfo);
                     Fun_ReDisplay();
@@ -61,7 +66,6 @@ namespace DotNet.HalconUI
             {
                 if (hWindowControl.Parent == null || hWindowControl.IsDisposed || !hWindowControl.Visible) return;
 
-                //1、判断图片是否为空
                 if (!_image.NotNull())
                 {
                     HOperatorSet.ClearWindow(hWindow);
@@ -69,23 +73,13 @@ namespace DotNet.HalconUI
                 }
                 HoImage = _image;
 
-                //2、获取信息
                 HOperatorSet.GetImageSize(HoImage, out getInfo.width, out getInfo.height);
 
-                //3、缩放判断
                 if (getInfo.width.D != zoomInfo.width.D || getInfo.height.D != zoomInfo.height.D)
                 {
                     Fun_ZoomImage(getInfo);
                 }
-                //if (getInfo.parent.Width != hWindowControl.Parent.Width || getInfo.parent.Height != hWindowControl.Parent.Height)
-                //{
-                //    getInfo.parent.Width = hWindowControl.Parent.Width;
-                //    getInfo.parent.Height = hWindowControl.Parent.Height;
 
-                //    Fun_ZoomImage(getInfo);
-                //}
-
-                //4、显示图像
                 if (isSetPart)
                 {
                     HOperatorSet.SetPart(hWindow, 0, 0, getInfo.height - 1, getInfo.width - 1);
@@ -100,7 +94,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary>
-        /// 初始化
+        /// 按父容器尺寸缩放/居中 HWindowControl
         /// </summary>
         private void Fun_ZoomImage(ZoomImage info)
         {
@@ -119,7 +113,6 @@ namespace DotNet.HalconUI
                     hWindowControl.Width = hWindowControl.Parent.Width;
                     hWindowControl.Location = new System.Drawing.Point(0, (hWindowControl.Parent.Height - hWindowControl.Height) / 2);
                 }
-                //zoomInfo = info.Clone();
                 zoomInfo.width = info.width;
                 zoomInfo.height = info.height;
                 HOperatorSet.ClearWindow(hWindow);
@@ -133,19 +126,17 @@ namespace DotNet.HalconUI
 
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-        ~HWindowImage()
-        {
-            Dispose(false);
-        }
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing)
+            if (_disposed) return;
+            _disposed = true;
+
+            // 仅取消事件订阅；HoImage 的所有权不在本类，不在此释放，避免双重释放。
+            if (hWindowControl != null && !hWindowControl.IsDisposed)
             {
-                HoImage?.Dispose();
+                hWindowControl.Resize -= HWindowControl_Resize;
             }
+
+            HoImage = null;
+            GC.SuppressFinalize(this);
         }
     }
 }

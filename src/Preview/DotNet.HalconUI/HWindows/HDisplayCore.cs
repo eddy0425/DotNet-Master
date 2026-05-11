@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace DotNet.HalconUI
 {
-    public class HDisplayCore
+    public class HDisplayCore : IDisposable
     {
         HWindow hWindow;
         HObject srcImage;
@@ -14,6 +14,8 @@ namespace DotNet.HalconUI
         HWindowImage _hWindowImage;
         HWindowMouse _hWindowMouse;
         HWindowControl _hWindowControl;
+
+        bool _disposed;
 
         public bool IsCross;           //是否画十字
         public bool Adaptive = true;   //自适应
@@ -65,10 +67,16 @@ namespace DotNet.HalconUI
 
         public void Dispose()
         {
-            hWindow.Dispose();
-            _hWindowControl.Dispose();
-            _hWindowImage.Dispose();
-            srcImage.Dispose();
+            if (_disposed) return;
+            _disposed = true;
+
+            // 释放顺序：先解绑事件订阅，再释放本类持有所有权的图像。
+            // 注意：hWindow / _hWindowControl 由宿主 UserControl (HDisplayUI) 通过 Designer 的 Dispose(bool) 负责释放，本类不再主动释放，避免双重释放。
+            _hWindowMouse?.Dispose();
+            _hWindowImage?.Dispose();
+            srcImage?.Dispose();
+
+            GC.SuppressFinalize(this);
         }
 
         #region IHWindowFont

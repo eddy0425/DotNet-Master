@@ -140,6 +140,10 @@ namespace DotNet.HalconUI
             HMouseUp -= OnMouseUp;
             HMouseWheel -= OnMouseWheel;
             HMouseMove -= OnMouseMove;
+
+            // 主动释放 HDisplayCore 内部聚合的鼠标/图像订阅与图像资源，
+            // 避免依赖 GC + finalizer 的滞后回收。
+            display?.Dispose();
         }
 
         public void SetNonePara()

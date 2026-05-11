@@ -5,15 +5,18 @@ using HalconDotNet;
 
 namespace DotNet.HalconUI
 {
-    public class HWindowMouse
+    public class HWindowMouse : IDisposable
     {
         long clickTicks = 0;                      //程序栏鼠标点击计时 
         bool Mouse_hand = false;                  //是否移动
         double RowDown;                           //鼠标按下时的行坐标
         double ColDown;                           //鼠标按下时的列坐标
-        HWindow hWindow;
-        HWindowControl hWindowControl;
-        HWindowImage hWindowImage;
+
+        readonly HWindow hWindow;
+        readonly HWindowControl hWindowControl;
+        readonly HWindowImage hWindowImage;
+
+        bool _disposed;
 
         public event Action<HTuple, HTuple, HTuple> RefreshUI;
         public bool MouseDown { get; set; }      //鼠标按下
@@ -26,7 +29,6 @@ namespace DotNet.HalconUI
             hWindowImage = _hWindowImage;
 
             hWindowControl.HMouseUp += HWindowControl_HMouseUp;
-            //hWindowControl.HMouseMove += HWindowControl_HMouseMove;
             hWindowControl.HMouseDown += HWindowControl_HMouseDown;
             hWindowControl.HMouseWheel += HWindowControl_HMouseWheel;
         }
@@ -57,8 +59,6 @@ namespace DotNet.HalconUI
                 {
                     MouseDown = true;
                 }
-
-                //info.MouseType = e.Button;
             }
             catch (Exception ex) { Console.WriteLine(ex.Message); }
         }
@@ -91,7 +91,7 @@ namespace DotNet.HalconUI
                 {
                     HTuple egray;
                     HOperatorSet.GetGrayval(hWindowImage.HoImage, Row, Column, out egray);
-                    handler?.Invoke(Row, Column, egray);
+                    handler.Invoke(Row, Column, egray);
                 }
             }
             catch (Exception ex) { Console.WriteLine(ex.Message); }
@@ -128,11 +128,20 @@ namespace DotNet.HalconUI
             catch (Exception ex) { Console.WriteLine(ex.Message); }
         }
 
-        //private void HWindowControl_HMouseMove(object sender, HMouseEventArgs e)  //鼠标滑轮滚动事件调用函数
-        //{
-        //    //SetCallBack_HMouseMove(sender, e);
-        //}
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
 
-        
+            if (hWindowControl != null && !hWindowControl.IsDisposed)
+            {
+                hWindowControl.HMouseUp -= HWindowControl_HMouseUp;
+                hWindowControl.HMouseDown -= HWindowControl_HMouseDown;
+                hWindowControl.HMouseWheel -= HWindowControl_HMouseWheel;
+            }
+
+            RefreshUI = null;
+            GC.SuppressFinalize(this);
+        }
     }
 }
