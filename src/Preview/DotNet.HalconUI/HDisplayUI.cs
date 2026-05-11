@@ -49,9 +49,9 @@ namespace DotNet.HalconUI
             display = new HDisplayCore(hWindowControl);
             display.RefreshUI += Display_RefreshUI;
 
-            HMouseDown += (s, e) => DrawHelper.Active?.OnMouseDown(e);
-            HMouseUp += (s, e) => DrawHelper.Active?.OnMouseUp(e);
-            HMouseMove += (s, e) => DrawHelper.Active?.OnMouseMove(e);
+            //HMouseDown += (s, e) => DrawHelper.Active?.OnMouseDown(e);
+            //HMouseUp += (s, e) => DrawHelper.Active?.OnMouseUp(e);
+            //HMouseMove += (s, e) => DrawHelper.Active?.OnMouseMove(e);
 
             HMouseDown  += OnMouseDown;
             HMouseUp    += OnMouseUp;
@@ -243,6 +243,7 @@ namespace DotNet.HalconUI
         /// <summary> 绘制区域 </summary>
         public void DrawRegion(RectEnum type, out CvRegion hRegion)
         {
+            drawType = DrawEnum.None;
             Reset();
             DrawHelper.CancelDraw();
             hRegion = new CvRegion();
@@ -328,6 +329,7 @@ namespace DotNet.HalconUI
         /// <summary> 绘制区域 </summary>
         public void DrawRegion(RectEnum type, out HObject rectangle)
         {
+            drawType = DrawEnum.None;
             Reset();
             DrawHelper.CancelDraw();
             HOperatorSet.GenEmptyObj(out rectangle);

@@ -59,7 +59,7 @@
     <Compile Include="HMouse\DrawEvent.cs" />
     <Compile Include="HMouse\DrawEnum.cs" />
     <Compile Include="HMouse\DrawHelper.cs" />
-    <Compile Include="HMouse\Handlers\SynthethicHandler.cs" />
+    <Compile Include="HMouse\old\SynthethicHandler.cs" />
     <Compile Include="HMouse\Handlers\DispModelMouse.cs" />
     <Compile Include="HMouse\Handlers\DispRectMouse.cs" />
     <Compile Include="HMouse\IMouseHandler.cs" />

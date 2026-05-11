@@ -408,6 +408,7 @@ namespace DotNet.HalconAlgo
             display.DrawRegion(type, out CvRegion hRegion);
             display.DispRegion(hRegion, HColor.Blue);
             inPara.HoRect = hRegion;
+            display.SetRectPara(inPara.HoRect);
         }
         public override void DispROI(HDisplayUI display)
         {

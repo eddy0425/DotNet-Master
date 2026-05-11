@@ -10,25 +10,24 @@ namespace DotNet.HalconUI
     /// </summary>
     public class NoneMouse : IMouseHandler
     {
-
         public void OnMouseDown(HMouseEventArgs e)
         {
-            // 无操作
+            DrawHelper.Active?.OnMouseDown(e);
         }
 
         public void OnMouseUp(HMouseEventArgs e)
         {
-            // 无操作
+            DrawHelper.Active?.OnMouseUp(e);
         }
 
         public void OnMouseWheel(HMouseEventArgs e)
         {
-            // 无操作
+            DrawHelper.Active?.OnMouseWheel(e);
         }
 
         public void OnMouseMove(HMouseEventArgs e)
         {
-            // 无操作
+            DrawHelper.Active?.OnMouseMove(e);
         }
 
     }

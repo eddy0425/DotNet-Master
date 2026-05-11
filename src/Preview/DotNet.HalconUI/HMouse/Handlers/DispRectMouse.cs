@@ -41,8 +41,8 @@ namespace DotNet.HalconUI
             Point2d Center = _shrRegion.Center;
 
             // 显示最终结果
-            _display.DispPoint(TopLeft, HColor.OrangeRed, 50);
-            _display.DispPoint(BottomRight, HColor.OrangeRed, 50);
+            //_display.DispPoint(TopLeft, HColor.OrangeRed, 50);
+            //_display.DispPoint(BottomRight, HColor.OrangeRed, 50);
             _display.DispPoint(Center, HColor.Orange, 50);
 
             _display.DispRegion(_shrRegion, HColor.Blue);

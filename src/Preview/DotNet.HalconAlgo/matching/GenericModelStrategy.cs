@@ -226,6 +226,7 @@ namespace DotNet.HalconAlgo
             display.DispRegion(hRegion, HColor.Blue);
             inPara.HoRect.Dispose();
             inPara.HoRect = hRegion;
+            display.SetRectPara(inPara.HoRect);
         }
         public override void DispROI(HDisplayUI display)
         {
