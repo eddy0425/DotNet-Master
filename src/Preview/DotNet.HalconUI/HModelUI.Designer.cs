@@ -1,6 +1,6 @@
 ﻿namespace DotNet.HalconUI
 {
-    partial class ModelControl
+    partial class HModelUI
     {
         /// <summary>
         /// Required designer variable.

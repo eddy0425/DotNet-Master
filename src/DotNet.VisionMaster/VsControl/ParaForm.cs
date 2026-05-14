@@ -15,7 +15,7 @@ namespace DotNet.VisionMaster
         int _index;
         List<IParaStrategy> _strategys;
         HDisplayUI _disPlay;
-        ModelControl _hModel;
+        HModelUI _hModel;
         ValueForm _form_Value;
         HEditModelUI _editModel;
 
@@ -27,7 +27,7 @@ namespace DotNet.VisionMaster
             InitializeComponent();
 
             _disPlay = displayUI;
-            _hModel = new ModelControl();
+            _hModel = new HModelUI();
             _editModel = new HEditModelUI();
             _form_Value = new ValueForm();
 

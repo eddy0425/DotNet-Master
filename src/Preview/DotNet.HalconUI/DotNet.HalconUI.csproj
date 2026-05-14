@@ -74,11 +74,11 @@
     <Compile Include="HWindows\HDisplayCore.cs" />
     <Compile Include="HWindows\HWindowImage.cs" />
     <Compile Include="HWindows\HWindowMouse.cs" />
-    <Compile Include="ModelControl.cs">
+    <Compile Include="HModelUI.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="ModelControl.Designer.cs">
-      <DependentUpon>ModelControl.cs</DependentUpon>
+    <Compile Include="HModelUI.Designer.cs">
+      <DependentUpon>HModelUI.cs</DependentUpon>
     </Compile>
     <Compile Include="HDisplayUI.cs">
       <SubType>UserControl</SubType>
@@ -104,8 +104,8 @@
     <Compile Include="VsControl\VsControlBindingStrategy.cs" />
     <Compile Include="VsControl\VsControlFactory.cs" />
     <Compile Include="VsControl\VsControlModel.cs" />
-    <EmbeddedResource Include="ModelControl.resx">
-      <DependentUpon>ModelControl.cs</DependentUpon>
+    <EmbeddedResource Include="HModelUI.resx">
+      <DependentUpon>HModelUI.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="HDisplayUI.resx">
       <DependentUpon>HDisplayUI.cs</DependentUpon>
