@@ -99,20 +99,20 @@ namespace DotNet.HalconAlgo
         public override void SavePara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
             //基本参数
-            inPara.CoordIn = VsControls["cmb_CoordIn"].Text;
+            inPara.CoordIn = VsControls["cmb_CoordIn"].AsString();
 
             for (int i = 0; i < inPara.RegionSources.Length; i++)
             {
-                inPara.RegionSources[i] = VsControls[$"cmb_{100 + i}"].Text;
+                inPara.RegionSources[i] = VsControls[$"cmb_{100 + i}"].AsString();
             }
 
             //------------------------------------------
-            inPara.DispText = VsControls["ckb_disp0"].Checked;
-            inPara.DispRegion = VsControls["ckb_disp1"].Checked;
+            inPara.DispText = VsControls["ckb_disp0"].AsBool();
+            inPara.DispRegion = VsControls["ckb_disp1"].AsBool();
 
-            inPara.FontX = Convert.ToInt16(VsControls["CB_FontX"].Text);
-            inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
-            inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
+            inPara.FontX = VsControls["CB_FontX"].AsInt();
+            inPara.FontY = VsControls["CB_FontY"].AsInt();
+            inPara.FontSize = VsControls["CB_FontSize"].AsInt();
         }
         public override void DrawROI(HDisplayUI display, RectEnum type)
         {

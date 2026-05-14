@@ -111,16 +111,16 @@ namespace DotNet.HalconAlgo
         }
         public override void SavePara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
-            inPara.Rotate = Convert.ToInt16(VsControls["cmb_Rotate"].Text);
-            inPara.Mirror = VsControls["cmb_Mirror"].Text;
-            inPara.ImageFolder = VsControls["cmb_ImageFolder"].Text;
+            inPara.Rotate = VsControls["cmb_Rotate"].AsInt();
+            inPara.Mirror = VsControls["cmb_Mirror"].AsString();
+            inPara.ImageFolder = VsControls["cmb_ImageFolder"].AsString();
 
             //------------------------------------------
-            inPara.DispText = VsControls["ckb_disp0"].Checked;
+            inPara.DispText = VsControls["ckb_disp0"].AsBool();
 
-            inPara.FontX = Convert.ToInt16(VsControls["CB_FontX"].Text);
-            inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
-            inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
+            inPara.FontX = VsControls["CB_FontX"].AsInt();
+            inPara.FontY = VsControls["CB_FontY"].AsInt();
+            inPara.FontSize = VsControls["CB_FontSize"].AsInt();
         }
         public override void Init(HDisplayUI display)
         {

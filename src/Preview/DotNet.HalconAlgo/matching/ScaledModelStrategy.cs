@@ -169,28 +169,28 @@ namespace DotNet.HalconAlgo
         public override void SavePara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
             //基本参数
-            inPara.CoordIn = VsControls["cmb_CoordIn"].Text;
-            inPara.ImageIn = VsControls["cmb_100"].Text;
-            inPara.RegionIn = VsControls["cmb_101"].Text;
-            inPara.AngleStart = Convert.ToDouble(VsControls["cmb_102"].Text);
-            inPara.AngleExtent = Convert.ToDouble(VsControls["cmb_103"].Text);
-            inPara.MaxOverlap = Convert.ToDouble(VsControls["cmb_104"].Text);
+            inPara.CoordIn = VsControls["cmb_CoordIn"].AsString();
+            inPara.ImageIn = VsControls["cmb_100"].AsString();
+            inPara.RegionIn = VsControls["cmb_101"].AsString();
+            inPara.AngleStart = VsControls["cmb_102"].AsDouble();
+            inPara.AngleExtent = VsControls["cmb_103"].AsDouble();
+            inPara.MaxOverlap = VsControls["cmb_104"].AsDouble();
 
-            inPara.NumMatches = VsControls["cmb_110"].Text == "多个" ? 0 : Convert.ToInt32(VsControls["cmb_110"].Text);
-            inPara.MinScore = Convert.ToDouble(VsControls["cmb_111"].Text);
-            inPara.NumLevels = Convert.ToInt16(VsControls["cmb_112"].Text);
-            inPara.ScaleMin = Convert.ToDouble(VsControls["cmb_113"].Text);
-            inPara.ScaleMax = Convert.ToDouble(VsControls["cmb_114"].Text);
+            inPara.NumMatches = VsControls["cmb_110"].AsString() == "多个" ? 0 : VsControls["cmb_110"].AsInt();
+            inPara.MinScore = VsControls["cmb_111"].AsDouble();
+            inPara.NumLevels = VsControls["cmb_112"].AsInt();
+            inPara.ScaleMin = VsControls["cmb_113"].AsDouble();
+            inPara.ScaleMax = VsControls["cmb_114"].AsDouble();
 
             //------------------------------------------
-            inPara.DispText = VsControls["ckb_disp0"].Checked;
-            inPara.DispRegion = VsControls["ckb_disp1"].Checked;
-            inPara.DispContour = VsControls["ckb_disp2"].Checked;
-            inPara.DispPoint = VsControls["ckb_disp3"].Checked;
+            inPara.DispText = VsControls["ckb_disp0"].AsBool();
+            inPara.DispRegion = VsControls["ckb_disp1"].AsBool();
+            inPara.DispContour = VsControls["ckb_disp2"].AsBool();
+            inPara.DispPoint = VsControls["ckb_disp3"].AsBool();
 
-            inPara.FontX = Convert.ToInt16(VsControls["CB_FontX"].Text);
-            inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
-            inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
+            inPara.FontX = VsControls["CB_FontX"].AsInt();
+            inPara.FontY = VsControls["CB_FontY"].AsInt();
+            inPara.FontSize = VsControls["CB_FontSize"].AsInt();
         }
         public override void DrawROI(HDisplayUI display, RectEnum type)
         {

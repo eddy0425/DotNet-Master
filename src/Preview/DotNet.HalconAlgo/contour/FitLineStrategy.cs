@@ -328,29 +328,29 @@ namespace DotNet.HalconAlgo
         }
         public override void SavePara(Form form, Dictionary<string, VsControlModel> VsControls)
         {
-            inPara.CoordIn = VsControls["cmb_CoordIn"].Text;
-            inPara.ImageIn = VsControls["cmb_100"].Text;
-            inPara.RegionIn = VsControls["cmb_101"].Text;
-            inPara.Transition = VsControls["cmb_102"].Text;
-            inPara.ContourType = VsControls["cmb_103"].Text;
-            inPara.Sigma = Convert.ToInt16(VsControls["cmb_104"].Text);
-            inPara.Threshold = Convert.ToInt16(VsControls["cmb_105"].Text);
+            inPara.CoordIn = VsControls["cmb_CoordIn"].AsString();
+            inPara.ImageIn = VsControls["cmb_100"].AsString();
+            inPara.RegionIn = VsControls["cmb_101"].AsString();
+            inPara.Transition = VsControls["cmb_102"].AsString();
+            inPara.ContourType = VsControls["cmb_103"].AsString();
+            inPara.Sigma = VsControls["cmb_104"].AsInt();
+            inPara.Threshold = VsControls["cmb_105"].AsInt();
 
-            inPara.StepPace = Convert.ToInt16(VsControls["cmb_110"].Text);
-            inPara.StepWidth = Convert.ToInt16(VsControls["cmb_111"].Text);
-            inPara.MaxErr = Convert.ToInt16(VsControls["cmb_112"].Text);
-            inPara.TrimEnds = VsControls["cmb_113"].Text;
+            inPara.StepPace = VsControls["cmb_110"].AsInt();
+            inPara.StepWidth = VsControls["cmb_111"].AsInt();
+            inPara.MaxErr = VsControls["cmb_112"].AsInt();
+            inPara.TrimEnds = VsControls["cmb_113"].AsString();
 
             //------------------------------------------
-            inPara.DispText = VsControls["ckb_disp0"].Checked;
-            inPara.DispRegion = VsControls["ckb_disp1"].Checked;
-            inPara.DispFixRegion = VsControls["ckb_disp2"].Checked;
-            inPara.DispFixPoint = VsControls["ckb_disp3"].Checked;
-            inPara.DispResult = VsControls["ckb_disp4"].Checked;
+            inPara.DispText = VsControls["ckb_disp0"].AsBool();
+            inPara.DispRegion = VsControls["ckb_disp1"].AsBool();
+            inPara.DispFixRegion = VsControls["ckb_disp2"].AsBool();
+            inPara.DispFixPoint = VsControls["ckb_disp3"].AsBool();
+            inPara.DispResult = VsControls["ckb_disp4"].AsBool();
 
-            inPara.FontX = Convert.ToInt16(VsControls["CB_FontX"].Text);
-            inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
-            inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
+            inPara.FontX = VsControls["CB_FontX"].AsInt();
+            inPara.FontY = VsControls["CB_FontY"].AsInt();
+            inPara.FontSize = VsControls["CB_FontSize"].AsInt();
         }
         public override void DrawROI(HDisplayUI display, RectEnum type)
         {
