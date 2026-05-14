@@ -84,7 +84,7 @@
             this.btn_rectCircle = new System.Windows.Forms.RadioButton();
             this.btn_rectEllipse = new System.Windows.Forms.RadioButton();
             this.btn_rectRectangle = new System.Windows.Forms.RadioButton();
-            this.but_updataRegion = new System.Windows.Forms.Button();
+            this.but_editRegion = new System.Windows.Forms.Button();
             this.btn_setCoordIn = new System.Windows.Forms.Button();
             this.grb_RectInfo = new System.Windows.Forms.GroupBox();
             this.cmb_Width = new System.Windows.Forms.ComboBox();
@@ -805,7 +805,7 @@
             // 
             this.tabPage2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(40)))), ((int)(((byte)(30)))));
             this.tabPage2.Controls.Add(this.grb_Rect);
-            this.tabPage2.Controls.Add(this.but_updataRegion);
+            this.tabPage2.Controls.Add(this.but_editRegion);
             this.tabPage2.Controls.Add(this.btn_setCoordIn);
             this.tabPage2.Controls.Add(this.grb_RectInfo);
             this.tabPage2.Controls.Add(this.btn_drawRegion);
@@ -898,20 +898,20 @@
             this.btn_rectRectangle.Text = "矩形";
             this.btn_rectRectangle.UseVisualStyleBackColor = true;
             // 
-            // but_updataRegion
+            // but_editRegion
             // 
-            this.but_updataRegion.BackColor = System.Drawing.Color.Gainsboro;
-            this.but_updataRegion.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
-            this.but_updataRegion.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.but_updataRegion.ForeColor = System.Drawing.Color.Black;
-            this.but_updataRegion.Location = new System.Drawing.Point(183, 91);
-            this.but_updataRegion.Margin = new System.Windows.Forms.Padding(0);
-            this.but_updataRegion.Name = "but_updataRegion";
-            this.but_updataRegion.Size = new System.Drawing.Size(75, 36);
-            this.but_updataRegion.TabIndex = 351;
-            this.but_updataRegion.Text = "修改区域";
-            this.but_updataRegion.UseVisualStyleBackColor = false;
-            this.but_updataRegion.Click += new System.EventHandler(this.but_updataRegion_Click);
+            this.but_editRegion.BackColor = System.Drawing.Color.Gainsboro;
+            this.but_editRegion.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
+            this.but_editRegion.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.but_editRegion.ForeColor = System.Drawing.Color.Black;
+            this.but_editRegion.Location = new System.Drawing.Point(183, 91);
+            this.but_editRegion.Margin = new System.Windows.Forms.Padding(0);
+            this.but_editRegion.Name = "but_editRegion";
+            this.but_editRegion.Size = new System.Drawing.Size(75, 36);
+            this.but_editRegion.TabIndex = 351;
+            this.but_editRegion.Text = "修改区域";
+            this.but_editRegion.UseVisualStyleBackColor = false;
+            this.but_editRegion.Click += new System.EventHandler(this.but_editRegion_Click);
             // 
             // btn_setCoordIn
             // 
@@ -1531,7 +1531,7 @@
         private System.Windows.Forms.RadioButton btn_rectCircle;
         private System.Windows.Forms.RadioButton btn_rectEllipse;
         private System.Windows.Forms.RadioButton btn_rectRectangle;
-        private System.Windows.Forms.Button but_updataRegion;
+        private System.Windows.Forms.Button but_editRegion;
         private System.Windows.Forms.Button btn_setCoordIn;
         private System.Windows.Forms.GroupBox grb_RectInfo;
         private System.Windows.Forms.ComboBox cmb_Width;

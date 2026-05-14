@@ -1,6 +1,6 @@
 using DotNet.Drawing;
-using DotNet.HalconAlgo;
 using DotNet.HalconUI;
+using DotNet.HalconAlgo;
 using HalconDotNet;
 using System;
 using System.Linq;
@@ -32,7 +32,7 @@ namespace DotNet.VisionMaster
             _form_Value = new ValueForm();
 
             panel1.Controls.Add(_hModel);
-            _disPlay.DrawDoneEvent += _disPlay_DrawDoneEvent;
+            _disPlay.DrawDoneEvent += DrawDoneEvent;
 
             _rectDrawMap = new Dictionary<RadioButton, RectEnum>
             {
@@ -54,124 +54,11 @@ namespace DotNet.VisionMaster
 
         }
 
-        private void btn_setPath_Click(object sender, EventArgs e)
-        {
-            Button button = (Button)sender;
-            if (button == btn_setPath)
-            {
-                FolderBrowserDialog fbd = new FolderBrowserDialog();
-                try { fbd.SelectedPath = cmb_ImageFolder.Text; } catch { }
-                if (fbd.ShowDialog() == DialogResult.OK)
-                {
-                    cmb_ImageFolder.Text = fbd.SelectedPath;
-                }
-            }
-            else
-            {
-                FolderBrowserDialog fbd = new FolderBrowserDialog();
-                try { fbd.SelectedPath = cmb_115.Text; } catch { }
-                if (fbd.ShowDialog() == DialogResult.OK)
-                {
-                    cmb_115.Text = fbd.SelectedPath;
-                }
-            }
-        }
-
-        private void btn_openPath_Click(object sender, EventArgs e)
-        {
-            Button button = (Button)sender;
-            if (button == btn_openPath)
-            {
-                try
-                {
-                    System.Diagnostics.Process.Start(cmb_ImageFolder.Text);
-                }
-                catch (Exception ex) { MessageBox.Show(ex.Message); }
-            }
-            else
-            {
-                try
-                {
-                    System.Diagnostics.Process.Start(cmb_115.Text);
-                }
-                catch (Exception ex) { MessageBox.Show(ex.Message); }
-            }
-        }
-
         public void SelectPara(int index, List<IParaStrategy> strategys)
         {
             _index = index;
             _strategys = strategys;
         }
-
-        private void btn_drawRegion_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                var strategy = _strategys[_index];
-                switch (strategy.Algorithm)
-                {
-                    case AlgoEnum.FitLine:
-                    case AlgoEnum.FitArcMidpoint:
-                        btn_rectAffRect.Checked = true;
-                        break;
-                    default:
-                        btn_rectRectangle.Checked = true;
-                        break;
-                }
-                var drawType = _rectDrawMap.FirstOrDefault(kv => kv.Key.Checked).Value;
-                _disPlay.ReDispImage();
-                strategy.DrawROI(_disPlay, drawType);
-            }
-            catch (Exception ex) { MessageBox.Show(ex.Message); }
-        }
-
-        //private void btn_drawRegion2_Click(object sender, EventArgs e)
-        //{
-        //    try
-        //    {
-        //        _disPlay.Reset();
-        //        DrawHelper.CancelDraw();
-
-        //        //DrawHelper.DrawRectangle1(_disPlay.HoWindow, out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2);
-
-        //        DrawHelper.DrawRectangle2(_disPlay.HoWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
-
-        //        //DrawHelper.DrawCircle(_disPlay.HoWindow, out HTuple row, out HTuple column, out HTuple radius);
-
-        //        //DrawHelper.DrawEllipse(_disPlay.HoWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2);
-
-        //        //DrawHelper.DrawRegion(out HObject region, _disPlay.HoWindow);
-
-        //        return;
-
-        //        var strategy = _strategys[_index];
-        //        switch (strategy.Algorithm)
-        //        {
-        //            case AlgoEnum.FitLine:
-        //            case AlgoEnum.FitArcMidpoint:
-        //                {
-        //                    _disPlay.SetDrawMode(strategy.Name, DrawEnum.NewAffRect);
-        //                }
-        //                break;
-        //            default:
-        //                _disPlay.SetDrawMode(strategy.Name, DrawEnum.NewRect);
-        //                break;
-        //        }
-        //    }
-        //    catch (Exception ex) { MessageBox.Show(ex.Message); }
-        //}
-
-        private void but_updataRegion_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                //var strategy = _strategys[_index];
-                //_disPlay.SetDrawMode(strategy.Name, DrawEnum.EditRect);
-            }
-            catch (Exception ex) { MessageBox.Show(ex.Message); }
-        }
-
         private void btn_100_Click(object sender, EventArgs e)
         {
             try
@@ -199,7 +86,6 @@ namespace DotNet.VisionMaster
             }
             catch (Exception ex) { MessageBox.Show(ex.Message); }
         }
-
         private void btn_101_Click(object sender, EventArgs e)
         {
             try
@@ -235,6 +121,48 @@ namespace DotNet.VisionMaster
             catch (Exception ex) { MessageBox.Show(ex.Message); }
         }
 
+        private void btn_setPath_Click(object sender, EventArgs e)
+        {
+            Button button = (Button)sender;
+            if (button == btn_setPath)
+            {
+                FolderBrowserDialog fbd = new FolderBrowserDialog();
+                try { fbd.SelectedPath = cmb_ImageFolder.Text; } catch { }
+                if (fbd.ShowDialog() == DialogResult.OK)
+                {
+                    cmb_ImageFolder.Text = fbd.SelectedPath;
+                }
+            }
+            else
+            {
+                FolderBrowserDialog fbd = new FolderBrowserDialog();
+                try { fbd.SelectedPath = cmb_115.Text; } catch { }
+                if (fbd.ShowDialog() == DialogResult.OK)
+                {
+                    cmb_115.Text = fbd.SelectedPath;
+                }
+            }
+        }
+        private void btn_openPath_Click(object sender, EventArgs e)
+        {
+            Button button = (Button)sender;
+            if (button == btn_openPath)
+            {
+                try
+                {
+                    System.Diagnostics.Process.Start(cmb_ImageFolder.Text);
+                }
+                catch (Exception ex) { MessageBox.Show(ex.Message); }
+            }
+            else
+            {
+                try
+                {
+                    System.Diagnostics.Process.Start(cmb_115.Text);
+                }
+                catch (Exception ex) { MessageBox.Show(ex.Message); }
+            }
+        }
         private void btn_setCoordIn_Click(object sender, EventArgs e)
         {
             try
@@ -262,7 +190,36 @@ namespace DotNet.VisionMaster
             }
             catch (Exception ex) { MessageBox.Show(ex.Message); }
         }
-
+        private void btn_drawRegion_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var strategy = _strategys[_index];
+                switch (strategy.Algorithm)
+                {
+                    case AlgoEnum.FitLine:
+                    case AlgoEnum.FitArcMidpoint:
+                        btn_rectAffRect.Checked = true;
+                        break;
+                    default:
+                        btn_rectRectangle.Checked = true;
+                        break;
+                }
+                var drawType = _rectDrawMap.FirstOrDefault(kv => kv.Key.Checked).Value;
+                _disPlay.ReDispImage();
+                strategy.DrawROI(_disPlay, drawType);
+            }
+            catch (Exception ex) { MessageBox.Show(ex.Message); }
+        }
+        private void but_editRegion_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                //var strategy = _strategys[_index];
+                //_disPlay.SetDrawMode(strategy.Name, DrawEnum.EditRect);
+            }
+            catch (Exception ex) { MessageBox.Show(ex.Message); }
+        }
         private void btn_newModel_Click(object sender, EventArgs e)
         {
             try
@@ -276,44 +233,6 @@ namespace DotNet.VisionMaster
             catch (Exception ex) { MessageBox.Show(ex.Message); }
 
         }
-
-        private void _disPlay_DrawDoneEvent(object sender, DrawModelUIArgs e)
-        {
-            try
-            {
-                var strategy = _strategys[_index];
-                switch (strategy.Algorithm)
-                {
-                    case AlgoEnum.ShapeModel:
-                        {
-                            var inPara = ((ShapeModelStrategy)strategy).inPara;
-                            _hModel.DisplayModel(inPara.ModelPath, e.HoModeRect, e.HoContour, e.Result);
-                        }
-                        break;
-                    case AlgoEnum.NccModel:
-                        {
-                            var inPara = ((NccModelStrategy)strategy).inPara;
-                            _hModel.DisplayModel(inPara.ModelPath, e.HoModeRect, e.HoContour, e.Result);
-                        }
-                        break;
-                    case AlgoEnum.ScaledModel:
-                        {
-                            var inPara = ((ScaledModelStrategy)strategy).inPara;
-                            _hModel.DisplayModel(inPara.ModelPath, e.HoModeRect, e.HoContour, e.Result);
-                        }
-                        break;
-                    case AlgoEnum.GenericModel:
-                        {
-                            var inPara = ((GenericModelStrategy)strategy).inPara;
-                            _hModel.DisplayModel(inPara.ModelPath, e.HoModeRect, e.HoContour, e.Result);
-                        }
-                        break;
-                }
-            }
-            catch (Exception ex) { MessageBox.Show(ex.Message); }
-
-        }
-
         private void but_editModel_Click(object sender, EventArgs e)
         {
             try
@@ -368,6 +287,42 @@ namespace DotNet.VisionMaster
                 }
             }
             catch (Exception ex) { MessageBox.Show(ex.Message); }
+        }
+        private void DrawDoneEvent(object sender, DrawModelUIArgs e)
+        {
+            try
+            {
+                var strategy = _strategys[_index];
+                switch (strategy.Algorithm)
+                {
+                    case AlgoEnum.ShapeModel:
+                        {
+                            var inPara = ((ShapeModelStrategy)strategy).inPara;
+                            _hModel.DisplayModel(inPara.ModelPath, e.HoModeRect, e.HoContour, e.Result);
+                        }
+                        break;
+                    case AlgoEnum.NccModel:
+                        {
+                            var inPara = ((NccModelStrategy)strategy).inPara;
+                            _hModel.DisplayModel(inPara.ModelPath, e.HoModeRect, e.HoContour, e.Result);
+                        }
+                        break;
+                    case AlgoEnum.ScaledModel:
+                        {
+                            var inPara = ((ScaledModelStrategy)strategy).inPara;
+                            _hModel.DisplayModel(inPara.ModelPath, e.HoModeRect, e.HoContour, e.Result);
+                        }
+                        break;
+                    case AlgoEnum.GenericModel:
+                        {
+                            var inPara = ((GenericModelStrategy)strategy).inPara;
+                            _hModel.DisplayModel(inPara.ModelPath, e.HoModeRect, e.HoContour, e.Result);
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex) { MessageBox.Show(ex.Message); }
+
         }
 
     }
