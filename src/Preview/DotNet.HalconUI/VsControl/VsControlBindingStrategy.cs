@@ -1,4 +1,6 @@
+using System;
 using System.Windows.Forms;
+using System.Collections.Generic;
 
 
 namespace DotNet.HalconUI
@@ -27,29 +29,30 @@ namespace DotNet.HalconUI
 
     public static class VsControlBindingStrategyFactory
     {
-        private static readonly IVsControlBinding _tabPage = new VsTabPageBindingStrategy();
-        private static readonly IVsControlBinding _textBox = new VsTextBoxBindingStrategy();
-        private static readonly IVsControlBinding _comboBox = new VsComboBoxBindingStrategy();
-        private static readonly IVsControlBinding _checkBox = new VsCheckBoxBindingStrategy();
-        private static readonly IVsControlBinding _radioButton = new VsRadioButtonBindingStrategy();
-        private static readonly IVsControlBinding _trackBar = new VsTrackBarBindingStrategy();
-        private static readonly IVsControlBinding _dataGridView = new VsDataGridViewBindingStrategy();
+        // 单例策略集合: 所有策略类是无状态的, 全进程共用一份即可.
+        private static readonly Dictionary<string, IVsControlBinding> _strategies =
+            new Dictionary<string, IVsControlBinding>(StringComparer.Ordinal)
+            {
+                { VsControlTypes.TabPage, new VsTabPageBindingStrategy() },
+                { VsControlTypes.TextBox, new VsTextBoxBindingStrategy() },
+                { VsControlTypes.ComboBox, new VsComboBoxBindingStrategy() },
+                { VsControlTypes.CheckBox, new VsCheckBoxBindingStrategy() },
+                { VsControlTypes.RadioButton, new VsRadioButtonBindingStrategy() },
+                { VsControlTypes.TrackBar, new VsTrackBarBindingStrategy() },
+                { VsControlTypes.DataGridView, new VsDataGridViewBindingStrategy() },
+            };
         private static readonly IVsControlBinding _null = new VsNullBindingStrategy();
 
-        public static IVsControlBinding CreateStrategy(string controlType)
+        /// <summary>
+        /// 根据控件类型获取对应策略 (单例). 未知类型返回 NullStrategy, 保持调用方无 null 防御.
+        /// </summary>
+        public static IVsControlBinding GetStrategy(string controlType)
         {
-            switch (controlType)
-            {
-                case VsControlTypes.TabPage: return _tabPage;
-                case VsControlTypes.TextBox: return _textBox;
-                case VsControlTypes.ComboBox: return _comboBox;
-                case VsControlTypes.CheckBox: return _checkBox;
-                case VsControlTypes.RadioButton: return _radioButton;
-                case VsControlTypes.TrackBar: return _trackBar;
-                case VsControlTypes.DataGridView: return _dataGridView;
-                default: return _null;
-            }
+            if (controlType == null) return _null;
+            IVsControlBinding s;
+            return _strategies.TryGetValue(controlType, out s) ? s : _null;
         }
+
     }
 
 
@@ -62,7 +65,7 @@ namespace DotNet.HalconUI
     {
         /// <summary>
         /// 添加/替换一条属性绑定. 先移除控件上 PropertyName 相同的旧 Binding (无论 source 是谁),
-        /// 再添加新 Binding. 这一步本身已经能阻止 "DataBindings 累积".
+        /// 再添加新 Binding. 同时把 Control 缓存到 VM, 供 Dispose 时复用.
         /// </summary>
         internal static void AddPropertyBinding(Control con, string controlProperty, VsControlModel vm, string vmProperty)
         {
@@ -72,6 +75,7 @@ namespace DotNet.HalconUI
                     con.DataBindings.RemoveAt(i);
             }
             con.DataBindings.Add(controlProperty, vm, vmProperty, false, DataSourceUpdateMode.OnPropertyChanged);
+            vm.AttachControl(con);
         }
 
         /// <summary>
@@ -80,7 +84,7 @@ namespace DotNet.HalconUI
         /// 即使 "new 新 VM (已 Bind) -> Replace 字典 -> Dispose 旧 VM" 的执行顺序下,
         /// 新 VM 刚加上的 Binding 也不会被误删 (旧 Binding 在 AddPropertyBinding 中已被同名移除).
         /// </summary>
-        internal static void RemoveBindingsBySource(Control con, VsControlModel source)
+        internal static void RemoveBindingsBySource(Control? con, VsControlModel source)
         {
             if (con == null) return;
             for (int i = con.DataBindings.Count - 1; i >= 0; i--)
@@ -92,111 +96,72 @@ namespace DotNet.HalconUI
     }
 
 
-    // ============================================================
-    //  TabPage
-    // ============================================================
-    public sealed class VsTabPageBindingStrategy : IVsControlBinding
+    /// <summary>
+    /// 单属性双向绑定策略的泛型基类. 把 "反射查找 Control -> 加绑定" 和 "复用缓存 Control -> 解绑定"
+    /// 这两段重复模板代码集中到这里, 子类只声明控件类型与控件侧属性名.
+    /// </summary>
+    public abstract class VsBindingStrategyBase<TControl> : IVsControlBinding where TControl : Control
     {
+        /// <summary>控件侧被绑定的属性名 (e.g. "Text" / "Checked" / "Value").</summary>
+        protected abstract string ControlPropertyName { get; }
+
         public void Bind(Form form, VsControlModel vm)
         {
-            var con = (TabPage)form.GetControl(vm.Name);
-            BindingHelper.AddPropertyBinding(con, "Text", vm, nameof(VsControlModel.Value));
+            var con = (TControl)form.GetControl(vm.Name);
+            BindingHelper.AddPropertyBinding(con, ControlPropertyName, vm, nameof(VsControlModel.Value));
         }
 
+        /// <summary>
+        /// 优先复用 Bind 时缓存的 Control, 避免在 Form 已 Dispose 后反射抛异常.
+        /// 兜底再做一次反射, 保持 "VM 没被 Bind 过也能安全 Unbind" 的契约.
+        /// </summary>
         public void Unbind(Form form, VsControlModel vm)
         {
-            BindingHelper.RemoveBindingsBySource((TabPage)form.GetControl(vm.Name), vm);
+            var con = vm.BoundControl as TControl;
+            if (con == null && form != null)
+            {
+                con = (TControl)form.GetControl(vm.Name);
+            }
+            BindingHelper.RemoveBindingsBySource(con, vm);
         }
     }
 
-    // ============================================================
-    //  TextBox
-    // ============================================================
-    public sealed class VsTextBoxBindingStrategy : IVsControlBinding
-    {
-        public void Bind(Form form, VsControlModel vm)
-        {
-            var con = (TextBox)form.GetControl(vm.Name);
-            BindingHelper.AddPropertyBinding(con, "Text", vm, nameof(VsControlModel.Value));
-        }
 
-        public void Unbind(Form form, VsControlModel vm)
-        {
-            BindingHelper.RemoveBindingsBySource((TextBox)form.GetControl(vm.Name), vm);
-        }
+    public sealed class VsTabPageBindingStrategy : VsBindingStrategyBase<TabPage>
+    {
+        protected override string ControlPropertyName { get { return "Text"; } }
     }
 
-    // ============================================================
-    //  ComboBox
-    // ============================================================
-    public sealed class VsComboBoxBindingStrategy : IVsControlBinding
+    public sealed class VsTextBoxBindingStrategy : VsBindingStrategyBase<TextBox>
     {
-        public void Bind(Form form, VsControlModel vm)
-        {
-            var con = (ComboBox)form.GetControl(vm.Name);
-            BindingHelper.AddPropertyBinding(con, "Text", vm, nameof(VsControlModel.Value));
-        }
-
-        public void Unbind(Form form, VsControlModel vm)
-        {
-            BindingHelper.RemoveBindingsBySource((ComboBox)form.GetControl(vm.Name), vm);
-        }
+        protected override string ControlPropertyName { get { return "Text"; } }
     }
 
-    // ============================================================
-    //  CheckBox
-    // ============================================================
-    public sealed class VsCheckBoxBindingStrategy : IVsControlBinding
+    public sealed class VsComboBoxBindingStrategy : VsBindingStrategyBase<ComboBox>
     {
-        public void Bind(Form form, VsControlModel vm)
-        {
-            var con = (CheckBox)form.GetControl(vm.Name);
-            BindingHelper.AddPropertyBinding(con, "Checked", vm, nameof(VsControlModel.Value));
-        }
-
-        public void Unbind(Form form, VsControlModel vm)
-        {
-            BindingHelper.RemoveBindingsBySource((CheckBox)form.GetControl(vm.Name), vm);
-        }
+        protected override string ControlPropertyName { get { return "Text"; } }
     }
 
-    // ============================================================
-    //  RadioButton
-    // ============================================================
-    public sealed class VsRadioButtonBindingStrategy : IVsControlBinding
+    public sealed class VsCheckBoxBindingStrategy : VsBindingStrategyBase<CheckBox>
     {
-        public void Bind(Form form, VsControlModel vm)
-        {
-            var con = (RadioButton)form.GetControl(vm.Name);
-            BindingHelper.AddPropertyBinding(con, "Checked", vm, nameof(VsControlModel.Value));
-        }
-
-        public void Unbind(Form form, VsControlModel vm)
-        {
-            BindingHelper.RemoveBindingsBySource((RadioButton)form.GetControl(vm.Name), vm);
-        }
+        protected override string ControlPropertyName { get { return "Checked"; } }
     }
 
-    // ============================================================
-    //  TrackBar
-    // ============================================================
-    public sealed class VsTrackBarBindingStrategy : IVsControlBinding
+    public sealed class VsRadioButtonBindingStrategy : VsBindingStrategyBase<RadioButton>
     {
-        public void Bind(Form form, VsControlModel vm)
-        {
-            var con = (TrackBar)form.GetControl(vm.Name);
-            // 控件侧 TrackBar.Value (int) 与 VM 侧 Value (object/装箱 int) 通过 WinForms 反射绑定自动拆装箱.
-            BindingHelper.AddPropertyBinding(con, "Value", vm, nameof(VsControlModel.Value));
-        }
-
-        public void Unbind(Form form, VsControlModel vm)
-        {
-            BindingHelper.RemoveBindingsBySource((TrackBar)form.GetControl(vm.Name), vm);
-        }
+        protected override string ControlPropertyName { get { return "Checked"; } }
     }
 
+    public sealed class VsTrackBarBindingStrategy : VsBindingStrategyBase<TrackBar>
+    {
+        // 控件侧 TrackBar.Value (int) 与 VM 侧 Value (object/装箱 int) 通过 WinForms 反射绑定自动拆装箱.
+        protected override string ControlPropertyName { get { return "Value"; } }
+    }
+
+
     // ============================================================
-    //  DataGridView (当前未启用具体属性绑定, 保留 hook)
+    //  DataGridView (当前未启用具体属性绑定, 保留 hook).
+    //  不继承泛型基类, 因为 Bind 不需要建立绑定, 仅占位.
     // ============================================================
     public sealed class VsDataGridViewBindingStrategy : IVsControlBinding
     {
@@ -204,9 +169,15 @@ namespace DotNet.HalconUI
 
         public void Unbind(Form form, VsControlModel vm)
         {
-            BindingHelper.RemoveBindingsBySource((DataGridView)form.GetControl(vm.Name), vm);
+            var con = vm.BoundControl as DataGridView;
+            if (con == null && form != null)
+            {
+                con = (DataGridView)form.GetControl(vm.Name);
+            }
+            BindingHelper.RemoveBindingsBySource(con, vm);
         }
     }
+
 
     // ============================================================
     //  Null (兜底策略)

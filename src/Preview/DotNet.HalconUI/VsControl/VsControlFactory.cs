@@ -1,8 +1,8 @@
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Windows.Forms;
+using System.Collections.Generic;
+using System.Collections.Concurrent;
 
 
 namespace DotNet.HalconUI
@@ -83,7 +83,7 @@ namespace DotNet.HalconUI
         /// <summary>
         /// 解绑所有 VM 并清空字典. 切换算法策略或 Form 关闭时调用.
         /// </summary>
-        public static void ClearAll(this Dictionary<string, VsControlModel> controls, Form form)
+        public static void ClearAll(this Dictionary<string, VsControlModel> controls)
         {
             if (controls == null) return;
             foreach (var kvp in controls)
@@ -92,7 +92,6 @@ namespace DotNet.HalconUI
             }
             controls.Clear();
         }
-
 
         /// <summary>
         /// 同名 key 再次 ShowXxx 时, 先 Dispose 旧 VM (解除 DataBindings 强引用), 再放入新 VM.

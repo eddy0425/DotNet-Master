@@ -70,7 +70,7 @@ namespace DotNet.VisionMaster
         private void SwitchStrategy(int index)
         {
             _index = index;
-            _vsControls.ClearAll(_formPara);
+            _vsControls.ClearAll();
             _formPara.SelectPara(_index, _strategys);
             _currentStrategy.DispPara(_formPara, _vsControls);
             _currentStrategy.DispROI(_display);

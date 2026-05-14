@@ -1,8 +1,8 @@
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Windows.Forms;
+using System.ComponentModel;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 
 namespace DotNet.HalconUI
@@ -31,14 +31,33 @@ namespace DotNet.HalconUI
         public bool Visible { get; set; }
         public bool Enabled { get; set; }
         public bool DropDownStyle { get; set; }
-        public string[] Items { get; set; } 
+
+        // Items 防御性拷贝, 避免外部数组在 VM 生命期内被改写.
+        private string[]? _items;
+        public string[]? Items
+        {
+            get { return _items == null ? null : (string[])_items.Clone(); }
+            set { _items = value == null ? null : (string[])value.Clone(); }
+        }
+
+        // 绑定时由策略写入的 Control 引用. 让 Dispose 时直接解绑, 不必再走 Form 反射,
+        // 这样即便 Form 已经先一步 Dispose 也能安全解绑.
+        private Control? _boundControl;
+        internal Control? BoundControl { get { return _boundControl; } }
+        internal void AttachControl(Control control) { _boundControl = control; }
+
 
         public event PropertyChangedEventHandler PropertyChanged;
-
         private void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             var handler = PropertyChanged;
             if (handler != null) handler(this, new PropertyChangedEventArgs(propertyName));
+        }
+        private void SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
+        {
+            if (EqualityComparer<T>.Default.Equals(field, value)) return;
+            field = value;
+            OnPropertyChanged(propertyName);
         }
 
         /// <summary>TrackBar</summary>
@@ -68,14 +87,14 @@ namespace DotNet.HalconUI
         }
 
         /// <summary>ComboBox</summary>
-        public VsControlModel(Form form, string name, string type, string text, bool visible, bool enabled, bool dropDownStyle, string[] items)
+        public VsControlModel(Form form, string name, string type, string text, bool visible, bool enabled, bool dropDownStyle, string[]? items)
             : this(form, name, type)
         {
             _value = text;
             Visible = visible;
             Enabled = enabled;
             DropDownStyle = dropDownStyle;
-            Items = items;
+            _items = items == null ? null : (string[])items.Clone();
             BindToControl();
         }
 
@@ -95,7 +114,7 @@ namespace DotNet.HalconUI
         /// </summary>
         private void BindToControl()
         {
-            VsControlBindingStrategyFactory.CreateStrategy(Type).Bind(_form, this);
+            VsControlBindingStrategyFactory.GetStrategy(Type).Bind(_form, this);
         }
 
         /// <summary>读取字符串. <see cref="Value"/> 为 null 或非 string 时返回 <see cref="string.Empty"/>.</summary>
@@ -116,16 +135,9 @@ namespace DotNet.HalconUI
         /// <summary>读取 Single. null 返回 0, 其余经 <see cref="Convert.ToSingle(object)"/> 转换.</summary>
         public float AsFloat() { return _value == null ? 0f : Convert.ToSingle(_value); }
 
-
-        private void SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
-        {
-            if (EqualityComparer<T>.Default.Equals(field, value)) return;
-            field = value;
-            OnPropertyChanged(propertyName);
-        }
-
         /// <summary>
         /// 解除与控件的 DataBindings 强引用, 释放 VM 自身. 多次调用安全.
+        /// 优先用 Bind 时缓存的 Control 解绑, 避免在 Form 已 Dispose 后再走反射出错.
         /// </summary>
         public void Dispose()
         {
@@ -133,12 +145,13 @@ namespace DotNet.HalconUI
             _disposed = true;
             try
             {
-                VsControlBindingStrategyFactory.CreateStrategy(Type).Unbind(_form, this);
+                VsControlBindingStrategyFactory.GetStrategy(Type).Unbind(_form, this);
             }
             catch
             {
                 // 控件可能在 Form Disposed 之后才被释放, 静默忽略, 避免影响 ClearAll 全流程.
             }
+            _boundControl = null;
             PropertyChanged = null;
         }
     }
