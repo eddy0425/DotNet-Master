@@ -118,6 +118,13 @@ namespace DotNet.HalconAlgo
             inPara.HoRect = hRegion;
             display.SetRectPara(inPara.HoRect);
         }
+        public override void DrawROIMod(HDisplayUI display, RectEnum type)
+        {
+            inPara.HoRect.Type = type;
+            display.DrawRegionMod2(inPara.HoRect);
+            display.DispRegion(inPara.HoRect, HColor.Blue);
+            display.SetRectPara(inPara.HoRect);
+        }
         public override void DispROI(HDisplayUI display)
         {
             display.SetRectPara(inPara.HoRect);

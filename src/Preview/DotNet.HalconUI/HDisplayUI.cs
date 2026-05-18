@@ -2,7 +2,9 @@
 using HalconDotNet;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 
 namespace DotNet.HalconUI
@@ -374,6 +376,14 @@ namespace DotNet.HalconUI
                     }
                     break;
             }
+        }
+
+        /// <summary> 绘制区域 </summary>
+        public void DrawRegionMod2(CvRegion hRegion)
+        {
+            drawType = DrawEnum.None;
+            Reset();
+            display.DrawRegionMod2(hRegion);
         }
 
         #endregion

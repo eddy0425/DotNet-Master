@@ -215,8 +215,20 @@ namespace DotNet.VisionMaster
         {
             try
             {
-                //var strategy = _strategys[_index];
-                //_disPlay.SetDrawMode(strategy.Name, DrawEnum.EditRect);
+                var strategy = _strategys[_index];
+                switch (strategy.Algorithm)
+                {
+                    case AlgoEnum.FitLine:
+                    case AlgoEnum.FitArcMidpoint:
+                        btn_rectAffRect.Checked = true;
+                        break;
+                    default:
+                        btn_rectRectangle.Checked = true;
+                        break;
+                }
+                var drawType = _rectDrawMap.FirstOrDefault(kv => kv.Key.Checked).Value;
+                _disPlay.ReDispImage();
+                strategy.DrawROIMod(_disPlay, drawType);
             }
             catch (Exception ex) { MessageBox.Show(ex.Message); }
         }

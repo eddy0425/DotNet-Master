@@ -2,6 +2,7 @@
 using HalconDotNet;
 using System;
 using System.Collections.Generic;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace DotNet.HalconUI
 {
@@ -543,6 +544,75 @@ namespace DotNet.HalconUI
 
                         HOperatorSet.AreaCenter(hRegion.HoRegion, out HTuple area, out HTuple hv_Row, out HTuple hv_Column);
                         hRegion.Center = new Point2d(hv_Row.D, hv_Column.D);
+                    }
+                    break;
+            }
+        }
+
+        public void DrawRegionMod2(HWindow hWindow, CvRegion hRegion)
+        {
+            DrawHelper.CancelDraw();
+            switch (hRegion.Type)
+            {
+                case RectEnum.Rectangle:
+                    {
+                        DrawHelper.DrawRectangle1Mod(hWindow, hRegion.Top, hRegion.Left, hRegion.Bottom, hRegion.Right,
+                                                  out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2);
+
+                        HOperatorSet.GenRectangle1(out HObject rectangle, row1, column1, row2, column2);
+
+                        hRegion.Update2Point(row1, column1, row2, column2);
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = rectangle;
+                    }
+                    break;
+                case RectEnum.AffRect:
+                    {
+                        DrawHelper.DrawRectangle2Mod(hWindow, hRegion.CenterY, hRegion.CenterX, hRegion.Phi,
+                                                hRegion.Width / 2, hRegion.Height / 2,
+                                                out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
+                        HOperatorSet.GenRectangle2(out HObject rectangle, row, column, phi, length1, length2);
+
+                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(length1.D * 2, length2.D * 2));
+                        hRegion.Phi = phi;
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = rectangle;
+                    }
+                    break;
+                case RectEnum.Circle:
+                    {
+                        DrawHelper.DrawCircleMod(hWindow, hRegion.CenterY, hRegion.CenterX, hRegion.Width / 2,
+                                           out HTuple row, out HTuple column, out HTuple radius);
+                        HOperatorSet.GenCircle(out HObject circle, row, column, radius);
+
+                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius.D * 2, radius.D * 2));
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = circle;
+                    }
+                    break;
+                case RectEnum.Ellipse:
+                    {
+                        DrawHelper.DrawEllipseMod(hWindow, hRegion.CenterY, hRegion.CenterX, hRegion.Phi,
+                                                     hRegion.Width / 2, hRegion.Height / 2,
+                                                     out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2);
+                        HOperatorSet.GenEllipse(out HObject ellipse, row, column, phi, radius1, radius2);
+
+                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius1.D * 2, radius2.D * 2));
+                        hRegion.Phi = phi;
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = ellipse;
+                    }
+                    break;
+                case RectEnum.Polygon:
+                    {
+                        DrawHelper.DrawRegion(out HObject region, hWindow);
+                        HOperatorSet.GetRegionPolygon(region, 1, out HTuple rows, out HTuple columns);
+                        HOperatorSet.AreaCenter(region, out HTuple area, out HTuple hv_Row, out HTuple hv_Column);
+                        hRegion.PolygonX = columns;
+                        hRegion.PolygonY = rows;
+                        hRegion.Center = new Point2d(hv_Column.D, hv_Row.D);
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = region;
                     }
                     break;
             }

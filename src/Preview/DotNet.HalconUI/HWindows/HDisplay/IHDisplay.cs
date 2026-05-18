@@ -119,6 +119,11 @@ namespace DotNet.HalconUI
         /// </summary>
         void DrawRegionMod(HWindow hWindow, CvRegion hRegion);
 
+        /// <summary>
+        /// 绘制（创建）橡皮筋区域
+        /// </summary>
+        void DrawRegionMod2(HWindow hWindow, CvRegion hRegion);
+
         void DispRectangle2(HWindow hWindow, HTuple centerRow, HTuple centerCol, HTuple phi, HTuple length1, HTuple length2);
         void DispRectangle2(HWindow hWindow, HTuple centerRow, HTuple centerCol, HTuple phi, HTuple length1, HTuple length2, string color);
 
