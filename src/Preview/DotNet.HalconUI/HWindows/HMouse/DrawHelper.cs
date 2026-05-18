@@ -26,7 +26,7 @@ namespace DotNet.HalconUI
     {
         #region Internal Types
 
-        private enum DrawType { None, Rect1, Rect2, Circle, Ellipse, Region }
+        private enum DrawType { None, Point, Line, Rect1, Rect2, Circle, Ellipse, Region }
         private enum Phase { Idle, Drawing, Editing }
         private enum Handle { None, P1, P2, Center, AxisEnd1, AxisEnd2, AxisEnd2Neg }
 
@@ -47,6 +47,12 @@ namespace DotNet.HalconUI
         private bool _completed;
         private bool _cancelled;
         private int _ended;
+
+        // Point (DrawPointMod)
+        private double _ptX, _ptY;
+
+        // Line (DrawLineMod)
+        private double _lnX1, _lnY1, _lnX2, _lnY2;
 
         // Rect1/2 (e.X=Col, e.Y=Row)
         private double _x1, _y1, _x2, _y2;
@@ -80,14 +86,41 @@ namespace DotNet.HalconUI
         /// <summary> 当前活动的绘图实例，用于转发鼠标事件 </summary>
         public static DrawHelper Active => _active;
 
-        //public static void DrawPoint(HTuple windowHandle, out HTuple row, out HTuple column)
-        //{ 
-        
-        //}
-        //public static void DrawLine(HTuple windowHandle, out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2)
-        //{ 
-        
-        //}
+        /// <summary>
+        /// 交互式绘制一个点 ROI: 左键点击设置位置后进入编辑, 可拖拽十字调整, 右键确认.
+        /// </summary>
+        public static void DrawPoint(HTuple windowHandle, out HTuple row, out HTuple column)
+        {
+            row = column = new HTuple();
+            CancelDraw();
+            var h = Begin(windowHandle, DrawType.Point);
+            try
+            {
+                h.BlockUntilDone();
+                row = h._ptY;
+                column = h._ptX;
+            }
+            finally { End(h); }
+        }
+
+        /// <summary>
+        /// 交互式绘制一条线段 ROI: 左键按下→拖拽→释放定义两端点后进入编辑,
+        /// 可拖拽端点或中点平移整条线, 右键确认.
+        /// </summary>
+        public static void DrawLine(HTuple windowHandle,
+            out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2)
+        {
+            row1 = column1 = row2 = column2 = new HTuple();
+            CancelDraw();
+            var h = Begin(windowHandle, DrawType.Line);
+            try
+            {
+                h.BlockUntilDone();
+                row1 = h._lnY1; column1 = h._lnX1;
+                row2 = h._lnY2; column2 = h._lnX2;
+            }
+            finally { End(h); }
+        }
 
         public static void DrawRectangle1(HTuple windowHandle,
             out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2)
@@ -182,6 +215,171 @@ namespace DotNet.HalconUI
             }
         }
 
+        /// <summary>
+        /// 修改一个已有的点 ROI: 以 (rowIn, columnIn) 为初始位置进入编辑模式,
+        /// 用户可拖拽圆心十字调整位置, 右键确认.
+        /// </summary>
+        public static void DrawPointMod(HTuple windowHandle,
+            HTuple rowIn, HTuple columnIn, out HTuple row, out HTuple column)
+        {
+            row = column = new HTuple();
+            CancelDraw();
+            var h = Begin(windowHandle, DrawType.Point);
+            try
+            {
+                h._ptX = columnIn.D;
+                h._ptY = rowIn.D;
+                h._phase = Phase.Editing;
+                h.RenderInitial();
+                h.BlockUntilDone();
+                row = h._ptY;
+                column = h._ptX;
+            }
+            finally { End(h); }
+        }
+
+        /// <summary>
+        /// 修改一条已有的线段 ROI: 以两端点 (row1In, column1In)-(row2In, column2In)
+        /// 为初始几何进入编辑模式, 可拖拽两端点或中点平移整条线, 右键确认.
+        /// </summary>
+        public static void DrawLineMod(HTuple windowHandle,
+            HTuple row1In, HTuple column1In, HTuple row2In, HTuple column2In,
+            out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2)
+        {
+            row1 = column1 = row2 = column2 = new HTuple();
+            CancelDraw();
+            var h = Begin(windowHandle, DrawType.Line);
+            try
+            {
+                h._lnX1 = column1In.D; h._lnY1 = row1In.D;
+                h._lnX2 = column2In.D; h._lnY2 = row2In.D;
+                h._phase = Phase.Editing;
+                h.RenderInitial();
+                h.BlockUntilDone();
+                row1 = h._lnY1; column1 = h._lnX1;
+                row2 = h._lnY2; column2 = h._lnX2;
+            }
+            finally { End(h); }
+        }
+
+        /// <summary>
+        /// 修改一个轴对齐矩形 ROI: 以 (row1,col1)-(row2,col2) 为初始对角点进入编辑模式,
+        /// 可拖拽两个角点或中心点平移, 右键确认.
+        /// </summary>
+        public static void DrawRectangle1Mod(HTuple windowHandle,
+            HTuple row1In, HTuple column1In, HTuple row2In, HTuple column2In,
+            out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2)
+        {
+            row1 = column1 = row2 = column2 = new HTuple();
+            CancelDraw();
+            var h = Begin(windowHandle, DrawType.Rect1);
+            try
+            {
+                h._x1 = column1In.D; h._y1 = row1In.D;
+                h._x2 = column2In.D; h._y2 = row2In.D;
+                h._cx = (h._x1 + h._x2) / 2;
+                h._cy = (h._y1 + h._y2) / 2;
+                h._phase = Phase.Editing;
+                h.RenderInitial();
+                h.BlockUntilDone();
+                NormalizeRect1(h._x1, h._y1, h._x2, h._y2,
+                    out double left, out double top, out double right, out double bottom);
+                row1 = top; column1 = left;
+                row2 = bottom; column2 = right;
+            }
+            finally { End(h); }
+        }
+
+        /// <summary>
+        /// 修改一个可旋转矩形 ROI: 以中心 (rowIn, columnIn)、方向 phiIn (弧度)、
+        /// 半轴长 length1In/length2In 为初始几何进入编辑模式,
+        /// 可拖拽中心 / 主轴端点 / 短轴端点, 右键确认.
+        /// </summary>
+        public static void DrawRectangle2Mod(HTuple windowHandle,
+            HTuple rowIn, HTuple columnIn, HTuple phiIn, HTuple length1In, HTuple length2In,
+            out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2)
+        {
+            row = column = phi = length1 = length2 = new HTuple();
+            CancelDraw();
+            var h = Begin(windowHandle, DrawType.Rect2);
+            try
+            {
+                h._cx = columnIn.D;
+                h._cy = rowIn.D;
+                h._phi = phiIn.D;
+                h._halfLen1 = Math.Max(1, length1In.D);
+                h._halfLen2 = Math.Max(1, length2In.D);
+                h._phase = Phase.Editing;
+                h.RenderInitial();
+                h.BlockUntilDone();
+                row = h._cy; column = h._cx;
+                phi = h._phi;
+                length1 = h._halfLen1;
+                length2 = h._halfLen2;
+            }
+            finally { End(h); }
+        }
+
+        /// <summary>
+        /// 修改一个圆 ROI: 以中心 (rowIn, columnIn)、半径 radiusIn 为初始几何进入编辑模式,
+        /// 可拖拽圆心或半径端点, 右键确认.
+        /// </summary>
+        public static void DrawCircleMod(HTuple windowHandle,
+            HTuple rowIn, HTuple columnIn, HTuple radiusIn,
+            out HTuple row, out HTuple column, out HTuple radius)
+        {
+            row = column = radius = new HTuple();
+            CancelDraw();
+            var h = Begin(windowHandle, DrawType.Circle);
+            try
+            {
+                h._circCX = columnIn.D;
+                h._circCY = rowIn.D;
+                h._circR = Math.Max(1, radiusIn.D);
+                h._phase = Phase.Editing;
+                h.RenderInitial();
+                h.BlockUntilDone();
+                row = h._circCY;
+                column = h._circCX;
+                radius = h._circR;
+            }
+            finally { End(h); }
+        }
+
+        /// <summary>
+        /// 修改一个椭圆 ROI: 以中心 (rowIn, columnIn)、方向 phiIn (弧度,
+        /// 与 radius1 同向)、长/短半径 radius1In/radius2In 为初始几何进入编辑模式,
+        /// 可拖拽中心 / 主轴端点 / 副轴端点, 右键确认.
+        /// 输出 radius1 始终 >= radius2, phi 自动调整为长轴方向.
+        /// </summary>
+        public static void DrawEllipseMod(HTuple windowHandle,
+            HTuple rowIn, HTuple columnIn, HTuple phiIn, HTuple radius1In, HTuple radius2In,
+            out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2)
+        {
+            row = column = phi = radius1 = radius2 = new HTuple();
+            CancelDraw();
+            var h = Begin(windowHandle, DrawType.Ellipse);
+            try
+            {
+                h._ellCX = columnIn.D;
+                h._ellCY = rowIn.D;
+                h._ellPhi = phiIn.D;
+                h._ellR1 = Math.Max(1, radius1In.D);
+                h._ellR2 = Math.Max(1, radius2In.D);
+                h._phase = Phase.Editing;
+                h.RenderInitial();
+                h.BlockUntilDone();
+                double major = Math.Max(h._ellR1, h._ellR2);
+                double minor = Math.Min(h._ellR1, h._ellR2);
+                double adjPhi = h._ellR1 >= h._ellR2 ? h._ellPhi : h._ellPhi + Math.PI / 2;
+                row = h._ellCY; column = h._ellCX;
+                phi = adjPhi;
+                radius1 = major;
+                radius2 = minor;
+            }
+            finally { End(h); }
+        }
+
         /// <summary> 取消当前绘图操作 </summary>
         public static void CancelDraw()
         {
@@ -241,6 +439,8 @@ namespace DotNet.HalconUI
         {
             switch (_type)
             {
+                case DrawType.Point: Down_Point(e); break;
+                case DrawType.Line: Down_Line(e); break;
                 case DrawType.Rect1: Down_Rect1(e); break;
                 case DrawType.Rect2: Down_Rect2(e); break;
                 case DrawType.Circle: Down_Circle(e); break;
@@ -266,6 +466,8 @@ namespace DotNet.HalconUI
         {
             switch (_type)
             {
+                case DrawType.Point: Up_Point(e); break;
+                case DrawType.Line: Up_Line(e); break;
                 case DrawType.Rect1: Up_Rect1(e); break;
                 case DrawType.Rect2: Up_Rect2(e); break;
                 case DrawType.Circle: Up_Circle(e); break;
@@ -293,6 +495,8 @@ namespace DotNet.HalconUI
                 _cachedPixelSize = ComputePixelSize();
                 switch (_type)
                 {
+                    case DrawType.Point: Move_Point(e); break;
+                    case DrawType.Line: Move_Line(e); break;
                     case DrawType.Rect1: Move_Rect1(e); break;
                     case DrawType.Rect2: Move_Rect2(e); break;
                     case DrawType.Circle: Move_Circle(e); break;
@@ -307,6 +511,172 @@ namespace DotNet.HalconUI
         }
 
         public void OnMouseWheel(HMouseEventArgs e) { }
+
+        #endregion
+
+        #region Point
+
+        private void Down_Point(HMouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Left) return;
+
+            if (_phase == Phase.Idle)
+            {
+                _ptX = e.X; _ptY = e.Y;
+                _phase = Phase.Editing;
+            }
+            else if (_phase == Phase.Editing && _hover == Handle.Center)
+            {
+                _dragging = true;
+            }
+        }
+
+        private void Up_Point(HMouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left && _phase == Phase.Editing)
+            {
+                _dragging = false;
+                _hover = Handle.None;
+            }
+            else if (e.Button == MouseButtons.Right && _phase == Phase.Editing)
+            {
+                _completed = true;
+            }
+        }
+
+        private void Move_Point(HMouseEventArgs e)
+        {
+            RestoreBackground();
+
+            switch (_phase)
+            {
+                case Phase.Idle:
+                    WDispCross(e.X, e.Y, "orange");
+                    break;
+
+                case Phase.Editing:
+                    EditPoint(e);
+                    break;
+            }
+        }
+
+        private void EditPoint(HMouseEventArgs e)
+        {
+            if (_dragging)
+            {
+                _ptX = e.X; _ptY = e.Y;
+            }
+            else
+            {
+                _hover = IsNear(_ptX, _ptY, e.X, e.Y) ? Handle.Center : Handle.None;
+            }
+            WDispCross(_ptX, _ptY, _hover == Handle.Center ? "green" : "red", 30);
+        }
+
+        #endregion
+
+        #region Line
+
+        private void Down_Line(HMouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Left) return;
+
+            if (_phase == Phase.Idle)
+            {
+                _lnX1 = e.X; _lnY1 = e.Y;
+                _phase = Phase.Drawing;
+            }
+            else if (_phase == Phase.Drawing)
+            {
+                _lnX2 = e.X; _lnY2 = e.Y;
+                _phase = Phase.Editing;
+            }
+            else if (_phase == Phase.Editing && _hover != Handle.None)
+            {
+                _dragging = true;
+            }
+        }
+
+        private void Up_Line(HMouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                if (_phase == Phase.Drawing && Dist(_lnX1, _lnY1, e.X, e.Y) > 2)
+                {
+                    _lnX2 = e.X; _lnY2 = e.Y;
+                    _phase = Phase.Editing;
+                }
+                else if (_phase == Phase.Editing)
+                {
+                    _dragging = false;
+                    _hover = Handle.None;
+                }
+            }
+            else if (e.Button == MouseButtons.Right && _phase == Phase.Editing)
+            {
+                _completed = true;
+            }
+        }
+
+        private void Move_Line(HMouseEventArgs e)
+        {
+            RestoreBackground();
+
+            switch (_phase)
+            {
+                case Phase.Idle:
+                    WDispCross(e.X, e.Y, "orange");
+                    break;
+
+                case Phase.Drawing:
+                    WDispCross(_lnX1, _lnY1, "orange");
+                    WDispCross(e.X, e.Y, "orange");
+                    WDispLine(_lnX1, _lnY1, e.X, e.Y, "red");
+                    break;
+
+                case Phase.Editing:
+                    EditLine(e);
+                    break;
+            }
+        }
+
+        private void EditLine(HMouseEventArgs e)
+        {
+            double midX = (_lnX1 + _lnX2) / 2;
+            double midY = (_lnY1 + _lnY2) / 2;
+
+            if (_dragging)
+            {
+                switch (_hover)
+                {
+                    case Handle.P1:
+                        _lnX1 = e.X; _lnY1 = e.Y;
+                        break;
+                    case Handle.P2:
+                        _lnX2 = e.X; _lnY2 = e.Y;
+                        break;
+                    case Handle.Center:
+                        double dx = e.X - midX, dy = e.Y - midY;
+                        _lnX1 += dx; _lnY1 += dy;
+                        _lnX2 += dx; _lnY2 += dy;
+                        break;
+                }
+                midX = (_lnX1 + _lnX2) / 2;
+                midY = (_lnY1 + _lnY2) / 2;
+            }
+            else
+            {
+                if (IsNear(_lnX1, _lnY1, e.X, e.Y)) _hover = Handle.P1;
+                else if (IsNear(_lnX2, _lnY2, e.X, e.Y)) _hover = Handle.P2;
+                else if (IsNear(midX, midY, e.X, e.Y)) _hover = Handle.Center;
+                else _hover = Handle.None;
+            }
+
+            WDispCross(_lnX1, _lnY1, _hover == Handle.P1 ? "green" : "orange", 50);
+            WDispCross(_lnX2, _lnY2, _hover == Handle.P2 ? "green" : "orange", 50);
+            WDispCross(midX, midY, _hover == Handle.Center ? "green" : "orange", 30);
+            WDispLine(_lnX1, _lnY1, _lnX2, _lnY2, "red");
+        }
 
         #endregion
 
@@ -1058,6 +1428,83 @@ namespace DotNet.HalconUI
             {
                 Application.DoEvents();
                 System.Threading.Thread.Sleep(10);
+            }
+        }
+
+        // *Mod 函数在 BlockUntilDone 之前调用一次, 用当前几何把 ROI 画到 backbuffer 并 swap 出来.
+        // 否则用户必须先移动鼠标才能看到传入的初始 ROI, 体验割裂.
+        // 实现上不依赖 HMouseEventArgs, 只复用各类型在 Editing 阶段 "hover=None, dragging=false"
+        // 的稳态绘制.
+        private void RenderInitial()
+        {
+            try
+            {
+                _cachedPixelSize = ComputePixelSize();
+                RestoreBackground();
+                _hover = Handle.None;
+                _dragging = false;
+                switch (_type)
+                {
+                    case DrawType.Point:
+                        WDispCross(_ptX, _ptY, "red", 30);
+                        break;
+
+                    case DrawType.Line:
+                        {
+                            double midX = (_lnX1 + _lnX2) / 2;
+                            double midY = (_lnY1 + _lnY2) / 2;
+                            WDispCross(_lnX1, _lnY1, "orange", 50);
+                            WDispCross(_lnX2, _lnY2, "orange", 50);
+                            WDispCross(midX, midY, "orange", 30);
+                            WDispLine(_lnX1, _lnY1, _lnX2, _lnY2, "red");
+                        }
+                        break;
+
+                    case DrawType.Rect1:
+                        WDispCross(_x1, _y1, "orange", 50);
+                        WDispCross(_x2, _y2, "orange", 50);
+                        WDispCross(_cx, _cy, "orange", 50);
+                        WDispRect1(_x1, _y1, _x2, _y2, "red");
+                        break;
+
+                    case DrawType.Rect2:
+                        {
+                            GetAxisEnd(_cx, _cy, _phi, _halfLen1, out double a1x, out double a1y);
+                            GetAxisEndPerp(_cx, _cy, _phi, _halfLen2, out double a2x, out double a2y);
+                            GetAxisEndPerp(_cx, _cy, _phi, -_halfLen2, out double a2nx, out double a2ny);
+                            WDispCross(_cx, _cy, "orange", 50);
+                            WDispCross(a1x, a1y, "orange", 30);
+                            WDispCross(a2x, a2y, "orange", 30);
+                            WDispCross(a2nx, a2ny, "orange", 30);
+                            WDispRect2Arrow(_cx, _cy, _phi, _halfLen1, _halfLen2, "red");
+                        }
+                        break;
+
+                    case DrawType.Circle:
+                        {
+                            double edgeX = _circCX + _circR;
+                            double edgeY = _circCY;
+                            WDispCross(_circCX, _circCY, "orange", 50);
+                            WDispCross(edgeX, edgeY, "orange", 30);
+                            WDispCircle(_circCX, _circCY, _circR, "red");
+                        }
+                        break;
+
+                    case DrawType.Ellipse:
+                        {
+                            GetAxisEnd(_ellCX, _ellCY, _ellPhi, _ellR1, out double a1x, out double a1y);
+                            GetAxisEndPerp(_ellCX, _ellCY, _ellPhi, _ellR2, out double a2x, out double a2y);
+                            WDispCross(_ellCX, _ellCY, "orange", 50);
+                            WDispCross(a1x, a1y, "orange", 30);
+                            WDispCross(a2x, a2y, "orange", 30);
+                            WDispEllipse(_ellCX, _ellCY, _ellPhi, _ellR1, _ellR2, "red");
+                        }
+                        break;
+                }
+            }
+            finally
+            {
+                FlushBuffer();
             }
         }
 
