@@ -82,6 +82,19 @@ namespace DotNet.HalconUI
 
         #endregion
 
+        #region Draw Region
+
+        /// <summary> 绘制（创建）橡皮筋区域 </summary>
+        void DrawRegion(HWindow hWindow, CvRegion hRegion);
+
+        /// <summary> 绘制（修改）橡皮筋区域 </summary>
+        void DrawRegionMod(HWindow hWindow, CvRegion hRegion);
+
+        /// <summary> 绘制（创建）橡皮筋区域 </summary>
+        void DrawRegion(HWindow hWindow, RectEnum type, out HObject rectangle);
+
+        #endregion
+
         #region Region
 
         /// <summary>
@@ -109,15 +122,6 @@ namespace DotNet.HalconUI
         /// </summary>
         void DispCvRegion(HWindow hWindow, CvRegion hRegion);
 
-        /// <summary>
-        /// 绘制（创建）橡皮筋区域
-        /// </summary>
-        void DrawRegion(HWindow hWindow, CvRegion hRegion);
-
-        /// <summary>
-        /// 绘制（创建）橡皮筋区域
-        /// </summary>
-        void DrawRegionMod(HWindow hWindow, CvRegion hRegion);
 
         void DispRectangle2(HWindow hWindow, HTuple centerRow, HTuple centerCol, HTuple phi, HTuple length1, HTuple length2);
         void DispRectangle2(HWindow hWindow, HTuple centerRow, HTuple centerCol, HTuple phi, HTuple length1, HTuple length2, string color);

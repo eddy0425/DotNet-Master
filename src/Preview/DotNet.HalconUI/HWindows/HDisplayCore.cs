@@ -2,6 +2,7 @@
 using HalconDotNet;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 
 
 namespace DotNet.HalconUI
@@ -382,20 +383,22 @@ namespace DotNet.HalconUI
             display.DispCvRegion(hWindow, hRegion);
         }
 
-        /// <summary>
-        /// 绘制（创建）橡皮筋区域
-        /// </summary>
+        /// <summary> 绘制（创建）橡皮筋区域 </summary>
         public void DrawRegion(CvRegion hRegion)
         {
             display.DrawRegion(hWindow, hRegion);
         }
 
-        /// <summary>
-        /// 绘制（创建）橡皮筋区域
-        /// </summary>
+        /// <summary> 绘制（修改）橡皮筋区域 </summary>
         public void DrawRegionMod(CvRegion hRegion)
         {
             display.DrawRegionMod(hWindow, hRegion);
+        }
+
+        /// <summary> 绘制（创建）橡皮筋区域 </summary>
+        public void DrawRegion(RectEnum type, out HObject rectangle)
+        {
+            display.DrawRegion(hWindow, type, out rectangle);
         }
 
         public void DispRectangle2(HTuple centerRow, HTuple centerCol, HTuple phi, HTuple length1, HTuple length2)

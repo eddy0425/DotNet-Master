@@ -185,28 +185,32 @@ namespace DotNet.HalconAlgo
             inPara.FontY = VsControls["CB_FontY"].AsInt();
             inPara.FontSize = VsControls["CB_FontSize"].AsInt();
         }
-        public override void DrawROI(HDisplayUI display, RectEnum type)
+        public override void DrawROI(HDisplayUI display, RectEnum type, bool newROI)
         {
-            display.DrawRegion(type, out CvRegion hRegion);
-            display.DispRegion(hRegion, HColor.Blue);
-            inPara.HoRect.Dispose();
-            inPara.HoRect = hRegion;
+            if (newROI)
+            {
+                inPara.HoRect.Type = type;
+                display.DrawRegion(inPara.HoRect);
+            } 
+            else display.DrawRegionMod(inPara.HoRect);
+
+            display.DispRegion(inPara.HoRect, HColor.Blue);
             display.SetRectPara(inPara.HoRect);
         }
         public override void DispROI(HDisplayUI display)
         {
             display.SetModelPara(inPara.HoRect.HoRegion, inPara.HoContour, inPara.Coord);
         }
-        public override void SetTemplate(HDisplayUI display, RectEnum type)
+        public override void SetTemplate(HDisplayUI display, RectEnum type, bool newModel)
         {
             HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
             HObject ho_Contour = new HObject(); HOperatorSet.GenEmptyObj(out ho_Contour);
 
             try
             {
-                display.DrawRegion(type, out CvRegion hRegion);
-                inPara.ModeRect.Dispose();
-                inPara.ModeRect = hRegion;
+                inPara.ModeRect.Type = type;
+                if (newModel) display.DrawRegion(inPara.ModeRect);
+                else display.DrawRegionMod(inPara.ModeRect);
 
                 inPara.ModelPath = Path.Combine(AlgoPaths.JobDir, RunIndex.ToString(), "matching.bmp");
                 var hImage = display.HoImage;

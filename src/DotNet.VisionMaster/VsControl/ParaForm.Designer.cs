@@ -1138,6 +1138,7 @@
             this.but_modifyModel.TabIndex = 350;
             this.but_modifyModel.Text = "修改模版";
             this.but_modifyModel.UseVisualStyleBackColor = false;
+            this.but_modifyModel.Click += new System.EventHandler(this.but_modifyModel_Click);
             // 
             // panel1
             // 

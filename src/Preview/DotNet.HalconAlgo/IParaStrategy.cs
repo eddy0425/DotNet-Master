@@ -25,9 +25,9 @@ namespace DotNet.HalconAlgo
         bool Fun_action(HDisplayUI display, List<IParaStrategy> strategys);
         void DispPara(Form form, Dictionary<string, VsControlModel> VsControls);
         void SavePara(Form form, Dictionary<string, VsControlModel> VsControls);
-        void DrawROI(HDisplayUI display, RectEnum type);
+        void DrawROI(HDisplayUI display, RectEnum type, bool newROI);
         void DispROI(HDisplayUI display);
-        void SetTemplate(HDisplayUI display, RectEnum type);
+        void SetTemplate(HDisplayUI display, RectEnum type, bool newModel);
     }
 
     /// <summary>
@@ -62,9 +62,9 @@ namespace DotNet.HalconAlgo
         public abstract bool Fun_action(HDisplayUI display, List<IParaStrategy> strategys);
         public abstract void DispPara(Form form, Dictionary<string, VsControlModel> VsControls);
         public abstract void SavePara(Form form, Dictionary<string, VsControlModel> VsControls);
-        public virtual void DrawROI(HDisplayUI display, RectEnum type) { }
+        public virtual void DrawROI(HDisplayUI display, RectEnum type, bool newROI) { }
         public virtual void DispROI(HDisplayUI display) { }
-        public virtual void SetTemplate(HDisplayUI display, RectEnum type) { }
+        public virtual void SetTemplate(HDisplayUI display, RectEnum type, bool newModel) { }
 
     }
 

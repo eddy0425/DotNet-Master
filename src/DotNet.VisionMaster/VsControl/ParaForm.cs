@@ -207,7 +207,7 @@ namespace DotNet.VisionMaster
                 }
                 var drawType = _rectDrawMap.FirstOrDefault(kv => kv.Key.Checked).Value;
                 _disPlay.ReDispImage();
-                strategy.DrawROI(_disPlay, drawType);
+                strategy.DrawROI(_disPlay, drawType, true);
             }
             catch (Exception ex) { MessageBox.Show(ex.Message); }
         }
@@ -215,8 +215,10 @@ namespace DotNet.VisionMaster
         {
             try
             {
-                //var strategy = _strategys[_index];
-                //_disPlay.SetDrawMode(strategy.Name, DrawEnum.EditRect);
+                var strategy = _strategys[_index];
+                _disPlay.ReDispImage();
+                var drawType = _rectDrawMap.FirstOrDefault(kv => kv.Key.Checked).Value;
+                strategy.DrawROI(_disPlay, drawType, false);
             }
             catch (Exception ex) { MessageBox.Show(ex.Message); }
         }
@@ -227,11 +229,22 @@ namespace DotNet.VisionMaster
                 var strategy = _strategys[_index];
                 var drawType = _modelDrawMap.FirstOrDefault(kv => kv.Key.Checked).Value;
                 _disPlay.ReDispImage();
-                strategy.SetTemplate(_disPlay, drawType);
-                //_disPlay.SetDrawMode(strategy.Name, DrawEnum.DispModel);
+                strategy.SetTemplate(_disPlay, drawType, true);
             }
             catch (Exception ex) { MessageBox.Show(ex.Message); }
 
+        }
+
+        private void but_modifyModel_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var strategy = _strategys[_index];
+                var drawType = _modelDrawMap.FirstOrDefault(kv => kv.Key.Checked).Value;
+                _disPlay.ReDispImage();
+                strategy.SetTemplate(_disPlay, drawType, false);
+            }
+            catch (Exception ex) { MessageBox.Show(ex.Message); }
         }
         private void but_editModel_Click(object sender, EventArgs e)
         {

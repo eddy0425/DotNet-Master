@@ -328,6 +328,184 @@ namespace DotNet.HalconUI
 
         #endregion
 
+        #region Draw Region
+
+        /// <summary> 新建区域 </summary>
+        public void DrawRegion(HWindow hWindow, CvRegion hRegion)
+        {
+            DrawHelper.CancelDraw();
+
+            switch (hRegion.Type)
+            {
+                case RectEnum.Rectangle:
+                    {
+                        DrawHelper.DrawRectangle1(hWindow, out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2);
+                        HOperatorSet.GenRectangle1(out HObject rectangle, row1, column1, row2, column2);
+
+                        hRegion.Update2Point(row1, column1, row2, column2);
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = rectangle;
+                    }
+                    break;
+                case RectEnum.AffRect:
+                    {
+                        DrawHelper.DrawRectangle2(hWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
+                        HOperatorSet.GenRectangle2(out HObject rectangle, row, column, phi, length1, length2);
+
+                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(length1.D * 2, length2.D * 2));
+                        hRegion.Phi = phi;
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = rectangle;
+                    }
+                    break;
+                case RectEnum.Circle:
+                    {
+                        DrawHelper.DrawCircle(hWindow, out HTuple row, out HTuple column, out HTuple radius);
+                        HOperatorSet.GenCircle(out HObject circle, row, column, radius);
+
+                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius.D * 2, radius.D * 2));
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = circle;
+                    }
+                    break;
+                case RectEnum.Ellipse:
+                    {
+                        DrawHelper.DrawEllipse(hWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2);
+                        HOperatorSet.GenEllipse(out HObject ellipse, row, column, phi, radius1, radius2);
+
+                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius1.D * 2, radius2.D * 2));
+                        hRegion.Phi = phi;
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = ellipse;
+                    }
+                    break;
+                case RectEnum.Polygon:
+                    {
+                        DrawHelper.DrawRegion(out HObject region, hWindow);
+                        HOperatorSet.GetRegionPolygon(region, 1, out HTuple rows, out HTuple columns);
+                        HOperatorSet.AreaCenter(region, out HTuple area, out HTuple hv_Row, out HTuple hv_Column);
+                        hRegion.PolygonX = columns;
+                        hRegion.PolygonY = rows;
+                        hRegion.Center = new Point2d(hv_Column.D, hv_Row.D);
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = region;
+                    }
+                    break;
+            }
+        }
+
+        /// <summary> 修改区域 </summary>
+        public void DrawRegionMod(HWindow hWindow, CvRegion hRegion)
+        {
+            DrawHelper.CancelDraw();
+            switch (hRegion.Type)
+            {
+                case RectEnum.Rectangle:
+                    {
+                        DrawHelper.DrawRectangle1Mod(hWindow, hRegion.Top, hRegion.Left, hRegion.Bottom, hRegion.Right,
+                                                  out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2);
+
+                        HOperatorSet.GenRectangle1(out HObject rectangle, row1, column1, row2, column2);
+
+                        hRegion.Update2Point(row1, column1, row2, column2);
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = rectangle;
+                    }
+                    break;
+                case RectEnum.AffRect:
+                    {
+                        DrawHelper.DrawRectangle2Mod(hWindow, hRegion.CenterY, hRegion.CenterX, hRegion.Phi,
+                                                hRegion.Width / 2, hRegion.Height / 2,
+                                                out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
+                        HOperatorSet.GenRectangle2(out HObject rectangle, row, column, phi, length1, length2);
+
+                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(length1.D * 2, length2.D * 2));
+                        hRegion.Phi = phi;
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = rectangle;
+                    }
+                    break;
+                case RectEnum.Circle:
+                    {
+                        DrawHelper.DrawCircleMod(hWindow, hRegion.CenterY, hRegion.CenterX, hRegion.Width / 2,
+                                           out HTuple row, out HTuple column, out HTuple radius);
+                        HOperatorSet.GenCircle(out HObject circle, row, column, radius);
+
+                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius.D * 2, radius.D * 2));
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = circle;
+                    }
+                    break;
+                case RectEnum.Ellipse:
+                    {
+                        DrawHelper.DrawEllipseMod(hWindow, hRegion.CenterY, hRegion.CenterX, hRegion.Phi,
+                                                     hRegion.Width / 2, hRegion.Height / 2,
+                                                     out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2);
+                        HOperatorSet.GenEllipse(out HObject ellipse, row, column, phi, radius1, radius2);
+
+                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius1.D * 2, radius2.D * 2));
+                        hRegion.Phi = phi;
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = ellipse;
+                    }
+                    break;
+                case RectEnum.Polygon:
+                    {
+                        DrawHelper.DrawRegion(out HObject region, hWindow);
+                        HOperatorSet.GetRegionPolygon(region, 1, out HTuple rows, out HTuple columns);
+                        HOperatorSet.AreaCenter(region, out HTuple area, out HTuple hv_Row, out HTuple hv_Column);
+                        hRegion.PolygonX = columns;
+                        hRegion.PolygonY = rows;
+                        hRegion.Center = new Point2d(hv_Column.D, hv_Row.D);
+                        hRegion.HoRegion.Dispose();
+                        hRegion.HoRegion = region;
+                    }
+                    break;
+            }
+        }
+
+        /// <summary> 新建区域 </summary>
+        public void DrawRegion(HWindow hWindow, RectEnum type, out HObject rectangle)
+        {
+            DrawHelper.CancelDraw();
+            HOperatorSet.GenEmptyObj(out rectangle);
+
+            switch (type)
+            {
+                case RectEnum.Rectangle:
+                    {
+                        DrawHelper.DrawRectangle1(hWindow, out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2);
+                        HOperatorSet.GenRectangle1(out rectangle, row1, column1, row2, column2);
+                    }
+                    break;
+                case RectEnum.AffRect:
+                    {
+                        DrawHelper.DrawRectangle2(hWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
+                        HOperatorSet.GenRectangle2(out rectangle, row, column, phi, length1, length2);
+                    }
+                    break;
+                case RectEnum.Circle:
+                    {
+                        DrawHelper.DrawCircle(hWindow, out HTuple row, out HTuple column, out HTuple radius);
+                        HOperatorSet.GenCircle(out rectangle, row, column, radius);
+                    }
+                    break;
+                case RectEnum.Ellipse:
+                    {
+                        DrawHelper.DrawEllipse(hWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2);
+                        HOperatorSet.GenEllipse(out rectangle, row, column, phi, radius1, radius2);
+                    }
+                    break;
+                case RectEnum.Polygon:
+                    {
+                        DrawHelper.DrawRegion(out rectangle, hWindow);
+                    }
+                    break;
+            }
+        }
+
+        #endregion
+
         #region Region
 
         /// <summary> 显示ROI区域 </summary>
@@ -413,136 +591,6 @@ namespace DotNet.HalconUI
                             circle1.Dispose();
                             circle2.Dispose();
                         }
-                    }
-                    break;
-            }
-        }
-
-        /// <summary> 绘制（创建）橡皮筋区域 </summary>
-        public void DrawRegion(HWindow hWindow, CvRegion hRegion)
-        {
-            HalconAPI.CancelDraw();
-
-            switch (hRegion.Type)
-            {
-                case RectEnum.Rectangle:
-                    {
-                        HOperatorSet.DrawRectangle1(hWindow, out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2);
-                        HOperatorSet.GenRectangle1(out HObject rectangle, row1, column1, row2, column2);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = rectangle;
-                        hRegion.Update2Point(row1, column1, row2, column2);
-                    }
-                    break;
-                case RectEnum.AffRect:
-                    {
-                        HOperatorSet.DrawRectangle2(hWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
-                        HOperatorSet.GenRectangle2(out HObject rectangle, row, column, phi, length1, length2);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = rectangle;
-                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(length1.D * 2, length2.D * 2));
-                        hRegion.Phi = phi;
-                    }
-                    break;
-                case RectEnum.Ring:
-                case RectEnum.Circle:
-                    {
-                        HOperatorSet.DrawCircle(hWindow, out HTuple row, out HTuple column, out HTuple radius);
-                        HOperatorSet.GenCircle(out HObject circle, row, column, radius);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = circle;
-                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius.D * 2, radius.D * 2));
-                    }
-                    break;
-                case RectEnum.Ellipse:
-                    {
-                        HOperatorSet.DrawEllipse(hWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2);
-                        HOperatorSet.GenEllipse(out HObject ellipse, row, column, phi, radius1, radius2);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = ellipse;
-                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius1.D * 2, radius2.D * 2));
-                        hRegion.Phi = phi;
-                    }
-                    break;
-                case RectEnum.Polygon:
-                    {
-                        HOperatorSet.DrawRegion(out HObject region, hWindow);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = region;
-                        HOperatorSet.GetRegionPolygon(hRegion.HoRegion, 1, out HTuple rows, out HTuple columns);
-                        hRegion.PolygonX = rows;
-                        hRegion.PolygonY = columns;
-                        HOperatorSet.AreaCenter(hRegion.HoRegion, out HTuple area, out HTuple hv_Row, out HTuple hv_Column);
-                        hRegion.Center = new Point2d(hv_Row.D, hv_Column.D);
-                    }
-                    break;
-            }
-        }
-
-        /// <summary> 绘制（创建）橡皮筋区域 </summary>
-        public void DrawRegionMod(HWindow hWindow, CvRegion hRegion)
-        {
-            HalconAPI.CancelDraw();
-
-            switch (hRegion.Type)
-            {
-                case RectEnum.Rectangle:
-                    {
-                        HOperatorSet.DrawRectangle1Mod(hWindow, hRegion.Top, hRegion.Left, hRegion.Bottom, hRegion.Right,
-                                                  out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2);
-
-                        HOperatorSet.GenRectangle1(out HObject rectangle, row1, column1, row2, column2);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = rectangle;
-                        hRegion.Update2Point(row1, column1, row2, column2);
-                    }
-                    break;
-                case RectEnum.AffRect:
-                    {
-                        HOperatorSet.DrawRectangle2Mod(hWindow, hRegion.CenterY, hRegion.CenterX, hRegion.Phi,
-                                                 hRegion.Width / 2, hRegion.Height / 2,
-                                                 out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
-                        HOperatorSet.GenRectangle2(out HObject rectangle, row, column, phi, length1, length2);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = rectangle;
-                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(length1.D * 2, length2.D * 2));
-                        hRegion.Phi = phi;
-                    }
-                    break;
-                case RectEnum.Ring:
-                case RectEnum.Circle:
-                    {
-                        HOperatorSet.DrawCircleMod(hWindow, hRegion.CenterY, hRegion.CenterX, hRegion.Width / 2,
-                                                  out HTuple row, out HTuple column, out HTuple radius);
-                        HOperatorSet.GenCircle(out HObject circle, row, column, radius);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = circle;
-                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius.D * 2, radius.D * 2));
-                    }
-                    break;
-                case RectEnum.Ellipse:
-                    {
-                        HOperatorSet.DrawEllipseMod(hWindow, hRegion.CenterY, hRegion.CenterX, hRegion.Phi,
-                                                      hRegion.Width / 2, hRegion.Height / 2,
-                                                      out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2);
-                        HOperatorSet.GenEllipse(out HObject ellipse, row, column, phi, radius1, radius2);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = ellipse;
-                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius1.D * 2, radius2.D * 2));
-                        hRegion.Phi = phi;
-                    }
-                    break;
-                case RectEnum.Polygon:
-                    {
-                        HOperatorSet.DrawRegion(out HObject region, hWindow);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = region;
-                        HOperatorSet.GetRegionPolygon(hRegion.HoRegion, 1, out HTuple rows, out HTuple columns);
-                        hRegion.PolygonX = rows;
-                        hRegion.PolygonY = columns;
-
-                        HOperatorSet.AreaCenter(hRegion.HoRegion, out HTuple area, out HTuple hv_Row, out HTuple hv_Column);
-                        hRegion.Center = new Point2d(hv_Row.D, hv_Column.D);
                     }
                     break;
             }

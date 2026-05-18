@@ -234,149 +234,6 @@ namespace DotNet.HalconUI
 
         #endregion
 
-        #region 区域相关
-
-        /// <summary> 显示橡皮筋区域 </summary>
-        public void DispGenRegion(CvRegion hRegion)
-        {
-            display.DispGenRegion(hRegion);
-        }
-
-        /// <summary> 获取坐标区域并显示 </summary>
-        public void GenCoordsRegion(CvRegion hRegion, List<CvCoord> coords)
-        {
-            display.GenCoordsRegion(hRegion, coords);
-        }
-
-        /// <summary> 绘制区域 </summary>
-        public void DrawRegion(RectEnum type, out CvRegion hRegion)
-        {
-            drawType = DrawEnum.None;
-            Reset();
-            DrawHelper.CancelDraw();
-            hRegion = new CvRegion();
-            hRegion.Type = type;
-            switch (type)
-            {
-                case RectEnum.Rectangle:
-                    {
-                        DrawHelper.DrawRectangle1(HoWindow, out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2);
-                        HOperatorSet.GenRectangle1(out HObject rectangle, row1, column1, row2, column2);
-
-                        hRegion.Update2Point(row1, column1, row2, column2);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = rectangle;
-                    }
-                    break;
-                case RectEnum.AffRect:
-                    {
-                        DrawHelper.DrawRectangle2(HoWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
-                        HOperatorSet.GenRectangle2(out HObject rectangle, row, column, phi, length1, length2);
-
-                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(length1.D * 2, length2.D * 2));
-                        hRegion.Phi = phi;
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = rectangle;
-                    }
-                    break;
-                case RectEnum.Circle:
-                    {
-                        DrawHelper.DrawCircle(HoWindow, out HTuple row, out HTuple column, out HTuple radius);
-                        HOperatorSet.GenCircle(out HObject circle, row, column, radius);
-
-                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius.D * 2, radius.D * 2));
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = circle;
-                    }
-                    break;
-                case RectEnum.Ellipse:
-                    {
-                        DrawHelper.DrawEllipse(HoWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2);
-                        HOperatorSet.GenEllipse(out HObject ellipse, row, column, phi, radius1, radius2);
-
-                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius1.D * 2, radius2.D * 2));
-                        hRegion.Phi = phi;
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = ellipse;
-                    }
-                    break;
-                case RectEnum.Polygon:
-                    {
-                        DrawHelper.DrawRegion(out HObject region, HoWindow);
-                        HOperatorSet.GetRegionPolygon(region, 1, out HTuple rows, out HTuple columns);
-                        HOperatorSet.AreaCenter(region, out HTuple area, out HTuple hv_Row, out HTuple hv_Column);
-                        hRegion.PolygonX = columns;
-                        hRegion.PolygonY = rows;
-                        hRegion.Center = new Point2d(hv_Column.D, hv_Row.D);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = region;
-                    }
-                    break;
-                case RectEnum.Ring:
-                    {
-                        //HObject circle1; HOperatorSet.GenEmptyObj(out circle1);
-                        //HObject circle2; HOperatorSet.GenEmptyObj(out circle2);
-                        //try
-                        //{
-                        //    HOperatorSet.GenCircle(out circle1, hRegion.CenterY, hRegion.CenterX, hRegion.MaxRadius);
-                        //    HOperatorSet.GenCircle(out circle2, hRegion.CenterY, hRegion.CenterX, hRegion.MinRadius);
-                        //    HOperatorSet.Difference(circle1, circle2, out HObject region);
-                        //    hRegion.HoRegion.Dispose();
-                        //    hRegion.HoRegion = region;
-                        //}
-                        //finally
-                        //{
-                        //    circle1.Dispose();
-                        //    circle2.Dispose();
-                        //}
-                    }
-                    break;
-            }
-        }
-
-        /// <summary> 绘制区域 </summary>
-        public void DrawRegion(RectEnum type, out HObject rectangle)
-        {
-            drawType = DrawEnum.None;
-            Reset();
-            DrawHelper.CancelDraw();
-            HOperatorSet.GenEmptyObj(out rectangle);
-
-            switch (type)
-            {
-                case RectEnum.Rectangle:
-                    {
-                        DrawHelper.DrawRectangle1(HoWindow, out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2);
-                        HOperatorSet.GenRectangle1(out rectangle, row1, column1, row2, column2);
-                    }
-                    break;
-                case RectEnum.AffRect:
-                    {
-                        DrawHelper.DrawRectangle2(HoWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
-                        HOperatorSet.GenRectangle2(out rectangle, row, column, phi, length1, length2);
-                    }
-                    break;
-                case RectEnum.Circle:
-                    {
-                        DrawHelper.DrawCircle(HoWindow, out HTuple row, out HTuple column, out HTuple radius);
-                        HOperatorSet.GenCircle(out rectangle, row, column, radius);
-                    }
-                    break;
-                case RectEnum.Ellipse:
-                    {
-                        DrawHelper.DrawEllipse(HoWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2);
-                        HOperatorSet.GenEllipse(out rectangle, row, column, phi, radius1, radius2);
-                    }
-                    break;
-                case RectEnum.Polygon:
-                    {
-                        DrawHelper.DrawRegion(out rectangle, HoWindow);
-                    }
-                    break;
-            }
-        }
-
-        #endregion
 
         #region 点相关
         public void DispPoint(double crossX, double crossY, double size = 20)
@@ -550,6 +407,55 @@ namespace DotNet.HalconUI
 
         #endregion
 
+        #region Draw Region
+
+        /// <summary>
+        /// 绘制（创建）橡皮筋区域
+        /// </summary>
+        public void DrawRegion(CvRegion hRegion)
+        {
+            drawType = DrawEnum.None;
+            Reset();
+            display.DrawRegion(hRegion);
+        }
+
+        /// <summary>
+        /// 绘制（修改）橡皮筋区域
+        /// </summary>
+        public void DrawRegionMod(CvRegion hRegion)
+        {
+            drawType = DrawEnum.None;
+            Reset();
+            display.DrawRegionMod(hRegion);
+        }
+
+        /// <summary> 绘制区域 </summary>
+        public void DrawRegion(RectEnum type, out HObject rectangle)
+        {
+            drawType = DrawEnum.None;
+            Reset();
+            display.DrawRegion(type, out rectangle);
+        }
+
+        #endregion
+
+        #region 区域相关
+
+        /// <summary> 显示橡皮筋区域 </summary>
+        public void DispGenRegion(CvRegion hRegion)
+        {
+            display.DispGenRegion(hRegion);
+        }
+
+        /// <summary> 获取坐标区域并显示 </summary>
+        public void GenCoordsRegion(CvRegion hRegion, List<CvCoord> coords)
+        {
+            display.GenCoordsRegion(hRegion, coords);
+        }
+
+        #endregion
+
+
         #region Region
 
         /// <summary>
@@ -590,22 +496,6 @@ namespace DotNet.HalconUI
         public void DispCvRegion(CvRegion hRegion)
         {
             display.DispCvRegion(hRegion);
-        }
-
-        /// <summary>
-        /// 绘制（创建）橡皮筋区域
-        /// </summary>
-        public void DrawRegion(CvRegion hRegion)
-        {
-            display.DrawRegion(hRegion);
-        }
-
-        /// <summary>
-        /// 绘制（创建）橡皮筋区域
-        /// </summary>
-        public void DrawRegionMod(CvRegion hRegion)
-        {
-            display.DrawRegionMod(hRegion);
         }
 
         public void DispRectangle2(HTuple centerRow, HTuple centerCol, HTuple phi, HTuple length1, HTuple length2)
