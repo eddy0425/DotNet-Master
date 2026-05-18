@@ -49,17 +49,29 @@ namespace DotNet.HalconUI
             }
         }
 
-        /// <summary>
-        /// 重新显示
-        /// </summary>
+        /// <summary> 图像显示 </summary>
         public void Fun_ReDisplay()
         {
-            Fun_DispImage(HoImage, false);
+            try
+            {
+                if (hWindowControl.Parent == null || hWindowControl.IsDisposed || !hWindowControl.Visible) return;
+
+                if (!HoImage.NotNull())
+                {
+                    HOperatorSet.ClearWindow(hWindow);
+                    return;
+                }
+
+                HOperatorSet.DispObj(HoImage, hWindow);
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
 
-        /// <summary>
-        /// 图像显示
-        /// </summary>
+        /// <summary> 图像显示 </summary>
         public void Fun_DispImage(HObject _image, bool isSetPart)
         {
             try
@@ -93,9 +105,7 @@ namespace DotNet.HalconUI
             }
         }
 
-        /// <summary>
-        /// 按父容器尺寸缩放/居中 HWindowControl
-        /// </summary>
+        /// <summary> 按父容器尺寸缩放/居中 HWindowControl </summary>
         private void Fun_ZoomImage(ZoomImage info)
         {
             try

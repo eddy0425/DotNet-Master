@@ -6,7 +6,7 @@ namespace DotNet.HalconUI
     /// <summary>
     /// 图像缩放信息载体
     /// </summary>
-    public struct ZoomImage
+    public class ZoomImage
     {
         /// <summary>
         /// 图像宽度（默认 1248）

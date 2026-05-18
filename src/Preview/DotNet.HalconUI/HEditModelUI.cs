@@ -160,25 +160,30 @@ namespace DotNet.HalconUI
 
             _srcImage.Dispose();
             HOperatorSet.ReadImage(out _srcImage, modelPath);
-            display.DispImage(_srcImage);
+            //display.DispImage(_srcImage);
 
             Point2d from = result.Coord.Center;
             Point2d to = display.HoCentre;
 
             shrFindMode.Dispose();
             TransObject(from, to, ho_ModeRect, out shrFindMode);
-            display.DispRegion(shrFindMode, HColor.Blue);
+            //display.DispRegion(shrFindMode, HColor.Blue);
 
             _shrContour.Dispose();
             TransObject(from, to, ho_Contour, out _shrContour);
-            display.DispRegion(_shrContour, HColor.Green);
+            //display.DispRegion(_shrContour, HColor.Green);
 
             HalconHelper.TransPixel(from, to, result.Row, result.Column, out HTuple rowTrans, out HTuple colTrans);
             _shrCoord = new CvCoord(colTrans, rowTrans, result.Angle);
-            display.DispCross(colTrans, rowTrans, result.Angle, HColor.Red);
+            //display.DispCross(colTrans, rowTrans, result.Angle, HColor.Red);
 
             display.SetModelPara(shrFindMode, _shrContour, _shrCoord);
             _drawType = DrawEnum.DispModel;
+
+            display.DispImage(_srcImage);
+            display.DispRegion(shrFindMode, HColor.Blue);
+            display.DispRegion(_shrContour, HColor.Green);
+            display.DispCross(colTrans, rowTrans, result.Angle, HColor.Red);
         }
 
         private static void TransObject(Point2d from, Point2d to, HObject obj, out HObject objTrans)

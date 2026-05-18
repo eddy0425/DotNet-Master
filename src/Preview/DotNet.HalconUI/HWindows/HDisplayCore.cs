@@ -48,20 +48,9 @@ namespace DotNet.HalconUI
 
             HOperatorSet.GenEmptyObj(out srcImage);
 
-            InitHWindow();
-        }
-
-        public void InitHWindow()
-        {
-            //5120x3840  //512 × 512
-            HImage hImage = new HImage("byte", 800, 600);
-            try
+            using (HImage hImage = new HImage("byte", 800, 600))
             {
                 DispImage(hImage);
-            }
-            finally
-            {
-                hImage.Dispose();
             }
         }
 
