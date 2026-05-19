@@ -49,14 +49,10 @@ namespace DotNet.HalconUI
 
         #region 区域相关
 
-        /// <summary>
-        /// 显示橡皮筋区域
-        /// </summary>
+        /// <summary> 显示橡皮筋区域 </summary>
         void DispGenRegion(CvRegion hRegion);
 
-        /// <summary>
-        /// 获取坐标区域并显示
-        /// </summary>
+        /// <summary> 获取坐标区域并显示 </summary>
         void GenCoordsRegion(CvRegion hRegion, List<CvCoord> coords);
 
         #endregion
@@ -130,29 +126,19 @@ namespace DotNet.HalconUI
 
         #region Region
 
-        /// <summary>
-        /// 显示ROI区域
-        /// </summary>
+        /// <summary> 显示ROI区域 </summary>
         void DispRegion(HObject hRegion);
 
-        /// <summary>
-        /// 显示ROI区域
-        /// </summary>
+        /// <summary> 显示ROI区域 </summary>
         void DispRegion(HObject hRegion, string color);
 
-        /// <summary>
-        /// 显示橡皮筋区域
-        /// </summary>
+        /// <summary> 显示橡皮筋区域 </summary>
         void DispRegion(CvRegion hRegion);
 
-        /// <summary>
-        /// 显示橡皮筋区域
-        /// </summary>
+        /// <summary> 显示橡皮筋区域 </summary>
         void DispRegion(CvRegion hRegion, string color);
 
-        /// <summary>
-        /// 显示橡皮筋区域
-        /// </summary>
+        /// <summary> 显示橡皮筋区域 </summary>
         void DispCvRegion(CvRegion hRegion);
 
 

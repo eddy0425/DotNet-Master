@@ -220,16 +220,14 @@ namespace DotNet.HalconUI
         /// <summary> 显示图片 </summary>
         public void DispImage(HObject image)
         {
-            if (display == null) return;
-            display.DispImage(image);
+            display?.DispImage(image);
             OnShow?.Invoke();
         }
 
         /// <summary> 显示图片 </summary>
         public void DispImage(HObject image, bool isSetPart)
         {
-            if (display == null) return;
-            display.DispImage(image, isSetPart);
+            display?.DispImage(image, isSetPart);
             OnShow?.Invoke();
         }
 

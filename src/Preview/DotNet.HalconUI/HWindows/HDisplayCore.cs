@@ -2,7 +2,6 @@
 using HalconDotNet;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 
 
 namespace DotNet.HalconUI
@@ -257,25 +256,13 @@ namespace DotNet.HalconUI
             display.DispLine(line, radius, color);
         }
 
-        /// <summary>
-        /// 画两点一线
-        /// </summary>
-        /// <param name="point1"></param>
-        /// <param name="point2"></param>
-        /// <param name="step"></param>
-        /// <param name="color"></param>
+        /// <summary> 画两点一线 </summary>
         public void DispLine(Point2d point1, Point2d point2, int step)
         {
             display.DispLine(point1, point2, step);
         }
 
-        /// <summary>
-        /// 画两点一线
-        /// </summary>
-        /// <param name="point1"></param>
-        /// <param name="point2"></param>
-        /// <param name="step"></param>
-        /// <param name="color"></param>
+        /// <summary> 画两点一线 </summary>
         public void DispLine(Point2d point1, Point2d point2, int step, string color)
         {
             display.DispLine(point1, point2, step, color);
@@ -333,41 +320,31 @@ namespace DotNet.HalconUI
 
         #region Region
 
-        /// <summary>
-        /// 显示橡皮筋区域
-        /// </summary>
+        /// <summary> 显示橡皮筋区域 </summary>
         public void DispRegion(HObject hRegion)
         {
             display.DispRegion(hRegion);
         }
 
-        /// <summary>
-        /// 显示ROI区域
-        /// </summary>
+        /// <summary> 显示ROI区域 </summary>
         public void DispRegion(HObject hRegion, string color)
         {
             display.DispRegion(hRegion, color);
         }
 
-        /// <summary>
-        /// 显示橡皮筋区域
-        /// </summary>
+        /// <summary> 显示橡皮筋区域 </summary>
         public void DispRegion(CvRegion hRegion)
         {
             display.DispRegion(hRegion);
         }
 
-        /// <summary>
-        /// 显示橡皮筋区域
-        /// </summary>
+        /// <summary> 显示橡皮筋区域 </summary>
         public void DispRegion(CvRegion hRegion, string color)
         {
             display.DispRegion(hRegion, color);
         }
 
-        /// <summary>
-        /// 显示橡皮筋区域
-        /// </summary>
+        /// <summary> 显示橡皮筋区域 </summary>
         public void DispCvRegion(CvRegion hRegion)
         {
             display.DispCvRegion(hRegion);
