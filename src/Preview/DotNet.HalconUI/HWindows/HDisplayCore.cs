@@ -11,23 +11,20 @@ namespace DotNet.HalconUI
     {
         bool _disposed;
 
-        HWindow hWindow;
-        HObject srcImage;
-        IHWindowFont _hWindowFont;
-        HWindowImage _hWindowImage;
+        HWindow _hWindow;
         HWindowMouse _hWindowMouse;
         HWindowControl _hWindowControl;
         IHDisplay display;
 
-        public bool IsCross;           //是否画十字
-        public bool Adaptive = true;   //自适应
         #region 属性
-        public double Width { get { return _hWindowImage.Width; } }
-        public double Height { get { return _hWindowImage.Height; } }
-        public Size2d Size => new Size2d(_hWindowImage.Width, _hWindowImage.Height);
-        public Point2d Centre => new Point2d(_hWindowImage.Width / 2, _hWindowImage.Height / 2);
-        public HObject HoImage => _hWindowImage.HoImage;  //图像
-        public HWindow HoWindow => hWindow;  //窗体控件
+        public double HoWidth { get { return display.HoWidth; } }
+        public double HoHeight { get { return display.HoHeight; } }
+        public Size2d Size => new Size2d(display.HoWidth, display.HoHeight);
+        public Point2d Centre => new Point2d(display.HoWidth / 2, display.HoHeight / 2);
+        public HObject HoImage => display.HoImage;  //图像
+        public HWindow HoWindow => _hWindow;  //窗体控件
+        public bool IsCross { get { return display.IsCross; } set { display.IsCross = value; } } //是否画十字
+        public bool Adaptive { get { return display.Adaptive; } set { display.Adaptive = value; } } //自适应
         public bool MouseDown { get { return _hWindowMouse.MouseDown; } set { _hWindowMouse.MouseDown = value; } } //鼠标按下
         public bool MouseDouble { get { return _hWindowMouse.MouseDouble; } set { _hWindowMouse.MouseDouble = value; } }  //鼠标双击按下
 
@@ -42,14 +39,10 @@ namespace DotNet.HalconUI
         public HDisplayCore(HWindowControl hWindowControl)
         {
             _hWindowControl = hWindowControl;
-            hWindow = _hWindowControl.HalconWindow;
-            _hWindowFont = new HWindowFont2018(hWindow);
-            _hWindowImage = new HWindowImage(hWindow, _hWindowControl);
-            _hWindowMouse = new HWindowMouse(hWindow, _hWindowControl, _hWindowImage);
-            display = new HDisplay(hWindow);
+            _hWindow = _hWindowControl.HalconWindow;
+            display = new HDisplay(_hWindow, _hWindowControl);
+            _hWindowMouse = new HWindowMouse(_hWindow, _hWindowControl, display);
 
-            HOperatorSet.GenEmptyObj(out srcImage);
-   
             using (HImage hImage = new HImage("byte", 800, 600))
             {
                 DispImage(hImage);
@@ -63,79 +56,56 @@ namespace DotNet.HalconUI
 
             // 释放顺序：先解绑事件订阅，再释放本类持有所有权的图像。
             // 注意：hWindow / _hWindowControl 由宿主 UserControl (HDisplayUI) 通过 Designer 的 Dispose(bool) 负责释放，本类不再主动释放，避免双重释放。
+
             _hWindowMouse?.Dispose();
-            _hWindowImage?.Dispose();
-            srcImage?.Dispose();
+            display.Dispose();
 
             GC.SuppressFinalize(this);
         }
-
-        #region IHWindowFont
-
-        /// <summary> 设置字体大小 </summary>
-        public void SetFontSize(HTuple hv_Size)
-        {
-            _hWindowFont.SetFontSize(hv_Size);
-        }
-
-        /// <summary> 显示字体 </summary>
-        public void DispText(string message, HTuple FontX, HTuple FontY, string color)
-        {
-            _hWindowFont.DispText(message, FontY, FontX, color);
-        }
-
-        /// <summary> 显示字体 </summary>
-        public void DispText(string message, HTuple FontX, HTuple FontY, HTuple size, string color)
-        {
-            _hWindowFont.SetFontSize(size);
-            _hWindowFont.DispText(message, FontY, FontX, color);
-        }
-
-        #endregion
 
         #region HWindowImage
 
         /// <summary> 显示图片 </summary>
         public void DispImage(HObject image)
         {
-            try
-            {
-                srcImage.Dispose();
-                HOperatorSet.CopyImage(image, out srcImage);
-                DispImage(srcImage, Adaptive);
-            }
-            catch
-            {
-
-            }
+            display.DispImage(image);
         }
 
         /// <summary> 显示图片 </summary>
         public void DispImage(HObject image, bool isSetPart)
         {
-            _hWindowImage.Fun_DispImage(image, isSetPart);
-
-            if (IsCross)
-            {
-                if (GetColor() != HColor.Red)
-                {
-                    SetColor(HColor.Red);
-                }
-
-                double size = Width > Height ? Width : Height;
-                HOperatorSet.DispCross(hWindow, Height / 2, Width / 2, size, 0);
-            }
+            display.DispImage(image, isSetPart);
         }
 
         /// <summary> 重新显示图片 </summary>
         public void ReDispImage()
         {
-            _hWindowImage.Fun_ReDisplay();
+            display.ReDispImage();
         }
 
         #endregion
 
-       
+        #region IHWindowFont
+
+        /// <summary> 设置字体大小 </summary>
+        public void SetFontSize(HTuple hv_Size)
+        {
+            display.SetFontSize(hv_Size);
+        }
+
+        /// <summary> 显示字体 </summary>
+        public void DispText(string message, HTuple FontX, HTuple FontY, string color)
+        {
+            display.DispText(message, FontX, FontY, color);
+        }
+
+        /// <summary> 显示字体 </summary>
+        public void DispText(string message, HTuple FontX, HTuple FontY, HTuple size, string color)
+        {
+            display.DispText(message, FontX, FontY, size, color);
+        }
+
+        #endregion
 
         /// <summary> 获取颜色 </summary>
         public string GetColor()

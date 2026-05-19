@@ -13,8 +13,8 @@ namespace DotNet.HalconUI
         double ColDown;                           //鼠标按下时的列坐标
 
         readonly HWindow hWindow;
+        readonly IHDisplay display;
         readonly HWindowControl hWindowControl;
-        readonly HWindowImage hWindowImage;
 
         bool _disposed;
 
@@ -22,18 +22,19 @@ namespace DotNet.HalconUI
         public bool MouseDown { get; set; }      //鼠标按下
         public bool MouseDouble { get; set; }    //鼠标双击按下
 
-        public HWindowMouse(HWindow _hWindow, HWindowControl _hWindowControl, HWindowImage _hWindowImage)
+        public HWindowMouse(HWindow _hWindow, HWindowControl _hWindowControl, IHDisplay _display)
         {
             hWindow = _hWindow;
+            display = _display;
             hWindowControl = _hWindowControl;
-            hWindowImage = _hWindowImage;
 
-            hWindowControl.HMouseUp += HWindowControl_HMouseUp;
-            hWindowControl.HMouseDown += HWindowControl_HMouseDown;
-            hWindowControl.HMouseWheel += HWindowControl_HMouseWheel;
+            hWindowControl.HMouseDown += OnHMouseDown;
+            hWindowControl.HMouseUp += OnHMouseUp;
+            hWindowControl.HMouseWheel += OnHMouseWheel;
         }
 
-        private void HWindowControl_HMouseDown(object sender, HMouseEventArgs e)  //鼠标指针在组件上方并释放鼠标按钮时发生
+
+        public void OnHMouseDown(object sender, HMouseEventArgs e)  //鼠标指针在组件上方并释放鼠标按钮时发生
         {
             try
             {
@@ -45,7 +46,7 @@ namespace DotNet.HalconUI
                 bool doubleClick = (DateTime.Now.Ticks - clickTicks) < 2000000;   //200ms                    
                 if (doubleClick)
                 {
-                    hWindowImage.Fun_DispImage(hWindowImage.HoImage, true);
+                    display.DispImage(display.HoImage, true);
                     Mouse_hand = false;
                     MouseDouble = true;
                 }
@@ -62,7 +63,7 @@ namespace DotNet.HalconUI
             }
             catch (Exception ex) { Console.WriteLine(ex.Message); }
         }
-        private void HWindowControl_HMouseUp(object sender, HMouseEventArgs e)  //鼠标移动事件调用函数
+        public void OnHMouseUp(object sender, HMouseEventArgs e)  //鼠标移动事件调用函数
         {
             try
             {
@@ -76,9 +77,9 @@ namespace DotNet.HalconUI
                     HOperatorSet.GetPart(hWindow, out row1, out col1, out row2, out col2);//得到当前的窗口坐标
                     HOperatorSet.SetPart(hWindow, row1 - RowMove, col1 - ColMove, row2 - RowMove, col2 - ColMove);//这里可能有些不好理解。以左上角原点为参考点
                     HOperatorSet.ClearWindow(hWindow);
-                    if (hWindowImage.HoImage != null)
+                    if (display.HoImage != null)
                     {
-                        HOperatorSet.DispObj(hWindowImage.HoImage, hWindow);
+                        HOperatorSet.DispObj(display.HoImage, hWindow);
                     }
                     else
                     {
@@ -87,16 +88,16 @@ namespace DotNet.HalconUI
                 }
 
                 var handler = RefreshUI;
-                if (handler != null && hWindowImage.HoImage.NotNull())
+                if (handler != null && display.HoImage.NotNull())
                 {
                     HTuple egray;
-                    HOperatorSet.GetGrayval(hWindowImage.HoImage, Row, Column, out egray);
+                    HOperatorSet.GetGrayval(display.HoImage, Row, Column, out egray);
                     handler.Invoke(Row, Column, egray);
                 }
             }
             catch (Exception ex) { Console.WriteLine(ex.Message); }
         }
-        private void HWindowControl_HMouseWheel(object sender, HMouseEventArgs e)  //鼠标指针在组件上方并按下鼠标按钮时发生
+        public void OnHMouseWheel(object sender, HMouseEventArgs e)  //鼠标指针在组件上方并按下鼠标按钮时发生
         {
             try
             {
@@ -122,7 +123,7 @@ namespace DotNet.HalconUI
                     c2 = c1 + (Wt / Zoom);
                     HOperatorSet.SetPart(hWindow, r1, c1, r2, c2);
                     HOperatorSet.ClearWindow(hWindow);
-                    HOperatorSet.DispObj(hWindowImage.HoImage, hWindow);
+                    HOperatorSet.DispObj(display.HoImage, hWindow);
                 }
             }
             catch (Exception ex) { Console.WriteLine(ex.Message); }
@@ -135,9 +136,9 @@ namespace DotNet.HalconUI
 
             if (hWindowControl != null && !hWindowControl.IsDisposed)
             {
-                hWindowControl.HMouseUp -= HWindowControl_HMouseUp;
-                hWindowControl.HMouseDown -= HWindowControl_HMouseDown;
-                hWindowControl.HMouseWheel -= HWindowControl_HMouseWheel;
+                hWindowControl.HMouseDown -= OnHMouseDown;
+                hWindowControl.HMouseUp -= OnHMouseUp;
+                hWindowControl.HMouseWheel -= OnHMouseWheel;
             }
 
             RefreshUI = null;

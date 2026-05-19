@@ -25,8 +25,8 @@ namespace DotNet.HalconUI
         }
 
         #region 属性
-        public double HoWidth => display.Width;
-        public double HoHeight => display.Height;
+        public double HoWidth => display.HoWidth;
+        public double HoHeight => display.HoHeight;
         public Size2d HoSize => display.Size;
         public Point2d HoCentre => display.Centre;
         public HObject HoImage => display.HoImage;  //图像

@@ -1,11 +1,44 @@
 ﻿using DotNet.Drawing;
 using HalconDotNet;
+using System;
 using System.Collections.Generic;
 
 namespace DotNet.HalconUI
 {
-    public interface IHDisplay
+    public interface IHDisplay : IDisposable
     {
+        bool IsCross { get; set; }      //是否画十字
+        bool Adaptive { get; set; }     //自适应
+        double HoWidth { get; }
+        double HoHeight { get; }
+        HObject HoImage { get; }
+
+        #region HWindowImage
+
+        /// <summary> 显示图片 </summary>
+        void DispImage(HObject image);
+
+        /// <summary> 显示图片 </summary>
+        void DispImage(HObject image, bool isSetPart);
+
+        /// <summary> 重新显示图片 </summary>
+        void ReDispImage();
+
+        #endregion
+
+        #region WindowFont
+
+        /// <summary> 设置字体大小 </summary>
+        void SetFontSize(HTuple hv_Size);
+
+        /// <summary> 显示字体 </summary>
+        void DispText(string message, HTuple FontX, HTuple FontY, string color);
+
+        /// <summary> 显示字体 </summary>
+        void DispText(string message, HTuple FontX, HTuple FontY, HTuple size, string color);
+
+        #endregion
+
         /// <summary> 获取颜色 </summary>
         string GetColor();
 
