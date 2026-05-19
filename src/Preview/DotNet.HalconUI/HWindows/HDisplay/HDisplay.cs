@@ -8,6 +8,12 @@ namespace DotNet.HalconUI
     public class HDisplay : IHDisplay
     {
         string _color;
+        HWindow hWindow;
+
+        public HDisplay(HWindow _hWindow)
+        {
+            hWindow = _hWindow;
+        }
 
         /// <summary> 获取颜色 </summary>
         public string GetColor()
@@ -16,7 +22,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary> 设置颜色 </summary>
-        public void SetColor(HWindow hWindow, string color)
+        public void SetColor(string color)
         {
             // 确保 hWindow 不是 null
             if (hWindow == null)
@@ -40,7 +46,7 @@ namespace DotNet.HalconUI
             hWindow.SetColor(color);
         }
 
-        public void ClearWinDisp(HWindow hWindow, HObject objectVal)
+        public void ClearWinDisp(HObject objectVal)
         {
             if (objectVal.NotNull())
             {
@@ -52,41 +58,41 @@ namespace DotNet.HalconUI
         #region 区域相关
 
         /// <summary> 显示橡皮筋区域 </summary>
-        public void DispGenRegion(HWindow hWindow, CvRegion hRegion)
+        public void DispGenRegion(CvRegion hRegion)
         {
             hRegion.GenRegion();
             hWindow.DispObj(hRegion.HoRegion);
         }
 
         /// <summary> 获取坐标区域并显示 </summary>
-        public void GenCoordsRegion(HWindow hWindow, CvRegion hRegion, List<CvCoord> coords)
+        public void GenCoordsRegion(CvRegion hRegion, List<CvCoord> coords)
         {
             hRegion.GenCoordsRegion(coords);
-            DispRegion(hWindow, hRegion.HoRegion, HColor.Green);
+            DispRegion(hRegion.HoRegion, HColor.Green);
         }
 
         #endregion
 
         #region 点相关
-        public void DispPoint(HWindow hWindow, double crossX, double crossY, double size = 20)
+        public void DispPoint(double crossX, double crossY, double size = 20)
         {
             hWindow.DispCross(crossY, crossX, size, 0);
         }
-        public void DispPoint(HWindow hWindow, double crossX, double crossY, string color, int size = 20)
+        public void DispPoint(double crossX, double crossY, string color, int size = 20)
         {
-            SetColor(hWindow, color);
+            SetColor(color);
             hWindow.DispCross(crossY, crossX, size, 0);
         }
-        public void DispPoint(HWindow hWindow, HTuple crossX, HTuple crossY, double size = 20)
+        public void DispPoint(HTuple crossX, HTuple crossY, double size = 20)
         {
             hWindow.DispCross(crossY, crossX, size, 0);
         }
-        public void DispPoint(HWindow hWindow, HTuple crossX, HTuple crossY, string color, int size = 20)
+        public void DispPoint(HTuple crossX, HTuple crossY, string color, int size = 20)
         {
-            SetColor(hWindow, color);
+            SetColor(color);
             hWindow.DispCross(crossY, crossX, size, 0);
         }
-        public void DispPoint(HWindow hWindow, double[] rowPoints, double[] columnPoints, int size = 20)
+        public void DispPoint(double[] rowPoints, double[] columnPoints, int size = 20)
         {
             if (rowPoints.Length != columnPoints.Length) return;
 
@@ -95,9 +101,9 @@ namespace DotNet.HalconUI
                 hWindow.DispCross(rowPoints[i], columnPoints[i], size, 0);
             }
         }
-        public void DispPoint(HWindow hWindow, double[] rowPoints, double[] columnPoints, string color, int size = 20)
+        public void DispPoint(double[] rowPoints, double[] columnPoints, string color, int size = 20)
         {
-            SetColor(hWindow, color);
+            SetColor(color);
 
             if (rowPoints.Length != columnPoints.Length) return;
 
@@ -106,7 +112,7 @@ namespace DotNet.HalconUI
                 hWindow.DispCross(rowPoints[i], columnPoints[i], size, 0);
             }
         }
-        public void DispPoint(HWindow hWindow, List<Point2d> polygons, int size = 20)
+        public void DispPoint(List<Point2d> polygons, int size = 20)
         {
             if (polygons.Count == 0) return;
 
@@ -115,9 +121,9 @@ namespace DotNet.HalconUI
                 hWindow.DispCross(polygons[i].Y, polygons[i].X, size, 0);
             }
         }
-        public void DispPoint(HWindow hWindow, List<Point2d> polygons, string color, int size = 20)
+        public void DispPoint(List<Point2d> polygons, string color, int size = 20)
         {
-            SetColor(hWindow, color);
+            SetColor(color);
 
             if (polygons.Count == 0) return;
 
@@ -126,78 +132,78 @@ namespace DotNet.HalconUI
                 hWindow.DispCross(polygons[i].Y, polygons[i].X, size, 0);
             }
         }
-        public void DispPoint(HWindow hWindow, Point2d point, double size = 20)
+        public void DispPoint(Point2d point, double size = 20)
         {
             hWindow.DispCross(point.Y, point.X, size, 0);
         }
-        public void DispPoint(HWindow hWindow, Point2d point, string color, double size = 20)
+        public void DispPoint(Point2d point, string color, double size = 20)
         {
-            SetColor(hWindow, color);
+            SetColor(color);
             hWindow.DispCross(point.Y, point.X, size, 0);
         }
 
         #endregion
 
         #region 坐标相关
-        public void DispCross(HWindow hWindow, double crossX, double crossY, double angle, double size = 20)
+        public void DispCross(double crossX, double crossY, double angle, double size = 20)
         {
             hWindow.DispCross(crossY, crossX, size, angle);
         }
-        public void DispCross(HWindow hWindow, double crossX, double crossY, double angle, string color, double size = 20)
+        public void DispCross(double crossX, double crossY, double angle, string color, double size = 20)
         {
-            SetColor(hWindow, color);
+            SetColor(color);
             hWindow.DispCross(crossY, crossX, size, angle);
         }
-        public void DispCross(HWindow hWindow, Point2d point, double angle, double size = 20)
+        public void DispCross(Point2d point, double angle, double size = 20)
         {
             hWindow.DispCross(point.Y, point.X, size, angle);
         }
-        public void DispCross(HWindow hWindow, Point2d point, double angle, string color, double size = 20)
+        public void DispCross(Point2d point, double angle, string color, double size = 20)
         {
-            SetColor(hWindow, color);
+            SetColor(color);
             hWindow.DispCross(point.Y, point.X, size, angle);
         }
-        public void DispCross(HWindow hWindow, CvCoord coord, double size = 20)
+        public void DispCross(CvCoord coord, double size = 20)
         {
             hWindow.DispCross(coord.Y, coord.X, size, coord.Angle.ToRadians());
         }
-        public void DispCross(HWindow hWindow, CvCoord coord, string color, double size = 20)
+        public void DispCross(CvCoord coord, string color, double size = 20)
         {
-            SetColor(hWindow, color);
+            SetColor(color);
             hWindow.DispCross(coord.Y, coord.X, size, coord.Angle.ToRadians());
         }
 
         #endregion
 
         #region 线相关
-        public void DispLine(HWindow hWindow, double startX, double startY, double endX, double endY)
+        public void DispLine(double startX, double startY, double endX, double endY)
         {
             hWindow.DispLine(startY, startX, endY, endX);
         }
-        public void DispLine(HWindow hWindow, double startX, double startY, double endX, double endY, string color)
+        public void DispLine(double startX, double startY, double endX, double endY, string color)
         {
-            SetColor(hWindow, color);
+            SetColor(color);
             hWindow.DispLine(startY, startX, endY, endX);
         }
-        public void DispLine(HWindow hWindow, CvLine line)
+        public void DispLine(CvLine line)
         {
             hWindow.DispLine(line.Start.Y, line.Start.X, line.End.Y, line.End.X);
         }
-        public void DispLine(HWindow hWindow, CvLine line, string color)
+        public void DispLine(CvLine line, string color)
         {
-            SetColor(hWindow, color);
+            SetColor(color);
             hWindow.DispLine(line.Start.Y, line.Start.X, line.End.Y, line.End.X);
         }
-        public void DispLine(HWindow hWindow, CvLine line, int radius)
+        public void DispLine(CvLine line, int radius)
         {
             hWindow.DispLine(line.Start.Y, line.Start.X, line.End.Y, line.End.X);
 
             hWindow.SetColor(HColor.Red);
             hWindow.DispCircle(line.End.Y, line.End.X, radius);
         }
-        public void DispLine(HWindow hWindow, CvLine line, int radius, string color)
+        public void DispLine(CvLine line, int radius, string color)
         {
-            SetColor(hWindow, color);
+            SetColor(color);
             hWindow.DispLine(line.Start.Y, line.Start.X, line.End.Y, line.End.X);
 
             hWindow.SetColor(HColor.Red);
@@ -206,7 +212,7 @@ namespace DotNet.HalconUI
 
 
         /// <summary> 画两点一线 </summary>
-        public void DispLine(HWindow hWindow, Point2d point1, Point2d point2, int step)
+        public void DispLine(Point2d point1, Point2d point2, int step)
         {
             {
                 double x1 = point1.X - step;
@@ -239,9 +245,9 @@ namespace DotNet.HalconUI
         }
 
         /// <summary> 画两点一线 </summary>
-        public void DispLine(HWindow hWindow, Point2d point1, Point2d point2, int step, string color)
+        public void DispLine(Point2d point1, Point2d point2, int step, string color)
         {
-            SetColor(hWindow, color);
+            SetColor(color);
 
             {
                 double x1 = point1.X - step;
@@ -276,53 +282,53 @@ namespace DotNet.HalconUI
         #endregion
 
         #region 方向线
-        public void DispArrow(HWindow hWindow, double startX, double startY, double endX, double endY, double size = 20)
+        public void DispArrow(double startX, double startY, double endX, double endY, double size = 20)
         {
             hWindow.DispArrow(startY, startX, endY, endX, size);
         }
-        public void DispArrow(HWindow hWindow, double startX, double startY, double endX, double endY, string color, double size = 20)
+        public void DispArrow(double startX, double startY, double endX, double endY, string color, double size = 20)
         {
-            SetColor(hWindow, color);
+            SetColor(color);
             hWindow.DispArrow(startY, startX, endY, endX, size);
         }
-        public void DispArrow(HWindow hWindow, CvLine line, double size = 20)
+        public void DispArrow(CvLine line, double size = 20)
         {
             hWindow.DispArrow(line.Start.Y, line.Start.X, line.End.Y, line.End.X, size);
         }
-        public void DispArrow(HWindow hWindow, CvLine line, string color, double size = 20)
+        public void DispArrow(CvLine line, string color, double size = 20)
         {
-            SetColor(hWindow, color);
+            SetColor(color);
             hWindow.DispArrow(line.Start.Y, line.Start.X, line.End.Y, line.End.X, size);
         }
-        public void DispArrow(HWindow hWindow, CvArrow arrow)
+        public void DispArrow(CvArrow arrow)
         {
             hWindow.DispArrow(arrow.Start.Y, arrow.Start.X, arrow.End.Y, arrow.End.X, arrow.HeadSize);
         }
-        public void DispArrow(HWindow hWindow, CvArrow arrow, string color)
+        public void DispArrow(CvArrow arrow, string color)
         {
-            SetColor(hWindow, color);
+            SetColor(color);
             hWindow.DispArrow(arrow.Start.Y, arrow.Start.X, arrow.End.Y, arrow.End.X, arrow.HeadSize);
         }
 
         #endregion
 
         #region 圆
-        public void DispCircle(HWindow hWindow, double crossX, double crossY, double radius)
+        public void DispCircle(double crossX, double crossY, double radius)
         {
             hWindow.DispCircle(crossY, crossX, radius);
         }
-        public void DispCircle(HWindow hWindow, double crossX, double crossY, double radius, string color)
+        public void DispCircle(double crossX, double crossY, double radius, string color)
         {
-            SetColor(hWindow, color);
+            SetColor(color);
             hWindow.DispCircle(crossY, crossX, radius);
         }
-        public void DispCircle(HWindow hWindow, CvCircle circle)
+        public void DispCircle(CvCircle circle)
         {
             hWindow.DispCircle(circle.Center.Y, circle.Center.X, circle.Radius);
         }
-        public void DispCircle(HWindow hWindow, CvCircle circle, string color)
+        public void DispCircle(CvCircle circle, string color)
         {
-            SetColor(hWindow, color);
+            SetColor(color);
             hWindow.DispCircle(circle.Center.Y, circle.Center.X, circle.Radius);
         }
 
@@ -331,7 +337,7 @@ namespace DotNet.HalconUI
         #region Draw Region
 
         /// <summary> 新建区域 </summary>
-        public void DrawRegion(HWindow hWindow, CvRegion hRegion)
+        public void DrawRegion(CvRegion hRegion)
         {
             DrawHelper.CancelDraw();
 
@@ -395,7 +401,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary> 修改区域 </summary>
-        public void DrawRegionMod(HWindow hWindow, CvRegion hRegion)
+        public void DrawRegionMod(CvRegion hRegion)
         {
             DrawHelper.CancelDraw();
             switch (hRegion.Type)
@@ -465,7 +471,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary> 新建区域 </summary>
-        public void DrawRegion(HWindow hWindow, RectEnum type, out HObject rectangle)
+        public void DrawRegion(RectEnum type, out HObject rectangle)
         {
             DrawHelper.CancelDraw();
             HOperatorSet.GenEmptyObj(out rectangle);
@@ -509,39 +515,39 @@ namespace DotNet.HalconUI
         #region Region
 
         /// <summary> 显示ROI区域 </summary>
-        public void DispRegion(HWindow hWindow, HObject hRegion)
+        public void DispRegion(HObject hRegion)
         {
             if (hRegion.NotNull())
                 hWindow.DispObj(hRegion);
         }
 
         /// <summary> 显示ROI区域 </summary>
-        public void DispRegion(HWindow hWindow, HObject hRegion, string color)
+        public void DispRegion(HObject hRegion, string color)
         {
-            SetColor(hWindow, color);
+            SetColor(color);
 
             if (hRegion.NotNull())
                 hWindow.DispObj(hRegion);
         }
 
         /// <summary> 显示橡皮筋区域 </summary>
-        public void DispRegion(HWindow hWindow, CvRegion hRegion)
+        public void DispRegion(CvRegion hRegion)
         {
             if (hRegion.HoRegion.NotNull())
                 hWindow.DispObj(hRegion.HoRegion);
         }
 
         /// <summary> 显示橡皮筋区域 </summary>
-        public void DispRegion(HWindow hWindow, CvRegion hRegion, string color)
+        public void DispRegion(CvRegion hRegion, string color)
         {
-            SetColor(hWindow, color);
+            SetColor(color);
 
             if (hRegion.HoRegion.NotNull())
                 hWindow.DispObj(hRegion.HoRegion);
         }
 
         /// <summary> 显示橡皮筋区域 </summary>
-        public void DispCvRegion(HWindow hWindow, CvRegion hRegion)
+        public void DispCvRegion(CvRegion hRegion)
         {
             switch (hRegion.Type)
             {
@@ -596,14 +602,14 @@ namespace DotNet.HalconUI
             }
         }
 
-        public void DispRectangle2(HWindow hWindow, HTuple centerRow, HTuple centerCol, HTuple phi, HTuple length1, HTuple length2)
+        public void DispRectangle2(HTuple centerRow, HTuple centerCol, HTuple phi, HTuple length1, HTuple length2)
         {
             hWindow.DispRectangle2(centerRow, centerCol, phi, length1, length2);
         }
 
-        public void DispRectangle2(HWindow hWindow, HTuple centerRow, HTuple centerCol, HTuple phi, HTuple length1, HTuple length2, string color)
+        public void DispRectangle2(HTuple centerRow, HTuple centerCol, HTuple phi, HTuple length1, HTuple length2, string color)
         {
-            SetColor(hWindow, color);
+            SetColor(color);
             hWindow.DispRectangle2(centerRow, centerCol, phi, length1, length2);
         }
 

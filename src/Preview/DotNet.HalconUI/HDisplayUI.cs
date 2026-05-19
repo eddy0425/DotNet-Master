@@ -7,7 +7,7 @@ using System.Windows.Forms;
 
 namespace DotNet.HalconUI
 {
-    public partial class HDisplayUI : UserControl
+    public partial class HDisplayUI : UserControl, IHDisplay
     {
         HDisplayCore display;
         public event HMouseEventHandler HMouseUp { add => hWindowControl.HMouseUp += value; remove => hWindowControl.HMouseUp -= value; }
