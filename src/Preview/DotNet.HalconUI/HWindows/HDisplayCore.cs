@@ -38,14 +38,33 @@ namespace DotNet.HalconUI
 
         public HDisplayCore(HWindowControl hWindowControl)
         {
-            _hWindowControl = hWindowControl;
-            _hWindow = _hWindowControl.HalconWindow;
-            display = new HDisplay(_hWindow, _hWindowControl);
-            _hWindowMouse = new HWindowMouse(_hWindow, _hWindowControl, display);
+            _hWindowControl = hWindowControl ?? throw new ArgumentNullException(nameof(hWindowControl));
+            _hWindow = _hWindowControl.HalconWindow ?? throw new InvalidOperationException("HWindowControl.HalconWindow is null.");
 
-            using (HImage hImage = new HImage("byte", 800, 600))
+            HDisplay createdDisplay = null;
+            HWindowMouse createdMouse = null;
+            try
             {
-                DispImage(hImage);
+                createdDisplay = new HDisplay(_hWindow, _hWindowControl);
+                createdMouse = new HWindowMouse(_hWindow, _hWindowControl, createdDisplay);
+
+                display = createdDisplay;
+                _hWindowMouse = createdMouse;
+                createdDisplay = null;
+                createdMouse = null;
+
+                // 用占位灰图初始化窗口；CopyImage 后这里 using 释放也是安全的
+                using (HImage hImage = new HImage("byte", 800, 600))
+                {
+                    DispImage(hImage);
+                }
+            }
+            catch
+            {
+                // 构造途中失败必须把已分配的资源释放干净，避免半初始化的对象泄漏
+                try { createdMouse?.Dispose(); } catch { /* swallow */ }
+                try { createdDisplay?.Dispose(); } catch { /* swallow */ }
+                throw;
             }
         }
 
@@ -57,8 +76,8 @@ namespace DotNet.HalconUI
             // 释放顺序：先解绑事件订阅，再释放本类持有所有权的图像。
             // 注意：hWindow / _hWindowControl 由宿主 UserControl (HDisplayUI) 通过 Designer 的 Dispose(bool) 负责释放，本类不再主动释放，避免双重释放。
 
-            _hWindowMouse?.Dispose();
-            display.Dispose();
+            try { _hWindowMouse?.Dispose(); } catch { /* swallow */ }
+            try { display?.Dispose(); } catch { /* swallow */ }
 
             GC.SuppressFinalize(this);
         }

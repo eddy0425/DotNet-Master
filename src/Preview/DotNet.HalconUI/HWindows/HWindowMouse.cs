@@ -5,12 +5,28 @@ using HalconDotNet;
 
 namespace DotNet.HalconUI
 {
+    /// <summary>
+    /// 鼠标交互（双击复位 / 中键平移 / 滚轮缩放 / 灰度回显）。
+    /// </summary>
+    /// <remarks>
+    /// 设计要点：
+    /// - 所有事件处理都在 try/catch 内，绝不允许把异常抛回 HWindowControl 事件总线，以免冒泡到顶层 UI 崩溃。
+    /// - 对外部传入的 <see cref="HObject"/> 一律使用 <see cref="HObjectExtension.NotNull"/> 检查，
+    ///   而不是 <c>!= null</c>—— HObject 是 HalconDotNet 的 wrapper，可能"非 null 但未 Initialized"。
+    /// - 不在鼠标事件里弹 <see cref="MessageBox"/>——会随着拖拽频率反复弹窗、阻塞 UI。
+    /// - 双击阈值原本是硬编码 2_000_000 ticks（200ms）；改成 <see cref="TimeSpan.TicksPerMillisecond"/>
+    ///   计算的命名常量更清晰。
+    /// </remarks>
     public class HWindowMouse : IDisposable
     {
-        long clickTicks = 0;                      //程序栏鼠标点击计时 
-        bool Mouse_hand = false;                  //是否移动
-        double RowDown;                           //鼠标按下时的行坐标
-        double ColDown;                           //鼠标按下时的列坐标
+        const int DoubleClickThresholdMs = 200;
+        // 普通版 Halcon 能处理的图像最大尺寸 32K*32K，避免缩小过头导致 SetPart 崩溃
+        const double MaxHalconViewArea = 32000d * 32000d;
+
+        long clickTicks = 0;
+        bool Mouse_hand = false;
+        double RowDown;
+        double ColDown;
 
         readonly HWindow hWindow;
         readonly IHDisplay display;
@@ -24,33 +40,42 @@ namespace DotNet.HalconUI
 
         public HWindowMouse(HWindow _hWindow, HWindowControl _hWindowControl, IHDisplay _display)
         {
-            hWindow = _hWindow;
-            display = _display;
-            hWindowControl = _hWindowControl;
+            hWindow = _hWindow ?? throw new ArgumentNullException(nameof(_hWindow));
+            display = _display ?? throw new ArgumentNullException(nameof(_display));
+            hWindowControl = _hWindowControl ?? throw new ArgumentNullException(nameof(_hWindowControl));
 
             hWindowControl.HMouseDown += OnHMouseDown;
             hWindowControl.HMouseUp += OnHMouseUp;
             hWindowControl.HMouseWheel += OnHMouseWheel;
         }
 
-
-        public void OnHMouseDown(object sender, HMouseEventArgs e)  //鼠标指针在组件上方并释放鼠标按钮时发生
+        bool IsUsable()
         {
+            if (_disposed) return false;
+            if (hWindow == null) return false;
+            if (hWindowControl == null || hWindowControl.IsDisposed) return false;
+            try { return hWindow.IsInitialized(); }
+            catch { return false; }
+        }
+
+        public void OnHMouseDown(object sender, HMouseEventArgs e)
+        {
+            if (!IsUsable() || e == null) return;
             try
             {
                 HTuple Row = e.Y, Column = e.X;
-                RowDown = Row;    //鼠标按下时的行坐标
-                ColDown = Column; //鼠标按下时的列坐标
+                RowDown = Row;
+                ColDown = Column;
 
-                //判断是否为双击
-                bool doubleClick = (DateTime.Now.Ticks - clickTicks) < 2000000;   //200ms                    
-                if (doubleClick)
+                long nowTicks = DateTime.Now.Ticks;
+                bool doubleClick = (nowTicks - clickTicks) < DoubleClickThresholdMs * TimeSpan.TicksPerMillisecond;
+                if (doubleClick && display.HoImage.NotNull())
                 {
                     display.DispImage(display.HoImage, true);
                     Mouse_hand = false;
                     MouseDouble = true;
                 }
-                clickTicks = DateTime.Now.Ticks;
+                clickTicks = nowTicks;
 
                 if (e.Button == MouseButtons.Middle)
                 {
@@ -61,72 +86,78 @@ namespace DotNet.HalconUI
                     MouseDown = true;
                 }
             }
-            catch (Exception ex) { Console.WriteLine(ex.Message); }
+            catch (Exception ex) { Console.WriteLine($"[HWindowMouse.OnHMouseDown] {ex.Message}"); }
         }
-        public void OnHMouseUp(object sender, HMouseEventArgs e)  //鼠标移动事件调用函数
+
+        public void OnHMouseUp(object sender, HMouseEventArgs e)
         {
+            if (!IsUsable() || e == null) return;
             try
             {
                 HTuple Row = e.Y, Column = e.X;
 
                 if (Mouse_hand)
                 {
-                    HTuple row1, col1, row2, col2;
-                    double RowMove = Row - RowDown;   //鼠标弹起时的行坐标减去按下时的行坐标，得到行坐标的移动值
-                    double ColMove = Column - ColDown;//鼠标弹起时的列坐标减去按下时的列坐标，得到列坐标的移动值
-                    HOperatorSet.GetPart(hWindow, out row1, out col1, out row2, out col2);//得到当前的窗口坐标
-                    HOperatorSet.SetPart(hWindow, row1 - RowMove, col1 - ColMove, row2 - RowMove, col2 - ColMove);//这里可能有些不好理解。以左上角原点为参考点
-                    HOperatorSet.ClearWindow(hWindow);
-                    if (display.HoImage != null)
+                    // 平移：始终重置 Mouse_hand，避免松开后状态卡住
+                    Mouse_hand = false;
+
+                    if (display.HoImage.NotNull())
                     {
+                        double RowMove = Row - RowDown;
+                        double ColMove = Column - ColDown;
+                        HOperatorSet.GetPart(hWindow, out HTuple row1, out HTuple col1, out HTuple row2, out HTuple col2);
+                        HOperatorSet.SetPart(hWindow, row1 - RowMove, col1 - ColMove, row2 - RowMove, col2 - ColMove);
+                        HOperatorSet.ClearWindow(hWindow);
                         HOperatorSet.DispObj(display.HoImage, hWindow);
                     }
-                    else
-                    {
-                        MessageBox.Show("请加载一张图片");
-                    }
+                    // 没有图像时静默忽略——鼠标事件不应该弹模态框
                 }
 
                 var handler = RefreshUI;
                 if (handler != null && display.HoImage.NotNull())
                 {
-                    HTuple egray;
-                    HOperatorSet.GetGrayval(display.HoImage, Row, Column, out egray);
-                    handler.Invoke(Row, Column, egray);
+                    try
+                    {
+                        HOperatorSet.GetGrayval(display.HoImage, Row, Column, out HTuple egray);
+                        handler.Invoke(Row, Column, egray);
+                    }
+                    catch
+                    {
+                        // 鼠标落在图像范围外 GetGrayval 会失败，属于正常路径，吞掉即可
+                    }
                 }
             }
-            catch (Exception ex) { Console.WriteLine(ex.Message); }
+            catch (Exception ex) { Console.WriteLine($"[HWindowMouse.OnHMouseUp] {ex.Message}"); }
         }
-        public void OnHMouseWheel(object sender, HMouseEventArgs e)  //鼠标指针在组件上方并按下鼠标按钮时发生
+
+        public void OnHMouseWheel(object sender, HMouseEventArgs e)
         {
+            if (!IsUsable() || e == null) return;
+            if (!display.HoImage.NotNull()) return;     // 没图像时滚轮无意义
+
             try
             {
-                HTuple Zoom;
+                double zoom = e.Delta > 0 ? 1.5 : 0.5;
                 HTuple Row = e.Y, Column = e.X;
-                HTuple Row0, Column0, Row00, Column00, Ht, Wt, r1, c1, r2, c2;
-                if (e.Delta > 0)
+
+                HOperatorSet.GetPart(hWindow, out HTuple Row0, out HTuple Column0, out HTuple Row00, out HTuple Column00);
+                HTuple Ht = Row00 - Row0;
+                HTuple Wt = Column00 - Column0;
+
+                // 仅允许放大；缩小时确保不会超出 Halcon 的视图上限
+                if (zoom == 1.5 || (Ht.D * Wt.D) < MaxHalconViewArea)
                 {
-                    Zoom = 1.5;
-                }
-                else
-                {
-                    Zoom = 0.5;
-                }
-                HOperatorSet.GetPart(hWindow, out Row0, out Column0, out Row00, out Column00);
-                Ht = Row00 - Row0;
-                Wt = Column00 - Column0;
-                if (Ht * Wt < 32000 * 32000 || Zoom == 1.5)//普通版halcon能处理的图像最大尺寸是32K*32K。如果无限缩小原图像，导致显示的图像超出限制，则会造成程序崩溃
-                {
-                    r1 = (Row0 + ((1 - (1.0 / Zoom)) * (Row - Row0)));
-                    c1 = (Column0 + ((1 - (1.0 / Zoom)) * (Column - Column0)));
-                    r2 = r1 + (Ht / Zoom);
-                    c2 = c1 + (Wt / Zoom);
+                    HTuple r1 = Row0 + ((1 - (1.0 / zoom)) * (Row - Row0));
+                    HTuple c1 = Column0 + ((1 - (1.0 / zoom)) * (Column - Column0));
+                    HTuple r2 = r1 + (Ht / zoom);
+                    HTuple c2 = c1 + (Wt / zoom);
+
                     HOperatorSet.SetPart(hWindow, r1, c1, r2, c2);
                     HOperatorSet.ClearWindow(hWindow);
                     HOperatorSet.DispObj(display.HoImage, hWindow);
                 }
             }
-            catch (Exception ex) { Console.WriteLine(ex.Message); }
+            catch (Exception ex) { Console.WriteLine($"[HWindowMouse.OnHMouseWheel] {ex.Message}"); }
         }
 
         public void Dispose()

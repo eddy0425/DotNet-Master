@@ -20,8 +20,7 @@ namespace DotNet.HalconUI
         public event EventHandler<DrawModelUIArgs> DrawDoneEvent;
         public void DrawDone(string modelPath, HObject ho_ModeRect, HObject ho_Contour, ModelResult result)
         {
-            var handler = DrawDoneEvent;
-            if (handler != null) handler(this, new DrawModelUIArgs(modelPath, ho_ModeRect, ho_Contour, result));
+            DrawDoneEvent?.Invoke(this, new DrawModelUIArgs(modelPath, ho_ModeRect, ho_Contour, result));
         }
 
         #region 属性
@@ -136,14 +135,19 @@ namespace DotNet.HalconUI
 
         private void UI_HandleDestroyed(object sender, EventArgs e)
         {
+            // 1) 先解绑自身订阅，确保后续即便 display 内部触发事件也不再回到当前实例
             HMouseDown -= OnMouseDown;
             HMouseUp -= OnMouseUp;
             HMouseWheel -= OnMouseWheel;
             HMouseMove -= OnMouseMove;
+            HandleDestroyed -= UI_HandleDestroyed;
 
-            // 主动释放 HDisplayCore 内部聚合的鼠标/图像订阅与图像资源，
-            // 避免依赖 GC + finalizer 的滞后回收。
-            display?.Dispose();
+            // 2) 释放 HDisplayCore（它会级联释放 HWindowMouse / HWindowImage / HDisplay 中持有的 HObject）
+            //    HDisplayCore.Dispose 自身已具备幂等性；这里不把 display 字段置 null，
+            //    避免外部在控件销毁后仍访问属性时引发 NullReferenceException——
+            //    Disposed 后属性会通过 HDisplayCore 内部的 _disposed 保护返回安全默认值。
+            try { display?.Dispose(); }
+            catch (Exception ex) { Console.WriteLine($"[HDisplayUI.UI_HandleDestroyed] {ex.Message}"); }
         }
 
         public void SetNonePara()
@@ -210,26 +214,28 @@ namespace DotNet.HalconUI
         /// <summary> 重新显示图片 </summary>
         public void ReDispImage()
         {
-            display.ReDispImage();
+            display?.ReDispImage();
         }
 
         /// <summary> 显示图片 </summary>
         public void DispImage(HObject image)
         {
+            if (display == null) return;
             display.DispImage(image);
-            if (OnShow != null) OnShow();
+            OnShow?.Invoke();
         }
 
         /// <summary> 显示图片 </summary>
         public void DispImage(HObject image, bool isSetPart)
         {
+            if (display == null) return;
             display.DispImage(image, isSetPart);
-            if (OnShow != null) OnShow();
+            OnShow?.Invoke();
         }
 
         public void ClearWinDisp(HObject objectVal)
         {
-            display.ClearWinDisp(objectVal);
+            display?.ClearWinDisp(objectVal);
         }
 
         #endregion

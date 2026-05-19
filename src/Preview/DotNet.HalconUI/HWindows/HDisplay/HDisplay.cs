@@ -8,7 +8,8 @@ namespace DotNet.HalconUI
     public class HDisplay : IHDisplay
     {
         bool _disposed;
-        string _color;
+        // 初始化为空字符串，避免在 GetColor() 之后被外部当字符串使用时出现 NPE / 引用未赋值的歧义
+        string _color = string.Empty;
 
         HObject _hoImage;
         readonly HWindow _hWindow;
@@ -17,12 +18,15 @@ namespace DotNet.HalconUI
 
         public bool IsCross { get; set; }           //是否画十字
         public bool Adaptive { get; set; } = true;   //自适应
-        public double HoWidth => _hWindowImage.HoWidth;
-        public double HoHeight => _hWindowImage.HoHeight;
-        public HObject HoImage => _hWindowImage.HoImage;  //图像
+        public double HoWidth => _hWindowImage?.HoWidth ?? 0;
+        public double HoHeight => _hWindowImage?.HoHeight ?? 0;
+        public HObject HoImage => _hWindowImage?.HoImage;  //图像
 
         public HDisplay(HWindow hWindow, HWindowControl _hWindowControl)
         {
+            if (hWindow == null) throw new ArgumentNullException(nameof(hWindow));
+            if (_hWindowControl == null) throw new ArgumentNullException(nameof(_hWindowControl));
+
             HOperatorSet.GenEmptyObj(out _hoImage);
 
             _hWindow = hWindow;
@@ -43,50 +47,104 @@ namespace DotNet.HalconUI
             // 释放顺序：先解绑事件订阅，再释放本类持有所有权的图像。
             // 注意：hWindow / _hWindowControl 由宿主 UserControl (HDisplayUI) 通过 Designer 的 Dispose(bool) 负责释放，本类不再主动释放，避免双重释放。
 
-            _hWindowImage?.Dispose();
-            _hoImage?.Dispose();
+            try { _hWindowImage?.Dispose(); } catch { /* swallow: release-time best effort */ }
+
+            // 显式置空便于检查；HObject 的 Dispose 自身已具备幂等性
+            var img = _hoImage;
+            _hoImage = null;
+            try { img?.Dispose(); } catch { /* swallow */ }
 
             GC.SuppressFinalize(this);
         }
 
-        #region HWindowImage
-
-        /// <summary> 显示图片 </summary>
-        public void DispImage(HObject image)
+        /// <summary> 窗口/控件是否仍可用于 Halcon 调用 </summary>
+        bool IsWindowUsable()
         {
+            if (_disposed) return false;
+            if (_hWindow == null) return false;
             try
             {
-                _hoImage.Dispose();
-                HOperatorSet.CopyImage(image, out _hoImage);
-                DispImage(_hoImage, Adaptive);
+                return _hWindow.IsInitialized();
             }
             catch
             {
+                return false;
+            }
+        }
 
+        #region HWindowImage
+
+        /// <summary> 显示图片：内部复制一份图像，避免持有外部对象的悬挂引用 </summary>
+        public void DispImage(HObject image)
+        {
+            if (_disposed) return;
+            if (!image.NotNull()) return;
+
+            // 先把 _hoImage 切到新的对象再释放旧的，保证即便 CopyImage 失败也总能维持一个可用的空 HObject，
+            // 避免下次调用又对一个已释放的对象 Dispose
+            HObject copied = null;
+            try
+            {
+                HOperatorSet.CopyImage(image, out copied);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[HDisplay.DispImage] CopyImage failed: {ex.Message}");
+                copied?.Dispose();
+                return;
+            }
+
+            var old = _hoImage;
+            _hoImage = copied;
+            try { old?.Dispose(); } catch { /* swallow */ }
+
+            try
+            {
+                DispImage(_hoImage, Adaptive);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[HDisplay.DispImage] display failed: {ex.Message}");
             }
         }
 
         /// <summary> 显示图片 </summary>
         public void DispImage(HObject image, bool isSetPart)
         {
+            if (_disposed) return;
+            if (_hWindowImage == null) return;
+
             _hWindowImage.Fun_DispImage(image, isSetPart);
 
-            if (IsCross)
+            if (IsCross && IsWindowUsable() && image.NotNull())
             {
-                if (GetColor() != HColor.Red)
+                if (!string.Equals(GetColor(), HColor.Red, StringComparison.Ordinal))
                 {
                     SetColor(HColor.Red);
                 }
 
-                double size = HoWidth > HoHeight ? HoWidth : HoHeight;
-                HOperatorSet.DispCross(_hWindow, HoHeight / 2, HoWidth / 2, size, 0);
+                double w = HoWidth;
+                double h = HoHeight;
+                if (w > 0 && h > 0)
+                {
+                    double size = w > h ? w : h;
+                    try
+                    {
+                        HOperatorSet.DispCross(_hWindow, h / 2, w / 2, size, 0);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[HDisplay.DispImage] DispCross failed: {ex.Message}");
+                    }
+                }
             }
         }
 
         /// <summary> 重新显示图片 </summary>
         public void ReDispImage()
         {
-            _hWindowImage.Fun_ReDisplay();
+            if (_disposed) return;
+            _hWindowImage?.Fun_ReDisplay();
         }
 
         #endregion
@@ -96,61 +154,85 @@ namespace DotNet.HalconUI
         /// <summary> 设置字体大小 </summary>
         public void SetFontSize(HTuple hv_Size)
         {
-            _hWindowFont.SetFontSize(hv_Size);
+            if (!IsWindowUsable() || _hWindowFont == null) return;
+            try { _hWindowFont.SetFontSize(hv_Size); }
+            catch (Exception ex) { Console.WriteLine($"[HDisplay.SetFontSize] {ex.Message}"); }
         }
 
-        /// <summary> 显示字体 </summary>
+        /// <summary> 显示字体 (FontX=Column, FontY=Row，沿用项目历史语义) </summary>
         public void DispText(string message, HTuple FontX, HTuple FontY, string color)
         {
-            _hWindowFont.DispText(message, FontY, FontX, color);
+            if (!IsWindowUsable() || _hWindowFont == null) return;
+            try { _hWindowFont.DispText(message, FontY, FontX, color); }
+            catch (Exception ex) { Console.WriteLine($"[HDisplay.DispText] {ex.Message}"); }
         }
 
         /// <summary> 显示字体 </summary>
         public void DispText(string message, HTuple FontX, HTuple FontY, HTuple size, string color)
         {
-            _hWindowFont.SetFontSize(size);
-            _hWindowFont.DispText(message, FontY, FontX, color);
+            if (!IsWindowUsable() || _hWindowFont == null) return;
+            try
+            {
+                _hWindowFont.SetFontSize(size);
+                _hWindowFont.DispText(message, FontY, FontX, color);
+            }
+            catch (Exception ex) { Console.WriteLine($"[HDisplay.DispText] {ex.Message}"); }
         }
 
         #endregion
 
-        /// <summary> 获取颜色 </summary>
+        /// <summary> 获取当前颜色（永不返回 null） </summary>
         public string GetColor()
         {
-            return _color;
+            return _color ?? string.Empty;
         }
 
-        /// <summary> 设置颜色 </summary>
+        /// <summary>
+        /// 设置画笔颜色。
+        /// 设计要点：本方法被几乎所有 Disp* 显示重载在内部调用——一旦它抛硬异常，
+        /// 整个上层调用栈会被打穿。这里改为"窗口不可用 → 静默忽略并记录日志"，
+        /// 同时在颜色相同的快速路径下跳过 PInvoke，降低高频鼠标事件下的开销。
+        /// </summary>
         public void SetColor(string color)
         {
-            // 确保 hWindow 不是 null
-            if (_hWindow == null)
+            if (color == null) color = HColor.Red;
+
+            if (!IsWindowUsable())
             {
-                throw new ArgumentNullException(nameof(_hWindow), "HALCON window handle is null.");
+                _color = color;     // 即便窗口尚未就绪也缓存意图，下次窗口就绪即可恢复
+                return;
             }
 
-            // 使用 IsInitialized 检查 hWindow 是否有效
-            if (!_hWindow.IsInitialized())
+            if (string.Equals(_color, color, StringComparison.Ordinal))
             {
-                throw new InvalidOperationException("HALCON window handle is not initialized.");
+                // 颜色未变化，无需重复 PInvoke
+                return;
             }
 
-            // 确保颜色字符串有效
-            if (color == null)
+            try
             {
-                color = HColor.Red; // 默认颜色
+                _hWindow.SetColor(color);
+                _color = color;
             }
-
-            _color = color;
-            _hWindow.SetColor(color);
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[HDisplay.SetColor] {ex.Message}");
+            }
         }
 
         public void ClearWinDisp(HObject objectVal)
         {
-            if (objectVal.NotNull())
+            if (!IsWindowUsable()) return;
+            if (!objectVal.NotNull()) return;
+
+            try
             {
                 _hWindow.ClearWindow();
                 _hWindow.DispObj(objectVal);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[HDisplay.ClearWinDisp] {ex.Message}");
             }
         }
 
@@ -159,15 +241,36 @@ namespace DotNet.HalconUI
         /// <summary> 显示橡皮筋区域 </summary>
         public void DispGenRegion(CvRegion hRegion)
         {
-            hRegion.GenRegion();
-            _hWindow.DispObj(hRegion.HoRegion);
+            if (!IsWindowUsable() || hRegion == null) return;
+
+            try
+            {
+                hRegion.GenRegion();
+                if (hRegion.HoRegion.NotNull())
+                {
+                    _hWindow.DispObj(hRegion.HoRegion);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[HDisplay.DispGenRegion] {ex.Message}");
+            }
         }
 
         /// <summary> 获取坐标区域并显示 </summary>
         public void GenCoordsRegion(CvRegion hRegion, List<CvCoord> coords)
         {
-            hRegion.GenCoordsRegion(coords);
-            DispRegion(hRegion.HoRegion, HColor.Green);
+            if (!IsWindowUsable() || hRegion == null || coords == null) return;
+
+            try
+            {
+                hRegion.GenCoordsRegion(coords);
+                DispRegion(hRegion.HoRegion, HColor.Green);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[HDisplay.GenCoordsRegion] {ex.Message}");
+            }
         }
 
         #endregion
@@ -438,174 +541,266 @@ namespace DotNet.HalconUI
         /// <summary> 新建区域 </summary>
         public void DrawRegion(CvRegion hRegion)
         {
+            if (!IsWindowUsable() || hRegion == null) return;
+
             DrawHelper.CancelDraw();
 
-            switch (hRegion.Type)
+            try
             {
-                case RectEnum.Rectangle:
-                    {
-                        DrawHelper.DrawRectangle1(_hWindow, out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2);
-                        HOperatorSet.GenRectangle1(out HObject rectangle, row1, column1, row2, column2);
-
-                        hRegion.Update2Point(row1, column1, row2, column2);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = rectangle;
-                    }
-                    break;
-                case RectEnum.AffRect:
-                    {
-                        DrawHelper.DrawRectangle2(_hWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
-                        HOperatorSet.GenRectangle2(out HObject rectangle, row, column, phi, length1, length2);
-
-                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(length1.D * 2, length2.D * 2));
-                        hRegion.Phi = phi;
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = rectangle;
-                    }
-                    break;
-                case RectEnum.Circle:
-                    {
-                        DrawHelper.DrawCircle(_hWindow, out HTuple row, out HTuple column, out HTuple radius);
-                        HOperatorSet.GenCircle(out HObject circle, row, column, radius);
-
-                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius.D * 2, radius.D * 2));
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = circle;
-                    }
-                    break;
-                case RectEnum.Ellipse:
-                    {
-                        DrawHelper.DrawEllipse(_hWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2);
-                        HOperatorSet.GenEllipse(out HObject ellipse, row, column, phi, radius1, radius2);
-
-                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius1.D * 2, radius2.D * 2));
-                        hRegion.Phi = phi;
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = ellipse;
-                    }
-                    break;
-                case RectEnum.Polygon:
-                    {
-                        DrawHelper.DrawRegion(out HObject region, _hWindow);
-                        HOperatorSet.GetRegionPolygon(region, 1, out HTuple rows, out HTuple columns);
-                        HOperatorSet.AreaCenter(region, out HTuple area, out HTuple hv_Row, out HTuple hv_Column);
-                        hRegion.PolygonX = columns;
-                        hRegion.PolygonY = rows;
-                        hRegion.Center = new Point2d(hv_Column.D, hv_Row.D);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = region;
-                    }
-                    break;
+                switch (hRegion.Type)
+                {
+                    case RectEnum.Rectangle:
+                        {
+                            DrawHelper.DrawRectangle1(_hWindow, out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2);
+                            HObject rectangle = null;
+                            try
+                            {
+                                HOperatorSet.GenRectangle1(out rectangle, row1, column1, row2, column2);
+                                hRegion.Update2Point(row1, column1, row2, column2);
+                                ReplaceRegion(hRegion, ref rectangle);
+                            }
+                            finally { rectangle?.Dispose(); }
+                        }
+                        break;
+                    case RectEnum.AffRect:
+                        {
+                            DrawHelper.DrawRectangle2(_hWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
+                            HObject rectangle = null;
+                            try
+                            {
+                                HOperatorSet.GenRectangle2(out rectangle, row, column, phi, length1, length2);
+                                hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(length1.D * 2, length2.D * 2));
+                                hRegion.Phi = phi;
+                                ReplaceRegion(hRegion, ref rectangle);
+                            }
+                            finally { rectangle?.Dispose(); }
+                        }
+                        break;
+                    case RectEnum.Circle:
+                        {
+                            DrawHelper.DrawCircle(_hWindow, out HTuple row, out HTuple column, out HTuple radius);
+                            HObject circle = null;
+                            try
+                            {
+                                HOperatorSet.GenCircle(out circle, row, column, radius);
+                                hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius.D * 2, radius.D * 2));
+                                ReplaceRegion(hRegion, ref circle);
+                            }
+                            finally { circle?.Dispose(); }
+                        }
+                        break;
+                    case RectEnum.Ellipse:
+                        {
+                            DrawHelper.DrawEllipse(_hWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2);
+                            HObject ellipse = null;
+                            try
+                            {
+                                HOperatorSet.GenEllipse(out ellipse, row, column, phi, radius1, radius2);
+                                hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius1.D * 2, radius2.D * 2));
+                                hRegion.Phi = phi;
+                                ReplaceRegion(hRegion, ref ellipse);
+                            }
+                            finally { ellipse?.Dispose(); }
+                        }
+                        break;
+                    case RectEnum.Polygon:
+                        DrawPolygonInto(hRegion);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[HDisplay.DrawRegion] {ex.Message}");
             }
         }
 
         /// <summary> 修改区域 </summary>
         public void DrawRegionMod(CvRegion hRegion)
         {
+            if (!IsWindowUsable() || hRegion == null) return;
+
             DrawHelper.CancelDraw();
-            switch (hRegion.Type)
+
+            try
             {
-                case RectEnum.Rectangle:
-                    {
-                        DrawHelper.DrawRectangle1Mod(_hWindow, hRegion.Top, hRegion.Left, hRegion.Bottom, hRegion.Right,
-                                                  out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2);
+                switch (hRegion.Type)
+                {
+                    case RectEnum.Rectangle:
+                        {
+                            DrawHelper.DrawRectangle1Mod(_hWindow, hRegion.Top, hRegion.Left, hRegion.Bottom, hRegion.Right,
+                                                      out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2);
+                            HObject rectangle = null;
+                            try
+                            {
+                                HOperatorSet.GenRectangle1(out rectangle, row1, column1, row2, column2);
+                                hRegion.Update2Point(row1, column1, row2, column2);
+                                ReplaceRegion(hRegion, ref rectangle);
+                            }
+                            finally { rectangle?.Dispose(); }
+                        }
+                        break;
+                    case RectEnum.AffRect:
+                        {
+                            DrawHelper.DrawRectangle2Mod(_hWindow, hRegion.CenterY, hRegion.CenterX, hRegion.Phi,
+                                                    hRegion.Width / 2, hRegion.Height / 2,
+                                                    out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
+                            HObject rectangle = null;
+                            try
+                            {
+                                HOperatorSet.GenRectangle2(out rectangle, row, column, phi, length1, length2);
+                                hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(length1.D * 2, length2.D * 2));
+                                hRegion.Phi = phi;
+                                ReplaceRegion(hRegion, ref rectangle);
+                            }
+                            finally { rectangle?.Dispose(); }
+                        }
+                        break;
+                    case RectEnum.Circle:
+                        {
+                            DrawHelper.DrawCircleMod(_hWindow, hRegion.CenterY, hRegion.CenterX, hRegion.Width / 2,
+                                               out HTuple row, out HTuple column, out HTuple radius);
+                            HObject circle = null;
+                            try
+                            {
+                                HOperatorSet.GenCircle(out circle, row, column, radius);
+                                hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius.D * 2, radius.D * 2));
+                                ReplaceRegion(hRegion, ref circle);
+                            }
+                            finally { circle?.Dispose(); }
+                        }
+                        break;
+                    case RectEnum.Ellipse:
+                        {
+                            DrawHelper.DrawEllipseMod(_hWindow, hRegion.CenterY, hRegion.CenterX, hRegion.Phi,
+                                                         hRegion.Width / 2, hRegion.Height / 2,
+                                                         out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2);
+                            HObject ellipse = null;
+                            try
+                            {
+                                HOperatorSet.GenEllipse(out ellipse, row, column, phi, radius1, radius2);
+                                hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius1.D * 2, radius2.D * 2));
+                                hRegion.Phi = phi;
+                                ReplaceRegion(hRegion, ref ellipse);
+                            }
+                            finally { ellipse?.Dispose(); }
+                        }
+                        break;
+                    case RectEnum.Polygon:
+                        DrawPolygonInto(hRegion);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[HDisplay.DrawRegionMod] {ex.Message}");
+            }
+        }
 
-                        HOperatorSet.GenRectangle1(out HObject rectangle, row1, column1, row2, column2);
+        /// <summary>
+        /// 把新生成的 HObject 转移到 <paramref name="hRegion"/> 的 HoRegion 上：
+        /// 释放旧 HoRegion → 转移所有权 → 把 <paramref name="created"/> 置 null，
+        /// 这样调用方的 finally 不会再次释放（即"所有权已转移"语义）。
+        /// </summary>
+        static void ReplaceRegion(CvRegion hRegion, ref HObject created)
+        {
+            if (hRegion == null || created == null) return;
+            try { hRegion.HoRegion?.Dispose(); } catch { /* swallow */ }
+            hRegion.HoRegion = created;
+            created = null;
+        }
 
-                        hRegion.Update2Point(row1, column1, row2, column2);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = rectangle;
-                    }
-                    break;
-                case RectEnum.AffRect:
-                    {
-                        DrawHelper.DrawRectangle2Mod(_hWindow, hRegion.CenterY, hRegion.CenterX, hRegion.Phi,
-                                                hRegion.Width / 2, hRegion.Height / 2,
-                                                out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
-                        HOperatorSet.GenRectangle2(out HObject rectangle, row, column, phi, length1, length2);
+        /// <summary>
+        /// 多边形 ROI 的共享实现：DrawRegion / DrawRegionMod 都走这里。
+        /// 使用 try/finally 兜底，避免 GetRegionPolygon 或 AreaCenter 出错时 region 句柄泄漏。
+        /// </summary>
+        void DrawPolygonInto(CvRegion hRegion)
+        {
+            HObject region = null;
+            try
+            {
+                DrawHelper.DrawRegion(out region, _hWindow);
+                if (!region.NotNull()) return;
 
-                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(length1.D * 2, length2.D * 2));
-                        hRegion.Phi = phi;
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = rectangle;
-                    }
-                    break;
-                case RectEnum.Circle:
-                    {
-                        DrawHelper.DrawCircleMod(_hWindow, hRegion.CenterY, hRegion.CenterX, hRegion.Width / 2,
-                                           out HTuple row, out HTuple column, out HTuple radius);
-                        HOperatorSet.GenCircle(out HObject circle, row, column, radius);
+                HOperatorSet.GetRegionPolygon(region, 1, out HTuple rows, out HTuple columns);
+                HOperatorSet.AreaCenter(region, out HTuple _, out HTuple hv_Row, out HTuple hv_Column);
 
-                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius.D * 2, radius.D * 2));
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = circle;
-                    }
-                    break;
-                case RectEnum.Ellipse:
-                    {
-                        DrawHelper.DrawEllipseMod(_hWindow, hRegion.CenterY, hRegion.CenterX, hRegion.Phi,
-                                                     hRegion.Width / 2, hRegion.Height / 2,
-                                                     out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2);
-                        HOperatorSet.GenEllipse(out HObject ellipse, row, column, phi, radius1, radius2);
+                hRegion.PolygonX = columns;
+                hRegion.PolygonY = rows;
+                hRegion.Center = new Point2d(hv_Column.D, hv_Row.D);
 
-                        hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius1.D * 2, radius2.D * 2));
-                        hRegion.Phi = phi;
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = ellipse;
-                    }
-                    break;
-                case RectEnum.Polygon:
-                    {
-                        DrawHelper.DrawRegion(out HObject region, _hWindow);
-                        HOperatorSet.GetRegionPolygon(region, 1, out HTuple rows, out HTuple columns);
-                        HOperatorSet.AreaCenter(region, out HTuple area, out HTuple hv_Row, out HTuple hv_Column);
-                        hRegion.PolygonX = columns;
-                        hRegion.PolygonY = rows;
-                        hRegion.Center = new Point2d(hv_Column.D, hv_Row.D);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = region;
-                    }
-                    break;
+                ReplaceRegion(hRegion, ref region);
+            }
+            finally
+            {
+                region?.Dispose();
             }
         }
 
         /// <summary> 新建区域 </summary>
+        /// <remarks>
+        /// 修复点：原实现先 <c>GenEmptyObj(out rectangle)</c> 再被各 case 的 <c>GenXxx(out rectangle, …)</c> 覆盖，
+        /// 第一次创建的空 HObject 句柄丢失 → 句柄泄漏。
+        /// 现在改为先在 case 内创建临时变量，全部成功后再赋给 <paramref name="rectangle"/>；
+        /// 任何失败路径都会保证 <paramref name="rectangle"/> 是一个合法（可 Dispose）的空对象。
+        /// </remarks>
         public void DrawRegion(RectEnum type, out HObject rectangle)
         {
-            DrawHelper.CancelDraw();
             HOperatorSet.GenEmptyObj(out rectangle);
+            if (!IsWindowUsable()) return;
 
-            switch (type)
+            DrawHelper.CancelDraw();
+
+            HObject created = null;
+            try
             {
-                case RectEnum.Rectangle:
-                    {
-                        DrawHelper.DrawRectangle1(_hWindow, out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2);
-                        HOperatorSet.GenRectangle1(out rectangle, row1, column1, row2, column2);
-                    }
-                    break;
-                case RectEnum.AffRect:
-                    {
-                        DrawHelper.DrawRectangle2(_hWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
-                        HOperatorSet.GenRectangle2(out rectangle, row, column, phi, length1, length2);
-                    }
-                    break;
-                case RectEnum.Circle:
-                    {
-                        DrawHelper.DrawCircle(_hWindow, out HTuple row, out HTuple column, out HTuple radius);
-                        HOperatorSet.GenCircle(out rectangle, row, column, radius);
-                    }
-                    break;
-                case RectEnum.Ellipse:
-                    {
-                        DrawHelper.DrawEllipse(_hWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2);
-                        HOperatorSet.GenEllipse(out rectangle, row, column, phi, radius1, radius2);
-                    }
-                    break;
-                case RectEnum.Polygon:
-                    {
-                        DrawHelper.DrawRegion(out rectangle, _hWindow);
-                    }
-                    break;
+                switch (type)
+                {
+                    case RectEnum.Rectangle:
+                        {
+                            DrawHelper.DrawRectangle1(_hWindow, out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2);
+                            HOperatorSet.GenRectangle1(out created, row1, column1, row2, column2);
+                        }
+                        break;
+                    case RectEnum.AffRect:
+                        {
+                            DrawHelper.DrawRectangle2(_hWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2);
+                            HOperatorSet.GenRectangle2(out created, row, column, phi, length1, length2);
+                        }
+                        break;
+                    case RectEnum.Circle:
+                        {
+                            DrawHelper.DrawCircle(_hWindow, out HTuple row, out HTuple column, out HTuple radius);
+                            HOperatorSet.GenCircle(out created, row, column, radius);
+                        }
+                        break;
+                    case RectEnum.Ellipse:
+                        {
+                            DrawHelper.DrawEllipse(_hWindow, out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2);
+                            HOperatorSet.GenEllipse(out created, row, column, phi, radius1, radius2);
+                        }
+                        break;
+                    case RectEnum.Polygon:
+                        {
+                            DrawHelper.DrawRegion(out created, _hWindow);
+                        }
+                        break;
+                }
+
+                if (created.NotNull())
+                {
+                    rectangle.Dispose();    // 释放占位的空对象
+                    rectangle = created;
+                    created = null;         // 所有权已转移
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[HDisplay.DrawRegion] {ex.Message}");
+            }
+            finally
+            {
+                // 失败路径或中途异常下未转移所有权的对象兜底释放
+                created?.Dispose();
             }
         }
 
@@ -645,59 +840,70 @@ namespace DotNet.HalconUI
                 _hWindow.DispObj(hRegion.HoRegion);
         }
 
-        /// <summary> 显示橡皮筋区域 </summary>
+        /// <summary>
+        /// 显示橡皮筋区域。
+        /// </summary>
+        /// <remarks>
+        /// 修复点（Ring 分支）：
+        /// 1) 原代码 <c>new HObject(); GenEmptyObj(out circle1);</c> 会立刻覆盖第一次创建的句柄→泄漏；之后 <c>GenCircle(out circle1, …)</c>
+        ///    又再次覆盖了 GenEmptyObj 的句柄。本次改为直接使用 <c>GenCircle(out …)</c>，并用 finally 兜底释放。
+        /// 2) "Display" 方法不应有副作用——原代码偷偷改了 <c>hRegion.HoRegion</c>，让调用方拿不到原始几何对象的所有权。
+        ///    现在只显示，差集 region 用完即弃；如果调用方需要持久化差集 region，应由专门的 Gen 方法负责。
+        /// </remarks>
         public void DispCvRegion(CvRegion hRegion)
         {
-            switch (hRegion.Type)
+            if (!IsWindowUsable() || hRegion == null) return;
+
+            try
             {
-                case RectEnum.Rectangle:
-                    {
+                switch (hRegion.Type)
+                {
+                    case RectEnum.Rectangle:
                         HOperatorSet.DispRectangle1(_hWindow, hRegion.Top + 0.5, hRegion.Left + 1,
                                                             hRegion.Bottom, hRegion.Right);
-                    }
-                    break;
-                case RectEnum.AffRect:
-                    {
+                        break;
+                    case RectEnum.AffRect:
                         HOperatorSet.DispRectangle2(_hWindow, hRegion.CenterY + 0.5, hRegion.CenterX + 1, hRegion.Phi,
                                                  hRegion.Width / 2, hRegion.Height / 2);
-                    }
-                    break;
-                case RectEnum.Circle:
-                    {
+                        break;
+                    case RectEnum.Circle:
                         HOperatorSet.DispCircle(_hWindow, hRegion.CenterY + 0.5, hRegion.CenterX + 1, hRegion.Width / 2);
-                    }
-                    break;
-                case RectEnum.Ellipse:
-                    {
+                        break;
+                    case RectEnum.Ellipse:
                         HOperatorSet.DispEllipse(_hWindow, hRegion.CenterY + 0.5, hRegion.CenterX + 1, hRegion.Phi,
                                                  hRegion.Width / 2, hRegion.Height / 2);
-                    }
-                    break;
-                case RectEnum.Polygon:
-                    {
+                        break;
+                    case RectEnum.Polygon:
                         HOperatorSet.DispPolygon(_hWindow, hRegion.PolygonX, hRegion.PolygonY);
-                    }
-                    break;
-                case RectEnum.Ring:
-                    {
-                        HObject circle1 = new HObject(); HOperatorSet.GenEmptyObj(out circle1);
-                        HObject circle2 = new HObject(); HOperatorSet.GenEmptyObj(out circle2);
-                        try
-                        {
-                            HOperatorSet.GenCircle(out circle1, hRegion.CenterY + 0.5, hRegion.CenterX + 1, hRegion.MaxRadius);
-                            HOperatorSet.GenCircle(out circle2, hRegion.CenterY + 0.5, hRegion.CenterX + 1, hRegion.MinRadius);
-                            HOperatorSet.Difference(circle1, circle2, out HObject regionDifference);
-                            hRegion.HoRegion.Dispose();
-                            hRegion.HoRegion = regionDifference;
-                            _hWindow.DispObj(hRegion.HoRegion);
-                        }
-                        finally
-                        {
-                            circle1.Dispose();
-                            circle2.Dispose();
-                        }
-                    }
-                    break;
+                        break;
+                    case RectEnum.Ring:
+                        DispRingInternal(hRegion);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[HDisplay.DispCvRegion] {ex.Message}");
+            }
+        }
+
+        void DispRingInternal(CvRegion hRegion)
+        {
+            HObject circle1 = null;
+            HObject circle2 = null;
+            HObject regionDifference = null;
+            try
+            {
+                HOperatorSet.GenCircle(out circle1, hRegion.CenterY + 0.5, hRegion.CenterX + 1, hRegion.MaxRadius);
+                HOperatorSet.GenCircle(out circle2, hRegion.CenterY + 0.5, hRegion.CenterX + 1, hRegion.MinRadius);
+                HOperatorSet.Difference(circle1, circle2, out regionDifference);
+                _hWindow.DispObj(regionDifference);
+            }
+            finally
+            {
+                circle1?.Dispose();
+                circle2?.Dispose();
+                regionDifference?.Dispose();
             }
         }
 
