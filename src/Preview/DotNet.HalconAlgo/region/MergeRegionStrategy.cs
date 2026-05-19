@@ -37,7 +37,7 @@ namespace DotNet.HalconAlgo
             RegisterOutput("区域", () => inPara.HoRect);
 
         }
-        public override bool Fun_action(HDisplayUI display, List<IParaStrategy> strategys)
+        public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
         {
             HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
             HObject imgReduce = new HObject(); HOperatorSet.GenEmptyObj(out imgReduce);

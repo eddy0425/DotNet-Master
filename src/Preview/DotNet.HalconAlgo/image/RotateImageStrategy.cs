@@ -23,7 +23,7 @@ namespace DotNet.HalconAlgo
             ClearResolvers();
             RegisterOutput("图像", () => inPara.Image);
         }
-        public override bool Fun_action(HDisplayUI display, List<IParaStrategy> strategys)
+        public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
         {
             try
             {

@@ -22,7 +22,7 @@ namespace DotNet.HalconAlgo
         void Close(HDisplayUI display);
         void GenTreeNode(TreeVisualizer tree);
 
-        bool Fun_action(HDisplayUI display, List<IParaStrategy> strategys);
+        bool Fun_action(IHDisplay display, List<IParaStrategy> strategys);
         void DispPara(Form form, Dictionary<string, VsControlModel> VsControls);
         void SavePara(Form form, Dictionary<string, VsControlModel> VsControls);
         void DrawROI(HDisplayUI display, RectEnum type, bool newROI);
@@ -59,7 +59,7 @@ namespace DotNet.HalconAlgo
         public virtual void Close(HDisplayUI display) { }
         public abstract void GenTreeNode(TreeVisualizer tree);
   
-        public abstract bool Fun_action(HDisplayUI display, List<IParaStrategy> strategys);
+        public abstract bool Fun_action(IHDisplay display, List<IParaStrategy> strategys);
         public abstract void DispPara(Form form, Dictionary<string, VsControlModel> VsControls);
         public abstract void SavePara(Form form, Dictionary<string, VsControlModel> VsControls);
         public virtual void DrawROI(HDisplayUI display, RectEnum type, bool newROI) { }
