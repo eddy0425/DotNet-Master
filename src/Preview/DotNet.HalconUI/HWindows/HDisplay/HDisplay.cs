@@ -73,26 +73,10 @@ namespace DotNet.HalconUI
             if (_disposed) return;
             if (!image.NotNull()) return;
 
-            // 先把 _hoImage 切到新的对象再释放旧的，保证即便 CopyImage 失败也总能维持一个可用的空 HObject，
-            // 避免下次调用又对一个已释放的对象 Dispose
-            HObject copied = null;
             try
             {
-                HOperatorSet.CopyImage(image, out copied);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[HDisplay.DispImage] CopyImage failed: {ex.Message}");
-                copied?.Dispose();
-                return;
-            }
-
-            var old = _hoImage;
-            _hoImage = copied;
-            try { old?.Dispose(); } catch { /* swallow */ }
-
-            try
-            {
+                _hoImage.Dispose();
+                HOperatorSet.CopyImage(image, out _hoImage);
                 DispImage(_hoImage, Adaptive);
             }
             catch (Exception ex)
