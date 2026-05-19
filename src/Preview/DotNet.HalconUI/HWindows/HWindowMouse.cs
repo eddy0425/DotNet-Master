@@ -28,9 +28,9 @@ namespace DotNet.HalconUI
         double RowDown;
         double ColDown;
 
-        readonly HWindow hWindow;
-        readonly IHDisplay display;
-        readonly HWindowControl hWindowControl;
+        readonly HWindow _hWindow;
+        readonly IHDisplay _display;
+        readonly HWindowControl _hWindowControl;
 
         bool _disposed;
 
@@ -38,11 +38,14 @@ namespace DotNet.HalconUI
         public bool MouseDown { get; set; }      //鼠标按下
         public bool MouseDouble { get; set; }    //鼠标双击按下
 
-        public HWindowMouse(HWindow _hWindow, HWindowControl _hWindowControl, IHDisplay _display)
+        public HWindowMouse(HWindowControl hWindowControl, IHDisplay display)
         {
-            hWindow = _hWindow ?? throw new ArgumentNullException(nameof(_hWindow));
-            display = _display ?? throw new ArgumentNullException(nameof(_display));
-            hWindowControl = _hWindowControl ?? throw new ArgumentNullException(nameof(_hWindowControl));
+            if (hWindowControl == null) throw new ArgumentNullException(nameof(hWindowControl));
+            if (display == null) throw new ArgumentNullException(nameof(display));
+
+            _hWindow = hWindowControl.HalconWindow;
+            _hWindowControl = hWindowControl;
+            _display = display;
 
             hWindowControl.HMouseDown += OnHMouseDown;
             hWindowControl.HMouseUp += OnHMouseUp;
@@ -52,9 +55,9 @@ namespace DotNet.HalconUI
         bool IsUsable()
         {
             if (_disposed) return false;
-            if (hWindow == null) return false;
-            if (hWindowControl == null || hWindowControl.IsDisposed) return false;
-            try { return hWindow.IsInitialized(); }
+            if (_hWindow == null) return false;
+            if (_hWindowControl == null || _hWindowControl.IsDisposed) return false;
+            try { return _hWindow.IsInitialized(); }
             catch { return false; }
         }
 
@@ -69,9 +72,9 @@ namespace DotNet.HalconUI
 
                 long nowTicks = DateTime.Now.Ticks;
                 bool doubleClick = (nowTicks - clickTicks) < DoubleClickThresholdMs * TimeSpan.TicksPerMillisecond;
-                if (doubleClick && display.HoImage.NotNull())
+                if (doubleClick && _display.HoImage.NotNull())
                 {
-                    display.DispImage(display.HoImage, true);
+                    _display.DispImage(_display.HoImage, true);
                     Mouse_hand = false;
                     MouseDouble = true;
                 }
@@ -101,24 +104,24 @@ namespace DotNet.HalconUI
                     // 平移：始终重置 Mouse_hand，避免松开后状态卡住
                     Mouse_hand = false;
 
-                    if (display.HoImage.NotNull())
+                    if (_display.HoImage.NotNull())
                     {
                         double RowMove = Row - RowDown;
                         double ColMove = Column - ColDown;
-                        HOperatorSet.GetPart(hWindow, out HTuple row1, out HTuple col1, out HTuple row2, out HTuple col2);
-                        HOperatorSet.SetPart(hWindow, row1 - RowMove, col1 - ColMove, row2 - RowMove, col2 - ColMove);
-                        HOperatorSet.ClearWindow(hWindow);
-                        HOperatorSet.DispObj(display.HoImage, hWindow);
+                        HOperatorSet.GetPart(_hWindow, out HTuple row1, out HTuple col1, out HTuple row2, out HTuple col2);
+                        HOperatorSet.SetPart(_hWindow, row1 - RowMove, col1 - ColMove, row2 - RowMove, col2 - ColMove);
+                        HOperatorSet.ClearWindow(_hWindow);
+                        HOperatorSet.DispObj(_display.HoImage, _hWindow);
                     }
                     // 没有图像时静默忽略——鼠标事件不应该弹模态框
                 }
 
                 var handler = RefreshUI;
-                if (handler != null && display.HoImage.NotNull())
+                if (handler != null && _display.HoImage.NotNull())
                 {
                     try
                     {
-                        HOperatorSet.GetGrayval(display.HoImage, Row, Column, out HTuple egray);
+                        HOperatorSet.GetGrayval(_display.HoImage, Row, Column, out HTuple egray);
                         handler.Invoke(Row, Column, egray);
                     }
                     catch
@@ -133,14 +136,14 @@ namespace DotNet.HalconUI
         public void OnHMouseWheel(object sender, HMouseEventArgs e)
         {
             if (!IsUsable() || e == null) return;
-            if (!display.HoImage.NotNull()) return;     // 没图像时滚轮无意义
+            if (!_display.HoImage.NotNull()) return;     // 没图像时滚轮无意义
 
             try
             {
                 double zoom = e.Delta > 0 ? 1.5 : 0.5;
                 HTuple Row = e.Y, Column = e.X;
 
-                HOperatorSet.GetPart(hWindow, out HTuple Row0, out HTuple Column0, out HTuple Row00, out HTuple Column00);
+                HOperatorSet.GetPart(_hWindow, out HTuple Row0, out HTuple Column0, out HTuple Row00, out HTuple Column00);
                 HTuple Ht = Row00 - Row0;
                 HTuple Wt = Column00 - Column0;
 
@@ -152,9 +155,9 @@ namespace DotNet.HalconUI
                     HTuple r2 = r1 + (Ht / zoom);
                     HTuple c2 = c1 + (Wt / zoom);
 
-                    HOperatorSet.SetPart(hWindow, r1, c1, r2, c2);
-                    HOperatorSet.ClearWindow(hWindow);
-                    HOperatorSet.DispObj(display.HoImage, hWindow);
+                    HOperatorSet.SetPart(_hWindow, r1, c1, r2, c2);
+                    HOperatorSet.ClearWindow(_hWindow);
+                    HOperatorSet.DispObj(_display.HoImage, _hWindow);
                 }
             }
             catch (Exception ex) { Console.WriteLine($"[HWindowMouse.OnHMouseWheel] {ex.Message}"); }
@@ -165,11 +168,11 @@ namespace DotNet.HalconUI
             if (_disposed) return;
             _disposed = true;
 
-            if (hWindowControl != null && !hWindowControl.IsDisposed)
+            if (_hWindowControl != null && !_hWindowControl.IsDisposed)
             {
-                hWindowControl.HMouseDown -= OnHMouseDown;
-                hWindowControl.HMouseUp -= OnHMouseUp;
-                hWindowControl.HMouseWheel -= OnHMouseWheel;
+                _hWindowControl.HMouseDown -= OnHMouseDown;
+                _hWindowControl.HMouseUp -= OnHMouseUp;
+                _hWindowControl.HMouseWheel -= OnHMouseWheel;
             }
 
             RefreshUI = null;

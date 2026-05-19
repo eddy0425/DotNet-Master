@@ -6,8 +6,8 @@ namespace DotNet.HalconUI
 {
     public class HWindowImage : IDisposable
     {
-        readonly HWindow hWindow;
-        readonly HWindowControl hWindowControl;
+        readonly HWindow _hWindow;
+        readonly HWindowControl _hWindowControl;
 
         ZoomImage getInfo;
         ZoomImage zoomInfo;
@@ -21,10 +21,12 @@ namespace DotNet.HalconUI
         public double HoWidth { get { return getInfo.width; } }
         public double HoHeight { get { return getInfo.height; } }
 
-        public HWindowImage(HWindow _hWindow, HWindowControl _hWindowControl)
+        public HWindowImage(HWindowControl hWindowControl)
         {
-            hWindow = _hWindow ?? throw new ArgumentNullException(nameof(_hWindow));
-            hWindowControl = _hWindowControl ?? throw new ArgumentNullException(nameof(_hWindowControl));
+            if (hWindowControl == null) throw new ArgumentNullException(nameof(hWindowControl));
+
+            _hWindow = hWindowControl.HalconWindow;
+            _hWindowControl = hWindowControl;
 
             getInfo = new ZoomImage();
             zoomInfo = new ZoomImage();
@@ -35,10 +37,10 @@ namespace DotNet.HalconUI
         bool CanDraw()
         {
             if (_disposed) return false;
-            if (hWindowControl == null || hWindowControl.IsDisposed) return false;
-            if (hWindowControl.Parent == null) return false;
-            if (!hWindowControl.Visible) return false;
-            try { return hWindow != null && hWindow.IsInitialized(); }
+            if (_hWindowControl == null || _hWindowControl.IsDisposed) return false;
+            if (_hWindowControl.Parent == null) return false;
+            if (!_hWindowControl.Visible) return false;
+            try { return _hWindow != null && _hWindow.IsInitialized(); }
             catch { return false; }
         }
 
@@ -69,11 +71,11 @@ namespace DotNet.HalconUI
             {
                 if (!HoImage.NotNull())
                 {
-                    HOperatorSet.ClearWindow(hWindow);
+                    HOperatorSet.ClearWindow(_hWindow);
                     return;
                 }
 
-                HOperatorSet.DispObj(HoImage, hWindow);
+                HOperatorSet.DispObj(HoImage, _hWindow);
             }
             catch (Exception ex)
             {
@@ -90,7 +92,7 @@ namespace DotNet.HalconUI
             {
                 if (!_image.NotNull())
                 {
-                    HOperatorSet.ClearWindow(hWindow);
+                    HOperatorSet.ClearWindow(_hWindow);
                     return;
                 }
                 HoImage = _image;
@@ -104,9 +106,9 @@ namespace DotNet.HalconUI
 
                 if (isSetPart)
                 {
-                    HOperatorSet.SetPart(hWindow, 0, 0, getInfo.height - 1, getInfo.width - 1);
+                    HOperatorSet.SetPart(_hWindow, 0, 0, getInfo.height - 1, getInfo.width - 1);
                 }
-                HOperatorSet.DispObj(HoImage, hWindow);
+                HOperatorSet.DispObj(HoImage, _hWindow);
             }
             catch (Exception ex)
             {
@@ -117,13 +119,13 @@ namespace DotNet.HalconUI
         /// <summary> 按父容器尺寸缩放/居中 HWindowControl </summary>
         private void Fun_ZoomImage(ZoomImage info)
         {
-            if (_disposed || hWindowControl == null || hWindowControl.IsDisposed) return;
-            if (hWindowControl.Parent == null) return;
+            if (_disposed || _hWindowControl == null || _hWindowControl.IsDisposed) return;
+            if (_hWindowControl.Parent == null) return;
             if (info == null) return;
 
             // 防御除零：父容器尚未布局时宽高可能为 0
-            int parentW = hWindowControl.Parent.Width;
-            int parentH = hWindowControl.Parent.Height;
+            int parentW = _hWindowControl.Parent.Width;
+            int parentH = _hWindowControl.Parent.Height;
             double imgW = info.width.D;
             double imgH = info.height.D;
             if (parentW <= 0 || parentH <= 0 || imgW <= 0 || imgH <= 0) return;
@@ -132,20 +134,20 @@ namespace DotNet.HalconUI
             {
                 if ((imgW / parentW) < (imgH / parentH))
                 {
-                    hWindowControl.Width = (int)(imgW * parentH / imgH);
-                    hWindowControl.Height = parentH;
-                    hWindowControl.Location = new System.Drawing.Point((parentW - hWindowControl.Width) / 2, 0);
+                    _hWindowControl.Width = (int)(imgW * parentH / imgH);
+                    _hWindowControl.Height = parentH;
+                    _hWindowControl.Location = new System.Drawing.Point((parentW - _hWindowControl.Width) / 2, 0);
                 }
                 else
                 {
-                    hWindowControl.Height = (int)(imgH * parentW / imgW);
-                    hWindowControl.Width = parentW;
-                    hWindowControl.Location = new System.Drawing.Point(0, (parentH - hWindowControl.Height) / 2);
+                    _hWindowControl.Height = (int)(imgH * parentW / imgW);
+                    _hWindowControl.Width = parentW;
+                    _hWindowControl.Location = new System.Drawing.Point(0, (parentH - _hWindowControl.Height) / 2);
                 }
                 zoomInfo.width = info.width;
                 zoomInfo.height = info.height;
-                HOperatorSet.ClearWindow(hWindow);
-                HOperatorSet.SetDraw(hWindow, "margin");
+                HOperatorSet.ClearWindow(_hWindow);
+                HOperatorSet.SetDraw(_hWindow, "margin");
             }
             catch (Exception ex)
             {
@@ -159,9 +161,9 @@ namespace DotNet.HalconUI
             _disposed = true;
 
             // 仅取消事件订阅；HoImage 的所有权不在本类，不在此释放，避免双重释放。
-            if (hWindowControl != null && !hWindowControl.IsDisposed)
+            if (_hWindowControl != null && !_hWindowControl.IsDisposed)
             {
-                hWindowControl.Resize -= HWindowControl_Resize;
+                _hWindowControl.Resize -= HWindowControl_Resize;
             }
 
             HoImage = null;

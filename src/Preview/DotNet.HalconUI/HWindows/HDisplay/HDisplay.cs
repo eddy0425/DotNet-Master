@@ -22,21 +22,14 @@ namespace DotNet.HalconUI
         public double HoHeight => _hWindowImage?.HoHeight ?? 0;
         public HObject HoImage => _hWindowImage?.HoImage;  //图像
 
-        public HDisplay(HWindow hWindow, HWindowControl _hWindowControl)
+        public HDisplay(HWindowControl hWindowControl)
         {
-            if (hWindow == null) throw new ArgumentNullException(nameof(hWindow));
-            if (_hWindowControl == null) throw new ArgumentNullException(nameof(_hWindowControl));
-
+            if (hWindowControl == null) throw new ArgumentNullException(nameof(hWindowControl));
             HOperatorSet.GenEmptyObj(out _hoImage);
 
-            _hWindow = hWindow;
-            _hWindowFont = new HWindowFont2018(hWindow);
-            _hWindowImage = new HWindowImage(hWindow, _hWindowControl);
-        }
-
-        public HWindowImage GetHWindowImage()
-        {
-            return _hWindowImage;
+            _hWindow = hWindowControl.HalconWindow;
+            _hWindowFont = new HWindowFont2018(_hWindow);
+            _hWindowImage = new HWindowImage(hWindowControl);
         }
 
         public void Dispose()

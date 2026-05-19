@@ -9,7 +9,7 @@ namespace DotNet.HalconUI
 {
     public partial class HDisplayUI : UserControl, IHDisplay
     {
-        HDisplayCore display;
+        readonly HDisplayCore display;
         public event HMouseEventHandler HMouseUp { add => hWindowControl.HMouseUp += value; remove => hWindowControl.HMouseUp -= value; }
         public event HMouseEventHandler HMouseMove { add => hWindowControl.HMouseMove += value; remove => hWindowControl.HMouseMove -= value; }
         public event HMouseEventHandler HMouseDown { add => hWindowControl.HMouseDown += value; remove => hWindowControl.HMouseDown -= value; }
