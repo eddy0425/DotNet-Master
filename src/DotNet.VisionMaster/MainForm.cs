@@ -32,6 +32,9 @@ namespace DotNet.VisionMaster
             _strategys.Add(new ShapeModelStrategy());
             _strategys.Add(new FitLineStrategy());
             _strategys.Add(new FitArcMidpointStrategy());
+            _strategys.Add(new NccModelStrategy());
+            _strategys.Add(new ScaledModelStrategy());
+            _strategys.Add(new GenericModelStrategy());
 
             for (int i = 0; i < _strategys.Count; i++)
             {
@@ -66,6 +69,20 @@ namespace DotNet.VisionMaster
         private void button5_Click(object sender, EventArgs e)
         {
             SwitchStrategy(4);
+        }
+        private void button6_Click(object sender, EventArgs e)
+        {
+            SwitchStrategy(5);
+        }
+
+        private void button7_Click(object sender, EventArgs e)
+        {
+            SwitchStrategy(6);
+        }
+
+        private void button8_Click(object sender, EventArgs e)
+        {
+            SwitchStrategy(7);
         }
 
         /// <summary>
@@ -104,6 +121,6 @@ namespace DotNet.VisionMaster
             }
         }
 
-
+        
     }
 }
