@@ -239,7 +239,6 @@ namespace DotNet.HalconAlgo
         public override void SetTemplate(HDisplayUI display, RectEnum type, bool newModel)
         {
             HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
-            HObject ho_Contour = new HObject(); HOperatorSet.GenEmptyObj(out ho_Contour);
 
             try
             {
@@ -297,35 +296,31 @@ namespace DotNet.HalconAlgo
                 // 试匹配完成后，恢复用户设定的匹配数量供 Fun_action 使用
                 HOperatorSet.SetGenericShapeModelParam(inPara.ModelID, "num_matches", inPara.NumMatches);
 
+                HOperatorSet.GetGenericShapeModelResult(matchResultID, 0, "row", out HTuple row);
+                HOperatorSet.GetGenericShapeModelResult(matchResultID, 0, "column", out HTuple column);
+                HOperatorSet.GetGenericShapeModelResult(matchResultID, 0, "angle", out HTuple angle);
+                HOperatorSet.GetGenericShapeModelResult(matchResultID, 0, "score", out HTuple score);
+
+                inPara.Results = new List<ModelResult>();
+                var result = new ModelResult(row, column, angle, score);
+                result.ResultID = matchResultID;
+                inPara.Results.Add(result);
+
+                HOperatorSet.GetGenericShapeModelResultObject(out HObject objects, matchResultID, 0, "contours");
+                inPara.HoContour.Dispose();
+                inPara.HoContour = objects;
+                inPara.Coord = new CvCoord(result.X, result.Y, result.Angle);
+
                 HalconHelper.SaveSmallestRectImage(hImage, imgReduced, inPara.ModelPath);
 
-                display.ReDispImage();
-                display.DispRegion(inPara.ModeRect, HColor.Red);
+                display.SetModelPara(inPara.HoRect.HoRegion, inPara.HoContour, inPara.Coord);
+                display.DispRegion(inPara.ModeRect, HColor.Orange);
+
+                display.DrawDone(inPara.ModelPath, inPara.ModeRect.HoRegion, inPara.HoContour, result);
 
                 if (numMatchResult.I > 0)
                 {
-                    HOperatorSet.GetGenericShapeModelResult(matchResultID, 0, "row", out HTuple row);
-                    HOperatorSet.GetGenericShapeModelResult(matchResultID, 0, "column", out HTuple column);
-                    HOperatorSet.GetGenericShapeModelResult(matchResultID, 0, "angle", out HTuple angle);
-                    HOperatorSet.GetGenericShapeModelResult(matchResultID, 0, "score", out HTuple score);
-
-                    inPara.Results = new List<ModelResult>();
-                    var result = new ModelResult(row, column, angle, score);
-                    result.ResultID = matchResultID;
-                    inPara.Results.Add(result);
-
-                    ho_Contour?.Dispose();
-                    HOperatorSet.GetGenericShapeModelResultObject(out ho_Contour, matchResultID, 0, "contours");
-
-                    display.DispRegion(ho_Contour, HColor.Green);
-                    display.DispCross(result.Column, result.Row, result.Angle.ToDegrees(), HColor.Red, 50);
-
-                    display.DrawDone(inPara.ModelPath, inPara.ModeRect.HoRegion, ho_Contour, result);
-                    inPara.Coord = new CvCoord(result.X, result.Y, result.Angle);
-                    display.SetModelPara(inPara.HoRect.HoRegion, inPara.HoContour, inPara.Coord);
-
                     display.DispText("新建模板成功！", 10, 10, HColor.Green);
-
                     inPara.TmplPoint = new Point2d(result.X, result.Y);      //更改跟随坐标
                 }
                 else
@@ -340,7 +335,7 @@ namespace DotNet.HalconAlgo
             finally
             {
                 imgReduced?.Dispose();
-                ho_Contour?.Dispose();
+
                 // 注:CvHalconDotNet 22.11 未暴露 ClearGenericShapeModelResult,
                 // 匹配结果句柄由 HALCON 内部生命周期管理。
             }

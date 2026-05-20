@@ -248,19 +248,16 @@ namespace DotNet.HalconAlgo
                 HOperatorSet.GetShapeModelContours(out ho_Contour, modelID, 1);
                 HOperatorSet.VectorAngleToRigid(0, 0, 0, result.Row, result.Column, result.Angle, out HTuple hv_HomMat2D);
                 HOperatorSet.AffineTransContourXld(ho_Contour, out HObject contoursAffineTrans, hv_HomMat2D);
-                ho_Contour.Dispose();
-                ho_Contour = contoursAffineTrans;
+                inPara.HoContour.Dispose();
+                inPara.HoContour = contoursAffineTrans;
+                inPara.Coord = new CvCoord(result.X, result.Y, result.Angle);
 
                 HalconHelper.SaveSmallestRectImage(hImage, imgReduced, inPara.ModelPath);
 
-                display.ReDispImage();
-                display.DispRegion(inPara.ModeRect, HColor.Red);
-                display.DispRegion(ho_Contour, HColor.Green);
-                display.DispCross(result.Column, result.Row, result.Angle.ToDegrees(), HColor.Red, 50);
-
-                display.DrawDone(inPara.ModelPath, inPara.ModeRect.HoRegion, ho_Contour, result);
-                inPara.Coord = new CvCoord(result.X, result.Y, result.Angle);
                 display.SetModelPara(inPara.HoRect.HoRegion, inPara.HoContour, inPara.Coord);
+                display.DispRegion(inPara.ModeRect, HColor.Orange);
+
+                display.DrawDone(inPara.ModelPath, inPara.ModeRect.HoRegion, inPara.HoContour, result);
 
                 if (score.Length > 0)
                 {
