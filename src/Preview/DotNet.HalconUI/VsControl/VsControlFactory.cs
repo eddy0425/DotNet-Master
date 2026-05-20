@@ -9,8 +9,8 @@ namespace DotNet.HalconUI
 {
     public static class VsControlFactory
     {
-        // 反射结果缓存: (FormType, FieldName) -> FieldInfo.
-        // 只缓存元数据, 不持有 Form / Control 实例, 不影响 GC.
+        // 反射结果缓存: (ControlType, FieldName) -> FieldInfo.
+        // 只缓存元数据, 不持有 Control 实例, 不影响 GC.
         private static readonly ConcurrentDictionary<Tuple<Type, string>, FieldInfo> _fieldCache
             = new ConcurrentDictionary<Tuple<Type, string>, FieldInfo>();
 
@@ -21,19 +21,19 @@ namespace DotNet.HalconUI
 
 
         /// <summary>
-        /// 通过名称在 Form 上反射查找控件 (Designer 生成的私有字段). 结果按 (FormType, FieldName) 缓存.
+        /// 通过名称在 Control（Form 或 UserControl）上反射查找控件 (Designer 生成的私有字段). 结果按 (ControlType, FieldName) 缓存.
         /// </summary>
         public static object GetControl(this Control form, string name)
         {
             if (form == null) throw new ArgumentNullException(nameof(form));
             if (string.IsNullOrEmpty(name)) throw new ArgumentNullException(nameof(name));
 
-            var key = Tuple.Create(form.GetType(), name);
-            var field = _fieldCache.GetOrAdd(key, k => k.Item1.GetField(k.Item2, BindingFlags.NonPublic | BindingFlags.Instance));
+            var type = form.GetType();
+            var field = _fieldCache.GetOrAdd(Tuple.Create(type, name), k => k.Item1.GetField(k.Item2, BindingFlags.NonPublic | BindingFlags.Instance));
 
             if (field == null)
                 throw new InvalidOperationException(
-                    string.Format("在 '{0}' 上找不到名为 '{1}' 的私有字段.", form.GetType().FullName, name));
+                    string.Format("在 '{0}' 上找不到名为 '{1}' 的私有字段.", type.FullName, name));
 
             return field.GetValue(form);
         }
