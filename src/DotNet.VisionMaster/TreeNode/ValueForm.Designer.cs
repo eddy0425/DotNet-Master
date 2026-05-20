@@ -93,7 +93,7 @@ namespace DotNet.VisionMaster
             this.TopMost = true;
             //this.ZoomScaleRect = new System.Drawing.Rectangle(15, 15, 223, 571);
             //this.ExtendBoxClick += new System.EventHandler(this.Form_Value_ExtendBoxClick);
-            this.VisibleChanged += new System.EventHandler(this.Form_Value_VisibleChanged);
+            this.VisibleChanged += new System.EventHandler(this.ValueForm_VisibleChanged);
             this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.ValueForm_KeyUp);
             this.contextMenuStrip1.ResumeLayout(false);
             this.ResumeLayout(false);

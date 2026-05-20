@@ -4,6 +4,7 @@ using DotNet.HalconUI;
 using DotNet.HalconAlgo;
 using System.Windows.Forms;
 using System.Collections.Generic;
+using System.Drawing;
 
 
 namespace DotNet.VisionMaster
@@ -17,11 +18,14 @@ namespace DotNet.VisionMaster
         char varSplit = '/';
         char valSplit = ';';
 
-        public ValueForm()
+        IWin32Window _owner;
+
+        public ValueForm(IWin32Window owner)
         {
             InitializeComponent();
+            _owner = owner;
         }
-        public void setValueForm(int runIndex, List<IParaStrategy> _strategys,string strOrg, OutEnum type)
+        public void setValueForm(int runIndex, List<IParaStrategy> _strategys, string strOrg, OutEnum type)
         {
             _runIndex = runIndex;
             StrReturn = strOrg;
@@ -29,7 +33,7 @@ namespace DotNet.VisionMaster
 
             GenerateTree(runIndex, _strategys);
             Fun_setSelectNode(StrReturn);
-            this.ShowDialog();
+            this.ShowDialog(_owner);
         }
         private void Fun_setSelectNode(string strIn)      //更新程序树选中节点
         {
@@ -141,12 +145,13 @@ namespace DotNet.VisionMaster
             return str;  // 返回最终结果
         }
 
-        private void ValueForm_KeyUp(object sender, KeyEventArgs e)  //在释放时发生
+        private void 全部展开ToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (e.KeyCode == Keys.Escape)
-            {
-                this.Close();
-            }
+            treeView1.ExpandAll();
+        }
+        private void 全部折叠ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            treeView1.CollapseAll();
         }
         private void treeView1_MouseDown(object sender, MouseEventArgs e)  //当鼠标指针在组件上方并按下鼠标按钮时发生
         {
@@ -164,14 +169,6 @@ namespace DotNet.VisionMaster
                 treeView1.ContextMenuStrip = contextMenuStrip1;// 添加右键菜单             
             }
         }
-        private void 全部展开ToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            treeView1.ExpandAll();
-        }
-        private void 全部折叠ToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            treeView1.CollapseAll();
-        }
         private void treeView1_DrawNode(object sender, DrawTreeNodeEventArgs e)  //当需要绘制节点时，在所有者描述模式下发生
         {
             ////绘制文字      
@@ -183,7 +180,6 @@ namespace DotNet.VisionMaster
         {
             treeView1.Invalidate();
         }
-    
         private void treeView1_MouseDoubleClick(object sender, MouseEventArgs e)  //用鼠标双击控件时发生 //来源 chatgpt
         {
             StrReturn = "";
@@ -238,23 +234,28 @@ namespace DotNet.VisionMaster
             this.Close();
         }
 
-
-        private void Form_Value_VisibleChanged(object sender, EventArgs e)
+        private void ValueForm_KeyUp(object sender, KeyEventArgs e)  //在释放时发生
         {
-            //if (this.Visible)
-            //{
-            //    //Point point = new Point(500, 300);
-            //    //if (schemePara.flowForm.WindowState != FormWindowState.Maximized)
-            //    //{
-            //    //    point = new Point(schemePara.flowForm.Location.X + schemePara.flowForm.Width, schemePara.flowForm.Location.Y);
-            //    //}
-            //    //this.Location = point;
-
-            //    Fun_genTreeNode(schemePara.defaultJob);
-            //    Fun_setSelectNode(StrReturn);
-            //}
+            if (e.KeyCode == Keys.Escape)
+            {
+                this.Close();
+            }
         }
-        private void Form_Value_ExtendBoxClick(object sender, EventArgs e)
+        private void ValueForm_VisibleChanged(object sender, EventArgs e)
+        {
+            if (this.Visible)
+            {
+                Point point = new Point(500, 300);
+                Form ownerForm = this.Owner;
+                if (ownerForm != null && ownerForm.WindowState != FormWindowState.Maximized)
+                {
+                    point = new Point(ownerForm.Location.X + ownerForm.Width, ownerForm.Location.Y);
+                }
+
+                this.Location = point;
+            }
+        }
+        private void ValueForm_ExtendBoxClick(object sender, EventArgs e)
         {
             //TopMost = !TopMost;
 

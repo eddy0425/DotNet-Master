@@ -1453,10 +1453,10 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(522, 235);
-            this.Controls.Add(this.tabControl1);    
+            this.Controls.Add(this.tabControl1);
             this.Name = "ParaForm";
-            this.Text = "Form_Para";
+            this.Size = new System.Drawing.Size(522, 235);
+            this.Load += new System.EventHandler(this.ParaForm_Load);
             this.tabControl1.ResumeLayout(false);
             this.tabPage0.ResumeLayout(false);
             this.tabPage0.PerformLayout();

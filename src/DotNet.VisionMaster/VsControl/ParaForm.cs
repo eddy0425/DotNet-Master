@@ -26,11 +26,13 @@ namespace DotNet.VisionMaster
         {
             InitializeComponent();
             this.Dock = DockStyle.Fill;
-
             _disPlay = displayUI;
+        }
+        private void ParaForm_Load(object sender, EventArgs e)
+        {
             _hModel = new HModelUI();
             _editModel = new HEditModelUI();
-            _form_Value = new ValueForm();
+            _form_Value = new ValueForm(this.FindForm());
 
             panel1.Controls.Add(_hModel);
             _disPlay.DrawDoneEvent += DrawDoneEvent;
@@ -52,9 +54,7 @@ namespace DotNet.VisionMaster
                 { btn_modelEllipse,   RectEnum.Ellipse },
                 { btn_modelPolygon,   RectEnum.Polygon },
             };
-
         }
-
         public void SelectPara(int index, List<IParaStrategy> strategys)
         {
             _index = index;
@@ -339,5 +339,6 @@ namespace DotNet.VisionMaster
 
         }
 
+       
     }
 }
