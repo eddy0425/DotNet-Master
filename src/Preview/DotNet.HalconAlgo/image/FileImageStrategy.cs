@@ -94,7 +94,7 @@ namespace DotNet.HalconAlgo
                 throw;
             }
         }
-        public override void DispPara(Form form, Dictionary<string, VsControlModel> VsControls)
+        public override void DispPara(Control form, Dictionary<string, VsControlModel> VsControls)
         {
             form.ShowTabs(TabPageEnum.FileImage, TabPageEnum.Display);
 
@@ -109,7 +109,7 @@ namespace DotNet.HalconAlgo
             VsControls.ShowComboBoxDropDown(form, "CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
             VsControls.ShowComboBoxDropDown(form, "CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
         }
-        public override void SavePara(Form form, Dictionary<string, VsControlModel> VsControls)
+        public override void SavePara(Control form, Dictionary<string, VsControlModel> VsControls)
         {
             inPara.Rotate = VsControls["cmb_Rotate"].AsInt();
             inPara.Mirror = VsControls["cmb_Mirror"].AsString();

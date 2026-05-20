@@ -314,7 +314,7 @@ namespace DotNet.HalconAlgo
                 return startPhi - span * 0.5;
             }
         }
-        public override void DispPara(Form form, Dictionary<string, VsControlModel> VsControls)
+        public override void DispPara(Control form, Dictionary<string, VsControlModel> VsControls)
         {
             form.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Region, TabPageEnum.Display);
 
@@ -375,7 +375,7 @@ namespace DotNet.HalconAlgo
             VsControls.ShowComboBoxDropDown(form, "CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
             VsControls.ShowComboBoxDropDown(form, "CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
         }
-        public override void SavePara(Form form, Dictionary<string, VsControlModel> VsControls)
+        public override void SavePara(Control form, Dictionary<string, VsControlModel> VsControls)
         {
             inPara.CoordIn = VsControls["cmb_CoordIn"].AsString();
 

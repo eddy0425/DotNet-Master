@@ -25,10 +25,6 @@ namespace DotNet.VisionMaster
             panel1.Controls.Add(_display);
 
             _formPara = new ParaForm(_display);
-            _formPara.FormBorderStyle = FormBorderStyle.None;     //无边框
-            _formPara.Dock = DockStyle.Fill;
-            _formPara.TopLevel = false;
-            _formPara.Show();
             panel2.Controls.Add(_formPara);
 
             _strategys.Add(new FileImageStrategy());

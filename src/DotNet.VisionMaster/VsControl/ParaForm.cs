@@ -10,7 +10,7 @@ using System.Collections.Generic;
 
 namespace DotNet.VisionMaster
 {
-    public partial class ParaForm : Form
+    public partial class ParaForm : UserControl
     {
         int _index;
         List<IParaStrategy> _strategys;
@@ -25,6 +25,7 @@ namespace DotNet.VisionMaster
         public ParaForm(HDisplayUI displayUI)
         {
             InitializeComponent();
+            this.Dock = DockStyle.Fill;
 
             _disPlay = displayUI;
             _hModel = new HModelUI();

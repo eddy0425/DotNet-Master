@@ -7,8 +7,8 @@ namespace DotNet.HalconUI
 {
     public interface IVsControlBinding
     {
-        void Bind(Form form, VsControlModel bindingSource);
-        void Unbind(Form form, VsControlModel bindingSource);
+        void Bind(Control form, VsControlModel bindingSource);
+        void Unbind(Control form, VsControlModel bindingSource);
     }
 
 
@@ -105,7 +105,7 @@ namespace DotNet.HalconUI
         /// <summary>控件侧被绑定的属性名 (e.g. "Text" / "Checked" / "Value").</summary>
         protected abstract string ControlPropertyName { get; }
 
-        public void Bind(Form form, VsControlModel vm)
+        public void Bind(Control form, VsControlModel vm)
         {
             var con = (TControl)form.GetControl(vm.Name);
             BindingHelper.AddPropertyBinding(con, ControlPropertyName, vm, nameof(VsControlModel.Value));
@@ -115,7 +115,7 @@ namespace DotNet.HalconUI
         /// 优先复用 Bind 时缓存的 Control, 避免在 Form 已 Dispose 后反射抛异常.
         /// 兜底再做一次反射, 保持 "VM 没被 Bind 过也能安全 Unbind" 的契约.
         /// </summary>
-        public void Unbind(Form form, VsControlModel vm)
+        public void Unbind(Control form, VsControlModel vm)
         {
             var con = vm.BoundControl as TControl;
             if (con == null && form != null)
@@ -165,9 +165,9 @@ namespace DotNet.HalconUI
     // ============================================================
     public sealed class VsDataGridViewBindingStrategy : IVsControlBinding
     {
-        public void Bind(Form form, VsControlModel vm) { }
+        public void Bind(Control form, VsControlModel vm) { }
 
-        public void Unbind(Form form, VsControlModel vm)
+        public void Unbind(Control form, VsControlModel vm)
         {
             var con = vm.BoundControl as DataGridView;
             if (con == null && form != null)
@@ -184,7 +184,7 @@ namespace DotNet.HalconUI
     // ============================================================
     public sealed class VsNullBindingStrategy : IVsControlBinding
     {
-        public void Bind(Form form, VsControlModel vm) { }
-        public void Unbind(Form form, VsControlModel vm) { }
+        public void Bind(Control form, VsControlModel vm) { }
+        public void Unbind(Control form, VsControlModel vm) { }
     }
 }

@@ -102,8 +102,14 @@
     <Compile Include="TreeNode\ValueForm.Designer.cs">
       <DependentUpon>ValueForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="VsControl\ParaForm.cs">
+    <Compile Include="TreeViews\ToolForm.cs">
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TreeViews\ToolForm.Designer.cs">
+      <DependentUpon>ToolForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="VsControl\ParaForm.cs">
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="VsControl\ParaForm.Designer.cs">
       <DependentUpon>ParaForm.cs</DependentUpon>
@@ -128,6 +134,9 @@
     </Compile>
     <EmbeddedResource Include="TreeNode\ValueForm.resx">
       <DependentUpon>ValueForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TreeViews\ToolForm.resx">
+      <DependentUpon>ToolForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="VsControl\ParaForm.resx">
       <DependentUpon>ParaForm.cs</DependentUpon>

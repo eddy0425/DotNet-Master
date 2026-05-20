@@ -23,7 +23,7 @@ namespace DotNet.HalconUI
         /// <summary>
         /// 通过名称在 Form 上反射查找控件 (Designer 生成的私有字段). 结果按 (FormType, FieldName) 缓存.
         /// </summary>
-        public static object GetControl(this Form form, string name)
+        public static object GetControl(this Control form, string name)
         {
             if (form == null) throw new ArgumentNullException(nameof(form));
             if (string.IsNullOrEmpty(name)) throw new ArgumentNullException(nameof(name));
@@ -42,7 +42,7 @@ namespace DotNet.HalconUI
         /// <summary>
         /// 按枚举顺序重建 tabControl1 的可见 TabPage 集合.
         /// </summary>
-        public static void ShowTabs(this Form form, params TabPageEnum[] tabsToShow)
+        public static void ShowTabs(this Control form, params TabPageEnum[] tabsToShow)
         {
             if (tabsToShow == null) return;
 
@@ -118,37 +118,37 @@ namespace DotNet.HalconUI
         //  其余控件创建对应 VsControlModel 并通过 Replace 放入字典.
         // ============================================================
 
-        public static void ShowTrackBar(this Dictionary<string, VsControlModel> controls, Form form, string name, int value)
+        public static void ShowTrackBar(this Dictionary<string, VsControlModel> controls, Control form, string name, int value)
         {
             controls.Replace(name, new VsControlModel(form, name, VsControlTypes.TrackBar, value));
         }
 
-        public static void ShowTabPage(this Dictionary<string, VsControlModel> controls, Form form, string name, string text, bool visible)
+        public static void ShowTabPage(this Dictionary<string, VsControlModel> controls, Control form, string name, string text, bool visible)
         {
             controls.Replace(name, new VsControlModel(form, name, VsControlTypes.TabPage, text, visible));
         }
 
-        public static void ShowLabel(this Dictionary<string, VsControlModel> controls, Form form, string name, string text)
+        public static void ShowLabel(this Dictionary<string, VsControlModel> controls, Control form, string name, string text)
         {
             var con = (Label)form.GetControl(name);
             con.Text = text;
             con.Visible = true;
         }
 
-        public static void ShowButton(this Dictionary<string, VsControlModel> controls, Form form, string name, bool visible)
+        public static void ShowButton(this Dictionary<string, VsControlModel> controls, Control form, string name, bool visible)
         {
             var con = (Button)form.GetControl(name);
             con.Visible = visible;
         }
 
-        public static void ShowTextBox(this Dictionary<string, VsControlModel> controls, Form form, string name, string text)
+        public static void ShowTextBox(this Dictionary<string, VsControlModel> controls, Control form, string name, string text)
         {
             var con = (TextBox)form.GetControl(name);
             con.Visible = true;
             controls.Replace(name, new VsControlModel(form, name, VsControlTypes.TextBox, text, true));
         }
 
-        public static void ShowComboBox(this Dictionary<string, VsControlModel> controls, Form form, string name, string text, bool enabled)
+        public static void ShowComboBox(this Dictionary<string, VsControlModel> controls, Control form, string name, string text, bool enabled)
         {
             var con = (ComboBox)form.GetControl(name);
             con.Visible = true;
@@ -157,7 +157,7 @@ namespace DotNet.HalconUI
             controls.Replace(name, new VsControlModel(form, name, VsControlTypes.ComboBox, text, true, enabled, false, null));
         }
 
-        public static void ShowComboBoxList(this Dictionary<string, VsControlModel> controls, Form form, string name, string text, string[] items)
+        public static void ShowComboBoxList(this Dictionary<string, VsControlModel> controls, Control form, string name, string text, string[] items)
         {
             var con = (ComboBox)form.GetControl(name);
             con.Visible = true;
@@ -168,7 +168,7 @@ namespace DotNet.HalconUI
             controls.Replace(name, new VsControlModel(form, name, VsControlTypes.ComboBox, text, true, true, true, items));
         }
 
-        public static void ShowComboBoxDropDown(this Dictionary<string, VsControlModel> controls, Form form, string name, string text, string[] items)
+        public static void ShowComboBoxDropDown(this Dictionary<string, VsControlModel> controls, Control form, string name, string text, string[] items)
         {
             var con = (ComboBox)form.GetControl(name);
             con.Visible = true;
@@ -179,7 +179,7 @@ namespace DotNet.HalconUI
             controls.Replace(name, new VsControlModel(form, name, VsControlTypes.ComboBox, text, true, true, false, items));
         }
 
-        public static void ShowCheckBox(this Dictionary<string, VsControlModel> controls, Form form, string name, string text, bool _checked)
+        public static void ShowCheckBox(this Dictionary<string, VsControlModel> controls, Control form, string name, string text, bool _checked)
         {
             var con = (CheckBox)form.GetControl(name);
             con.Visible = true;
@@ -187,13 +187,13 @@ namespace DotNet.HalconUI
             controls.Replace(name, new VsControlModel(form, name, VsControlTypes.CheckBox, text, true, _checked));
         }
 
-        public static void ShowGroupBox(this Dictionary<string, VsControlModel> controls, Form form, string name)
+        public static void ShowGroupBox(this Dictionary<string, VsControlModel> controls, Control form, string name)
         {
             var con = (GroupBox)form.GetControl(name);
             con.Visible = true;
         }
 
-        public static void ShowRadioButton(this Dictionary<string, VsControlModel> controls, Form form, string name, string text, bool visible, bool _checked)
+        public static void ShowRadioButton(this Dictionary<string, VsControlModel> controls, Control form, string name, string text, bool visible, bool _checked)
         {
             var con = (RadioButton)form.GetControl(name);
             con.Visible = visible;

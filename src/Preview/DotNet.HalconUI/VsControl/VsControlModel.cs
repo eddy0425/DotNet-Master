@@ -20,7 +20,7 @@ namespace DotNet.HalconUI
     /// </summary>
     public sealed class VsControlModel : INotifyPropertyChanged, IDisposable
     {
-        private readonly Form _form;
+        private readonly Control _form;
         private bool _disposed;
 
         private object _value;
@@ -61,7 +61,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary>TrackBar</summary>
-        public VsControlModel(Form form, string name, string type, int value)
+        public VsControlModel(Control form, string name, string type, int value)
             : this(form, name, type)
         {
             _value = value;
@@ -69,7 +69,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary>TabPage / TextBox</summary>
-        public VsControlModel(Form form, string name, string type, string text, bool visible)
+        public VsControlModel(Control form, string name, string type, string text, bool visible)
             : this(form, name, type)
         {
             _value = text;
@@ -78,7 +78,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary>CheckBox / RadioButton. text 仅用于控件外观, 不进入 VM 状态.</summary>
-        public VsControlModel(Form form, string name, string type, string text, bool visible, bool @checked)
+        public VsControlModel(Control form, string name, string type, string text, bool visible, bool @checked)
             : this(form, name, type)
         {
             _value = @checked;
@@ -87,7 +87,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary>ComboBox</summary>
-        public VsControlModel(Form form, string name, string type, string text, bool visible, bool enabled, bool dropDownStyle, string[]? items)
+        public VsControlModel(Control form, string name, string type, string text, bool visible, bool enabled, bool dropDownStyle, string[]? items)
             : this(form, name, type)
         {
             _value = text;
@@ -98,7 +98,7 @@ namespace DotNet.HalconUI
             BindToControl();
         }
 
-        private VsControlModel(Form form, string name, string type)
+        private VsControlModel(Control form, string name, string type)
         {
             if (form == null) throw new ArgumentNullException(nameof(form));
             if (string.IsNullOrEmpty(name)) throw new ArgumentNullException(nameof(name));
