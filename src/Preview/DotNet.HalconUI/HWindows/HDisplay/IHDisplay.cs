@@ -15,6 +15,9 @@ namespace DotNet.HalconUI
 
         #region HWindowImage
 
+        /// <summary> 设置图像 </summary>
+        void SetImage(HObject image);
+
         /// <summary> 显示图片 </summary>
         void DispImage(HObject image);
 

@@ -35,6 +35,11 @@ namespace DotNet.HalconAlgo
             RegisterOutput("坐标系/原点/列", () => inPara.Coord.X);
             RegisterOutput("坐标系/角度", () => inPara.Coord.Angle);
         }
+        public override bool Fun_action(HObject ho_Image, IHDisplay display)
+        {
+            display.SetImage(ho_Image);
+            return Fun_action(display, null);
+        }
         public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
         {
             if (inPara.ModelID == null || inPara.ModelID.Length == 0)

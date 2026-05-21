@@ -29,6 +29,11 @@ namespace DotNet.HalconAlgo
             RegisterOutput("中点/行", () => inPara.ArcMidpoint.Y);
             RegisterOutput("中点/列", () => inPara.ArcMidpoint.X);
         }
+        public override bool Fun_action(HObject ho_Image, IHDisplay display)
+        {
+            display.SetImage(ho_Image);
+            return Fun_action(display, null);
+        }
         public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
         {
             HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);

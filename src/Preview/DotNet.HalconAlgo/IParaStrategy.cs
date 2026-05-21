@@ -1,5 +1,6 @@
 using DotNet.Drawing;
 using DotNet.HalconUI;
+using HalconDotNet;
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
@@ -22,6 +23,7 @@ namespace DotNet.HalconAlgo
         void Close(HDisplayUI display);
         void GenTreeNode(TreeVisualizer tree);
 
+        bool Fun_action(HObject ho_Image, IHDisplay display);
         bool Fun_action(IHDisplay display, List<IParaStrategy> strategys);
         void DispPara(Control form, Dictionary<string, VsControlModel> VsControls);
         void SavePara(Control form, Dictionary<string, VsControlModel> VsControls);
@@ -58,7 +60,8 @@ namespace DotNet.HalconAlgo
         public virtual void Init(HDisplayUI display) { }
         public virtual void Close(HDisplayUI display) { }
         public abstract void GenTreeNode(TreeVisualizer tree);
-  
+
+        public virtual bool Fun_action(HObject ho_Image, IHDisplay display) { return false; }
         public abstract bool Fun_action(IHDisplay display, List<IParaStrategy> strategys);
         public abstract void DispPara(Control form, Dictionary<string, VsControlModel> VsControls);
         public abstract void SavePara(Control form, Dictionary<string, VsControlModel> VsControls);

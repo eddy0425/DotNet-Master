@@ -67,21 +67,72 @@ namespace DotNet.HalconUI
 
         #region HWindowImage
 
-        /// <summary> 显示图片：内部复制一份图像，避免持有外部对象的悬挂引用 </summary>
-        public void DispImage(HObject image)
+        /// <summary> 设置图像：内部复制一份图像，避免持有外部对象的悬挂引用 </summary>
+        public void SetImage(HObject image)
         {
             if (_disposed) return;
             if (!image.NotNull()) return;
+            if (_hWindowImage == null) return;
 
             try
             {
                 _hoImage.Dispose();
                 HOperatorSet.CopyImage(image, out _hoImage);
-                DispImage(_hoImage, Adaptive);
+                _hWindowImage.Fun_SetImage(_hoImage);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[HDisplay.DispImage] display failed: {ex.Message}");
+            }
+            finally
+            {
+                image.Dispose();
+            }
+        }
+
+        /// <summary> 显示图片：内部复制一份图像，避免持有外部对象的悬挂引用 </summary>
+        public void DispImage(HObject image)
+        {
+            if (_disposed) return;
+            if (!image.NotNull()) return;
+            if (_hWindowImage == null) return;
+
+            try
+            {
+                _hoImage.Dispose();
+                HOperatorSet.CopyImage(image, out _hoImage);
+                _hWindowImage.Fun_DispImage(_hoImage, Adaptive);
+
+                if (IsCross && IsWindowUsable())
+                {
+                    if (!string.Equals(GetColor(), HColor.Red, StringComparison.Ordinal))
+                    {
+                        SetColor(HColor.Red);
+                    }
+
+                    double w = HoWidth;
+                    double h = HoHeight;
+                    if (w > 0 && h > 0)
+                    {
+                        double size = w > h ? w : h;
+                        try
+                        {
+                            HOperatorSet.DispCross(_hWindow, h / 2, w / 2, size, 0);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[HDisplay.DispImage] DispCross failed: {ex.Message}");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[HDisplay.DispImage] display failed: {ex.Message}");
+            }
+            finally
+            {
+                image.Dispose();
             }
         }
 
@@ -89,31 +140,45 @@ namespace DotNet.HalconUI
         public void DispImage(HObject image, bool isSetPart)
         {
             if (_disposed) return;
+            if (!image.NotNull()) return;
             if (_hWindowImage == null) return;
 
-            _hWindowImage.Fun_DispImage(image, isSetPart);
-
-            if (IsCross && IsWindowUsable() && image.NotNull())
+            try
             {
-                if (!string.Equals(GetColor(), HColor.Red, StringComparison.Ordinal))
-                {
-                    SetColor(HColor.Red);
-                }
+                _hoImage.Dispose();
+                HOperatorSet.CopyImage(image, out _hoImage);
+                _hWindowImage.Fun_DispImage(_hoImage, isSetPart);
 
-                double w = HoWidth;
-                double h = HoHeight;
-                if (w > 0 && h > 0)
+                if (IsCross && IsWindowUsable())
                 {
-                    double size = w > h ? w : h;
-                    try
+                    if (!string.Equals(GetColor(), HColor.Red, StringComparison.Ordinal))
                     {
-                        HOperatorSet.DispCross(_hWindow, h / 2, w / 2, size, 0);
+                        SetColor(HColor.Red);
                     }
-                    catch (Exception ex)
+
+                    double w = HoWidth;
+                    double h = HoHeight;
+                    if (w > 0 && h > 0)
                     {
-                        Console.WriteLine($"[HDisplay.DispImage] DispCross failed: {ex.Message}");
+                        double size = w > h ? w : h;
+                        try
+                        {
+                            HOperatorSet.DispCross(_hWindow, h / 2, w / 2, size, 0);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[HDisplay.DispImage] DispCross failed: {ex.Message}");
+                        }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[HDisplay.DispImage] display failed: {ex.Message}");
+            }
+            finally
+            {
+                image.Dispose();
             }
         }
 

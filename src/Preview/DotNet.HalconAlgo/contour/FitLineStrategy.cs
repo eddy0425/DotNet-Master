@@ -40,6 +40,11 @@ namespace DotNet.HalconAlgo
             RegisterOutput("直线/终点/列", () => inPara.Line.End.X);
 
         }
+        public override bool Fun_action(HObject ho_Image, IHDisplay display)
+        {
+            display.SetImage(ho_Image);
+            return Fun_action(display, null);
+        }
         public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
         {
             HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);

@@ -62,6 +62,21 @@ namespace DotNet.HalconUI
             }
         }
 
+        /// <summary> 设置图像 </summary>
+        internal void Fun_SetImage(HObject _image)
+        {
+            try
+            {
+                HoImage = _image;
+
+                HOperatorSet.GetImageSize(HoImage, out getInfo.width, out getInfo.height);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[HWindowImage.Fun_SetImage] {ex.Message}");
+            }
+        }
+
         /// <summary> 图像显示 </summary>
         public void Fun_ReDisplay()
         {

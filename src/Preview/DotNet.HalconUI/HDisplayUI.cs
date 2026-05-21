@@ -211,6 +211,12 @@ namespace DotNet.HalconUI
 
         #region DispImage
 
+        /// <summary> 设置图像 </summary>
+        public void SetImage(HObject image)
+        {
+            display?.SetImage(image);
+        }
+
         /// <summary> 重新显示图片 </summary>
         public void ReDispImage()
         {
