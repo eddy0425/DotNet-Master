@@ -102,10 +102,6 @@ namespace DotNet.HalconAlgo
 
                 return true;
             }
-            catch
-            {
-                throw;
-            }
             finally
             {
                 imgReduced.Dispose();

@@ -80,10 +80,6 @@ namespace DotNet.HalconUI
                 HOperatorSet.CopyImage(image, out _hoImage);
                 _hWindowImage.Fun_SetImage(_hoImage);
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[HDisplay.DispImage] display failed: {ex.Message}");
-            }
             finally
             {
                 image.Dispose();

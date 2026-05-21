@@ -64,10 +64,6 @@ namespace DotNet.HalconAlgo
 
                 return true;
             }
-            catch
-            {
-                throw;
-            }
             finally
             {
                 regionGet.Dispose();
