@@ -74,7 +74,10 @@ namespace DotNet.HalconUI
                 bool doubleClick = (nowTicks - clickTicks) < DoubleClickThresholdMs * TimeSpan.TicksPerMillisecond;
                 if (doubleClick && _display.HoImage.NotNull())
                 {
-                    _display.DispImage(_display.HoImage, true);
+                    //_display.DispImage(_display.HoImage, true);
+                    HOperatorSet.SetPart(_hWindow, 0, 0, _display.HoHeight - 1, _display.HoWidth - 1);
+                    HOperatorSet.ClearWindow(_hWindow);
+                    HOperatorSet.DispObj(_display.HoImage, _hWindow);
                     Mouse_hand = false;
                     MouseDouble = true;
                 }

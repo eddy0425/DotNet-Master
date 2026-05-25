@@ -70,20 +70,13 @@ namespace DotNet.HalconUI
         /// <summary> 设置图像：内部复制一份图像，避免持有外部对象的悬挂引用 </summary>
         public void SetImage(HObject image)
         {
-            if (_disposed) return;
-            if (!image.NotNull()) return;
-            if (_hWindowImage == null) return;
+            if (_disposed) throw new NullReferenceException("HDisplay已释放！");
+            if (!image.NotNull()) throw new NullReferenceException("图像为空！");
+            if (_hWindowImage == null) throw new NullReferenceException("HWindowImage为空！");
 
-            try
-            {
-                _hoImage.Dispose();
-                HOperatorSet.CopyImage(image, out _hoImage);
-                _hWindowImage.Fun_SetImage(_hoImage);
-            }
-            finally
-            {
-                image.Dispose();
-            }
+            _hoImage.Dispose();
+            HOperatorSet.CopyImage(image, out _hoImage);
+            _hWindowImage.Fun_SetImage(_hoImage);
         }
 
         /// <summary> 显示图片：内部复制一份图像，避免持有外部对象的悬挂引用 </summary>
@@ -125,10 +118,6 @@ namespace DotNet.HalconUI
             catch (Exception ex)
             {
                 Console.WriteLine($"[HDisplay.DispImage] display failed: {ex.Message}");
-            }
-            finally
-            {
-                image.Dispose();
             }
         }
 
@@ -172,10 +161,6 @@ namespace DotNet.HalconUI
             {
                 Console.WriteLine($"[HDisplay.DispImage] display failed: {ex.Message}");
             }
-            finally
-            {
-                image.Dispose();
-            }
         }
 
         /// <summary> 重新显示图片 </summary>
@@ -186,6 +171,7 @@ namespace DotNet.HalconUI
         }
 
         #endregion
+
 
         #region IHWindowFont
 
