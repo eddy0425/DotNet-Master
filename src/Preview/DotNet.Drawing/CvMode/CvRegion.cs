@@ -10,7 +10,7 @@ namespace DotNet.Drawing
     /// </summary>
     /// <remarks>
     /// 设计说明：
-    /// - <b>可变 class</b>：调用方依赖按引用语义直接修改 (<c>region.Phi = ...</c>、<c>region.Update2Point(...)</c>)，
+    /// - <b>可变 class</b>：调用方依赖按引用语义直接修改 (<c>region.Phi = ...</c>、<c>region.SetRect(...)</c>)，
     ///   且 <see cref="InRegion"/> 被作为 <c>out</c> 参数传给 HOperatorSet（C# 不支持 out 属性），
     ///   因此必须保留 public field + 可变属性形态。
     /// - <b>sealed</b>：派生类若再次扩展状态会破坏本类的 <see cref="Equals(CvRegion)"/> / <see cref="GetHashCode"/> 契约，禁止继承。
@@ -93,7 +93,7 @@ namespace DotNet.Drawing
         public Point2d Center
         {
             get => new Point2d((Left + Right) / 2, (Top + Bottom) / 2);
-            set => this.UpdateCenter(value);
+            set => this.SetCenter(value);
         }
 
         #region Cloning

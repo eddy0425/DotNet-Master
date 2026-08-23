@@ -82,9 +82,12 @@ namespace DotNet.HalconUI
             hWindowControl.Focus();
         }
 
-        public void SetDraw(HTuple mode)
+
+        /// <summary> 设置绘制模式 </summary>
+        /// <param name="mode">"margin" 外接矩形, "fill" 填充矩形</param>
+        public void SetDraw(string mode)
         {
-            HOperatorSet.SetDraw(HoWindow, mode);
+            display.SetDraw(mode);
         }
 
         #region Mouse Events

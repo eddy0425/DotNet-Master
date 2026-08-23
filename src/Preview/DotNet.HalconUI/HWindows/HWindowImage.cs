@@ -46,19 +46,25 @@ namespace DotNet.HalconUI
 
         private void HWindowControl_Resize(object sender, EventArgs e)
         {
-            if (_disposed) return;
-
-            HWindowControl control = sender as HWindowControl;
-            if (control == null || control.Parent == null) return;
-            if (!control.Visible) return;
-
-            if (getInfo.parent.Width != control.Parent.Width || getInfo.parent.Height != control.Parent.Height)
+            try
             {
-                getInfo.parent.Width = control.Parent.Width;
-                getInfo.parent.Height = control.Parent.Height;
+                if (_disposed) return;
 
-                Fun_ZoomImage(getInfo);
-                Fun_ReDisplay();
+                HWindowControl control = sender as HWindowControl;
+                if (control == null || control.Parent == null) return;
+                if (!control.Visible) return;
+
+                if (getInfo.parent.Width != control.Parent.Width || getInfo.parent.Height != control.Parent.Height)
+                {
+                    getInfo.parent.Width = control.Parent.Width;
+                    getInfo.parent.Height = control.Parent.Height;
+
+                    Fun_ZoomImage(getInfo);
+                    Fun_ReDisplay();
+                }
+            }
+            catch
+            {
             }
         }
 

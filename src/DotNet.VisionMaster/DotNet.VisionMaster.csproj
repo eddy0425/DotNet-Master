@@ -155,6 +155,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\DotNet.Data\DotNet.Data.csproj">
+      <Project>{5c5f27fb-2b8d-4212-a788-ff51177cfb9f}</Project>
+      <Name>DotNet.Data</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Library\DotNet.Excel\DotNet.Excel.csproj">
       <Project>{66313ca7-8fed-4d1d-aceb-71cb2909a09c}</Project>
       <Name>DotNet.Excel</Name>

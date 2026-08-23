@@ -1,9 +1,10 @@
-using System;
-using DotNet.HalconUI;
 using DotNet.HalconAlgo;
-using System.Windows.Forms;
+using DotNet.HalconUI;
+using DotNet.Json;
+using System;
 using System.Collections.Generic;
-
+using System.IO;
+using System.Windows.Forms;
 
 namespace DotNet.VisionMaster
 {
@@ -28,9 +29,14 @@ namespace DotNet.VisionMaster
             _formPara = new ParaForm(_display);
             panel2.Controls.Add(_formPara);
 
+            string path1 = Path.Combine("D:\\", "Recipes", "Data", "Pick", "mapVision1.json");
+            var shapeModel = new ShapeModelStrategy();
+            DotNet.Data.JsonHelper.Load(path1, out shapeModel);
+
             _strategys.Add(new FileImageStrategy());
-            _strategys.Add(new ShapeModelStrategy());
+            _strategys.Add(shapeModel);
             _strategys.Add(new CreateROIStrategy());
+            _strategys.Add(new FitLineStrategy());
 
             for (int i = 0; i < _strategys.Count; i++)
             {
@@ -42,6 +48,9 @@ namespace DotNet.VisionMaster
 
             var fileImage = ((FileImageStrategy)_strategys[0]).inPara;
             fileImage.ImageFolder = "D:\\testImage\\123";
+
+            //ShapeModelStrategy strategy1 = (ShapeModelStrategy)_strategys[1];
+            //strategy1.inPara = shapeModel;
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -58,7 +67,10 @@ namespace DotNet.VisionMaster
         {
             SwitchStrategy(2);
         }
-
+        private void button4_Click(object sender, EventArgs e)
+        {
+            SwitchStrategy(3);
+        }
 
         /// <summary>
         /// 切换算法策略：解绑旧控件 → 清空 → 设置新策略 → 显示新参数
@@ -109,6 +121,15 @@ namespace DotNet.VisionMaster
             {
                 MessageBox.Show(ex.Message);
             }
+        }
+
+        private void button4_old(object sender, EventArgs e)
+        {
+            string path1 = Path.Combine("D:\\", "Recipes", "Data", "Pick", "mapVision1.json");
+
+            var shapeModelStrategy = _strategys[1] as ShapeModelStrategy;
+
+            DotNet.Data.JsonHelper.Save(path1, shapeModelStrategy);
         }
     }
 }

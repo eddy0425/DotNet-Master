@@ -13,6 +13,10 @@ namespace DotNet.HalconUI
         double HoHeight { get; }
         HObject HoImage { get; }
 
+        /// <summary> 设置绘制模式 </summary>
+        /// <param name="mode">"margin" 外接矩形, "fill" 填充矩形</param>
+        void SetDraw(string mode);
+        
         #region HWindowImage
 
         /// <summary> 设置图像 </summary>

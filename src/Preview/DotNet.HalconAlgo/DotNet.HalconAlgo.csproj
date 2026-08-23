@@ -57,6 +57,7 @@
     <Compile Include="AlgoEnum.cs" />
     <Compile Include="AlgoPaths.cs" />
     <Compile Include="AlgoFont.cs" />
+    <Compile Include="contour\FitArcMidpointRender.cs" />
     <Compile Include="contour\FitCircleStrategy.cs" />
     <Compile Include="geometry\CreateCoordStrategy.cs" />
     <Compile Include="geometry\LineOffsetStrategy.cs" />

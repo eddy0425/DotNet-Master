@@ -4,15 +4,20 @@ using HalconDotNet;
 using System;
 using System.Windows.Forms;
 using System.Collections.Generic;
+using System.Threading;
 
 
 namespace DotNet.HalconAlgo
 {
-    public class FitArcMidpointStrategy : ParaStrategyBase<FitArcMidpoint>
+    public class FitArcMidpointStrategy : ParaStrategyBase<FitArcMidpoint>, IDisposable
     {
         public override AlgoEnum Algorithm => AlgoEnum.FitArcMidpoint;
         public override string Name { get; set; } = "圆弧中点";
         public override int RunIndex { get; set; }
+
+        // 每次拟合的显示数据槽：仅保留最近一次，未被取走的旧数据在覆盖时释放
+        private FitArcMidpointRenderData _pendingRenderData;
+        private bool _disposed;
 
         public override void GenTreeNode(TreeVisualizer tree)
         {
@@ -29,26 +34,86 @@ namespace DotNet.HalconAlgo
             RegisterOutput("中点/行", () => inPara.ArcMidpoint.Y);
             RegisterOutput("中点/列", () => inPara.ArcMidpoint.X);
         }
+
         public override bool Fun_action(HObject ho_Image, IHDisplay display)
         {
             display.SetImage(ho_Image);
-            return Fun_action(display, null);
+            try
+            {
+                return ComputeFit(ho_Image, null);
+            }
+            finally
+            {
+                DrawPendingOverlay(display);
+            }
         }
+
         public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
+        {
+            HObject hoImage;
+            if (inPara.ImageIn == "默认")
+                hoImage = display.HoImage;
+            else
+                hoImage = strategys.ResolveFrom<HObject>(inPara.ImageIn);
+            try
+            {
+                return ComputeFit(hoImage, strategys);
+            }
+            finally
+            {
+                DrawPendingOverlay(display);
+            }
+        }
+
+        /// <summary>
+        /// 取走最近一次拟合的显示数据，所有权随之转移（调用方负责 Dispose）；无数据返回 null。
+        /// </summary>
+        public FitArcMidpointRenderData TakeRenderData()
+        {
+            return Interlocked.Exchange(ref _pendingRenderData, null);
+        }
+
+        private void PublishRenderData(FitArcMidpointRenderData data)
+        {
+            Interlocked.Exchange(ref _pendingRenderData, data)?.Dispose();
+        }
+
+        /// <summary>
+        /// 编辑器同步路径：拟合结束后立即绘制并释放本次显示数据。
+        /// </summary>
+        private void DrawPendingOverlay(IHDisplay display)
+        {
+            using (var data = TakeRenderData())
+            {
+                data?.DrawTo(display);
+            }
+        }
+
+        /// <summary>
+        /// 纯计算：不触碰任何显示对象。显示数据在拟合过程中写入 FitArcMidpointRenderData，
+        /// 无论成败都会发布（失败时为部分数据），由调用方决定同步绘制还是交给渲染线程。
+        /// </summary>
+        protected bool ComputeFit(HObject ho_Image, List<IParaStrategy> strategys)
         {
             HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
             HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
             HObject contourFitting = new HObject(); HOperatorSet.GenEmptyObj(out contourFitting);
-            HObject arcContour = new HObject(); HOperatorSet.GenEmptyObj(out arcContour);
+
+            var render = new FitArcMidpointRenderData
+            {
+                PointSize = inPara.PointSize,
+                FontX = inPara.FontX,
+                FontY = inPara.FontY,
+                FontSize = inPara.FontSize,
+                ShowRegion = inPara.DispRegion,
+                ShowFixRegion = inPara.DispFixRegion,
+                ShowPoints = inPara.DispFixPoint,
+                ShowResult = inPara.DispResult,
+                ShowText = inPara.DispText,
+            };
 
             try
             {
-                HObject ho_Image;
-                if (inPara.ImageIn == "默认")
-                    ho_Image = display.HoImage;
-                else
-                    ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
-
                 HObject ho_Rect;
                 if (inPara.RegionIn == "默认")
                     ho_Rect = inPara.HoRect.HoRegion;
@@ -61,7 +126,7 @@ namespace DotNet.HalconAlgo
                 {
                     imgReduced.Dispose();
                     HOperatorSet.ReduceDomain(ho_Image, ho_Rect, out imgReduced);
-                    if (inPara.DispRegion) display.DispRegion(ho_Rect, HColor.Blue);
+                    render.SearchRegion = ho_Rect.Clone();
                 }
                 else
                 {
@@ -73,15 +138,14 @@ namespace DotNet.HalconAlgo
 
                     imgReduced.Dispose();
                     HOperatorSet.ReduceDomain(ho_Image, regionGet, out imgReduced);
-                    if (inPara.DispRegion) display.DispRegion(regionGet, HColor.Blue);
+                    render.SearchRegion = regionGet.Clone();
                 }
 
                 #region 变量
                 HTuple fixAgl = inPara.HoRect.Phi;
                 HTuple fixLen1 = inPara.HoRect.Width / 2;
                 HTuple fixLen2 = inPara.HoRect.Height / 2;
-                HTuple imgWid = display.HoWidth;
-                HTuple imgHei = display.HoHeight;
+                HOperatorSet.GetImageSize(ho_Image, out HTuple imgWid, out HTuple imgHei);
                 #endregion
 
                 #region 边缘查找
@@ -98,13 +162,19 @@ namespace DotNet.HalconAlgo
                 double cosLen2 = fixLen2 * Math.Cos(fixAgl) / loop_cnt;
                 double sinLen2 = fixLen2 * Math.Sin(fixAgl) / loop_cnt;
 
-                List<double> rowList = new List<double>(2 * loop_cnt + 1);
-                List<double> colList = new List<double>(2 * loop_cnt + 1);
+                render.MeasurePhi = fixAgl.D;
+                render.MeasureLen1 = fixLen1.D;
+                render.MeasureLen2 = stepWid;
+
+                var rowList = new List<double>(2 * loop_cnt + 1);
+                var colList = new List<double>(2 * loop_cnt + 1);
 
                 for (int s = -loop_cnt; s <= loop_cnt; s++)
                 {
                     HTuple rowNew = fixRow + s * cosLen2;
                     HTuple colNew = fixCol + s * sinLen2;
+                    render.MeasureRows.Add(rowNew.D);
+                    render.MeasureCols.Add(colNew.D);
 
                     HTuple hMHandle;
                     HOperatorSet.GenMeasureRectangle2(rowNew, colNew, fixAgl, fixLen1, stepWid,
@@ -114,11 +184,6 @@ namespace DotNet.HalconAlgo
                         HTuple mRow, mCol, mAmp, mDis;
                         HOperatorSet.MeasurePos(imgReduced, hMHandle, inPara.Sigma, inPara.Threshold,
                             transition, measureSelect, out mRow, out mCol, out mAmp, out mDis);
-
-                        if (inPara.DispFixRegion)
-                        {
-                            display.DispRectangle2(rowNew, colNew, fixAgl, fixLen1, stepWid, HColor.Blue);
-                        }
 
                         if (mRow.Length > pickIndex)
                         {
@@ -143,8 +208,8 @@ namespace DotNet.HalconAlgo
                 // 直线粗滤阈值适度放宽以容纳弧的凸量 (sagitta)
                 double lineGate = Math.Max(maxErr * 3.0, 15.0);
 
-                List<double> rowRemoved = new List<double>();
-                List<double> colRemoved = new List<double>();
+                var rowRemoved = new List<double>();
+                var colRemoved = new List<double>();
 
                 #region Stage 1：gauss 鲁棒直线拟合剔除严重跑偏的点
                 contourFitting.Dispose();
@@ -241,34 +306,20 @@ namespace DotNet.HalconAlgo
 
                 #endregion
 
-                #region Display
+                #region 显示数据
 
-                if (inPara.DispFixPoint)
-                {
-                    for (int i = 0; i < rowRemoved.Count; i++)
-                    {
-                        display.DispPoint(colRemoved[i], rowRemoved[i], HColor.Red, inPara.PointSize);
-                    }
-                    for (int i = 0; i < rowList.Count; i++)
-                    {
-                        display.DispPoint(colList[i], rowList[i], HColor.Green, inPara.PointSize);
-                    }
-                }
+                render.UsedRows = rowList;
+                render.UsedCols = colList;
+                render.RemovedRows = rowRemoved;
+                render.RemovedCols = colRemoved;
 
-                if (inPara.DispResult)
-                {
-                    arcContour.Dispose();
-                    HOperatorSet.GenCircleContourXld(out arcContour,
-                        circRow, circCol, circRadius, circStartPhi, circEndPhi, circPointOrder, 1);
-                    display.DispRegion(arcContour, HColor.Red);
-                    display.DispPoint(midCol, midRow, HColor.OrangeRed, inPara.PointSize + 50);
-                }
+                HOperatorSet.GenCircleContourXld(out HObject arcContour, circRow, circCol, circRadius, circStartPhi, circEndPhi, circPointOrder, 1);
+                render.ArcContour = arcContour;
 
-                if (inPara.DispText)
-                {
-                    string message = $"{Name} : 中点:({inPara.ArcMidpoint.X:F2},{inPara.ArcMidpoint.Y:F2}) 半径:{circRadius.D:F2} 用点:{rowList.Count}";
-                    display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
-                }
+                render.MidRow = midRow;
+                render.MidCol = midCol;
+                render.HasMidpoint = true;
+                render.Message = $"{Name} : 中点:({inPara.ArcMidpoint.X:F2},{inPara.ArcMidpoint.Y:F2}) 半径:{circRadius.D:F2} 用点:{rowList.Count}";
 
                 #endregion
 
@@ -276,9 +327,10 @@ namespace DotNet.HalconAlgo
             }
             finally
             {
+                regionGet.Dispose();
                 imgReduced.Dispose();
                 contourFitting.Dispose();
-                arcContour.Dispose();
+                PublishRenderData(render);
             }
         }
 
@@ -422,9 +474,16 @@ namespace DotNet.HalconAlgo
         }
         public override void Close(HDisplayUI display)
         {
-            inPara.HoRect.Dispose();
+            Dispose();
         }
+        public void Dispose()
+        {
+            if (_disposed) return;
 
+            _disposed = true;
+            inPara?.HoRect?.Dispose();
+            TakeRenderData()?.Dispose();
+        }
     }
 
     public class FitArcMidpoint : AlgoFont
@@ -490,7 +549,7 @@ namespace DotNet.HalconAlgo
         /// <summary>
         /// 阈值 val = 0: 自动阈值, val > 0: 手动阈值, val = -1: 能量最强, val 小于 -1: 百分比阈值
         /// </summary>
-        public int Threshold { set; get; } = 80;
+        public int Threshold { set; get; } = 60;
 
         /// <summary> 步距 </summary>
         public int StepPace { set; get; } = 10;

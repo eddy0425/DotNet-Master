@@ -36,16 +36,22 @@ namespace DotNet.HalconUI
 
         public void OnMouseMove(HMouseEventArgs e)
         {
-            Point2d TopLeft = _shrRegion.TopLeft;
-            Point2d BottomRight = _shrRegion.BottomRight;
-            Point2d Center = _shrRegion.Center;
+            try
+            {
+                Point2d TopLeft = _shrRegion.TopLeft;
+                Point2d BottomRight = _shrRegion.BottomRight;
+                Point2d Center = _shrRegion.Center;
 
-            // 显示最终结果
-            //_display.DispPoint(TopLeft, HColor.OrangeRed, 50);
-            //_display.DispPoint(BottomRight, HColor.OrangeRed, 50);
-            _display.DispPoint(Center, HColor.Orange, 50);
+                // 显示最终结果
+                //_display.DispPoint(TopLeft, HColor.OrangeRed, 50);
+                //_display.DispPoint(BottomRight, HColor.OrangeRed, 50);
+                _display.DispPoint(Center, HColor.Orange, 50);
 
-            _display.DispRegion(_shrRegion, HColor.Blue);
+                _display.DispRegion(_shrRegion, HColor.Blue);
+            }
+            catch
+            { }
+  
         }
 
     }

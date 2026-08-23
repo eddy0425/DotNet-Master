@@ -36,6 +36,7 @@
             this.button1 = new System.Windows.Forms.Button();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.panel3 = new System.Windows.Forms.Panel();
+            this.button4 = new System.Windows.Forms.Button();
             this.but_Cycle = new System.Windows.Forms.Button();
             this.tableLayoutPanel1.SuspendLayout();
             this.panel3.SuspendLayout();
@@ -124,6 +125,7 @@
             // 
             // panel3
             // 
+            this.panel3.Controls.Add(this.button4);
             this.panel3.Controls.Add(this.but_Cycle);
             this.panel3.Controls.Add(this.button1);
             this.panel3.Controls.Add(this.button3);
@@ -135,6 +137,16 @@
             this.tableLayoutPanel1.SetRowSpan(this.panel3, 2);
             this.panel3.Size = new System.Drawing.Size(194, 823);
             this.panel3.TabIndex = 2;
+            // 
+            // button4
+            // 
+            this.button4.Location = new System.Drawing.Point(61, 183);
+            this.button4.Name = "button4";
+            this.button4.Size = new System.Drawing.Size(75, 23);
+            this.button4.TabIndex = 7;
+            this.button4.Text = "button4";
+            this.button4.UseVisualStyleBackColor = true;
+            this.button4.Click += new System.EventHandler(this.button4_Click);
             // 
             // but_Cycle
             // 
@@ -172,6 +184,7 @@
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
         private System.Windows.Forms.Panel panel3;
         private System.Windows.Forms.Button but_Cycle;
+        private System.Windows.Forms.Button button4;
     }
 }
 

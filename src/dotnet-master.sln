@@ -51,6 +51,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNet.HalconUI", "Preview\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNet.HalconAlgo", "Preview\DotNet.HalconAlgo\DotNet.HalconAlgo.csproj", "{90FFD348-89AE-46AD-995F-780490A7865F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNet.Data", "DotNet.Data\DotNet.Data.csproj", "{5C5F27FB-2B8D-4212-A788-FF51177CFB9F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -141,6 +143,10 @@ Global
 		{90FFD348-89AE-46AD-995F-780490A7865F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{90FFD348-89AE-46AD-995F-780490A7865F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{90FFD348-89AE-46AD-995F-780490A7865F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C5F27FB-2B8D-4212-A788-FF51177CFB9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C5F27FB-2B8D-4212-A788-FF51177CFB9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C5F27FB-2B8D-4212-A788-FF51177CFB9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C5F27FB-2B8D-4212-A788-FF51177CFB9F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -167,6 +173,7 @@ Global
 		{CE09ACC5-0E8D-4D7D-AA2B-D47B837F2CD2} = {7BF5F4A7-A50B-4CF7-8E7D-0A05D52D0058}
 		{F64662FA-E352-43AE-9B06-2E1ECFB1F205} = {7BF5F4A7-A50B-4CF7-8E7D-0A05D52D0058}
 		{90FFD348-89AE-46AD-995F-780490A7865F} = {7BF5F4A7-A50B-4CF7-8E7D-0A05D52D0058}
+		{5C5F27FB-2B8D-4212-A788-FF51177CFB9F} = {741B78FC-BA83-4FD4-A5B2-C444BC1773C4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {85015248-7E70-49E3-B9EE-6AD3B0689B2B}

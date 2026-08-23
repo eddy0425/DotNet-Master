@@ -65,6 +65,29 @@ namespace DotNet.HalconUI
             }
         }
 
+        /// <summary> 设置绘制模式 </summary>
+        /// <param name="mode">"margin" 外接矩形, "fill" 填充矩形</param>
+        public void SetDraw(string mode)
+        {
+            if (string.IsNullOrWhiteSpace(mode)) mode = "margin";
+            if (mode != "margin" && mode != "fill")
+            {
+                Console.WriteLine($"[HDisplay.SetDraw] 未知模式 '{mode}'，回退为 margin");
+                mode = "margin";
+            }
+
+            if (!IsWindowUsable()) return;
+
+            try
+            {
+                HOperatorSet.SetDraw(_hWindow, mode);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[HDisplay.SetDraw] {ex.Message}");
+            }
+        }
+
         #region HWindowImage
 
         /// <summary> 设置图像：内部复制一份图像，避免持有外部对象的悬挂引用 </summary>
@@ -269,7 +292,7 @@ namespace DotNet.HalconUI
 
             try
             {
-                hRegion.GenRegion();
+                hRegion.RebuildRegion();
                 if (hRegion.HoRegion.NotNull())
                 {
                     _hWindow.DispObj(hRegion.HoRegion);
@@ -580,7 +603,7 @@ namespace DotNet.HalconUI
                             try
                             {
                                 HOperatorSet.GenRectangle1(out rectangle, row1, column1, row2, column2);
-                                hRegion.Update2Point(row1, column1, row2, column2);
+                                hRegion.SetRectByCorners(row1, column1, row2, column2);
                                 ReplaceRegion(hRegion, ref rectangle);
                             }
                             finally { rectangle?.Dispose(); }
@@ -593,7 +616,7 @@ namespace DotNet.HalconUI
                             try
                             {
                                 HOperatorSet.GenRectangle2(out rectangle, row, column, phi, length1, length2);
-                                hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(length1.D * 2, length2.D * 2));
+                                hRegion.SetRectByCenter(new Point2d(column.D, row.D), new Size2d(length1.D * 2, length2.D * 2));
                                 hRegion.Phi = phi;
                                 ReplaceRegion(hRegion, ref rectangle);
                             }
@@ -607,7 +630,7 @@ namespace DotNet.HalconUI
                             try
                             {
                                 HOperatorSet.GenCircle(out circle, row, column, radius);
-                                hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius.D * 2, radius.D * 2));
+                                hRegion.SetRectByCenter(new Point2d(column.D, row.D), new Size2d(radius.D * 2, radius.D * 2));
                                 ReplaceRegion(hRegion, ref circle);
                             }
                             finally { circle?.Dispose(); }
@@ -620,7 +643,7 @@ namespace DotNet.HalconUI
                             try
                             {
                                 HOperatorSet.GenEllipse(out ellipse, row, column, phi, radius1, radius2);
-                                hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius1.D * 2, radius2.D * 2));
+                                hRegion.SetRectByCenter(new Point2d(column.D, row.D), new Size2d(radius1.D * 2, radius2.D * 2));
                                 hRegion.Phi = phi;
                                 ReplaceRegion(hRegion, ref ellipse);
                             }
@@ -657,7 +680,7 @@ namespace DotNet.HalconUI
                             try
                             {
                                 HOperatorSet.GenRectangle1(out rectangle, row1, column1, row2, column2);
-                                hRegion.Update2Point(row1, column1, row2, column2);
+                                hRegion.SetRectByCorners(row1, column1, row2, column2);
                                 ReplaceRegion(hRegion, ref rectangle);
                             }
                             finally { rectangle?.Dispose(); }
@@ -672,7 +695,7 @@ namespace DotNet.HalconUI
                             try
                             {
                                 HOperatorSet.GenRectangle2(out rectangle, row, column, phi, length1, length2);
-                                hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(length1.D * 2, length2.D * 2));
+                                hRegion.SetRectByCenter(new Point2d(column.D, row.D), new Size2d(length1.D * 2, length2.D * 2));
                                 hRegion.Phi = phi;
                                 ReplaceRegion(hRegion, ref rectangle);
                             }
@@ -687,7 +710,7 @@ namespace DotNet.HalconUI
                             try
                             {
                                 HOperatorSet.GenCircle(out circle, row, column, radius);
-                                hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius.D * 2, radius.D * 2));
+                                hRegion.SetRectByCenter(new Point2d(column.D, row.D), new Size2d(radius.D * 2, radius.D * 2));
                                 ReplaceRegion(hRegion, ref circle);
                             }
                             finally { circle?.Dispose(); }
@@ -702,7 +725,7 @@ namespace DotNet.HalconUI
                             try
                             {
                                 HOperatorSet.GenEllipse(out ellipse, row, column, phi, radius1, radius2);
-                                hRegion.UpdateCenter(new Point2d(column.D, row.D), new Size2d(radius1.D * 2, radius2.D * 2));
+                                hRegion.SetRectByCenter(new Point2d(column.D, row.D), new Size2d(radius1.D * 2, radius2.D * 2));
                                 hRegion.Phi = phi;
                                 ReplaceRegion(hRegion, ref ellipse);
                             }

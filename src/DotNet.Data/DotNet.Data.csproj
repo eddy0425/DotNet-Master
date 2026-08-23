@@ -1,16 +1,18 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{CE09ACC5-0E8D-4D7D-AA2B-D47B837F2CD2}</ProjectGuid>
+    <ProjectGuid>{5C5F27FB-2B8D-4212-A788-FF51177CFB9F}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>DotNet.Drawing</RootNamespace>
-    <AssemblyName>DotNet.Drawing</AssemblyName>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>LPRDotNet.Data</RootNamespace>
+    <AssemblyName>DotNet.Data</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <Deterministic>true</Deterministic>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>x64</PlatformTarget>
@@ -21,6 +23,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <LangVersion>7.1</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -30,22 +33,40 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <LangVersion>7.1</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
-    <LangVersion>latest</LangVersion>
-    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+    <DocumentationFile>bin\x64\Debug\DotNet.Data.xml</DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="halcondotnet, Version=22.11.0.0, Culture=neutral, PublicKeyToken=4973bed59ddbf2b8, processorArchitecture=MSIL">
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>C:\DotNet\.dll\Halcon\halcondotnet.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json">
       <HintPath>C:\DotNet\.dll\Newtonsoft.Json\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -57,38 +78,28 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CvEnum\AngleRange.cs" />
-    <Compile Include="CvEnum\RectEnum.cs" />
-    <Compile Include="Extension\AngleExtension.cs" />
-    <Compile Include="Extension\HObjectExtension.cs" />
-    <Compile Include="Extension\HTupleExtension.cs" />
-    <Compile Include="Extension\StringExtension.cs" />
-    <Compile Include="HalconController.cs" />
-    <Compile Include="HalconHelper.cs" />
-    <Compile Include="HColor.cs" />
-    <Compile Include="Extension\IsExternalInit.cs" />
-    <Compile Include="Extension\RegionExtension.cs" />
-    <Compile Include="CvMode\CvArrow.cs" />
-    <Compile Include="CvMode\CvCircle.cs" />
-    <Compile Include="CvMode\CvCoord.cs" />
-    <Compile Include="CvMode\CvLine.cs" />
-    <Compile Include="CvMode\CvRegion.cs" />
-    <Compile Include="CvMode\HashCode.cs" />
-    <Compile Include="CvMode\ICvShape.cs" />
-    <Compile Include="CvMode\MathHelper.cs" />
-    <Compile Include="CvMode\TransExpV2.cs" />
-    <Compile Include="OpenCvSharp\DMatch.cs" />
-    <Compile Include="OpenCvSharp\KeyPoint.cs" />
-    <Compile Include="OpenCvSharp\Point2d.cs" />
-    <Compile Include="OpenCvSharp\Point2f.cs" />
-    <Compile Include="OpenCvSharp\Rect.cs" />
-    <Compile Include="OpenCvSharp\Rect2d.cs" />
-    <Compile Include="OpenCvSharp\Rect2f.cs" />
-    <Compile Include="OpenCvSharp\Size2d.cs" />
-    <Compile Include="OpenCvSharp\Size2f.cs" />
+    <Compile Include="Attribute.cs" />
+    <Compile Include="DataLog.cs" />
+    <Compile Include="com\action\BinaryAction.cs" />
+    <Compile Include="com\action\CHFDoc.cs" />
+    <Compile Include="com\action\IniAction.cs" />
+    <Compile Include="com\action\JsonAction.cs" />
+    <Compile Include="com\action\TxtAction.cs" />
+    <Compile Include="com\action\XmlAction.cs" />
+    <Compile Include="com\daoImpl\BinaryDaoImpl.cs" />
+    <Compile Include="com\daoImpl\IniDaoImpl.cs" />
+    <Compile Include="com\daoImpl\JsonDaoImpl.cs" />
+    <Compile Include="com\daoImpl\TxtDaoImpl.cs" />
+    <Compile Include="com\daoImpl\XmlDaoImpl.cs" />
+    <Compile Include="com\dao\BinaryDao.cs" />
+    <Compile Include="com\dao\Data.cs" />
+    <Compile Include="com\dao\IniDao.cs" />
+    <Compile Include="com\dao\JsonDao.cs" />
+    <Compile Include="com\dao\TxtDao.cs" />
+    <Compile Include="com\dao\XmlDao.cs" />
+    <Compile Include="JsonCore.cs" />
+    <Compile Include="JsonHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Serialize\JsonConvertHObject.cs" />
-    <Compile Include="Serialize\SerializeConvert.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -97,6 +108,7 @@
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
     </Compile>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -112,4 +124,11 @@
     <None Include="App.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
 </Project>
