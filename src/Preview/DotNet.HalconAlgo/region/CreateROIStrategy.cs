@@ -38,7 +38,7 @@ namespace DotNet.HalconAlgo
         }
         public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
         {
-            HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
+            HObject regionGet; HOperatorSet.GenEmptyObj(out regionGet);
 
             try
             {

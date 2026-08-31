@@ -117,8 +117,9 @@ namespace DotNet.Drawing
         /// <summary> 获取仿射变换矩阵 </summary>
         public void VectorAngleToRigid(CvCoord coord, CvCoord coordTrans, out HTuple hv_HomMat2D)
         {
-            HOperatorSet.VectorAngleToRigid(coord.Y, coord.X, coord.Angle.ToRadians(),
-                                            coordTrans.Y, coordTrans.X, coordTrans.Angle.ToRadians(),
+            // CvCoord.Angle 已是弧度，vector_angle_to_rigid 也要求弧度，不可再做角度→弧度转换
+            HOperatorSet.VectorAngleToRigid(coord.Y, coord.X, coord.Angle,
+                                            coordTrans.Y, coordTrans.X, coordTrans.Angle,
                                             out hv_HomMat2D);
         }
 
@@ -183,26 +184,18 @@ namespace DotNet.Drawing
         /// <summary>
         /// 计算经过刚体变换后的坐标
         /// </summary>
+        /// <remarks>
+        /// Point2d 只有位置、没有朝向（其 <see cref="Point2d.Angle"/> 是"与原点连线的夹角"，
+        /// 不代表坐标系旋转量），因此本重载与 <see cref="VectorAngleToRigid(Point2d, Point2d, out HTuple)"/>
+        /// 保持一致：纯平移，不旋转，target 的角度原样保留。
+        /// 需要含旋转的变换请使用 CvCoord 重载。
+        /// </remarks>
         public void GetTransformedCoord(Point2d point, Point2d pointTrans, CvCoord target, out CvCoord result)
         {
-            // 计算角度差（弧度）
-            double angleDiff = (pointTrans.Angle - point.Angle).ToRadians();
+            double transformedX = target.X - point.X + pointTrans.X;
+            double transformedY = target.Y - point.Y + pointTrans.Y;
 
-            // 计算平移差
-            double deltaX = pointTrans.X - point.X;
-            double deltaY = pointTrans.Y - point.Y;
-
-            // 旋转矩阵
-            double cosTheta = Math.Cos(0);
-            double sinTheta = Math.Sin(0);
-
-            // 计算新坐标
-            double transformedX = cosTheta * (target.X - point.X) - sinTheta * (target.Y - point.Y) + pointTrans.X;
-            double transformedY = sinTheta * (target.X - point.X) + cosTheta * (target.Y - point.Y) + pointTrans.Y;
-
-            // 更新结果
-            var angle = target.Angle + (pointTrans.Angle - point.Angle); // 更新角度
-            result = new CvCoord(transformedX, transformedY, angle);
+            result = new CvCoord(transformedX, transformedY, target.Angle);
         }
 
         /// <summary>
@@ -210,24 +203,16 @@ namespace DotNet.Drawing
         /// </summary>
         public void GetTransformedCoord(CvCoord coord, CvCoord coordTrans, CvCoord target, out CvCoord result)
         {
-            // 计算角度差（弧度）
-            double angleDiff = (coordTrans.Angle - coord.Angle).ToRadians();
+            // CvCoord.Angle 已是弧度，直接相减即为旋转量
+            double angleDiff = coordTrans.Angle - coord.Angle;
 
-            // 计算平移差
-            double deltaX = coordTrans.X - coord.X;
-            double deltaY = coordTrans.Y - coord.Y;
-
-            // 旋转矩阵
             double cosTheta = Math.Cos(angleDiff);
             double sinTheta = Math.Sin(angleDiff);
 
-            // 计算新坐标
             double transformedX = cosTheta * (target.X - coord.X) - sinTheta * (target.Y - coord.Y) + coordTrans.X;
             double transformedY = sinTheta * (target.X - coord.X) + cosTheta * (target.Y - coord.Y) + coordTrans.Y;
 
-            // 更新结果
-            var angle = target.Angle + (coordTrans.Angle - coord.Angle); // 更新角度
-            result = new CvCoord(transformedX, transformedY, angle);
+            result = new CvCoord(transformedX, transformedY, target.Angle + angleDiff);
         }
 
         #endregion
@@ -454,7 +439,7 @@ namespace DotNet.Drawing
         /// <param name="imageType">图片格式："bmp", "tiff", "png", etc.</param>
         public void SaveCropWindow(HTuple hWindowHandle, string folderPath, string imageType = "tiff")
         {
-            HObject croppedImage = new HObject(); HOperatorSet.GenEmptyObj(out croppedImage);
+            HObject croppedImage; HOperatorSet.GenEmptyObj(out croppedImage);
 
             try
             {
@@ -511,7 +496,7 @@ namespace DotNet.Drawing
         /// <param name="imageType">图片格式："bmp", "tiff", "png", etc.</param>
         public void SaveCropWindow(HTuple hWindowHandle, string cameraName, string folderPath = @"D:\Picture\SaveCropWindow", string imageType = "tiff")
         {
-            HObject croppedImage = new HObject(); HOperatorSet.GenEmptyObj(out croppedImage);
+            HObject croppedImage; HOperatorSet.GenEmptyObj(out croppedImage);
 
             try
             {
@@ -563,9 +548,9 @@ namespace DotNet.Drawing
         /// </summary>
         public void SaveSmallestRectImage(HObject hImage, HObject imgReduced, string ModelPath, string format = "bmp")
         {
-            HObject rectangle = new HObject(); HOperatorSet.GenEmptyObj(out rectangle);
-            HObject imageReduced = new HObject(); HOperatorSet.GenEmptyObj(out imageReduced);
-            HObject imagePart = new HObject(); HOperatorSet.GenEmptyObj(out imagePart);
+            HObject rectangle; HOperatorSet.GenEmptyObj(out rectangle);
+            HObject imageReduced; HOperatorSet.GenEmptyObj(out imageReduced);
+            HObject imagePart; HOperatorSet.GenEmptyObj(out imagePart);
 
             try
             {

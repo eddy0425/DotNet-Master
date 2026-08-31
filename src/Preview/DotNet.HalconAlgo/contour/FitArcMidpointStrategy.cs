@@ -95,9 +95,9 @@ namespace DotNet.HalconAlgo
         /// </summary>
         protected bool ComputeFit(HObject ho_Image, List<IParaStrategy> strategys)
         {
-            HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
-            HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
-            HObject contourFitting = new HObject(); HOperatorSet.GenEmptyObj(out contourFitting);
+            HObject regionGet; HOperatorSet.GenEmptyObj(out regionGet);
+            HObject imgReduced; HOperatorSet.GenEmptyObj(out imgReduced);
+            HObject contourFitting; HOperatorSet.GenEmptyObj(out contourFitting);
 
             var render = new FitArcMidpointRenderData
             {

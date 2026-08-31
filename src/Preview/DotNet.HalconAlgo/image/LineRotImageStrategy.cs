@@ -137,7 +137,8 @@ namespace DotNet.HalconAlgo
         public string LineIn { set; get; } = "默认";
 
         /// <summary> 输出图像 </summary>
-        public HObject Image = new HObject();
+        /// <remarks>不加 = new HObject() 初始化器：句柄统一由构造函数的 GenEmptyObj 创建，否则初始化器创建的句柄会被覆盖且永不释放。</remarks>
+        public HObject Image;
 
         /// <summary> 对齐轴 </summary>
         public string AlignAxis { set; get; } = "平行X轴";

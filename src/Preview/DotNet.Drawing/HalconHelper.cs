@@ -37,7 +37,7 @@ namespace DotNet.Drawing
         /// </summary>
         public static void GenContours(List<Point2d> points, out HObject contour)
         {
-            GenContours(points, out contour);
+            controller.GenContours(points, out contour);
         }
 
         /// <summary>

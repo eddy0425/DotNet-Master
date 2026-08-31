@@ -48,8 +48,8 @@ namespace DotNet.HalconAlgo
                 return false;
             }
 
-            HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
-            HObject ho_SelRect = new HObject(); HOperatorSet.GenEmptyObj(out ho_SelRect);
+            HObject imgReduced; HOperatorSet.GenEmptyObj(out imgReduced);
+            HObject ho_SelRect; HOperatorSet.GenEmptyObj(out ho_SelRect);
 
             try
             {
@@ -239,7 +239,7 @@ namespace DotNet.HalconAlgo
         }
         public override void SetTemplate(HDisplayUI display, RectEnum type, bool newModel)
         {
-            HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
+            HObject imgReduced; HOperatorSet.GenEmptyObj(out imgReduced);
 
             try
             {
@@ -382,7 +382,8 @@ namespace DotNet.HalconAlgo
         public CvRegion ModeRect { set; get; } = new CvRegion();
 
         /// <summary> 模版轮廓 </summary>
-        public HObject HoContour = new HObject();
+        /// <remarks>不加 = new HObject() 初始化器：句柄统一由构造函数的 GenEmptyObj 创建，否则初始化器创建的句柄会被覆盖且永不释放。</remarks>
+        public HObject HoContour;
 
         /// <summary> 锁定中心 </summary>
         public bool LockCenter { get; set; } = true;

@@ -126,6 +126,8 @@ namespace DotNet.HalconAlgo
         {
             try
             {
+                // Init 可能被重复调用，先释放上一次的句柄再重建，避免累积泄漏
+                inPara.Image?.Dispose();
                 HOperatorSet.GenEmptyObj(out inPara.Image);
                 ImagePaths = HalconHelper.GetPaths(inPara.ImageFolder);
             }
@@ -144,7 +146,8 @@ namespace DotNet.HalconAlgo
     public class FileImage : AlgoFont
     {
         /// <summary> 图像 </summary>
-        public HObject Image = new HObject();
+        /// <remarks>不加 = new HObject() 初始化器：句柄由 <see cref="FileImageStrategy.Init"/> 创建，否则初始化器创建的句柄会被覆盖且永不释放。</remarks>
+        public HObject Image;
 
         /// <summary> 旋转 </summary>
         public int Rotate { get; set; } = 0;

@@ -58,8 +58,9 @@ namespace DotNet.HalconUI
             HMouseUp    += OnMouseUp;
             HMouseWheel += OnMouseWheel;
             HMouseMove  += OnMouseMove;
-            // 控件销毁时主动释放 HObject, 避免依赖 GC + finalizer 的滞后回收
-            HandleDestroyed += UI_HandleDestroyed;
+            // 资源释放走 Dispose(bool)（见 HDisplayUI.Designer.cs），不要用 HandleDestroyed：
+            // 更换 Parent / 修改 Dock / TabPage 切换等场景会重建句柄并触发 HandleDestroyed，
+            // 此时控件并未销毁，提前释放 display 会让显示功能永久失效。
         }
 
         private void Display_RefreshUI(HTuple Row, HTuple Column, HTuple egray)
@@ -136,21 +137,23 @@ namespace DotNet.HalconUI
             }
         }
 
-        private void UI_HandleDestroyed(object sender, EventArgs e)
+        /// <summary>
+        /// 释放显示相关的托管资源，由 <see cref="Dispose(bool)"/> 的 disposing 分支调用。
+        /// </summary>
+        private void ReleaseDisplayResources()
         {
             // 1) 先解绑自身订阅，确保后续即便 display 内部触发事件也不再回到当前实例
             HMouseDown -= OnMouseDown;
             HMouseUp -= OnMouseUp;
             HMouseWheel -= OnMouseWheel;
             HMouseMove -= OnMouseMove;
-            HandleDestroyed -= UI_HandleDestroyed;
 
             // 2) 释放 HDisplayCore（它会级联释放 HWindowMouse / HWindowImage / HDisplay 中持有的 HObject）
             //    HDisplayCore.Dispose 自身已具备幂等性；这里不把 display 字段置 null，
             //    避免外部在控件销毁后仍访问属性时引发 NullReferenceException——
             //    Disposed 后属性会通过 HDisplayCore 内部的 _disposed 保护返回安全默认值。
             try { display?.Dispose(); }
-            catch (Exception ex) { Console.WriteLine($"[HDisplayUI.UI_HandleDestroyed] {ex.Message}"); }
+            catch (Exception ex) { Console.WriteLine($"[HDisplayUI.ReleaseDisplayResources] {ex.Message}"); }
         }
 
         public void SetNonePara()

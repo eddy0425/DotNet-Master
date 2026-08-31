@@ -54,20 +54,25 @@ namespace DotNet.Drawing
                     break;
                 case RectEnum.Ring:
                     {
-                        HOperatorSet.GenEmptyObj(out HObject circle1);
-                        HOperatorSet.GenEmptyObj(out HObject circle2);
+                        // 直接以 GenCircle 创建句柄：原实现先 GenEmptyObj 再被 GenCircle 覆盖，空对象句柄永不释放
+                        HOperatorSet.GenCircle(out HObject circle1, hRegion.CenterY, hRegion.CenterX, hRegion.MaxRadius);
                         try
                         {
-                            HOperatorSet.GenCircle(out circle1, hRegion.CenterY, hRegion.CenterX, hRegion.MaxRadius);
-                            HOperatorSet.GenCircle(out circle2, hRegion.CenterY, hRegion.CenterX, hRegion.MinRadius);
-                            HOperatorSet.Difference(circle1, circle2, out HObject region);
-                            hRegion.HoRegion.Dispose();
-                            hRegion.HoRegion = region;
+                            HOperatorSet.GenCircle(out HObject circle2, hRegion.CenterY, hRegion.CenterX, hRegion.MinRadius);
+                            try
+                            {
+                                HOperatorSet.Difference(circle1, circle2, out HObject region);
+                                hRegion.HoRegion.Dispose();
+                                hRegion.HoRegion = region;
+                            }
+                            finally
+                            {
+                                circle2.Dispose();
+                            }
                         }
                         finally
                         {
                             circle1.Dispose();
-                            circle2.Dispose();
                         }
                     }
                     break;
@@ -82,7 +87,7 @@ namespace DotNet.Drawing
         public static void GenCoordsRegion(this CvRegion hRegion, List<CvCoord> coords)
         {
             if (coords == null) return;
-            HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
+            HObject imgReduced; HOperatorSet.GenEmptyObj(out imgReduced);
 
             try
             {

@@ -1,4 +1,4 @@
-using HalconDotNet;
+﻿using HalconDotNet;
 using System;
 using DotNet.Drawing;
 using DotNet.HalconUI;
@@ -47,10 +47,10 @@ namespace DotNet.HalconAlgo
         }
         public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
         {
-            HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
-            HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
-            HObject contourFitting = new HObject(); HOperatorSet.GenEmptyObj(out contourFitting);
-            HObject arcContour = new HObject(); HOperatorSet.GenEmptyObj(out arcContour);
+            HObject regionGet; HOperatorSet.GenEmptyObj(out regionGet);
+            HObject imgReduced; HOperatorSet.GenEmptyObj(out imgReduced);
+            HObject contourFitting; HOperatorSet.GenEmptyObj(out contourFitting);
+            HObject arcContour; HOperatorSet.GenEmptyObj(out arcContour);
 
             try
             {

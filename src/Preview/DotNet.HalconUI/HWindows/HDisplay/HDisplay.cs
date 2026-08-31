@@ -414,12 +414,13 @@ namespace DotNet.HalconUI
         }
         public void DispCross(CvCoord coord, double size = 20)
         {
-            _hWindow.DispCross(coord.Y, coord.X, size, coord.Angle.ToRadians());
+            // CvCoord.Angle 已是弧度，不可再做角度→弧度转换
+            _hWindow.DispCross(coord.Y, coord.X, size, coord.Angle);
         }
         public void DispCross(CvCoord coord, string color, double size = 20)
         {
             SetColor(color);
-            _hWindow.DispCross(coord.Y, coord.X, size, coord.Angle.ToRadians());
+            _hWindow.DispCross(coord.Y, coord.X, size, coord.Angle);
         }
 
         #endregion
@@ -447,7 +448,7 @@ namespace DotNet.HalconUI
         {
             _hWindow.DispLine(line.Start.Y, line.Start.X, line.End.Y, line.End.X);
 
-            _hWindow.SetColor(HColor.Red);
+            SetColor(HColor.Red);
             _hWindow.DispCircle(line.End.Y, line.End.X, radius);
         }
         public void DispLine(CvLine line, int radius, string color)
@@ -455,7 +456,7 @@ namespace DotNet.HalconUI
             SetColor(color);
             _hWindow.DispLine(line.Start.Y, line.Start.X, line.End.Y, line.End.X);
 
-            _hWindow.SetColor(HColor.Red);
+            SetColor(HColor.Red);
             _hWindow.DispCircle(line.End.Y, line.End.X, radius);
         }
 
@@ -921,7 +922,8 @@ namespace DotNet.HalconUI
                                                  hRegion.Width / 2, hRegion.Height / 2);
                         break;
                     case RectEnum.Polygon:
-                        HOperatorSet.DispPolygon(_hWindow, hRegion.PolygonX, hRegion.PolygonY);
+                        // disp_polygon(Window, Row, Column)：首参为 Row，而 PolygonX/PolygonY 分别存 Column/Row
+                        HOperatorSet.DispPolygon(_hWindow, hRegion.PolygonY, hRegion.PolygonX);
                         break;
                     case RectEnum.Ring:
                         DispRingInternal(hRegion);
