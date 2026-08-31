@@ -128,7 +128,9 @@ namespace DotNet.Drawing
         public bool IsDegenerate
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => MathHelper.AreEqual(LengthSquared, 0);
+            // 必须在同一量纲上比较：LengthSquared 与 PixelTolerance 的平方比较，
+            // 等价于"线段长度不足 0.01 像素"。原先拿长度平方与 1e-9 比，实际阈值是 3e-5 像素。
+            get => LengthSquared < MathHelper.PixelTolerance * MathHelper.PixelTolerance;
         }
 
         #endregion
@@ -201,7 +203,12 @@ namespace DotNet.Drawing
         /// <summary>
         /// 判断点是否在线段内（实现 ICvContainable）
         /// </summary>
-        public bool Contains(Point2d point) => ContainsPoint(point, MathHelper.Tolerance);
+        /// <remarks>
+        /// 使用像素级容差，与 <see cref="IsOnBoundary"/> 的默认档位保持一致。
+        /// 原实现传入 <c>MathHelper.Tolerance</c>(1e-9)，比默认值严格 7 个数量级，
+        /// 对任何实际测量得到的点都恒为 false。
+        /// </remarks>
+        public bool Contains(Point2d point) => ContainsPoint(point, MathHelper.PixelTolerance);
 
         /// <summary>
         /// 判断点是否在边界上（实现 ICvContainable）
@@ -349,7 +356,9 @@ namespace DotNet.Drawing
             var d2 = other.Direction;
             double cross = d1.Cross(d2);
 
-            if (MathHelper.AreEqual(cross, 0))
+            // cross = |d1|*|d2|*sin(theta)，量级随线段长度平方增长，
+            // 必须以 |d1|*|d2| 为参考做相对判零，否则长线段永远判不出平行。
+            if (MathHelper.IsZeroRelative(cross, Length * other.Length))
                 return false; // 平行或共线
 
             var diff = other.Start - Start;
@@ -377,7 +386,8 @@ namespace DotNet.Drawing
             var d2 = other.Direction;
             double cross = d1.Cross(d2);
 
-            if (MathHelper.AreEqual(cross, 0))
+            // 同 TryIntersect：叉积量纲为长度平方，按量级做相对判零。
+            if (MathHelper.IsZeroRelative(cross, Length * other.Length))
                 return false; // 平行
 
             var diff = other.Start - Start;

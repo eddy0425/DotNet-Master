@@ -5,8 +5,7 @@
         None,
         Erase,
         DispRect, 
-        DispModel, 
-        Synthethic 
+        DispModel 
     }
 
 }

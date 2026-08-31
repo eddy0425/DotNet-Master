@@ -26,7 +26,8 @@ namespace DotNet.HalconAlgo
         public override bool Fun_action(HObject ho_Image, IHDisplay display)
         {
             display.SetImage(ho_Image);
-            return Fun_action(display, null);
+            // 传空集合而不是 null: 另一重载内部会对 strategys 做 ResolveFrom, null 会直接 NRE.
+            return Fun_action(display, StrategyExtensions.EmptyList());
         }
         public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
         {
@@ -67,9 +68,8 @@ namespace DotNet.HalconAlgo
                     // CvCoord.Angle 已是弧度，统一以度数做归一化与逻辑处理
                     double baseAglDeg = hCoord.AngleDegrees;
 
-                    baseAglDeg = baseAglDeg % 360;
-                    if (baseAglDeg > 180) baseAglDeg -= 360;
-                    else if (baseAglDeg < -180) baseAglDeg += 360;
+                    // 统一走 MathHelper 的归一化, 不再手写 %360 三段式 (原写法在 ±180 处的取舍不明确)
+                    baseAglDeg = MathHelper.NormalizeAngleDegrees(baseAglDeg);
 
                     switch (inPara.RotateType)
                     {
@@ -78,8 +78,16 @@ namespace DotNet.HalconAlgo
                             baseAglDeg = -baseAglDeg;
                             break;
                         case "坐标系Y轴":
-                            if (baseAglDeg > 0) baseAglDeg = 90 - baseAglDeg;
-                            else if (baseAglDeg < 0) baseAglDeg = -90 - baseAglDeg;
+                            // 目标是把坐标系 Y 轴摆正, 所需旋转量为 (±90 - baseAglDeg).
+                            // baseAglDeg == 0 时 +90 与 -90 在几何上等价(相差 180°, 都能让 Y 轴竖直),
+                            // 这里明确归入 ">= 0" 分支取 +90, 与 baseAglDeg → 0⁺ 的极限保持连续;
+                            // 原实现把 0 漏在两个分支之外, 结果退化成 "不旋转", 与两侧极限都不连续.
+                            baseAglDeg = baseAglDeg >= 0 ? 90 - baseAglDeg : -90 - baseAglDeg;
+                            break;
+                        default:
+                            // 未知旋转方式: 保持原角度不做换算, 但记录下来便于发现配置写错.
+                            Log.Warn(nameof(RotateImageStrategy),
+                                     $"未知的旋转方式 '{inPara.RotateType}', 按原角度处理.");
                             break;
                     }
 

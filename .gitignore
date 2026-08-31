@@ -8,3 +8,7 @@
 # Visual Studio
 # .vs/ - Visual Studio 的用户特定设置文件夹，包含个人偏好设置、断点信息等
 .vs/
+
+
+# Local development files
+/scripts/normalize_crlf.py

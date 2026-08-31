@@ -32,23 +32,4 @@ namespace DotNet.HalconUI
 
     }
 
-    public class DrawSynthethicArgs : EventArgs
-    {
-        public DrawSynthethicArgs(HObject contour, Point2d topLeft, Point2d bottomRight)
-        {
-            ho_Contour = contour;
-            TopLeft = topLeft;
-            BottomRight = bottomRight;
-        }
-
-        public HObject ho_Contour { get; private set; }
-
-        /// <summary> 矩形左上角点 </summary>
-        public Point2d TopLeft { get; private set; }
-
-        /// <summary> 矩形右下角点 </summary>
-        public Point2d BottomRight { get; private set; }
-
-    }
-
 }

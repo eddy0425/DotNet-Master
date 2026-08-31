@@ -50,6 +50,21 @@ namespace DotNet.HalconUI
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// DispCvRegion 显示时叠加到 Row 上的像素偏移。
+        /// </summary>
+        /// <remarks>
+        /// 这两个偏移是从原实现原样保留下来的经验值，仅用于"显示"，不参与任何几何计算。
+        /// 需要说明的是：它们并非对称（Row 加 0.5、Column 加 1），原代码没有留下任何推导依据，
+        /// 按 HALCON 的像素中心约定，理论上两个方向应当取同一个值（0.5）。
+        /// 这里先提为具名常量，使其可被检索、可被讨论；是否修正为对称值需要用实际图像比对后再定，
+        /// 因此本次不改变数值，避免在没有验证手段的情况下引入肉眼可见的位移。
+        /// </remarks>
+        const double DispRowOffset = 0.5;
+
+        /// <summary> DispCvRegion 显示时叠加到 Column 上的像素偏移，见 <see cref="DispRowOffset"/> </summary>
+        const double DispColOffset = 1;
+
         /// <summary> 窗口/控件是否仍可用于 Halcon 调用 </summary>
         bool IsWindowUsable()
         {
@@ -72,7 +87,7 @@ namespace DotNet.HalconUI
             if (string.IsNullOrWhiteSpace(mode)) mode = "margin";
             if (mode != "margin" && mode != "fill")
             {
-                Console.WriteLine($"[HDisplay.SetDraw] 未知模式 '{mode}'，回退为 margin");
+                Log.Warn(nameof(HDisplay), $"未知绘制模式 '{mode}'，回退为 margin.");
                 mode = "margin";
             }
 
@@ -84,7 +99,7 @@ namespace DotNet.HalconUI
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[HDisplay.SetDraw] {ex.Message}");
+                Log.Error(nameof(HDisplay), "设置绘制模式失败.", ex);
             }
         }
 
@@ -133,14 +148,14 @@ namespace DotNet.HalconUI
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"[HDisplay.DispImage] DispCross failed: {ex.Message}");
+                            Log.Warn(nameof(HDisplay), "显示图像时叠加十字失败.", ex);
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[HDisplay.DispImage] display failed: {ex.Message}");
+                Log.Error(nameof(HDisplay), "显示图像失败.", ex);
             }
         }
 
@@ -175,14 +190,14 @@ namespace DotNet.HalconUI
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"[HDisplay.DispImage] DispCross failed: {ex.Message}");
+                            Log.Warn(nameof(HDisplay), "显示图像时叠加十字失败.", ex);
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[HDisplay.DispImage] display failed: {ex.Message}");
+                Log.Error(nameof(HDisplay), "显示图像失败.", ex);
             }
         }
 
@@ -203,7 +218,7 @@ namespace DotNet.HalconUI
         {
             if (!IsWindowUsable() || _hWindowFont == null) return;
             try { _hWindowFont.SetFontSize(hv_Size); }
-            catch (Exception ex) { Console.WriteLine($"[HDisplay.SetFontSize] {ex.Message}"); }
+            catch (Exception ex) { Log.Warn(nameof(HDisplay), "设置字号失败.", ex); }
         }
 
         /// <summary> 显示字体 (FontX=Column, FontY=Row，沿用项目历史语义) </summary>
@@ -211,7 +226,7 @@ namespace DotNet.HalconUI
         {
             if (!IsWindowUsable() || _hWindowFont == null) return;
             try { _hWindowFont.DispText(message, FontY, FontX, color); }
-            catch (Exception ex) { Console.WriteLine($"[HDisplay.DispText] {ex.Message}"); }
+            catch (Exception ex) { Log.Warn(nameof(HDisplay), "显示文本失败.", ex); }
         }
 
         /// <summary> 显示字体 </summary>
@@ -223,7 +238,7 @@ namespace DotNet.HalconUI
                 _hWindowFont.SetFontSize(size);
                 _hWindowFont.DispText(message, FontY, FontX, color);
             }
-            catch (Exception ex) { Console.WriteLine($"[HDisplay.DispText] {ex.Message}"); }
+            catch (Exception ex) { Log.Warn(nameof(HDisplay), "显示文本失败.", ex); }
         }
 
         #endregion
@@ -263,7 +278,7 @@ namespace DotNet.HalconUI
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[HDisplay.SetColor] {ex.Message}");
+                Log.Warn(nameof(HDisplay), "设置颜色失败.", ex);
             }
         }
 
@@ -279,7 +294,7 @@ namespace DotNet.HalconUI
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[HDisplay.ClearWinDisp] {ex.Message}");
+                Log.Error(nameof(HDisplay), "清空窗口失败.", ex);
             }
         }
 
@@ -300,7 +315,7 @@ namespace DotNet.HalconUI
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[HDisplay.DispGenRegion] {ex.Message}");
+                Log.Error(nameof(HDisplay), "生成并显示区域失败.", ex);
             }
         }
 
@@ -316,34 +331,44 @@ namespace DotNet.HalconUI
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[HDisplay.GenCoordsRegion] {ex.Message}");
+                Log.Error(nameof(HDisplay), "由坐标生成区域失败.", ex);
             }
         }
 
         #endregion
 
         #region 点相关
+
+        // 本区域（以及下方的坐标/线/方向线/圆/Region）统一遵循两条约定：
+        // 1) 每族重载只保留一个真正调用 Halcon 的实现入口，由该入口做 IsWindowUsable() 防护；
+        //    带 color 的重载只负责 SetColor 后转发，避免防护逻辑散落成几十份。
+        // 2) 参数校验一律前置于任何副作用（含 SetColor）；非法入参抛异常而不是静默 return。
+
         public void DispPoint(double crossX, double crossY, double size = 20)
         {
+            if (!IsWindowUsable()) return;
             _hWindow.DispCross(crossY, crossX, size, 0);
         }
         public void DispPoint(double crossX, double crossY, string color, int size = 20)
         {
             SetColor(color);
-            _hWindow.DispCross(crossY, crossX, size, 0);
+            DispPoint(crossX, crossY, (double)size);
         }
         public void DispPoint(HTuple crossX, HTuple crossY, double size = 20)
         {
+            if (!IsWindowUsable()) return;
             _hWindow.DispCross(crossY, crossX, size, 0);
         }
         public void DispPoint(HTuple crossX, HTuple crossY, string color, int size = 20)
         {
             SetColor(color);
-            _hWindow.DispCross(crossY, crossX, size, 0);
+            DispPoint(crossX, crossY, (double)size);
         }
         public void DispPoint(double[] rowPoints, double[] columnPoints, int size = 20)
         {
-            if (rowPoints.Length != columnPoints.Length) return;
+            ValidatePointArrays(rowPoints, columnPoints);
+
+            if (!IsWindowUsable()) return;
 
             for (int i = 0; i < rowPoints.Length; i++)
             {
@@ -352,18 +377,18 @@ namespace DotNet.HalconUI
         }
         public void DispPoint(double[] rowPoints, double[] columnPoints, string color, int size = 20)
         {
+            // 原实现先 SetColor 再校验：长度不一致时颜色已被改掉，且静默 return，
+            // 调用方既看不到错误，后续绘制的颜色还被污染。这里把校验提到 SetColor 之前。
+            ValidatePointArrays(rowPoints, columnPoints);
+
             SetColor(color);
-
-            if (rowPoints.Length != columnPoints.Length) return;
-
-            for (int i = 0; i < rowPoints.Length; i++)
-            {
-                _hWindow.DispCross(rowPoints[i], columnPoints[i], size, 0);
-            }
+            DispPoint(rowPoints, columnPoints, size);
         }
         public void DispPoint(List<Point2d> polygons, int size = 20)
         {
-            if (polygons.Count == 0) return;
+            if (polygons is null) throw new ArgumentNullException(nameof(polygons));
+
+            if (!IsWindowUsable()) return;
 
             for (int i = 0; i < polygons.Count; i++)
             {
@@ -372,23 +397,31 @@ namespace DotNet.HalconUI
         }
         public void DispPoint(List<Point2d> polygons, string color, int size = 20)
         {
+            if (polygons is null) throw new ArgumentNullException(nameof(polygons));
+
             SetColor(color);
-
-            if (polygons.Count == 0) return;
-
-            for (int i = 0; i < polygons.Count; i++)
-            {
-                _hWindow.DispCross(polygons[i].Y, polygons[i].X, size, 0);
-            }
+            DispPoint(polygons, size);
         }
         public void DispPoint(Point2d point, double size = 20)
         {
+            if (!IsWindowUsable()) return;
             _hWindow.DispCross(point.Y, point.X, size, 0);
         }
         public void DispPoint(Point2d point, string color, double size = 20)
         {
             SetColor(color);
-            _hWindow.DispCross(point.Y, point.X, size, 0);
+            DispPoint(point, size);
+        }
+
+        /// <summary> 行列坐标数组的前置校验：数量必须一一对应 </summary>
+        static void ValidatePointArrays(double[] rowPoints, double[] columnPoints)
+        {
+            if (rowPoints == null) throw new ArgumentNullException(nameof(rowPoints));
+            if (columnPoints == null) throw new ArgumentNullException(nameof(columnPoints));
+            if (rowPoints.Length != columnPoints.Length)
+                throw new ArgumentException(
+                    $"行列坐标数量不一致: rowPoints={rowPoints.Length}, columnPoints={columnPoints.Length}",
+                    nameof(columnPoints));
         }
 
         #endregion
@@ -396,31 +429,33 @@ namespace DotNet.HalconUI
         #region 坐标相关
         public void DispCross(double crossX, double crossY, double angle, double size = 20)
         {
+            if (!IsWindowUsable()) return;
             _hWindow.DispCross(crossY, crossX, size, angle);
         }
         public void DispCross(double crossX, double crossY, double angle, string color, double size = 20)
         {
             SetColor(color);
-            _hWindow.DispCross(crossY, crossX, size, angle);
+            DispCross(crossX, crossY, angle, size);
         }
         public void DispCross(Point2d point, double angle, double size = 20)
         {
-            _hWindow.DispCross(point.Y, point.X, size, angle);
+            DispCross(point.X, point.Y, angle, size);
         }
         public void DispCross(Point2d point, double angle, string color, double size = 20)
         {
             SetColor(color);
-            _hWindow.DispCross(point.Y, point.X, size, angle);
+            DispCross(point, angle, size);
         }
         public void DispCross(CvCoord coord, double size = 20)
         {
+            // CvCoord 是 readonly struct，不需要（也不可能）做 null 校验
             // CvCoord.Angle 已是弧度，不可再做角度→弧度转换
-            _hWindow.DispCross(coord.Y, coord.X, size, coord.Angle);
+            DispCross(coord.X, coord.Y, coord.Angle, size);
         }
         public void DispCross(CvCoord coord, string color, double size = 20)
         {
             SetColor(color);
-            _hWindow.DispCross(coord.Y, coord.X, size, coord.Angle);
+            DispCross(coord, size);
         }
 
         #endregion
@@ -428,24 +463,32 @@ namespace DotNet.HalconUI
         #region 线相关
         public void DispLine(double startX, double startY, double endX, double endY)
         {
+            if (!IsWindowUsable()) return;
             _hWindow.DispLine(startY, startX, endY, endX);
         }
         public void DispLine(double startX, double startY, double endX, double endY, string color)
         {
             SetColor(color);
-            _hWindow.DispLine(startY, startX, endY, endX);
+            DispLine(startX, startY, endX, endY);
         }
         public void DispLine(CvLine line)
         {
-            _hWindow.DispLine(line.Start.Y, line.Start.X, line.End.Y, line.End.X);
+            if (line is null) throw new ArgumentNullException(nameof(line));
+
+            DispLine(line.Start.X, line.Start.Y, line.End.X, line.End.Y);
         }
         public void DispLine(CvLine line, string color)
         {
+            if (line is null) throw new ArgumentNullException(nameof(line));
+
             SetColor(color);
-            _hWindow.DispLine(line.Start.Y, line.Start.X, line.End.Y, line.End.X);
+            DispLine(line);
         }
         public void DispLine(CvLine line, int radius)
         {
+            if (line is null) throw new ArgumentNullException(nameof(line));
+            if (!IsWindowUsable()) return;
+
             _hWindow.DispLine(line.Start.Y, line.Start.X, line.End.Y, line.End.X);
 
             SetColor(HColor.Red);
@@ -453,43 +496,20 @@ namespace DotNet.HalconUI
         }
         public void DispLine(CvLine line, int radius, string color)
         {
-            SetColor(color);
-            _hWindow.DispLine(line.Start.Y, line.Start.X, line.End.Y, line.End.X);
+            if (line is null) throw new ArgumentNullException(nameof(line));
 
-            SetColor(HColor.Red);
-            _hWindow.DispCircle(line.End.Y, line.End.X, radius);
+            SetColor(color);
+            DispLine(line, radius);
         }
 
 
         /// <summary> 画两点一线 </summary>
         public void DispLine(Point2d point1, Point2d point2, int step)
         {
-            {
-                double x1 = point1.X - step;
-                double y1 = point1.Y;
-                double x2 = point1.X + step;
-                double y2 = point1.Y;
-                HOperatorSet.DispLine(_hWindow, y1, x1, y2, x2);
+            if (!IsWindowUsable()) return;
 
-                double x3 = point1.X;
-                double y3 = point1.Y - step;
-                double x4 = point1.X;
-                double y4 = point1.Y + step;
-                HOperatorSet.DispLine(_hWindow, y3, x3, y4, x4);
-            }
-            {
-                double x1 = point2.X - step;
-                double y1 = point2.Y;
-                double x2 = point2.X + step;
-                double y2 = point2.Y;
-                HOperatorSet.DispLine(_hWindow, y1, x1, y2, x2);
-
-                double x3 = point2.X;
-                double y3 = point2.Y - step;
-                double x4 = point2.X;
-                double y4 = point2.Y + step;
-                HOperatorSet.DispLine(_hWindow, y3, x3, y4, x4);
-            }
+            DispStepCross(point1, step);
+            DispStepCross(point2, step);
 
             HOperatorSet.DispLine(_hWindow, point1.Y, point1.X, point2.Y, point2.X);
         }
@@ -497,36 +517,16 @@ namespace DotNet.HalconUI
         /// <summary> 画两点一线 </summary>
         public void DispLine(Point2d point1, Point2d point2, int step, string color)
         {
+            // 原来这里逐字复制了上面 30 行的十字绘制代码，仅多一行 SetColor；改为转发。
             SetColor(color);
+            DispLine(point1, point2, step);
+        }
 
-            {
-                double x1 = point1.X - step;
-                double y1 = point1.Y;
-                double x2 = point1.X + step;
-                double y2 = point1.Y;
-                HOperatorSet.DispLine(_hWindow, y1, x1, y2, x2);
-
-                double x3 = point1.X;
-                double y3 = point1.Y - step;
-                double x4 = point1.X;
-                double y4 = point1.Y + step;
-                HOperatorSet.DispLine(_hWindow, y3, x3, y4, x4);
-            }
-            {
-                double x1 = point2.X - step;
-                double y1 = point2.Y;
-                double x2 = point2.X + step;
-                double y2 = point2.Y;
-                HOperatorSet.DispLine(_hWindow, y1, x1, y2, x2);
-
-                double x3 = point2.X;
-                double y3 = point2.Y - step;
-                double x4 = point2.X;
-                double y4 = point2.Y + step;
-                HOperatorSet.DispLine(_hWindow, y3, x3, y4, x4);
-            }
-
-            HOperatorSet.DispLine(_hWindow, point1.Y, point1.X, point2.Y, point2.X);
+        /// <summary> 以 point 为中心画一个臂长为 step 的十字（两条正交线段） </summary>
+        void DispStepCross(Point2d point, int step)
+        {
+            HOperatorSet.DispLine(_hWindow, point.Y, point.X - step, point.Y, point.X + step);
+            HOperatorSet.DispLine(_hWindow, point.Y - step, point.X, point.Y + step, point.X);
         }
 
         #endregion
@@ -534,30 +534,39 @@ namespace DotNet.HalconUI
         #region 方向线
         public void DispArrow(double startX, double startY, double endX, double endY, double size = 20)
         {
+            if (!IsWindowUsable()) return;
             _hWindow.DispArrow(startY, startX, endY, endX, size);
         }
         public void DispArrow(double startX, double startY, double endX, double endY, string color, double size = 20)
         {
             SetColor(color);
-            _hWindow.DispArrow(startY, startX, endY, endX, size);
+            DispArrow(startX, startY, endX, endY, size);
         }
         public void DispArrow(CvLine line, double size = 20)
         {
-            _hWindow.DispArrow(line.Start.Y, line.Start.X, line.End.Y, line.End.X, size);
+            if (line is null) throw new ArgumentNullException(nameof(line));
+
+            DispArrow(line.Start.X, line.Start.Y, line.End.X, line.End.Y, size);
         }
         public void DispArrow(CvLine line, string color, double size = 20)
         {
+            if (line is null) throw new ArgumentNullException(nameof(line));
+
             SetColor(color);
-            _hWindow.DispArrow(line.Start.Y, line.Start.X, line.End.Y, line.End.X, size);
+            DispArrow(line, size);
         }
         public void DispArrow(CvArrow arrow)
         {
-            _hWindow.DispArrow(arrow.Start.Y, arrow.Start.X, arrow.End.Y, arrow.End.X, arrow.HeadSize);
+            if (arrow is null) throw new ArgumentNullException(nameof(arrow));
+
+            DispArrow(arrow.Start.X, arrow.Start.Y, arrow.End.X, arrow.End.Y, arrow.HeadSize);
         }
         public void DispArrow(CvArrow arrow, string color)
         {
+            if (arrow is null) throw new ArgumentNullException(nameof(arrow));
+
             SetColor(color);
-            _hWindow.DispArrow(arrow.Start.Y, arrow.Start.X, arrow.End.Y, arrow.End.X, arrow.HeadSize);
+            DispArrow(arrow);
         }
 
         #endregion
@@ -565,21 +574,26 @@ namespace DotNet.HalconUI
         #region 圆
         public void DispCircle(double crossX, double crossY, double radius)
         {
+            if (!IsWindowUsable()) return;
             _hWindow.DispCircle(crossY, crossX, radius);
         }
         public void DispCircle(double crossX, double crossY, double radius, string color)
         {
             SetColor(color);
-            _hWindow.DispCircle(crossY, crossX, radius);
+            DispCircle(crossX, crossY, radius);
         }
         public void DispCircle(CvCircle circle)
         {
-            _hWindow.DispCircle(circle.Center.Y, circle.Center.X, circle.Radius);
+            if (circle is null) throw new ArgumentNullException(nameof(circle));
+
+            DispCircle(circle.Center.X, circle.Center.Y, circle.Radius);
         }
         public void DispCircle(CvCircle circle, string color)
         {
+            if (circle is null) throw new ArgumentNullException(nameof(circle));
+
             SetColor(color);
-            _hWindow.DispCircle(circle.Center.Y, circle.Center.X, circle.Radius);
+            DispCircle(circle);
         }
 
         #endregion
@@ -654,11 +668,16 @@ namespace DotNet.HalconUI
                     case RectEnum.Polygon:
                         DrawPolygonInto(hRegion);
                         break;
+                    case RectEnum.Ring:
+                        DrawRingInto(hRegion, modify: false);
+                        break;
+                    default:
+                        throw new NotSupportedException($"DrawRegion: 不支持的 ROI 类型: {hRegion.Type}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[HDisplay.DrawRegion] {ex.Message}");
+                Log.Error(nameof(HDisplay), "DrawRegion 失败.", ex);
             }
         }
 
@@ -736,11 +755,16 @@ namespace DotNet.HalconUI
                     case RectEnum.Polygon:
                         DrawPolygonInto(hRegion);
                         break;
+                    case RectEnum.Ring:
+                        DrawRingInto(hRegion, modify: true);
+                        break;
+                    default:
+                        throw new NotSupportedException($"DrawRegionMod: 不支持的 ROI 类型: {hRegion.Type}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[HDisplay.DrawRegionMod] {ex.Message}");
+                Log.Error(nameof(HDisplay), "DrawRegionMod 失败.", ex);
             }
         }
 
@@ -782,6 +806,71 @@ namespace DotNet.HalconUI
             {
                 region?.Dispose();
             }
+        }
+
+        /// <summary>
+        /// 生成同心圆环区域 (外圆减内圆). 调用方获得返回句柄的所有权.
+        /// 内外半径顺序不敏感: 自动取大者为外圆.
+        /// </summary>
+        static HObject GenRing(HTuple row, HTuple column, double radiusA, double radiusB)
+        {
+            double outer = Math.Max(radiusA, radiusB);
+            double inner = Math.Min(radiusA, radiusB);
+
+            HObject outerCircle = null;
+            HObject innerCircle = null;
+            try
+            {
+                HOperatorSet.GenCircle(out outerCircle, row, column, outer);
+                HOperatorSet.GenCircle(out innerCircle, row, column, inner);
+                HObject ring;
+                HOperatorSet.Difference(outerCircle, innerCircle, out ring);
+                return ring;
+            }
+            finally
+            {
+                outerCircle?.Dispose();
+                innerCircle?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// 圆环 ROI 的共享实现: DrawRegion / DrawRegionMod 都走这里.
+        /// 交互分两步 —— 先画(或调整)外圆, 再调整内圆半径.
+        /// 第二步用外圆的圆心作为内圆圆心, 强制保持同心; 用户在第二步移动圆心的操作会被忽略,
+        /// 因为 <see cref="CvRegion"/> 的圆环模型 (MaxRadius / MinRadius) 只能表达同心圆环.
+        /// </summary>
+        void DrawRingInto(CvRegion hRegion, bool modify)
+        {
+            HTuple row, column, outerRadius;
+            if (modify)
+            {
+                DrawHelper.DrawCircleMod(_hWindow, hRegion.CenterY, hRegion.CenterX, hRegion.MaxRadius,
+                                         out row, out column, out outerRadius);
+            }
+            else
+            {
+                DrawHelper.DrawCircle(_hWindow, out row, out column, out outerRadius);
+            }
+
+            // 新建时给内圆一个可见的初值(外圆一半), 修改时沿用已有的 MinRadius.
+            double innerSeed = modify ? hRegion.MinRadius : outerRadius.D / 2;
+            DrawHelper.DrawCircleMod(_hWindow, row, column, innerSeed, out HTuple _, out HTuple _, out HTuple innerRadius);
+
+            double outer = Math.Max(outerRadius.D, innerRadius.D);
+            double inner = Math.Min(outerRadius.D, innerRadius.D);
+
+            HObject ring = GenRing(row, column, outer, inner);
+            try
+            {
+                // 外接框按外圆直径写入, 保证 Width/Height/BoundingBox 与其它 ROI 类型语义一致.
+                hRegion.SetRectByCenter(new Point2d(column.D, row.D), new Size2d(outer * 2, outer * 2));
+                hRegion.MaxRadius = outer;
+                hRegion.MinRadius = inner;
+                hRegion.RingWidth = outer - inner;
+                ReplaceRegion(hRegion, ref ring);
+            }
+            finally { ring?.Dispose(); }
         }
 
         /// <summary> 新建区域 </summary>
@@ -832,6 +921,16 @@ namespace DotNet.HalconUI
                             DrawHelper.DrawRegion(out created, _hWindow);
                         }
                         break;
+                    case RectEnum.Ring:
+                        {
+                            DrawHelper.DrawCircle(_hWindow, out HTuple row, out HTuple column, out HTuple outerRadius);
+                            DrawHelper.DrawCircleMod(_hWindow, row, column, outerRadius.D / 2,
+                                                     out HTuple _, out HTuple _, out HTuple innerRadius);
+                            created = GenRing(row, column, outerRadius.D, innerRadius.D);
+                        }
+                        break;
+                    default:
+                        throw new NotSupportedException($"DrawRegion: 不支持的 ROI 类型: {type}");
                 }
 
                 if (created.NotNull())
@@ -843,7 +942,7 @@ namespace DotNet.HalconUI
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[HDisplay.DrawRegion] {ex.Message}");
+                Log.Error(nameof(HDisplay), "交互绘制区域失败.", ex);
             }
             finally
             {
@@ -859,6 +958,8 @@ namespace DotNet.HalconUI
         /// <summary> 显示ROI区域 </summary>
         public void DispRegion(HObject hRegion)
         {
+            if (!IsWindowUsable()) return;
+
             if (hRegion.NotNull())
                 _hWindow.DispObj(hRegion);
         }
@@ -867,14 +968,15 @@ namespace DotNet.HalconUI
         public void DispRegion(HObject hRegion, string color)
         {
             SetColor(color);
-
-            if (hRegion.NotNull())
-                _hWindow.DispObj(hRegion);
+            DispRegion(hRegion);
         }
 
         /// <summary> 显示橡皮筋区域 </summary>
         public void DispRegion(CvRegion hRegion)
         {
+            // 原实现直接解引用 hRegion.HoRegion，hRegion 为 null 时是 NRE 而不是可忽略的空绘制。
+            if (!IsWindowUsable() || hRegion == null) return;
+
             if (hRegion.HoRegion.NotNull())
                 _hWindow.DispObj(hRegion.HoRegion);
         }
@@ -883,9 +985,7 @@ namespace DotNet.HalconUI
         public void DispRegion(CvRegion hRegion, string color)
         {
             SetColor(color);
-
-            if (hRegion.HoRegion.NotNull())
-                _hWindow.DispObj(hRegion.HoRegion);
+            DispRegion(hRegion);
         }
 
         /// <summary>
@@ -907,18 +1007,18 @@ namespace DotNet.HalconUI
                 switch (hRegion.Type)
                 {
                     case RectEnum.Rectangle:
-                        HOperatorSet.DispRectangle1(_hWindow, hRegion.Top + 0.5, hRegion.Left + 1,
+                        HOperatorSet.DispRectangle1(_hWindow, hRegion.Top + DispRowOffset, hRegion.Left + DispColOffset,
                                                             hRegion.Bottom, hRegion.Right);
                         break;
                     case RectEnum.AffRect:
-                        HOperatorSet.DispRectangle2(_hWindow, hRegion.CenterY + 0.5, hRegion.CenterX + 1, hRegion.Phi,
+                        HOperatorSet.DispRectangle2(_hWindow, hRegion.CenterY + DispRowOffset, hRegion.CenterX + DispColOffset, hRegion.Phi,
                                                  hRegion.Width / 2, hRegion.Height / 2);
                         break;
                     case RectEnum.Circle:
-                        HOperatorSet.DispCircle(_hWindow, hRegion.CenterY + 0.5, hRegion.CenterX + 1, hRegion.Width / 2);
+                        HOperatorSet.DispCircle(_hWindow, hRegion.CenterY + DispRowOffset, hRegion.CenterX + DispColOffset, hRegion.Width / 2);
                         break;
                     case RectEnum.Ellipse:
-                        HOperatorSet.DispEllipse(_hWindow, hRegion.CenterY + 0.5, hRegion.CenterX + 1, hRegion.Phi,
+                        HOperatorSet.DispEllipse(_hWindow, hRegion.CenterY + DispRowOffset, hRegion.CenterX + DispColOffset, hRegion.Phi,
                                                  hRegion.Width / 2, hRegion.Height / 2);
                         break;
                     case RectEnum.Polygon:
@@ -928,11 +1028,13 @@ namespace DotNet.HalconUI
                     case RectEnum.Ring:
                         DispRingInternal(hRegion);
                         break;
+                    default:
+                        throw new NotSupportedException($"DispCvRegion: 不支持的 ROI 类型: {hRegion.Type}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[HDisplay.DispCvRegion] {ex.Message}");
+                Log.Error(nameof(HDisplay), "DispCvRegion 失败.", ex);
             }
         }
 
@@ -943,8 +1045,8 @@ namespace DotNet.HalconUI
             HObject regionDifference = null;
             try
             {
-                HOperatorSet.GenCircle(out circle1, hRegion.CenterY + 0.5, hRegion.CenterX + 1, hRegion.MaxRadius);
-                HOperatorSet.GenCircle(out circle2, hRegion.CenterY + 0.5, hRegion.CenterX + 1, hRegion.MinRadius);
+                HOperatorSet.GenCircle(out circle1, hRegion.CenterY + DispRowOffset, hRegion.CenterX + DispColOffset, hRegion.MaxRadius);
+                HOperatorSet.GenCircle(out circle2, hRegion.CenterY + DispRowOffset, hRegion.CenterX + DispColOffset, hRegion.MinRadius);
                 HOperatorSet.Difference(circle1, circle2, out regionDifference);
                 _hWindow.DispObj(regionDifference);
             }
@@ -958,13 +1060,14 @@ namespace DotNet.HalconUI
 
         public void DispRectangle2(HTuple centerRow, HTuple centerCol, HTuple phi, HTuple length1, HTuple length2)
         {
+            if (!IsWindowUsable()) return;
             _hWindow.DispRectangle2(centerRow, centerCol, phi, length1, length2);
         }
 
         public void DispRectangle2(HTuple centerRow, HTuple centerCol, HTuple phi, HTuple length1, HTuple length2, string color)
         {
             SetColor(color);
-            _hWindow.DispRectangle2(centerRow, centerCol, phi, length1, length2);
+            DispRectangle2(centerRow, centerCol, phi, length1, length2);
         }
 
         #endregion

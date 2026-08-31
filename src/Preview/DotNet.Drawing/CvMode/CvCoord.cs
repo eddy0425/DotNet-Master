@@ -64,7 +64,8 @@ namespace DotNet.Drawing
         public bool IsIdentity
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => MathHelper.AreEqual(X, 0) && MathHelper.AreEqual(Y, 0) && MathHelper.AreEqual(Angle, 0);
+            // X/Y 是像素量走几何容差；Angle 是弧度，属纯数值恒等判定，保留严格容差。
+            get => MathHelper.IsZeroGeometric(X) && MathHelper.IsZeroGeometric(Y) && MathHelper.IsZero(Angle);
         }
 
         #endregion
@@ -282,8 +283,8 @@ namespace DotNet.Drawing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(CvCoord other)
         {
-            return MathHelper.AreEqual(X, other.X) &&
-                   MathHelper.AreEqual(Y, other.Y) &&
+            return MathHelper.AreEqualGeometric(X, other.X) &&
+                   MathHelper.AreEqualGeometric(Y, other.Y) &&
                    MathHelper.AreEqual(Angle, other.Angle);
         }
 
@@ -291,8 +292,8 @@ namespace DotNet.Drawing
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode() => HashCode.Combine(
-            MathHelper.QuantizeToTolerance(X),
-            MathHelper.QuantizeToTolerance(Y),
+            MathHelper.QuantizeGeometric(X),
+            MathHelper.QuantizeGeometric(Y),
             MathHelper.QuantizeToTolerance(Angle));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

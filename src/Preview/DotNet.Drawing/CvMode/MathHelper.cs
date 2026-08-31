@@ -17,17 +17,22 @@ namespace DotNet.Drawing
         #region Constants
 
         /// <summary>
-        /// 浮点数比较容差（适用于像素级精度）
+        /// 数值恒等容差：用于判断"是否为同一个数"，例如判零、判等价参数。
         /// </summary>
+        /// <remarks>
+        /// 注意：本档 <b>远严于像素精度</b>（约为 1 像素的十亿分之一）。
+        /// 涉及坐标、长度、半径等<b>几何量</b>的比较请改用 <see cref="PixelTolerance"/>；
+        /// 量级敏感（结果量纲为坐标平方、叉积等）的判定请改用 <see cref="AreEqualRelative"/>。
+        /// </remarks>
         public const double Tolerance = 1e-9;
 
         /// <summary>
-        /// 较宽松的容差（适用于一般几何计算）
+        /// 较宽松的容差：用于累积了多步浮点运算、但仍要求"数值上相同"的场景。
         /// </summary>
         public const double LooseTolerance = 1e-6;
 
         /// <summary>
-        /// 像素级容差
+        /// 像素级容差：几何量（坐标 / 长度 / 半径 / 距离）比较的默认档位。
         /// </summary>
         public const double PixelTolerance = 0.01;
 
@@ -71,6 +76,68 @@ namespace DotNet.Drawing
         public static bool AreEqual(double a, double b, double tolerance)
         {
             return Math.Abs(a - b) < tolerance;
+        }
+
+        /// <summary>
+        /// 以<b>相对容差</b>判断两个浮点数是否近似相等
+        /// </summary>
+        /// <remarks>
+        /// 适用于量级不确定的中间量（叉积、行列式等）：这类值的量纲是坐标的平方，
+        /// 在 4000x3000 图像上轻易达到 1e7 量级，此时任何绝对容差都失去意义。
+        /// 判据为 <c>|a-b| &lt;= tolerance * max(1, |a|, |b|)</c>，
+        /// 其中 <c>max</c> 的 1 用于保证在两值都接近 0 时退化为绝对容差。
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool AreEqualRelative(double a, double b, double tolerance = LooseTolerance)
+        {
+            double scale = Math.Max(1.0, Math.Max(Math.Abs(a), Math.Abs(b)));
+            return Math.Abs(a - b) <= tolerance * scale;
+        }
+
+        /// <summary>
+        /// 以<b>相对容差</b>判断浮点数是否近似为零（相对于给定的参考量级）
+        /// </summary>
+        /// <param name="value">待判定的值</param>
+        /// <param name="scale">该值的期望量级，例如叉积判平行时传两向量长度之积</param>
+        /// <param name="tolerance">相对容差</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsZeroRelative(double value, double scale, double tolerance = LooseTolerance)
+        {
+            return Math.Abs(value) <= tolerance * Math.Max(1.0, Math.Abs(scale));
+        }
+
+        /// <summary>
+        /// 将两个几何量量化到像素容差网格后判断是否相等。
+        /// </summary>
+        /// <remarks>
+        /// 适用对象：坐标、长度、半径、宽高等以像素为单位的量。
+        /// 网格判等是等价关系，并与 <see cref="QuantizeGeometric"/> 生成的哈希分量严格一致；
+        /// 避免使用 <c>|a-b| &lt; tolerance</c> 时因不具传递性、跨网格边界而破坏
+        /// <c>Equals/GetHashCode</c> 契约。
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool AreEqualGeometric(double a, double b)
+        {
+            if (double.IsNaN(a) || double.IsNaN(b)) return false;
+            return QuantizeGeometric(a).Equals(QuantizeGeometric(b));
+        }
+
+        /// <summary>
+        /// 按几何量网格判等规则判断是否为零。
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsZeroGeometric(double value)
+        {
+            return AreEqualGeometric(value, 0);
+        }
+
+        /// <summary>
+        /// <see cref="AreEqualGeometric"/> 配套的哈希量化（像素级网格）
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double QuantizeGeometric(double value)
+        {
+            return QuantizeToTolerance(value, PixelTolerance);
         }
 
         /// <summary>
@@ -161,12 +228,17 @@ namespace DotNet.Drawing
         /// <summary>
         /// 将角度规范化到 [-π, π) 范围
         /// </summary>
+        /// <remarks>
+        /// 使用 <c>floor</c> 一次性折算而非循环加减：循环版本对 1e18 这类极大输入需要迭代
+        /// 上亿次，实际表现为挂起。NaN / 无穷输入原样返回，避免产生无意义的结果。
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double NormalizeAngle(double angle)
         {
-            while (angle >= Math.PI) angle -= TwoPi;
-            while (angle < -Math.PI) angle += TwoPi;
-            return angle;
+            if (double.IsNaN(angle) || double.IsInfinity(angle)) return angle;
+            double result = angle - TwoPi * Math.Floor((angle + Math.PI) / TwoPi);
+            // 浮点舍入可能让结果恰好落在开区间端点 π 上，强制回落到 -π。
+            return result >= Math.PI ? result - TwoPi : result;
         }
 
         /// <summary>
@@ -175,9 +247,9 @@ namespace DotNet.Drawing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double NormalizeAnglePositive(double angle)
         {
-            while (angle >= TwoPi) angle -= TwoPi;
-            while (angle < 0) angle += TwoPi;
-            return angle;
+            if (double.IsNaN(angle) || double.IsInfinity(angle)) return angle;
+            double result = angle - TwoPi * Math.Floor(angle / TwoPi);
+            return result >= TwoPi ? 0 : (result < 0 ? 0 : result);
         }
 
         /// <summary>
@@ -186,9 +258,20 @@ namespace DotNet.Drawing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double NormalizeAngleDegrees(double degrees)
         {
-            while (degrees >= 180) degrees -= 360;
-            while (degrees < -180) degrees += 360;
-            return degrees;
+            if (double.IsNaN(degrees) || double.IsInfinity(degrees)) return degrees;
+            double result = degrees - 360.0 * Math.Floor((degrees + 180.0) / 360.0);
+            return result >= 180.0 ? result - 360.0 : result;
+        }
+
+        /// <summary>
+        /// 将角度规范化到 [0, 360) 度数范围
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double NormalizeAngleDegreesPositive(double degrees)
+        {
+            if (double.IsNaN(degrees) || double.IsInfinity(degrees)) return degrees;
+            double result = degrees - 360.0 * Math.Floor(degrees / 360.0);
+            return result >= 360.0 ? 0 : (result < 0 ? 0 : result);
         }
 
         /// <summary>
@@ -316,12 +399,19 @@ namespace DotNet.Drawing
         }
 
         /// <summary>
-        /// 平滑插值 (Smoothstep)
+        /// 平滑阶跃 (Smoothstep)：把 <paramref name="value"/> 相对区间
+        /// [<paramref name="edge0"/>, <paramref name="edge1"/>] 的位置映射为 <b>0..1</b> 的平滑权重。
         /// </summary>
+        /// <remarks>
+        /// 注意返回值域是 <b>[0, 1]</b>，而不是 [edge0, edge1] —— 它不是"在 a 与 b 之间插值"，
+        /// 若需要后者请用 <see cref="Lerp"/>。原名 <c>SmoothStep(a, b, t)</c> 的参数命名容易被误读为
+        /// 插值端点，故更名以贴合实际语义。
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double SmoothStep(double a, double b, double t)
+        public static double SmoothStepBetween(double edge0, double edge1, double value)
         {
-            t = Clamp01((t - a) / (b - a));
+            if (AreEqual(edge0, edge1)) return value < edge0 ? 0 : 1;
+            double t = Clamp01((value - edge0) / (edge1 - edge0));
             return t * t * (3 - 2 * t);
         }
 

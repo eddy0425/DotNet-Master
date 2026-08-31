@@ -169,8 +169,10 @@ namespace DotNet.Drawing
         /// 保存图像
         /// </summary>
         /// <param name="imgTemp">图像</param>
+        /// <param name="cameraName">相机名</param>
+        /// <param name="folderPath">保存根目录；传 null 或空字符串时使用 <see cref="DrawingPaths.OriginalImageDir"/></param>
         /// <param name="imageType">图片格式："bmp", "tiff", "png", etc.</param>
-        public static void SaveImage(HObject imgTemp, string cameraName, string folderPath = @"D:\Picture\SaveOriginalImages", string imageType = "tiff")
+        public static void SaveImage(HObject imgTemp, string cameraName, string folderPath = "", string imageType = "tiff")
         {
             controller.SaveImage(imgTemp, cameraName, folderPath, imageType);
         }
@@ -195,8 +197,10 @@ namespace DotNet.Drawing
         /// 从 Halcon 窗口中裁剪图像并保存到路径
         /// </summary>
         /// <param name="hWindowHandle">窗口句柄</param>
+        /// <param name="cameraName">相机名</param>
+        /// <param name="folderPath">保存根目录；传 null 或空字符串时使用 <see cref="DrawingPaths.CropWindowDir"/></param>
         /// <param name="imageType">图片格式："bmp", "tiff", "png", etc.</param>
-        public static void SaveCropWindow(HTuple hWindowHandle, string cameraName, string folderPath = @"D:\Picture\SaveCropWindow", string imageType = "tiff")
+        public static void SaveCropWindow(HTuple hWindowHandle, string cameraName, string folderPath = "", string imageType = "tiff")
         {
             controller.SaveCropWindow(hWindowHandle, cameraName, folderPath, imageType);
         }

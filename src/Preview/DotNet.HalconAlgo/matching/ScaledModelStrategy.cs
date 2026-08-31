@@ -38,7 +38,8 @@ namespace DotNet.HalconAlgo
         public override bool Fun_action(HObject ho_Image, IHDisplay display)
         {
             display.SetImage(ho_Image);
-            return Fun_action(display, null);
+            // 传空集合而不是 null: 另一重载内部会对 strategys 做 ResolveFrom, null 会直接 NRE.
+            return Fun_action(display, StrategyExtensions.EmptyList());
         }
         public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
         {

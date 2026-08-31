@@ -63,6 +63,7 @@
     <Compile Include="Extension\HObjectExtension.cs" />
     <Compile Include="Extension\HTupleExtension.cs" />
     <Compile Include="Extension\StringExtension.cs" />
+    <Compile Include="DrawingPaths.cs" />
     <Compile Include="HalconController.cs" />
     <Compile Include="HalconHelper.cs" />
     <Compile Include="HColor.cs" />
@@ -87,6 +88,7 @@
     <Compile Include="OpenCvSharp\Size2d.cs" />
     <Compile Include="OpenCvSharp\Size2f.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Diagnostics\Log.cs" />
     <Compile Include="Serialize\JsonConvertHObject.cs" />
     <Compile Include="Serialize\SerializeConvert.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">

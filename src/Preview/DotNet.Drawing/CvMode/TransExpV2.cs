@@ -6,8 +6,18 @@ using System.Collections.Generic;
 namespace DotNet.Drawing
 {
     /// <summary>
-    /// 利用泛型的特性进行对象克隆
+    /// 利用表达式树进行对象浅拷贝 / 同构映射
     /// </summary>
+    /// <remarks>
+    /// <b>重要限制</b>：只复制 <c>TOut</c> 上<b>可写的公开属性</b>（<c>GetProperties()</c>）。
+    /// <b>字段一律被跳过</b>，且不会有任何提示。若源类型把状态存在字段上
+    /// （例如 <c>CvRegion.HoRegion</c> 这种必须作为 <c>out</c> 实参的 Halcon 句柄），
+    /// 结果对象的该字段会保持默认值，产生"拷贝成功但内容缺失"的静默错误。
+    /// <para>
+    /// 另外它做的是<b>浅拷贝</b>：引用类型属性与源对象共享同一实例，
+    /// 不适合用于需要独立所有权（如非托管句柄）的场景——那种情况请手写克隆。
+    /// </para>
+    /// </remarks>
     /// <typeparam name="TIn">输入</typeparam>
     /// <typeparam name="TOut">输出</typeparam>
     public static class TransExpV2<TIn, TOut>

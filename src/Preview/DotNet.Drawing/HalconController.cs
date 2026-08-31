@@ -291,11 +291,12 @@ namespace DotNet.Drawing
                     throw new ArgumentException($"不支持的图片格式: {imageType}", nameof(imageType));
                 }
 
-                // 生成文件名 时间戳
-                string fileName = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss_fffff"); // 更直观的日期时间格式
+                // 注意: 本重载的落盘路径完全由 filePath 决定, 不再生成时间戳文件名
+                // (原来这里有一个 fileName 变量, 算完从未被使用).
 
-                // 确保文件夹存在
-                Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+                // 确保文件夹存在: 走 FileExists, 它对 Path.GetDirectoryName 返回 null/空的情况有兜底,
+                // 原写法在 filePath 为纯文件名时会把 null 传给 CreateDirectory 直接 NRE.
+                FileExists(filePath);
 
                 // 保存图像
                 HOperatorSet.WriteImage(imgTemp, imageType, 0, filePath);
@@ -309,8 +310,14 @@ namespace DotNet.Drawing
         /// <summary>
         /// 保存图像
         /// </summary>
+        /// <param name="folderPath">保存目录，文件名由时间戳生成</param>
         /// <param name="imageType">图片格式："bmp", "tiff", "png", etc.</param>
-        public void SaveImage(HObject imgTemp, string folderPath, string imageType = "tiff")
+        /// <remarks>
+        /// 三个 SaveImage 重载原先都带默认参数，参数个数区间互相重叠（2~2 / 2~3 / 2~4），
+        /// 同一个调用写法会落到不同重载上。现在去掉全部默认值，让三者的参数个数分别为 2 / 3 / 4，
+        /// 调用点必须显式表达意图。
+        /// </remarks>
+        public void SaveImage(HObject imgTemp, string folderPath, string imageType)
         {
             try
             {
@@ -334,7 +341,7 @@ namespace DotNet.Drawing
                 string saveFilePath = Path.Combine(folderPath, $"{fileName}.{imageType}");
 
                 // 确保文件夹存在
-                Directory.CreateDirectory(Path.GetDirectoryName(saveFilePath));
+                FileExists(saveFilePath);
 
                 // 保存图像
                 HOperatorSet.WriteImage(imgTemp, imageType, 0, saveFilePath);
@@ -349,8 +356,11 @@ namespace DotNet.Drawing
         /// 保存图像
         /// </summary>
         /// <param name="imgTemp">图像</param>
+        /// <param name="cameraName">相机名，作为 folderPath 下的一级子目录</param>
+        /// <param name="folderPath">保存根目录，传空则回落到 <see cref="DrawingPaths.OriginalImageDir"/></param>
         /// <param name="imageType">图片格式："bmp", "tiff", "png", etc.</param>
-        public void SaveImage(HObject imgTemp, string cameraName, string folderPath = @"D:\Picture\SaveOriginalImages", string imageType = "tiff")
+        /// <remarks>原默认值是硬编码的 D:\Picture\SaveOriginalImages，换台机器就写不进去；改为由 DrawingPaths 统一配置。</remarks>
+        public void SaveImage(HObject imgTemp, string cameraName, string folderPath, string imageType)
         {
             try
             {
@@ -368,9 +378,7 @@ namespace DotNet.Drawing
                 }
 
                 // 设置默认文件夹路径
-                folderPath = string.IsNullOrWhiteSpace(folderPath)
-                    ? Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)
-                    : folderPath;
+                if (string.IsNullOrWhiteSpace(folderPath)) folderPath = DrawingPaths.OriginalImageDir;
 
                 // 确保相机名称没有非法字符
                 string sanitizedCameraName = string.Join("_", cameraName.Split(Path.GetInvalidFileNameChars()));
@@ -382,14 +390,14 @@ namespace DotNet.Drawing
                 string savePath = Path.Combine(folderPath, sanitizedCameraName, $"{fileName}.{imageType}");
 
                 // 确保文件夹存在
-                Directory.CreateDirectory(Path.GetDirectoryName(savePath));
+                FileExists(savePath);
 
                 // 保存图像
                 HOperatorSet.WriteImage(imgTemp, imageType, 0, savePath);
             }
             catch (Exception ex)
             {
-                throw new Exception($"保存图像: {ex.Message}\n{ex.StackTrace}");
+                throw new Exception($"保存图像失败：{ex.Message}", ex);
             }
         }
 
@@ -428,7 +436,7 @@ namespace DotNet.Drawing
             catch (Exception ex)
             {
                 if (croppedImage.NotNull()) croppedImage.Dispose();
-                throw new Exception($"获取裁剪图像: {ex.Message}\n{ex.StackTrace}");
+                throw new Exception($"获取裁剪图像失败：{ex.Message}", ex);
             }
         }
 
@@ -436,8 +444,10 @@ namespace DotNet.Drawing
         /// 从 Halcon 窗口中裁剪图像并保存到路径
         /// </summary>
         /// <param name="hWindowHandle">Halcon 窗口句柄</param>
+        /// <param name="folderPath">保存目录，文件名由时间戳生成</param>
         /// <param name="imageType">图片格式："bmp", "tiff", "png", etc.</param>
-        public void SaveCropWindow(HTuple hWindowHandle, string folderPath, string imageType = "tiff")
+        /// <remarks>与 SaveImage 同理去掉默认值，使两个重载的参数个数分别为 3 / 4，不再互相遮蔽。</remarks>
+        public void SaveCropWindow(HTuple hWindowHandle, string folderPath, string imageType)
         {
             HObject croppedImage; HOperatorSet.GenEmptyObj(out croppedImage);
 
@@ -473,7 +483,7 @@ namespace DotNet.Drawing
                 string saveFilePath = Path.Combine(folderPath, $"{fileName}.{imageType}");
 
                 // 确保文件夹存在
-                Directory.CreateDirectory(Path.GetDirectoryName(saveFilePath));
+                FileExists(saveFilePath);
 
                 // 保存图像
                 HOperatorSet.WriteImage(croppedImage, imageType, 0, saveFilePath);
@@ -481,7 +491,7 @@ namespace DotNet.Drawing
             }
             catch (Exception ex)
             {
-                throw new Exception($"裁剪窗体图像: {ex.Message}\n{ex.StackTrace}");
+                throw new Exception($"裁剪窗体图像失败：{ex.Message}", ex);
             }
             finally
             {
@@ -493,8 +503,11 @@ namespace DotNet.Drawing
         /// 从 Halcon 窗口中裁剪图像并保存到路径
         /// </summary>
         /// <param name="hWindowHandle">窗口句柄</param>
+        /// <param name="cameraName">相机名，作为 folderPath 下的一级子目录</param>
+        /// <param name="folderPath">保存根目录，传空则回落到 <see cref="DrawingPaths.CropWindowDir"/></param>
         /// <param name="imageType">图片格式："bmp", "tiff", "png", etc.</param>
-        public void SaveCropWindow(HTuple hWindowHandle, string cameraName, string folderPath = @"D:\Picture\SaveCropWindow", string imageType = "tiff")
+        /// <remarks>原默认值是硬编码的 D:\Picture\SaveCropWindow；改为由 DrawingPaths 统一配置。</remarks>
+        public void SaveCropWindow(HTuple hWindowHandle, string cameraName, string folderPath, string imageType)
         {
             HObject croppedImage; HOperatorSet.GenEmptyObj(out croppedImage);
 
@@ -513,6 +526,9 @@ namespace DotNet.Drawing
                     throw new ArgumentException($"不支持的图片格式: {imageType}", nameof(imageType));
                 }
 
+                // 设置默认文件夹路径
+                if (string.IsNullOrWhiteSpace(folderPath)) folderPath = DrawingPaths.CropWindowDir;
+
                 // 确保相机名称无非法字符
                 string sanitizedCameraName = string.Join("_", cameraName.Split(Path.GetInvalidFileNameChars()));
 
@@ -523,7 +539,7 @@ namespace DotNet.Drawing
                 string savePath = Path.Combine(folderPath, sanitizedCameraName, $"{fileName}.{imageType}");
 
                 // 确保文件夹存在
-                Directory.CreateDirectory(Path.GetDirectoryName(savePath));
+                FileExists(savePath);
 
                 // 在 Halcon 中利用 DumpWindowImage 提取窗口中的图像
                 croppedImage.Dispose();

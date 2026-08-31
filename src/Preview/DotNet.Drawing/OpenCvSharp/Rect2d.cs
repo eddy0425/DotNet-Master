@@ -1,48 +1,54 @@
 ﻿using HalconDotNet;
 using Newtonsoft.Json;
 using System;
-using System.Runtime.InteropServices;
 
 namespace DotNet.Drawing
 {
     /// <summary>
-    /// 双精度矩形（引用类型，支持继承和 JSON 序列化）
+    /// 双精度矩形（<b>不可变</b>引用类型，支持 JSON 序列化）
     /// </summary>
+    /// <remarks>
+    /// <b>不可变</b>：四个几何分量只在构造函数里赋值，之后不再变化。
+    /// 这样做是为了兑现构造函数里"宽高非负"的校验——原本 X/Y/Width/Height 是公开可写字段，
+    /// 任何人都能在构造之后把 Width 改成负数，校验形同虚设；同时可变的矩形被多处引用时，
+    /// 一方的修改会静默波及另一方。需要"改一改"的场景请用返回新实例的
+    /// <see cref="Inflate(double,double)"/>、<see cref="Intersect(Rect2d)"/>、
+    /// <see cref="Union(Rect2d)"/> 或直接 <c>new</c>。
+    /// <para>
+    /// 曾带有 <c>[StructLayout(LayoutKind.Sequential)]</c> 与 <c>SizeOf</c> 常量，那是从
+    /// struct 版本移植时的遗留物：本类型是引用类型且成员含引用，并非 blittable，
+    /// 这两者对它没有任何意义，已移除。
+    /// </para>
+    /// <para>
+    /// 曾被 <c>CvRegion</c> 继承。现在 <c>CvRegion</c> 改为<b>组合</b>持有本类型：
+    /// "带 Halcon 句柄、可增可减、还能是圆/椭圆/多边形的 ROI"与"矩形"不构成 is-a 关系，
+    /// 那次继承只是为了复用四个分量。因此本类不再需要为派生类留任何虚成员。
+    /// </para>
+    /// </remarks>
     [Serializable]
-    [StructLayout(LayoutKind.Sequential)]
     public class Rect2d : IEquatable<Rect2d>
     {
-        #region Field
+        #region Geometry
 
         /// <summary>
         /// 左上角X
         /// </summary>
-        public double X;
+        public double X { get; }
 
         /// <summary>
         /// 左上角Y
         /// </summary>
-        public double Y;
+        public double Y { get; }
 
         /// <summary>
-        /// 区域宽
+        /// 区域宽（非负）
         /// </summary>
-        public double Width;
+        public double Width { get; }
 
         /// <summary>
-        /// 区域高
+        /// 区域高（非负）
         /// </summary>
-        public double Height;
-
-        /// <summary>
-        /// sizeof(Rect2d)
-        /// </summary>
-        public const int SizeOf = sizeof(double) * 4;
-
-        /// <summary>
-        /// 空矩形（所有值为0）
-        /// </summary>
-        public static readonly Rect2d Default = new Rect2d();
+        public double Height { get; }
 
         #endregion
 
@@ -60,17 +66,18 @@ namespace DotNet.Drawing
         /// <summary>
         /// 从位置和尺寸构造
         /// </summary>
+        /// <remarks>原实现直接赋值、跳过了非负校验，负尺寸的 <see cref="Size2d"/> 能造出非法矩形；
+        /// 现在转发到主构造函数，四个入口的校验保持一致。</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">宽或高为负</exception>
         public Rect2d(Point2d location, Size2d size)
+            : this(location.X, location.Y, size.Width, size.Height)
         {
-            X = location.X;
-            Y = location.Y;
-            Width = size.Width;
-            Height = size.Height;
         }
 
         /// <summary>
         /// 从坐标和尺寸构造
         /// </summary>
+        [JsonConstructor]
         public Rect2d(double x, double y, double width, double height)
         {
             if (width < 0) throw new ArgumentOutOfRangeException(nameof(width), "Width must be non-negative.");
@@ -120,20 +127,21 @@ namespace DotNet.Drawing
         /// 判断两个矩形是否在容差内相等
         /// </summary>
         /// <remarks>
-        /// 设为 <c>virtual</c> 让派生类（如 <see cref="CvRegion"/>）可以扩展比较语义（增加 Phi/Type/...），
-        /// 同时通过虚分派保证 <c>HashSet&lt;Rect2d&gt;</c>、<c>EqualityComparer&lt;Rect2d&gt;.Default</c> 等
-        /// 标准容器调用时仍走最具体类型的 Equals，从而维持 Equals/GetHashCode 契约。
+        /// 曾是 <c>virtual</c>，供当时继承本类的 <c>CvRegion</c> 覆写。那套覆写破坏了对称性：
+        /// <c>rect.Equals(region)</c> 与 <c>region.Equals(rect)</c> 结果不同，放进
+        /// <c>HashSet</c> / 字典的行为未定义。<c>CvRegion</c> 改为组合之后本类不再有派生类，
+        /// 虚分派没有意义，恢复为非虚——判等严格是"四个几何分量在容差内相等"。
         /// </remarks>
-        public virtual bool Equals(Rect2d? obj)
+        public bool Equals(Rect2d? obj)
         {
             if (ReferenceEquals(obj, null)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            // 使用 MathHelper.AreEqual 与 Point2d/Size2d/CvCoord 等同口径，
-            // 避免 IEEE-754 舍入误差导致的"显示一样但 Equals==false"问题。
-            return MathHelper.AreEqual(X, obj.X)
-                && MathHelper.AreEqual(Y, obj.Y)
-                && MathHelper.AreEqual(Width, obj.Width)
-                && MathHelper.AreEqual(Height, obj.Height);
+            // 使用 MathHelper.AreEqualGeometric 与 Point2d/Size2d/CvCoord 等同口径：
+            // 矩形四个分量都是像素量，用像素级容差才符合"画面上重合即相等"的直觉。
+            return MathHelper.AreEqualGeometric(X, obj.X)
+                && MathHelper.AreEqualGeometric(Y, obj.Y)
+                && MathHelper.AreEqualGeometric(Width, obj.Width)
+                && MathHelper.AreEqualGeometric(Height, obj.Height);
         }
 
         public static bool operator ==(Rect2d? lhs, Rect2d? rhs)
@@ -219,69 +227,49 @@ namespace DotNet.Drawing
         [JsonIgnore]
         public double CenterY { get { return (Top + Bottom) / 2; } }
 
+        // 四条边界一律只读：Top/Left 曾可写而 Bottom/Right 只读，语义不对称；
+        // 现在整个类型不可变，四者自然对称，也不存在"改了 Right 把 Width 改成负数"的路径。
+
         /// <summary>
         /// 上边界Y
         /// </summary>
-        public double Top
-        {
-            get { return Y; }
-            set { Y = value; }
-        }
+        [JsonIgnore]
+        public double Top { get { return Y; } }
 
         /// <summary>
         /// 下边界Y (Y + Height)
         /// </summary>
-        public double Bottom
-        {
-            get { return Y + Height; }
-        }
+        [JsonIgnore]
+        public double Bottom { get { return Y + Height; } }
 
         /// <summary>
         /// 左边界X
         /// </summary>
-        public double Left
-        {
-            get { return X; }
-            set { X = value; }
-        }
+        [JsonIgnore]
+        public double Left { get { return X; } }
 
         /// <summary>
         /// 右边界X (X + Width)
         /// </summary>
-        public double Right
-        {
-            get { return X + Width; }
-        }
+        [JsonIgnore]
+        public double Right { get { return X + Width; } }
 
         /// <summary>
         /// 左上角位置
         /// </summary>
-        public Point2d Location
-        {
-            get { return new Point2d(X, Y); }
-            set
-            {
-                X = value.X;
-                Y = value.Y;
-            }
-        }
+        [JsonIgnore]
+        public Point2d Location { get { return new Point2d(X, Y); } }
 
         /// <summary>
         /// 矩形大小
         /// </summary>
-        public Size2d Size
-        {
-            get { return new Size2d(Width, Height); }
-            set
-            {
-                Width = value.Width;
-                Height = value.Height;
-            }
-        }
+        [JsonIgnore]
+        public Size2d Size { get { return new Size2d(Width, Height); } }
 
         /// <summary>
         /// 左上角点
         /// </summary>
+        [JsonIgnore]
         public Point2d TopLeft
         {
             get { return new Point2d(X, Y); }
@@ -290,6 +278,7 @@ namespace DotNet.Drawing
         /// <summary>
         /// 右下角点
         /// </summary>
+        [JsonIgnore]
         public Point2d BottomRight
         {
             get { return new Point2d(X + Width, Y + Height); }
@@ -308,7 +297,7 @@ namespace DotNet.Drawing
         }
 
         /// <summary>
-        /// 判断坐标是否在矩形内
+        /// 判断坐标是否在矩形内（右开 / 下开区间：<c>Right</c>、<c>Bottom</c> 上的点不算）
         /// </summary>
         public bool Contains(double x, double y)
         {
@@ -324,8 +313,14 @@ namespace DotNet.Drawing
         }
 
         /// <summary>
-        /// 判断另一个矩形是否完全在此矩形内
+        /// 判断另一个矩形是否完全在此矩形内（闭区间，允许边界重合）
         /// </summary>
+        /// <remarks>
+        /// <b>边界语义</b>：本重载用<b>闭区间</b>——与自身完全重合的矩形视为被包含。
+        /// 而 <see cref="Contains(double,double)"/> 用<b>右开 / 下开区间</b>
+        /// （即 <c>Right</c>、<c>Bottom</c> 上的点不算在内），与像素栅格的半开约定一致。
+        /// 两者语义不同是有意为之，调用时请留意。
+        /// </remarks>
         public bool Contains(Rect2d rect)
         {
             return X <= rect.X &&
@@ -335,22 +330,29 @@ namespace DotNet.Drawing
         }
 
         /// <summary>
-        /// 向外膨胀矩形（修改自身）
+        /// 返回向外膨胀后的<b>新矩形</b>；本实例不变。
         /// </summary>
-        public void Inflate(double width, double height)
+        /// <remarks>
+        /// 传负值即为向内收缩。收缩幅度过大会产生负的宽 / 高——那是构造函数明令禁止的状态，
+        /// 由构造函数统一拒绝。
+        /// <para>
+        /// <b>破坏性变更</b>：原来是 <c>void Inflate(...)</c> 就地修改自身。就地修改是本类型
+        /// 唯一绕过"宽高非负"校验的路径，也是矩形被多处共享时最容易踩的坑，因此改为返回新实例。
+        /// 调用点须写成 <c>rect = rect.Inflate(dx, dy);</c>。
+        /// </para>
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">膨胀后宽或高为负</exception>
+        public Rect2d Inflate(double width, double height)
         {
-            X -= width;
-            Y -= height;
-            Width += (2 * width);
-            Height += (2 * height);
+            return new Rect2d(X - width, Y - height, Width + 2 * width, Height + 2 * height);
         }
 
         /// <summary>
-        /// 向外膨胀矩形（修改自身）
+        /// 返回向外膨胀后的<b>新矩形</b>；本实例不变。
         /// </summary>
-        public void Inflate(Size2d size)
+        public Rect2d Inflate(Size2d size)
         {
-            Inflate(size.Width, size.Height);
+            return Inflate(size.Width, size.Height);
         }
 
         /// <summary>
@@ -373,7 +375,9 @@ namespace DotNet.Drawing
 
             if (x2 >= x1 && y2 >= y1)
                 return new Rect2d(x1, y1, x2 - x1, y2 - y1);
-            return Default;
+            // 不相交时返回全新实例：原先返回共享的 static readonly Default，
+            // 调用方一旦 Inflate() 或改 X/Y/Width/Height 就会永久污染全局单例。
+            return new Rect2d();
         }
 
         /// <summary>
@@ -421,10 +425,10 @@ namespace DotNet.Drawing
         public override int GetHashCode()
         {
             return HashCode.Combine(
-                MathHelper.QuantizeToTolerance(X),
-                MathHelper.QuantizeToTolerance(Y),
-                MathHelper.QuantizeToTolerance(Width),
-                MathHelper.QuantizeToTolerance(Height));
+                MathHelper.QuantizeGeometric(X),
+                MathHelper.QuantizeGeometric(Y),
+                MathHelper.QuantizeGeometric(Width),
+                MathHelper.QuantizeGeometric(Height));
         }
 
         public override string ToString()

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Windows.Forms;
 using HalconDotNet;
 using Newtonsoft.Json;
 
@@ -26,9 +25,10 @@ namespace DotNet.Drawing
                 }
                 return hObject;
             }
-            catch (Exception ex) 
-            { 
-                MessageBox.Show(ex.Message); 
+            catch (Exception ex)
+            {
+                // 反序列化失败退化为空 HObject: 这是库层代码, 不能弹窗阻塞调用线程.
+                Log.Warn(nameof(JsonConvertHObject), "反序列化 HObject 失败, 返回空对象.", ex);
                 return hObject;
             }
         }
@@ -49,7 +49,9 @@ namespace DotNet.Drawing
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                // 序列化失败不能静默丢数据: 记录后抛出, 由上层决定提示还是重试.
+                Log.Error(nameof(JsonConvertHObject), "序列化 HObject 失败.", ex);
+                throw;
             }
         }
     }

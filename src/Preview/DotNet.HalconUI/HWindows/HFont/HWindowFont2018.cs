@@ -1,4 +1,6 @@
-﻿using HalconDotNet;
+﻿using DotNet.Drawing;
+using HalconDotNet;
+using System;
 
 namespace DotNet.HalconUI
 {
@@ -338,7 +340,12 @@ namespace DotNet.HalconUI
 
                 return;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // 文本绘制失败不应打断调用方的整条显示流程（通常是窗口已销毁或字体不可用），
+                // 但静默会让"文字不显示"变成无线索问题，因此记一条日志。
+                Log.Warn(nameof(HWindowFont2018), "显示文本失败.", ex);
+            }
         }
 
     }

@@ -70,7 +70,7 @@ namespace DotNet.Drawing
         public bool IsEmpty
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => MathHelper.AreEqual(Width, 0) || MathHelper.AreEqual(Height, 0);
+            get => MathHelper.IsZeroGeometric(Width) || MathHelper.IsZeroGeometric(Height);
         }
 
         /// <summary>
@@ -79,7 +79,7 @@ namespace DotNet.Drawing
         public bool IsSquare
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => MathHelper.AreEqual(Width, Height);
+            get => MathHelper.AreEqualGeometric(Width, Height);
         }
 
         /// <summary>
@@ -243,7 +243,8 @@ namespace DotNet.Drawing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Size2d operator /(Size2d s, double scalar)
         {
-            if (MathHelper.AreEqual(scalar, 0))
+            // 只在真正除以 0 时抛出，避免把合法的极小缩放因子误判为除零。
+            if (scalar == 0)
                 throw new DivideByZeroException("Cannot divide by zero.");
             if (scalar < 0)
                 throw new ArgumentOutOfRangeException(nameof(scalar), "Scalar must be positive.");
@@ -263,16 +264,17 @@ namespace DotNet.Drawing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Size2d other)
         {
-            return MathHelper.AreEqual(Width, other.Width) &&
-                   MathHelper.AreEqual(Height, other.Height);
+            // 宽高属于几何量，用像素级容差比较
+            return MathHelper.AreEqualGeometric(Width, other.Width) &&
+                   MathHelper.AreEqualGeometric(Height, other.Height);
         }
 
         public override bool Equals(object? obj) => obj is Size2d other && Equals(other);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode() => HashCode.Combine(
-            MathHelper.QuantizeToTolerance(Width),
-            MathHelper.QuantizeToTolerance(Height));
+            MathHelper.QuantizeGeometric(Width),
+            MathHelper.QuantizeGeometric(Height));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Size2d left, Size2d right) => left.Equals(right);

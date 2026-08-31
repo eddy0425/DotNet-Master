@@ -62,7 +62,7 @@ namespace DotNet.Drawing
         public bool IsZero
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => MathHelper.AreEqual(X, 0) && MathHelper.AreEqual(Y, 0);
+            get => MathHelper.IsZeroGeometric(X) && MathHelper.IsZeroGeometric(Y);
         }
 
         #endregion
@@ -231,7 +231,9 @@ namespace DotNet.Drawing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Point2d operator /(Point2d p, double scalar)
         {
-            if (MathHelper.AreEqual(scalar, 0))
+            // 只在真正除以 0 时抛出：原先用 1e-9 容差会把 1e-10 这类合法的小缩放因子
+            // 误判为除零，而 IEEE-754 对这些值的除法本身是良定义的。
+            if (scalar == 0)
                 throw new DivideByZeroException("Cannot divide by zero.");
             return new Point2d(p.X / scalar, p.Y / scalar);
         }
@@ -249,15 +251,16 @@ namespace DotNet.Drawing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Point2d other)
         {
-            return MathHelper.AreEqual(X, other.X) && MathHelper.AreEqual(Y, other.Y);
+            // 坐标属于几何量，用像素级容差比较（详见 MathHelper.AreEqualGeometric）
+            return MathHelper.AreEqualGeometric(X, other.X) && MathHelper.AreEqualGeometric(Y, other.Y);
         }
 
         public override bool Equals(object? obj) => obj is Point2d other && Equals(other);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode() => HashCode.Combine(
-            MathHelper.QuantizeToTolerance(X),
-            MathHelper.QuantizeToTolerance(Y));
+            MathHelper.QuantizeGeometric(X),
+            MathHelper.QuantizeGeometric(Y));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Point2d left, Point2d right) => left.Equals(right);

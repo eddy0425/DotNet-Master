@@ -174,7 +174,7 @@ namespace DotNet.Drawing
         public bool IsDegenerate
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => MathHelper.AreEqual(Radius, 0);
+            get => MathHelper.IsZeroGeometric(Radius);
         }
 
         #endregion
@@ -245,19 +245,24 @@ namespace DotNet.Drawing
         /// </summary>
         public static CvCircle? FromThreePoints(Point2d p1, Point2d p2, Point2d p3)
         {
-            // 计算两条垂直平分线的交点
-            double ax = p1.X, ay = p1.Y;
-            double bx = p2.X, by = p2.Y;
-            double cx = p3.X, cy = p3.Y;
+            // 以 p1 为局部原点计算，避免判定阈值和中间平方项随整体坐标平移而变化。
+            double ux = p2.X - p1.X;
+            double uy = p2.Y - p1.Y;
+            double vx = p3.X - p1.X;
+            double vy = p3.Y - p1.Y;
 
-            double d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
-            if (MathHelper.AreEqual(d, 0))
-                return null; // 三点共线
+            double cross = ux * vy - uy * vx;
+            double scale = Math.Sqrt(ux * ux + uy * uy) * Math.Sqrt(vx * vx + vy * vy);
+            if (MathHelper.IsZeroRelative(cross, scale))
+                return null; // 三点共线或近似共线
 
-            double ux = ((ax * ax + ay * ay) * (by - cy) + (bx * bx + by * by) * (cy - ay) + (cx * cx + cy * cy) * (ay - by)) / d;
-            double uy = ((ax * ax + ay * ay) * (cx - bx) + (bx * bx + by * by) * (ax - cx) + (cx * cx + cy * cy) * (bx - ax)) / d;
+            double denominator = 2 * cross;
+            double uLengthSquared = ux * ux + uy * uy;
+            double vLengthSquared = vx * vx + vy * vy;
+            double offsetX = (vy * uLengthSquared - uy * vLengthSquared) / denominator;
+            double offsetY = (ux * vLengthSquared - vx * uLengthSquared) / denominator;
 
-            var center = new Point2d(ux, uy);
+            var center = new Point2d(p1.X + offsetX, p1.Y + offsetY);
             double radius = center.DistanceTo(p1);
             return new CvCircle(center, radius);
         }
@@ -490,14 +495,14 @@ namespace DotNet.Drawing
         {
             if (other is null) return false;
             return Center.Equals(other.Center) &&
-                   MathHelper.AreEqual(Radius, other.Radius) &&
+                   MathHelper.AreEqualGeometric(Radius, other.Radius) &&
                    MathHelper.AreEqual(StartPhi, other.StartPhi) &&
                    MathHelper.AreEqual(EndPhi, other.EndPhi);
         }
 
         public override int GetHashCode() => HashCode.Combine(
             Center,
-            MathHelper.QuantizeToTolerance(Radius),
+            MathHelper.QuantizeGeometric(Radius),
             MathHelper.QuantizeToTolerance(StartPhi),
             MathHelper.QuantizeToTolerance(EndPhi));
 

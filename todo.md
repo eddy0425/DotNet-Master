@@ -622,24 +622,24 @@ private void PublishRenderData(FitArcMidpointRenderData data)
 
 ### 阶段 2：契约与安全性（3~5 天）
 
-- [ ] B6 消除可变全局单例 `Rect2d.Default` / `CvRegion.Empty`
-- [ ] B7 手写 `CvRegion.Clone()`，明确 `HoRegion` 深拷贝
-- [ ] B3 / C18 补齐 `switch` 缺失分支，全部加 `default` 兜底
-- [ ] B10 `FitLineStrategy.Close` 不再销毁配置态对象
-- [ ] B11 `MergeRegionStrategy`：实现或删除，**禁止保留返回 true 的空实现**
-- [ ] C6 引入 `TryResolveOutput<T>`，替换所有强转
-- [ ] C7 `strategys` 传空集合替代 `null`
-- [ ] C13 / C14 修正容差体系与 `NormalizeAngle`
-- [ ] C15 `Rect2d` 不可变化；`CvRegion` 改继承为组合
-- [ ] C17 `VsControlModel` 三个属性改走 `SetField`
-- [ ] D1 引入 `ILogger`，替换全部 `catch { }` 与 `Console.WriteLine`
-- [ ] D3 / D4 删除 11 个空壳类与 647 行死文件
-- [ ] D6 `AlgoPaths` 派生路径改表达式属性
-- [ ] C2 全部 `Disp*` 补齐 `IsWindowUsable()` 防护；参数校验一律前置于 `SetColor` 等副作用之前
-- [ ] C8 移除库层的 3 处 `MessageBox.Show`（`FileImageStrategy.Init`、`JsonConvertHObject` ×2），改为抛异常或写日志
-- [ ] C9 `RotateImageStrategy` 的 `baseAglDeg == 0` 边界明确归入某一分支
-- [ ] D2 异常包装改为 `throw new XxxException(msg, ex)` 保留 `InnerException`
-- [ ] D8 硬编码路径 `D:\Picture\...` 改配置项；`DispCvRegion` 的 `+0.5`/`+1` 像素偏移提为命名常量并注明推导；删除未使用变量
+- [x] B6 消除可变全局单例 `Rect2d.Default` / `CvRegion.Empty`
+- [x] B7 手写 `CvRegion.Clone()`，明确 `HoRegion` 深拷贝
+- [x] B3 / C18 补齐 `switch` 缺失分支，全部加 `default` 兜底
+- [x] B10 `FitLineStrategy.Close` 不再销毁配置态对象
+- [x] B11 `MergeRegionStrategy`：实现或删除，**禁止保留返回 true 的空实现**
+- [x] C6 引入 `TryResolveOutput<T>`，替换所有强转
+- [x] C7 `strategys` 传空集合替代 `null`
+- [x] C13 / C14 修正容差体系与 `NormalizeAngle`
+- [x] C15 `Rect2d` 不可变化；`CvRegion` 改继承为组合
+- [x] C17 `VsControlModel` 三个属性改走 `SetField`
+- [x] D1 引入 `ILogger`，替换全部 `catch { }` 与 `Console.WriteLine`
+- [x] D3 / D4 删除 11 个空壳类与 647 行死文件
+- [x] D6 `AlgoPaths` 派生路径改表达式属性
+- [x] C2 全部 `Disp*` 补齐 `IsWindowUsable()` 防护；参数校验一律前置于 `SetColor` 等副作用之前
+- [x] C8 移除库层的 3 处 `MessageBox.Show`（`FileImageStrategy.Init`、`JsonConvertHObject` ×2），改为抛异常或写日志
+- [x] C9 `RotateImageStrategy` 的 `baseAglDeg == 0` 边界明确归入某一分支
+- [x] D2 异常包装改为 `throw new XxxException(msg, ex)` 保留 `InnerException`
+- [x] D8 硬编码路径 `D:\Picture\...` 改配置项；`DispCvRegion` 的 `+0.5`/`+1` 像素偏移提为命名常量并注明推导；删除未使用变量
 
 ### 阶段 3：API 收敛（1~2 周）
 

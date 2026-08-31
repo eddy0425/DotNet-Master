@@ -350,14 +350,14 @@ namespace DotNet.Drawing
         {
             if (other is null) return false;
             return Line.Equals(other.Line) &&
-                   MathHelper.AreEqual(HeadSize, other.HeadSize) &&
+                   MathHelper.AreEqualGeometric(HeadSize, other.HeadSize) &&
                    MathHelper.AreEqual(HeadAngle, other.HeadAngle) &&
                    Style == other.Style;
         }
 
         public override int GetHashCode() => HashCode.Combine(
             Line,
-            MathHelper.QuantizeToTolerance(HeadSize),
+            MathHelper.QuantizeGeometric(HeadSize),
             MathHelper.QuantizeToTolerance(HeadAngle),
             Style);
 

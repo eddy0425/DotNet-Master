@@ -24,13 +24,28 @@ namespace DotNet.HalconUI
         private bool _disposed;
 
         private object _value;
-        // 唯一被 DataBindings 监听的属性: TabPage/TextBox/ComboBox -> string, CheckBox/RadioButton -> bool, TrackBar -> int.
+        // 控件主属性: TabPage/TextBox/ComboBox -> string, CheckBox/RadioButton -> bool, TrackBar -> int.
         public object Value { get { return _value; } set { SetField(ref _value, value); } }
         public string Name { get; }
         public string Type { get; }
-        public bool Visible { get; set; }
-        public bool Enabled { get; set; }
-        public bool DropDownStyle { get; set; }
+
+        // 以下三个外观属性同样参与 DataBindings, 因此必须走 SetField 发出 PropertyChanged.
+        // 原实现是自动属性(无通知), 绑定建立后在代码里改它们, 控件不会有任何反应.
+        private bool _visible;
+        private bool _enabled;
+        private bool _dropDownStyle;
+
+        /// <summary>控件可见性. 绑定到 Control.Visible (TabPage 除外, 见 VsTabPageBindingStrategy).</summary>
+        public bool Visible { get { return _visible; } set { SetField(ref _visible, value); } }
+
+        /// <summary>控件可用性. 绑定到 Control.Enabled (TabPage 除外).</summary>
+        public bool Enabled { get { return _enabled; } set { SetField(ref _enabled, value); } }
+
+        /// <summary>
+        /// ComboBox 是否为只读下拉 (true = <see cref="ComboBoxStyle.DropDownList"/>,
+        /// false = <see cref="ComboBoxStyle.DropDown"/>). 仅对 ComboBox 有意义.
+        /// </summary>
+        public bool DropDownStyle { get { return _dropDownStyle; } set { SetField(ref _dropDownStyle, value); } }
 
         // Items 防御性拷贝, 避免外部数组在 VM 生命期内被改写.
         private string[]? _items;
@@ -68,12 +83,15 @@ namespace DotNet.HalconUI
             BindToControl();
         }
 
+        // 说明: 所有构造函数都在 BindToControl() 之前把 _visible/_enabled 置为控件当前的实际状态
+        // (VsControlFactory 在 new VM 之前已经设置好 con.Visible/Enabled), 保证首次绑定不会改变界面。
+
         /// <summary>TabPage / TextBox</summary>
         public VsControlModel(Control form, string name, string type, string text, bool visible)
             : this(form, name, type)
         {
             _value = text;
-            Visible = visible;
+            _visible = visible;
             BindToControl();
         }
 
@@ -82,7 +100,7 @@ namespace DotNet.HalconUI
             : this(form, name, type)
         {
             _value = @checked;
-            Visible = visible;
+            _visible = visible;
             BindToControl();
         }
 
@@ -91,15 +109,19 @@ namespace DotNet.HalconUI
             : this(form, name, type)
         {
             _value = text;
-            Visible = visible;
-            Enabled = enabled;
-            DropDownStyle = dropDownStyle;
+            _visible = visible;
+            _enabled = enabled;
+            _dropDownStyle = dropDownStyle;
             _items = items == null ? null : (string[])items.Clone();
             BindToControl();
         }
 
         private VsControlModel(Control form, string name, string type)
         {
+            // 默认可见可用: TrackBar 等未显式传值的构造路径依赖这个默认, 否则绑定建立时会把控件藏掉。
+            _visible = true;
+            _enabled = true;
+
             if (form == null) throw new ArgumentNullException(nameof(form));
             if (string.IsNullOrEmpty(name)) throw new ArgumentNullException(nameof(name));
             if (string.IsNullOrEmpty(type)) throw new ArgumentNullException(nameof(type));

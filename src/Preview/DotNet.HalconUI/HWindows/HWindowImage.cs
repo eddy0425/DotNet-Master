@@ -63,8 +63,11 @@ namespace DotNet.HalconUI
                     Fun_ReDisplay();
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                // 尺寸变化回调运行在控件布局路径上，抛出会打断整个 Layout；
+                // 但完全静默会让"窗口不跟随缩放"这类问题无从查起，所以记日志后忽略。
+                Log.Warn(nameof(HWindowImage), "自适应缩放失败.", ex);
             }
         }
 
@@ -92,7 +95,7 @@ namespace DotNet.HalconUI
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[HWindowImage.Fun_ReDisplay] {ex.Message}");
+                Log.Error(nameof(HWindowImage), "重绘图像失败.", ex);
             }
         }
 
@@ -125,7 +128,7 @@ namespace DotNet.HalconUI
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[HWindowImage.Fun_DispImage] {ex.Message}");
+                Log.Error(nameof(HWindowImage), "显示图像失败.", ex);
             }
         }
 
@@ -164,7 +167,7 @@ namespace DotNet.HalconUI
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[HWindowImage.Fun_ZoomImage] {ex}");
+                Log.Error(nameof(HWindowImage), "缩放图像失败.", ex);
             }
         }
 

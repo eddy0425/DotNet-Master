@@ -118,8 +118,7 @@ namespace DotNet.Drawing
         public static void SetCenter(this CvRegion hRegion, Point2d center)
         {
             Point2d location = new Point2d(center.X - hRegion.Width / 2, center.Y - hRegion.Height / 2);
-            hRegion.X = location.X;
-            hRegion.Y = location.Y;
+            hRegion.Bounds = new Rect2d(location, hRegion.Size);
         }
 
         /// <summary>
@@ -131,10 +130,7 @@ namespace DotNet.Drawing
         {
             Point2d TopLeft = new Point2d(center.X - size.Width / 2, center.Y - size.Height / 2);
             var rect = new Rect2d(TopLeft, size);
-            hRegion.X = rect.X;
-            hRegion.Y = rect.Y;
-            hRegion.Width = rect.Width;
-            hRegion.Height = rect.Height;
+            hRegion.Bounds = rect;
         }
 
         /// <summary>
@@ -145,10 +141,7 @@ namespace DotNet.Drawing
         public static void SetRectByTopLeft(this CvRegion hRegion, Point2d topLeft, Size2d size)
         {
             var rect = new Rect2d(topLeft, size);
-            hRegion.X = rect.X;
-            hRegion.Y = rect.Y;
-            hRegion.Width = rect.Width;
-            hRegion.Height = rect.Height;
+            hRegion.Bounds = rect;
         }
       
         /// <summary>
@@ -159,10 +152,7 @@ namespace DotNet.Drawing
         public static void SetRectByCorners(this CvRegion hRegion, Point2d topLeft, Point2d bottomRight)
         {
             var rect = Rect2d.FromLTRB(topLeft.X, topLeft.Y, bottomRight.X, bottomRight.Y);
-            hRegion.X = rect.X;
-            hRegion.Y = rect.Y;
-            hRegion.Width = rect.Width;
-            hRegion.Height = rect.Height;
+            hRegion.Bounds = rect;
         }
 
         /// <summary>
@@ -175,10 +165,7 @@ namespace DotNet.Drawing
         public static void SetRect(this CvRegion hRegion, double x, double y, double width, double height)
         {
             var rect = new Rect2d(x, y, width, height);
-            hRegion.X = rect.X;
-            hRegion.Y = rect.Y;
-            hRegion.Width = rect.Width;
-            hRegion.Height = rect.Height;
+            hRegion.Bounds = rect;
         }
 
         /// <summary>
@@ -191,10 +178,7 @@ namespace DotNet.Drawing
         public static void SetRectByCorners(this CvRegion hRegion, HTuple row1, HTuple column1, HTuple row2, HTuple column2)
         {
             var rect = new Rect2d(row1, column1, row2, column2);
-            hRegion.X = rect.X;
-            hRegion.Y = rect.Y;
-            hRegion.Width = rect.Width;
-            hRegion.Height = rect.Height;
+            hRegion.Bounds = rect;
         }
 
         /// <summary>
@@ -207,10 +191,7 @@ namespace DotNet.Drawing
             if (hRegion == null || inRegion == null) return;
             if (ReferenceEquals(hRegion, inRegion)) return; // 自拷贝：无需换句柄
 
-            hRegion.X = inRegion.X;
-            hRegion.Y = inRegion.Y;
-            hRegion.Width = inRegion.Width;
-            hRegion.Height = inRegion.Height;
+            hRegion.Bounds = inRegion.Bounds;
 
             // Dispose() 后 HoRegion 会置 null，这里补空并保持"HoRegion 非空"的不变式
             HObject cloned;

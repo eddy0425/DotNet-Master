@@ -1,5 +1,6 @@
 ﻿using DotNet.Drawing;
 using HalconDotNet;
+using System;
 
 
 namespace DotNet.HalconUI
@@ -49,8 +50,12 @@ namespace DotNet.HalconUI
 
                 _display.DispRegion(_shrRegion, HColor.Blue);
             }
-            catch
-            { }
+            catch (Exception ex)
+            {
+                // 运行在鼠标移动回调里，抛出会连带打断整个拖拽交互；
+                // 但一次都不记录的话，区域显示异常在现场完全无迹可循。
+                Log.Warn(nameof(DispRectMouse), "显示区域失败.", ex);
+            }
   
         }
 

@@ -16,7 +16,14 @@ namespace DotNet.HalconUI
         public event HMouseEventHandler HMouseWheel { add => hWindowControl.HMouseWheel += value; remove => hWindowControl.HMouseWheel -= value; }
 
         public delegate void ShowDelegate();
-        public ShowDelegate OnShow;
+        /// <summary>
+        /// 图像刷新完成后触发。
+        /// </summary>
+        /// <remarks>
+        /// 原为公开委托字段：外部可以直接整体覆盖（丢掉别人的订阅），也可以替本控件触发。
+        /// 改成 event 后外部只能 += / -=，触发权保留在本类内部。
+        /// </remarks>
+        public event ShowDelegate OnShow;
         public event EventHandler<DrawModelUIArgs> DrawDoneEvent;
         public void DrawDone(string modelPath, HObject ho_ModeRect, HObject ho_Contour, ModelResult result)
         {
@@ -37,10 +44,21 @@ namespace DotNet.HalconUI
 
         #endregion
 
-        public DrawEnum drawType = DrawEnum.None;
-        NoneMouse dispNone = new NoneMouse();
-        DispRectMouse dispRect = new DispRectMouse();
-        DispModelMouse dispModel = new DispModelMouse();
+        private DrawEnum _drawType = DrawEnum.None;
+
+        /// <summary>
+        /// 当前鼠标交互模式。
+        /// </summary>
+        /// <remarks>原为公开可变字段，改成属性以便后续加入校验/通知，外部读写语义不变。</remarks>
+        public DrawEnum DrawType
+        {
+            get { return _drawType; }
+            set { _drawType = value; }
+        }
+
+        readonly NoneMouse dispNone = new NoneMouse();
+        readonly DispRectMouse dispRect = new DispRectMouse();
+        readonly DispModelMouse dispModel = new DispModelMouse();
 
         public HDisplayUI()
         {
@@ -93,48 +111,60 @@ namespace DotNet.HalconUI
 
         #region Mouse Events
 
+        /// <summary>
+        /// 按当前模式取出应处理鼠标事件的处理器；返回 null 表示本控件不处理该模式。
+        /// </summary>
+        /// <remarks>
+        /// 原来四个事件各写一份三分支 switch，既重复又漏掉了 <see cref="DrawEnum"/> 的另外两个取值，
+        /// 且没有 default 兜底——枚举将来再加成员时会静默无响应。这里收敛成一处解析：
+        /// <para>
+        /// Erase 的处理器不由 HDisplayUI 持有：它由 <c>HEditModelUI</c> 自行订阅
+        /// HMouseXxx 事件驱动 <c>EraseRectMouse</c>。
+        /// 因此这里显式返回 null，保持“本控件不插手”的既有行为，而不是回落到 <c>dispNone</c>
+        /// ——后者会把事件转发给 <c>DrawHelper.Active</c>，属于行为变更。
+        /// </para>
+        /// </remarks>
+        private IMouseHandler ResolveMouseHandler()
+        {
+            switch (_drawType)
+            {
+                case DrawEnum.None:
+                    return dispNone;
+                case DrawEnum.DispRect:
+                    return dispRect;
+                case DrawEnum.DispModel:
+                    return dispModel;
+                case DrawEnum.Erase:
+                    return null;
+                default:
+                    Log.Warn(nameof(HDisplayUI), $"未处理的鼠标交互模式: {_drawType}，本次鼠标事件被忽略。");
+                    return null;
+            }
+        }
+
         private void OnMouseDown(object sender, HMouseEventArgs e)
         {
             ReDispImage();
-            switch (drawType)
-            {
-                case DrawEnum.None: dispNone.OnMouseDown(e); break;
-                case DrawEnum.DispRect: dispRect.OnMouseDown(e); break;
-                case DrawEnum.DispModel: dispModel.OnMouseDown(e); break;
-            }
+            ResolveMouseHandler()?.OnMouseDown(e);
         }
 
         private void OnMouseUp(object sender, HMouseEventArgs e)
         {
             ReDispImage();
-            switch (drawType)
-            {
-                case DrawEnum.None: dispNone.OnMouseUp(e); break;
-                case DrawEnum.DispRect: dispRect.OnMouseUp(e); break;
-                case DrawEnum.DispModel: dispModel.OnMouseUp(e); break;
-            }
+            ResolveMouseHandler()?.OnMouseUp(e);
         }
 
         private void OnMouseWheel(object sender, HMouseEventArgs e)
         {
             ReDispImage();
-            switch (drawType)
-            {
-                case DrawEnum.None: dispNone.OnMouseWheel(e); break;
-                case DrawEnum.DispRect: dispRect.OnMouseWheel(e); break;
-                case DrawEnum.DispModel: dispModel.OnMouseWheel(e); break;
-            }
+            ResolveMouseHandler()?.OnMouseWheel(e);
         }
 
         private void OnMouseMove(object sender, HMouseEventArgs e)
         {
-            //ReDispImage();
-            switch (drawType)
-            {
-                case DrawEnum.None: dispNone.OnMouseMove(e); break;
-                case DrawEnum.DispRect: dispRect.OnMouseMove(e); break;
-                case DrawEnum.DispModel: dispModel.OnMouseMove(e); break;
-            }
+            // 移动事件不做整幅重绘：拖拽期间每个像素都刷一次图像会明显掉帧，
+            // 由各 handler 自行决定要不要重绘（DispRectMouse / EraseRectMouse 都是只重画自己的区域）。
+            ResolveMouseHandler()?.OnMouseMove(e);
         }
 
         /// <summary>
@@ -153,21 +183,21 @@ namespace DotNet.HalconUI
             //    避免外部在控件销毁后仍访问属性时引发 NullReferenceException——
             //    Disposed 后属性会通过 HDisplayCore 内部的 _disposed 保护返回安全默认值。
             try { display?.Dispose(); }
-            catch (Exception ex) { Console.WriteLine($"[HDisplayUI.ReleaseDisplayResources] {ex.Message}"); }
+            catch (Exception ex) { Log.Error(nameof(HDisplayUI), "释放显示资源失败.", ex); }
         }
 
         public void SetNonePara()
         {
             Reset();
             ReDispImage();
-            drawType = DrawEnum.None;
+            DrawType = DrawEnum.None;
         }
 
         public void SetRectPara(CvRegion shrRegion)
         {
             Reset();
             ReDispImage();
-            drawType = DrawEnum.DispRect;
+            DrawType = DrawEnum.DispRect;
             dispRect.SetUp(this, shrRegion);
         }
 
@@ -175,7 +205,7 @@ namespace DotNet.HalconUI
         {
             Reset();
             ReDispImage();
-            drawType = DrawEnum.DispModel;
+            DrawType = DrawEnum.DispModel;
             dispModel.SetUp(this, shrFindMode, shrContour, shrCoord);
         }
 
@@ -430,7 +460,7 @@ namespace DotNet.HalconUI
         /// </summary>
         public void DrawRegion(CvRegion hRegion)
         {
-            drawType = DrawEnum.None;
+            DrawType = DrawEnum.None;
             Reset();
             display.DrawRegion(hRegion);
         }
@@ -440,7 +470,7 @@ namespace DotNet.HalconUI
         /// </summary>
         public void DrawRegionMod(CvRegion hRegion)
         {
-            drawType = DrawEnum.None;
+            DrawType = DrawEnum.None;
             Reset();
             display.DrawRegionMod(hRegion);
         }
@@ -448,7 +478,7 @@ namespace DotNet.HalconUI
         /// <summary> 绘制区域 </summary>
         public void DrawRegion(RectEnum type, out HObject rectangle)
         {
-            drawType = DrawEnum.None;
+            DrawType = DrawEnum.None;
             Reset();
             display.DrawRegion(type, out rectangle);
         }

@@ -15,6 +15,20 @@ namespace DotNet.HalconAlgo
         public override string Name { get; set; } = "圆弧中点";
         public override int RunIndex { get; set; }
 
+        /// <summary>
+        /// 直线粗滤阈值的下限（像素）。
+        /// </summary>
+        /// <remarks>
+        /// Stage 1 用一条直线去近似待拟合的圆弧，弧本身相对该直线存在凸量（sagitta），
+        /// 因此阈值不能只由 MaxErr 决定，否则弧越长被误删的有效点越多。
+        /// 这里取一个经验下限：常见 ROI 长度与曲率下弧的凸量量级约十几个像素。
+        /// 提为常量是为了让它可被查找、可被解释，而不是散在表达式里的裸数字。
+        /// </remarks>
+        private const double LineGateMinPixels = 15.0;
+
+        /// <summary> 直线粗滤阈值相对 MaxErr 的放大倍数 </summary>
+        private const double LineGateErrScale = 3.0;
+
         // 每次拟合的显示数据槽：仅保留最近一次，未被取走的旧数据在覆盖时释放
         private FitArcMidpointRenderData _pendingRenderData;
         private bool _disposed;
@@ -40,7 +54,7 @@ namespace DotNet.HalconAlgo
             display.SetImage(ho_Image);
             try
             {
-                return ComputeFit(ho_Image, null);
+                return ComputeFit(ho_Image, StrategyExtensions.EmptyList());
             }
             finally
             {
@@ -206,7 +220,7 @@ namespace DotNet.HalconAlgo
 
                 double maxErr = inPara.MaxErr; if (maxErr < 0) maxErr = 0;
                 // 直线粗滤阈值适度放宽以容纳弧的凸量 (sagitta)
-                double lineGate = Math.Max(maxErr * 3.0, 15.0);
+                double lineGate = Math.Max(maxErr * LineGateErrScale, LineGateMinPixels);
 
                 var rowRemoved = new List<double>();
                 var colRemoved = new List<double>();
@@ -472,10 +486,16 @@ namespace DotNet.HalconAlgo
             inPara.HoRect.Type = RectEnum.AffRect;
             display.SetRectPara(inPara.HoRect);
         }
+        /// <summary>
+        /// 关闭工具页. 只丢弃运行期的显示数据, 不碰配置态的 <c>inPara.HoRect</c> —— 原实现直接
+        /// 转调 Dispose, 会把配置 ROI 一并销毁; 而策略实例在宿主里是长期复用的, 再次打开必 NRE.
+        /// </summary>
         public override void Close(HDisplayUI display)
         {
-            Dispose();
+            TakeRenderData()?.Dispose();
         }
+
+        /// <summary>策略实例生命周期结束时才释放配置态资源. 幂等.</summary>
         public void Dispose()
         {
             if (_disposed) return;

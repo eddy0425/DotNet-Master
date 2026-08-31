@@ -18,7 +18,7 @@ namespace DotNet.HalconUI
 
         string shrColor => CB_ApplyColor.Text;
         int shrLineWidth => CB_ApplyLineWidth.Text.ExtractNumber();
-        DrawEnum _drawType { get => display.drawType; set => display.drawType = value; }
+        DrawEnum _drawType { get => display.DrawType; set => display.DrawType = value; }
         EraseRectMouse eraseRect = new EraseRectMouse();
 
         public HEditModelUI()

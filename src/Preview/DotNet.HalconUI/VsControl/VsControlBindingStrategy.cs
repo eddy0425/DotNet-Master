@@ -69,12 +69,22 @@ namespace DotNet.HalconUI
         /// </summary>
         internal static void AddPropertyBinding(Control con, string controlProperty, VsControlModel vm, string vmProperty)
         {
+            AddPropertyBinding(con, controlProperty, vm, vmProperty, null);
+        }
+
+        /// <summary>
+        /// 同上, 额外允许在 Add 之前配置 Binding (例如挂 Format/Parse 做类型转换).
+        /// </summary>
+        internal static void AddPropertyBinding(Control con, string controlProperty, VsControlModel vm, string vmProperty, Action<Binding>? configure)
+        {
             for (int i = con.DataBindings.Count - 1; i >= 0; i--)
             {
                 if (con.DataBindings[i].PropertyName == controlProperty)
                     con.DataBindings.RemoveAt(i);
             }
-            con.DataBindings.Add(controlProperty, vm, vmProperty, false, DataSourceUpdateMode.OnPropertyChanged);
+            var binding = new Binding(controlProperty, vm, vmProperty, false, DataSourceUpdateMode.OnPropertyChanged);
+            if (configure != null) configure(binding);
+            con.DataBindings.Add(binding);
             vm.AttachControl(con);
         }
 
@@ -105,17 +115,33 @@ namespace DotNet.HalconUI
         /// <summary>控件侧被绑定的属性名 (e.g. "Text" / "Checked" / "Value").</summary>
         protected abstract string ControlPropertyName { get; }
 
-        public void Bind(Control form, VsControlModel vm)
+        /// <summary>
+        /// 是否把 <see cref="VsControlModel.Visible"/> 绑定到 Control.Visible.
+        /// 默认 false: 建立 Binding 时 WinForms 会立刻把 VM 侧的值推给控件, 只有 VsControlFactory
+        /// 在 new VM 之前确实按同一个值设置过 con.Visible 的控件类型才能安全开启, 否则会意外隐藏控件.
+        /// </summary>
+        protected virtual bool BindsVisible { get { return false; } }
+
+        /// <summary>
+        /// 是否把 <see cref="VsControlModel.Enabled"/> 绑定到 Control.Enabled. 约束同 <see cref="BindsVisible"/>.
+        /// </summary>
+        protected virtual bool BindsEnabled { get { return false; } }
+
+        public virtual void Bind(Control form, VsControlModel vm)
         {
             var con = (TControl)form.GetControl(vm.Name);
             BindingHelper.AddPropertyBinding(con, ControlPropertyName, vm, nameof(VsControlModel.Value));
+            if (BindsVisible)
+                BindingHelper.AddPropertyBinding(con, "Visible", vm, nameof(VsControlModel.Visible));
+            if (BindsEnabled)
+                BindingHelper.AddPropertyBinding(con, "Enabled", vm, nameof(VsControlModel.Enabled));
         }
 
         /// <summary>
         /// 优先复用 Bind 时缓存的 Control, 避免在 Form 已 Dispose 后反射抛异常.
         /// 兜底再做一次反射, 保持 "VM 没被 Bind 过也能安全 Unbind" 的契约.
         /// </summary>
-        public void Unbind(Control form, VsControlModel vm)
+        public virtual void Unbind(Control form, VsControlModel vm)
         {
             var con = vm.BoundControl as TControl;
             if (con == null && form != null)
@@ -127,6 +153,10 @@ namespace DotNet.HalconUI
     }
 
 
+    /// <summary>
+    /// TabPage 刻意不绑定 Visible/Enabled: WinForms 下 TabPage.Visible 由所属 TabControl 接管,
+    /// 直接赋值不会真正隐藏页签 (要增删 TabPages, 见 VsControlFactory.ShowTabs).
+    /// </summary>
     public sealed class VsTabPageBindingStrategy : VsBindingStrategyBase<TabPage>
     {
         protected override string ControlPropertyName { get { return "Text"; } }
@@ -135,21 +165,47 @@ namespace DotNet.HalconUI
     public sealed class VsTextBoxBindingStrategy : VsBindingStrategyBase<TextBox>
     {
         protected override string ControlPropertyName { get { return "Text"; } }
+        protected override bool BindsVisible { get { return true; } }
     }
 
     public sealed class VsComboBoxBindingStrategy : VsBindingStrategyBase<ComboBox>
     {
         protected override string ControlPropertyName { get { return "Text"; } }
+        protected override bool BindsVisible { get { return true; } }
+        protected override bool BindsEnabled { get { return true; } }
+
+        public override void Bind(Control form, VsControlModel vm)
+        {
+            base.Bind(form, vm);
+
+            // VM 侧用 bool 表达下拉样式 (true = 只读下拉), 控件侧是 ComboBoxStyle 枚举,
+            // 因此这条绑定必须带 Format/Parse 做双向转换, 否则 WinForms 会抛类型转换异常.
+            var con = (ComboBox)form.GetControl(vm.Name);
+            BindingHelper.AddPropertyBinding(con, "DropDownStyle", vm, nameof(VsControlModel.DropDownStyle),
+                b =>
+                {
+                    b.Format += (s, e) =>
+                    {
+                        e.Value = (e.Value is bool flag && flag) ? ComboBoxStyle.DropDownList : ComboBoxStyle.DropDown;
+                    };
+                    b.Parse += (s, e) =>
+                    {
+                        e.Value = (e.Value is ComboBoxStyle style) && style == ComboBoxStyle.DropDownList;
+                    };
+                });
+        }
     }
 
     public sealed class VsCheckBoxBindingStrategy : VsBindingStrategyBase<CheckBox>
     {
         protected override string ControlPropertyName { get { return "Checked"; } }
+        protected override bool BindsVisible { get { return true; } }
     }
 
     public sealed class VsRadioButtonBindingStrategy : VsBindingStrategyBase<RadioButton>
     {
         protected override string ControlPropertyName { get { return "Checked"; } }
+        protected override bool BindsVisible { get { return true; } }
     }
 
     public sealed class VsTrackBarBindingStrategy : VsBindingStrategyBase<TrackBar>

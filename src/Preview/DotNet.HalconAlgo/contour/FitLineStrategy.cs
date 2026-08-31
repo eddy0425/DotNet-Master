@@ -8,8 +8,10 @@ using System.Collections.Generic;
 
 namespace DotNet.HalconAlgo
 {
-    public class FitLineStrategy : ParaStrategyBase<FitLine>
+    public class FitLineStrategy : ParaStrategyBase<FitLine>, IDisposable
     {
+        private bool _disposed;
+
         public override AlgoEnum Algorithm => AlgoEnum.FitLine;
         public override string Name { get; set; } = "拟合直线";
         public override int RunIndex { get; set; }
@@ -43,7 +45,8 @@ namespace DotNet.HalconAlgo
         public override bool Fun_action(HObject ho_Image, IHDisplay display)
         {
             display.SetImage(ho_Image);
-            return Fun_action(display, null);
+            // 传空集合而不是 null: 另一重载内部会对 strategys 做 ResolveFrom, null 会直接 NRE.
+            return Fun_action(display, StrategyExtensions.EmptyList());
         }
         public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
         {
@@ -371,9 +374,23 @@ namespace DotNet.HalconAlgo
             display.SetRectPara(inPara.HoRect);
         }
 
+        /// <summary>
+        /// 关闭工具页. 只释放运行期临时对象 —— 本策略的临时 HObject 全部在 Fun_action 的
+        /// finally 里就地释放, 这里无事可做.
+        /// 注意: 不能在这里 Dispose <c>inPara.HoRect</c>. 它是配置态, CvRegion.Dispose 会把
+        /// HoRegion 置 null 并标记 _disposed; 而策略实例在宿主(MainForm)里是长期复用的,
+        /// 关闭工具页后再次打开同一实例, DrawROI / Fun_action 会立刻 NRE.
+        /// </summary>
         public override void Close(HDisplayUI display)
         {
-            inPara.HoRect.Dispose();
+        }
+
+        /// <summary>策略实例生命周期结束时才释放配置态资源. 幂等.</summary>
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            inPara?.HoRect?.Dispose();
         }
     }
 

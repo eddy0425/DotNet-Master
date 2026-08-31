@@ -67,7 +67,6 @@
     <Compile Include="HWindows\HMouse\DrawEvent.cs" />
     <Compile Include="HWindows\HMouse\DrawEnum.cs" />
     <Compile Include="HWindows\HMouse\DrawHelper.cs" />
-    <Compile Include="HWindows\HMouse\Handlers\SynthethicHandler.cs" />
     <Compile Include="HWindows\HMouse\Handlers\DispModelMouse.cs" />
     <Compile Include="HWindows\HMouse\Handlers\DispRectMouse.cs" />
     <Compile Include="HWindows\HMouse\IMouseHandler.cs" />

@@ -92,7 +92,7 @@ namespace DotNet.HalconUI
                     MouseDown = true;
                 }
             }
-            catch (Exception ex) { Console.WriteLine($"[HWindowMouse.OnHMouseDown] {ex.Message}"); }
+            catch (Exception ex) { Log.Error(nameof(HWindowMouse), "处理鼠标按下失败.", ex); }
         }
 
         public void OnHMouseUp(object sender, HMouseEventArgs e)
@@ -127,13 +127,15 @@ namespace DotNet.HalconUI
                         HOperatorSet.GetGrayval(_display.HoImage, Row, Column, out HTuple egray);
                         handler.Invoke(Row, Column, egray);
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // 鼠标落在图像范围外 GetGrayval 会失败，属于正常路径，吞掉即可
+                        // 鼠标落在图像范围外 GetGrayval 必然失败，属于正常路径，不升级为错误；
+                        // 保留 Debug 级日志，便于排查"取灰度一直没反应"时区分是越界还是别的原因。
+                        Log.Debug(nameof(HWindowMouse), $"取灰度失败(通常是鼠标在图像外): {ex.Message}");
                     }
                 }
             }
-            catch (Exception ex) { Console.WriteLine($"[HWindowMouse.OnHMouseUp] {ex.Message}"); }
+            catch (Exception ex) { Log.Error(nameof(HWindowMouse), "处理鼠标抬起失败.", ex); }
         }
 
         public void OnHMouseWheel(object sender, HMouseEventArgs e)
@@ -163,7 +165,7 @@ namespace DotNet.HalconUI
                     HOperatorSet.DispObj(_display.HoImage, _hWindow);
                 }
             }
-            catch (Exception ex) { Console.WriteLine($"[HWindowMouse.OnHMouseWheel] {ex.Message}"); }
+            catch (Exception ex) { Log.Error(nameof(HWindowMouse), "处理鼠标滚轮失败.", ex); }
         }
 
         public void Dispose()

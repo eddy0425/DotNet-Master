@@ -1,3 +1,4 @@
+using DotNet.Drawing;
 using HalconDotNet;
 using System;
 using System.Windows.Forms;
@@ -78,6 +79,52 @@ namespace DotNet.HalconUI
         private bool _windowConfigured;
 
         private const double NearThreshold = 10;
+
+        // 本次交互会话内是否已经记录过绘制失败，用于抑制高频重复日志
+        private bool _drawFailureLogged;
+
+        #endregion
+
+        #region 异常兜底
+
+        // 本文件原有 21 处 `catch { }`。它们并非可有可无：这些代码要么跑在鼠标事件回调里
+        // (约 100Hz)，要么跑在 finally 的清理路径上，抛出去只会把一个可忽略的竞态
+        // (窗口在拖拽中被销毁) 变成崩溃或吞掉正在传播的原始异常。
+        // 但"不外抛"不等于"不记录"。下面三个入口把吞异常的理由集中写清楚，
+        // 并按噪音程度选择日志级别，避免现场问题彻底无迹可循。
+
+        /// <summary>
+        /// 清理路径专用：释放 Halcon 对象，失败只记 Debug 日志。
+        /// </summary>
+        /// <remarks>
+        /// 调用点全部在 finally / 覆盖旧句柄的位置。此时要么主流程已成功，
+        /// 要么已有异常正在向外传播——释放失败再抛一次会把真正的错误覆盖掉。
+        /// </remarks>
+        private static void SafeDispose(HObject obj)
+        {
+            if (obj == null) return;
+            try { obj.Dispose(); }
+            catch (Exception ex) { Log.Debug(nameof(DrawHelper), $"释放 HObject 失败(已忽略): {ex.Message}"); }
+        }
+
+        /// <summary>
+        /// 窗口状态操作专用：进入/退出交互会话时的双缓冲开关与状态还原，失败只记 Debug 日志。
+        /// </summary>
+        private static void TryWindowOp(string operation, Action action)
+        {
+            try { action(); }
+            catch (Exception ex) { Log.Debug(nameof(DrawHelper), $"{operation} 失败(已忽略): {ex.Message}"); }
+        }
+
+        /// <summary>
+        /// 交互绘制失败：每个会话只记一条，避免鼠标移动回调把日志刷爆。
+        /// </summary>
+        private void OnDrawFailure(string operation, Exception ex)
+        {
+            if (_drawFailureLogged) return;
+            _drawFailureLogged = true;
+            Log.Warn(nameof(DrawHelper), $"{operation} 绘制失败，本次交互会话内不再重复记录.", ex);
+        }
 
         #endregion
 
@@ -205,12 +252,12 @@ namespace DotNet.HalconUI
                     HOperatorSet.GenContourPolygonXld(out contour, rows, cols);
                     var oldRegion = region;
                     HOperatorSet.GenRegionContourXld(contour, out region, "filled");
-                    try { oldRegion.Dispose(); } catch { }
+                    SafeDispose(oldRegion);
                 }
             }
             finally
             {
-                if (contour != null) { try { contour.Dispose(); } catch { } }
+                SafeDispose(contour);
                 End(h);
             }
         }
@@ -383,7 +430,7 @@ namespace DotNet.HalconUI
         /// <summary> 取消当前绘图操作 </summary>
         public static void CancelDraw()
         {
-            try { HalconAPI.CancelDraw(); } catch { }
+            TryWindowOp("CancelDraw", () => HalconAPI.CancelDraw());
             // DoEvents 允许在旧 Draw* 尚未退出时重入新的 Draw*。
             // 这里立即结束旧会话，避免 flush/autodraw 状态被新旧会话交叉还原。
             var current = _active;
@@ -1262,13 +1309,15 @@ namespace DotNet.HalconUI
                 _bgImage = img;
                 img = null;
             }
-            catch
+            catch (Exception ex)
             {
+                // 抓不到背景就退化成"不还原背景"，交互本身仍可继续
                 _bgImage = null;
+                Log.Debug(nameof(DrawHelper), $"抓取窗口背景失败(已忽略): {ex.Message}");
             }
             finally
             {
-                if (img != null) { try { img.Dispose(); } catch { } }
+                SafeDispose(img);
             }
         }
 
@@ -1288,7 +1337,7 @@ namespace DotNet.HalconUI
                     _bgImage = newImg;
                     newImg = null;
                     _partR1 = r1; _partC1 = c1; _partR2 = r2; _partC2 = c2;
-                    try { old.Dispose(); } catch { }
+                    SafeDispose(old);
                 }
 
                 HOperatorSet.GetImageSize(_bgImage, out HTuple w, out HTuple h);
@@ -1296,14 +1345,18 @@ namespace DotNet.HalconUI
                 shouldRestorePart = true;
                 HOperatorSet.DispObj(_bgImage, _windowHandle);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Debug(nameof(DrawHelper), $"还原窗口背景失败(已忽略): {ex.Message}");
+            }
             finally
             {
                 if (shouldRestorePart)
                 {
-                    try { HOperatorSet.SetPart(_windowHandle, _partR1, _partC1, _partR2, _partC2); } catch { }
+                    TryWindowOp("还原 SetPart",
+                        () => HOperatorSet.SetPart(_windowHandle, _partR1, _partC1, _partR2, _partC2));
                 }
-                if (newImg != null) { try { newImg.Dispose(); } catch { } }
+                SafeDispose(newImg);
             }
         }
 
@@ -1311,10 +1364,7 @@ namespace DotNet.HalconUI
         {
             var img = _bgImage;
             _bgImage = null;
-            if (img != null)
-            {
-                try { img.Dispose(); } catch { }
-            }
+            SafeDispose(img);
         }
 
         #endregion
@@ -1331,7 +1381,7 @@ namespace DotNet.HalconUI
                 HOperatorSet.DispLine(_windowHandle, row - half, col, row + half, col);
                 HOperatorSet.DispLine(_windowHandle, row, col - half, row, col + half);
             }
-            catch { }
+            catch (Exception ex) { OnDrawFailure(nameof(WDispCross), ex); }
         }
 
         private void WDispRect1(double col1, double row1, double col2, double row2, string color)
@@ -1344,7 +1394,7 @@ namespace DotNet.HalconUI
                 HOperatorSet.SetDraw(_windowHandle, "margin");
                 HOperatorSet.DispRectangle1(_windowHandle, top, left, bottom, right);
             }
-            catch { }
+            catch (Exception ex) { OnDrawFailure(nameof(WDispRect1), ex); }
         }
 
         private void WDispRect2(double cx, double cy, double phi, double len1, double len2, string color)
@@ -1355,7 +1405,7 @@ namespace DotNet.HalconUI
                 HOperatorSet.SetDraw(_windowHandle, "margin");
                 HOperatorSet.DispRectangle2(_windowHandle, cy, cx, phi, len1, len2);
             }
-            catch { }
+            catch (Exception ex) { OnDrawFailure(nameof(WDispRect2), ex); }
         }
 
         // 矩形 + 沿 phi 方向(主轴方向)的箭头: 起点在矩形中心, 终点在主轴端点 (axis end 1)
@@ -1379,7 +1429,7 @@ namespace DotNet.HalconUI
                 double size = 2 * GetPixelSize();
                 HOperatorSet.DispArrow(_windowHandle, row1, col1, row2, col2, size);
             }
-            catch { }
+            catch (Exception ex) { OnDrawFailure(nameof(WDispArrow), ex); }
         }
 
         private void WDispCircle(double col, double row, double radius, string color)
@@ -1390,7 +1440,7 @@ namespace DotNet.HalconUI
                 HOperatorSet.SetDraw(_windowHandle, "margin");
                 HOperatorSet.DispCircle(_windowHandle, row, col, radius);
             }
-            catch { }
+            catch (Exception ex) { OnDrawFailure(nameof(WDispCircle), ex); }
         }
 
         private void WDispEllipse(double cx, double cy, double phi, double r1, double r2, string color)
@@ -1404,7 +1454,7 @@ namespace DotNet.HalconUI
                 HOperatorSet.SetDraw(_windowHandle, "margin");
                 HOperatorSet.DispEllipse(_windowHandle, cy, cx, adjPhi, major, minor);
             }
-            catch { }
+            catch (Exception ex) { OnDrawFailure(nameof(WDispEllipse), ex); }
         }
 
         private void WDispLine(double col1, double row1, double col2, double row2, string color)
@@ -1414,7 +1464,7 @@ namespace DotNet.HalconUI
                 HOperatorSet.SetColor(_windowHandle, color);
                 HOperatorSet.DispLine(_windowHandle, row1, col1, row2, col2);
             }
-            catch { }
+            catch (Exception ex) { OnDrawFailure(nameof(WDispLine), ex); }
         }
 
         #endregion
@@ -1560,7 +1610,12 @@ namespace DotNet.HalconUI
                 double scaleY = (r2.D - r1.D + 1) / Math.Max(1, wh.D);
                 return Math.Max(scaleX, scaleY);
             }
-            catch { return 1; }
+            catch (Exception ex)
+            {
+                // 取不到缩放比例时按 1:1 处理：十字/箭头尺寸略有偏差，但不影响交互可用
+                Log.Debug(nameof(DrawHelper), $"计算窗口缩放比例失败, 按 1 处理: {ex.Message}");
+                return 1;
+            }
         }
 
         // 进入交互会话: 一次性切换为双缓冲模式, 整个会话保持稳定.
@@ -1571,14 +1626,24 @@ namespace DotNet.HalconUI
         {
             if (_windowConfigured) return;
 
+            // 取不到原值就置 null，RestoreWindow 会退回到默认值("flush"=true / 不改 autodraw)
             try { HOperatorSet.GetSystem("autodraw", out _savedAutodraw); }
-            catch { _savedAutodraw = null; }
+            catch (Exception ex)
+            {
+                _savedAutodraw = null;
+                Log.Debug(nameof(DrawHelper), $"读取 autodraw 原值失败, 还原时将走默认值: {ex.Message}");
+            }
 
             try { HOperatorSet.GetWindowParam(_windowHandle, "flush", out _savedFlush); }
-            catch { _savedFlush = null; }
+            catch (Exception ex)
+            {
+                _savedFlush = null;
+                Log.Debug(nameof(DrawHelper), $"读取 flush 原值失败, 还原时将走默认值: {ex.Message}");
+            }
 
-            try { HOperatorSet.SetSystem("autodraw", "false"); } catch { }
-            try { HOperatorSet.SetWindowParam(_windowHandle, "flush", "false"); } catch { }
+            // 开关设置失败只是退化为非双缓冲(可能闪烁)，不影响绘制结果
+            TryWindowOp("关闭 autodraw", () => HOperatorSet.SetSystem("autodraw", "false"));
+            TryWindowOp("关闭 flush", () => HOperatorSet.SetWindowParam(_windowHandle, "flush", "false"));
 
             _windowConfigured = true;
         }
@@ -1589,21 +1654,19 @@ namespace DotNet.HalconUI
         {
             if (!_windowConfigured) return;
 
-            try
+            TryWindowOp("还原 flush", () =>
             {
                 if (_savedFlush != null)
                     HOperatorSet.SetWindowParam(_windowHandle, "flush", _savedFlush);
                 else
                     HOperatorSet.SetWindowParam(_windowHandle, "flush", "true");
-            }
-            catch { }
+            });
 
-            try
+            TryWindowOp("还原 autodraw", () =>
             {
                 if (_savedAutodraw != null)
                     HOperatorSet.SetSystem("autodraw", _savedAutodraw);
-            }
-            catch { }
+            });
 
             _savedFlush = null;
             _savedAutodraw = null;
@@ -1615,7 +1678,7 @@ namespace DotNet.HalconUI
         private void FlushBuffer()
         {
             if (!_windowConfigured) return;
-            try { HOperatorSet.FlushBuffer(_windowHandle); } catch { }
+            TryWindowOp("FlushBuffer", () => HOperatorSet.FlushBuffer(_windowHandle));
         }
 
         /// <summary> 沿 phi 方向的端点: (cos(phi), -sin(phi)) </summary>

@@ -133,7 +133,10 @@ namespace DotNet.HalconAlgo
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                // Init 在宿主窗体构造期被循环调用, 这里弹窗会卡住整个启动流程;
+                // 图像目录无效属于可恢复配置问题, 记录后让其余策略继续初始化.
+                ImagePaths = null;
+                Log.Error(nameof(FileImageStrategy), $"初始化图像目录失败: {inPara.ImageFolder}", ex);
             }
         }
         public override void Close(HDisplayUI displayw)
