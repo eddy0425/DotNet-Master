@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36203.30
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNet.HWindows", "DotNet.HWindows\DotNet.HWindows.csproj", "{C3346B57-E924-4ABB-844B-36D99379C55A}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNet.Light", "DotNet.Light\DotNet.Light.csproj", "{238262E3-0000-4445-AD57-EE5D83D2505A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNet.SunnyUI", "DotNet.SunnyUI\DotNet.SunnyUI.csproj", "{475783DE-7C23-4E14-AAE8-C303F06FCB51}"
@@ -59,10 +57,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{C3346B57-E924-4ABB-844B-36D99379C55A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C3346B57-E924-4ABB-844B-36D99379C55A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C3346B57-E924-4ABB-844B-36D99379C55A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C3346B57-E924-4ABB-844B-36D99379C55A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{238262E3-0000-4445-AD57-EE5D83D2505A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{238262E3-0000-4445-AD57-EE5D83D2505A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{238262E3-0000-4445-AD57-EE5D83D2505A}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -152,7 +146,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{C3346B57-E924-4ABB-844B-36D99379C55A} = {7BF5F4A7-A50B-4CF7-8E7D-0A05D52D0058}
 		{238262E3-0000-4445-AD57-EE5D83D2505A} = {741B78FC-BA83-4FD4-A5B2-C444BC1773C4}
 		{475783DE-7C23-4E14-AAE8-C303F06FCB51} = {741B78FC-BA83-4FD4-A5B2-C444BC1773C4}
 		{389B0907-06E3-46B6-A60B-413D52CF7EBF} = {741B78FC-BA83-4FD4-A5B2-C444BC1773C4}
