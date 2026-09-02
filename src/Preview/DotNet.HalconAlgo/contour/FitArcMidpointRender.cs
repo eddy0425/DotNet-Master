@@ -1,5 +1,5 @@
 ﻿using DotNet.Drawing;
-using DotNet.HalconUI;
+using DotNet.Vision.Abstractions;
 using HalconDotNet;
 using System;
 using System.Collections.Generic;

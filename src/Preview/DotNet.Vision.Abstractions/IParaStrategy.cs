@@ -1,21 +1,33 @@
 using DotNet.Drawing;
-using DotNet.HalconUI;
 using HalconDotNet;
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
 
-
-namespace DotNet.HalconAlgo
+namespace DotNet.Vision.Abstractions
 {
+    #region 拆分后的职责接口
+
     /// <summary>
-    /// 算法参数策略接口
+    /// 算法执行：策略的核心职责，不涉及任何界面概念。
     /// </summary>
-    public interface IParaStrategy
+    public interface IAlgoStrategy
     {
         AlgoEnum Algorithm { get; }
         string Name { get; set; }
         int RunIndex { get; set; }
+
+        /// <summary> 在流程中执行：可从上游 <paramref name="strategys"/> 取输入 </summary>
+        bool Fun_action(IHDisplay display, List<IParaStrategy> strategys);
+
+        /// <summary> 单张图快速验证：没有上游策略 </summary>
+        bool Fun_action(HObject ho_Image, IHDisplay display);
+    }
+
+    /// <summary>
+    /// 输出解析：把策略的计算结果按路径暴露给下游。
+    /// </summary>
+    public interface IOutputProvider
+    {
         object ResolveOutput(string[] path);
 
         /// <summary>解析输出; 路径不存在或类型不匹配时抛 <see cref="AlgoOutputNotFoundException"/>.</summary>
@@ -23,24 +35,70 @@ namespace DotNet.HalconAlgo
 
         /// <summary>解析输出的安全版本: 失败返回 false 并把 value 置为 default, 不抛异常.</summary>
         bool TryResolveOutput<T>(string[] path, out T value);
+    }
 
-        void Init(HDisplayUI display);
-        void Close(HDisplayUI display);
-        void GenTreeNode(TreeVisualizer tree);
+    /// <summary>
+    /// ROI 编辑：需要在画面上交互式绘制或显示区域的策略才实现。
+    /// </summary>
+    public interface IRoiEditable
+    {
+        void DrawROI(IRoiHost host, RectEnum type, bool newROI);
+        void DispROI(IRoiHost host);
+    }
 
-        bool Fun_action(HObject ho_Image, IHDisplay display);
-        bool Fun_action(IHDisplay display, List<IParaStrategy> strategys);
-        void DispPara(Control form, Dictionary<string, VsControlModel> VsControls);
-        void SavePara(Control form, Dictionary<string, VsControlModel> VsControls);
-        void DrawROI(HDisplayUI display, RectEnum type, bool newROI);
-        void DispROI(HDisplayUI display);
-        void SetTemplate(HDisplayUI display, RectEnum type, bool newModel);
+    /// <summary>
+    /// 模板编辑：支持新建或修改匹配模板的策略才实现。
+    /// </summary>
+    public interface ITemplateEditable
+    {
+        void SetTemplate(IRoiHost host, RectEnum type, bool newModel);
+    }
+
+    /// <summary>
+    /// 参数绑定：参数面板的显示与回存。
+    /// </summary>
+    public interface IParaBinding
+    {
+        void DispPara(IParaUiHost ui);
+        void SavePara(IParaUiHost ui);
+    }
+
+    /// <summary>
+    /// 输出变量树节点的声明。
+    /// </summary>
+    public interface ITreeNodeProvider
+    {
+        void GenTreeNode(ITreeVisualizer tree);
+    }
+
+    #endregion
+
+    /// <summary>
+    /// 算法参数策略接口。
+    /// </summary>
+    /// <remarks>
+    /// 原本是 15 成员的巨型接口，同时承担参数解析、算法执行、ROI 绘制、树节点生成、
+    /// 控件双向同步和模板设置，任何策略都被迫拥有全部能力。现将可选能力拆成
+    /// <see cref="IRoiEditable"/>、<see cref="ITemplateEditable"/>、<see cref="IParaBinding"/>、
+    /// <see cref="ITreeNodeProvider"/>；本接口只保留所有策略共有的执行、输出和生命周期能力。
+    /// <para>
+    /// 宿主应按能力接口做类型判断，例如
+    /// <c>if (s is IRoiEditable roi) roi.DrawROI(...)</c>。
+    /// </para>
+    /// </remarks>
+    public interface IParaStrategy : IAlgoStrategy, IOutputProvider
+    {
+        /// <summary> 工具页打开：申请运行期资源 </summary>
+        void Init(IRoiHost host);
+
+        /// <summary> 工具页关闭：只释放运行期临时对象，不销毁配置态 </summary>
+        void Close(IRoiHost host);
     }
 
     /// <summary>
     /// 策略抽象基类：自动初始化参数实例，子类只需实现 DispPara / SavePara
     /// </summary>
-    public abstract class ParaStrategyBase<TPara> : IParaStrategy where TPara : class, new()
+    public abstract class ParaStrategyBase<TPara> : IParaStrategy, IParaBinding, ITreeNodeProvider where TPara : class, new()
     {
         private readonly Dictionary<string, Func<object>> _resolvers = new Dictionary<string, Func<object>>();
 
@@ -89,17 +147,14 @@ namespace DotNet.HalconAlgo
             return null;
         }
 
-        public virtual void Init(HDisplayUI display) { }
-        public virtual void Close(HDisplayUI display) { }
-        public abstract void GenTreeNode(TreeVisualizer tree);
+        public virtual void Init(IRoiHost host) { }
+        public virtual void Close(IRoiHost host) { }
+        public abstract void GenTreeNode(ITreeVisualizer tree);
 
         public virtual bool Fun_action(HObject ho_Image, IHDisplay display) { return false; }
         public abstract bool Fun_action(IHDisplay display, List<IParaStrategy> strategys);
-        public abstract void DispPara(Control form, Dictionary<string, VsControlModel> VsControls);
-        public abstract void SavePara(Control form, Dictionary<string, VsControlModel> VsControls);
-        public virtual void DrawROI(HDisplayUI display, RectEnum type, bool newROI) { }
-        public virtual void DispROI(HDisplayUI display) { }
-        public virtual void SetTemplate(HDisplayUI display, RectEnum type, bool newModel) { }
+        public abstract void DispPara(IParaUiHost ui);
+        public abstract void SavePara(IParaUiHost ui);
 
     }
 

@@ -3,7 +3,7 @@ using HalconDotNet;
 using System;
 using System.Collections.Generic;
 
-namespace DotNet.HalconUI
+namespace DotNet.Vision.Abstractions
 {
     /// <summary>
     /// HALCON 显示窗口的绘制契约。

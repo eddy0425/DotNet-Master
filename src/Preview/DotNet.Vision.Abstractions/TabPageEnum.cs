@@ -1,4 +1,4 @@
-﻿namespace DotNet.HalconUI
+﻿namespace DotNet.Vision.Abstractions
 {
     public enum TabPageEnum
     {

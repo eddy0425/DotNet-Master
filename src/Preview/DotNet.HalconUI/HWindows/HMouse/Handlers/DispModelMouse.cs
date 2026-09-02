@@ -1,5 +1,6 @@
 ﻿using DotNet.Drawing;
 using HalconDotNet;
+using DotNet.Vision.Abstractions;
 
 
 namespace DotNet.HalconUI

@@ -1,21 +1,20 @@
 ﻿using DotNet.Drawing;
-using DotNet.HalconUI;
+using DotNet.Vision.Abstractions;
 using HalconDotNet;
 using System;
 using System.IO;
-using System.Windows.Forms;
 using System.Collections.Generic;
 
 
 namespace DotNet.HalconAlgo
 {
-    public class ScaledModelStrategy : ParaStrategyBase<ScaledModel>
+    public class ScaledModelStrategy : ParaStrategyBase<ScaledModel>, IRoiEditable, ITemplateEditable
     {
         public override AlgoEnum Algorithm => AlgoEnum.ScaledModel;
         public override string Name { get; set; } = "缩放匹配";
         public override int RunIndex { get; set; }
 
-        public override void GenTreeNode(TreeVisualizer tree)
+        public override void GenTreeNode(ITreeVisualizer tree)
         {
             tree.Branch(Name, branch => branch
                        .Node("坐标系", OutEnum.Coord, line => line
@@ -108,109 +107,109 @@ namespace DotNet.HalconAlgo
                 ho_SelRect.Dispose();
             }
         }
-        public override void DispPara(Control form, Dictionary<string, VsControlModel> VsControls)
+        public override void DispPara(IParaUiHost ui)
         {
-            form.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Region, TabPageEnum.Matching, TabPageEnum.Display);
+            ui.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Region, TabPageEnum.Matching, TabPageEnum.Display);
 
             CvRegion hRegion = inPara.HoRect;
-            VsControls.ShowComboBox(form, "cmb_Width", hRegion.Width.ToString(), false);
-            VsControls.ShowComboBox(form, "cmb_Height", hRegion.Height.ToString(), false);
-            VsControls.ShowComboBox(form, "cmb_TopLeft", $"{hRegion.TopLeft.X};{hRegion.TopLeft.Y}", false);
-            VsControls.ShowComboBox(form, "cmb_BottomRight", $"{hRegion.BottomRight.X};{hRegion.BottomRight.Y}", false);
-            VsControls.ShowComboBox(form, "cmb_Center", $"{hRegion.Center.X};{hRegion.Center.Y}", false);
+            ui.ShowComboBox("cmb_Width", hRegion.Width.ToString(), false);
+            ui.ShowComboBox("cmb_Height", hRegion.Height.ToString(), false);
+            ui.ShowComboBox("cmb_TopLeft", $"{hRegion.TopLeft.X};{hRegion.TopLeft.Y}", false);
+            ui.ShowComboBox("cmb_BottomRight", $"{hRegion.BottomRight.X};{hRegion.BottomRight.Y}", false);
+            ui.ShowComboBox("cmb_Center", $"{hRegion.Center.X};{hRegion.Center.Y}", false);
 
-            VsControls.ShowComboBox(form, "cmb_CoordIn", inPara.CoordIn.ToString(), false);
+            ui.ShowComboBox("cmb_CoordIn", inPara.CoordIn.ToString(), false);
 
             //基本参数
-            VsControls.ShowLabel(form, "lbl_100", "图像来源");
-            VsControls.ShowComboBox(form, "cmb_100", inPara.ImageIn.ToString(), false);
-            VsControls.ShowButton(form, "btn_100", true);
+            ui.ShowLabel("lbl_100", "图像来源");
+            ui.ShowComboBox("cmb_100", inPara.ImageIn.ToString(), false);
+            ui.ShowButton("btn_100", true);
 
-            VsControls.ShowLabel(form, "lbl_101", "区域来源");
-            VsControls.ShowComboBox(form, "cmb_101", inPara.RegionIn, false);
-            VsControls.ShowButton(form, "btn_101", true);
+            ui.ShowLabel("lbl_101", "区域来源");
+            ui.ShowComboBox("cmb_101", inPara.RegionIn, false);
+            ui.ShowButton("btn_101", true);
 
-            VsControls.ShowLabel(form, "lbl_102", "起始角度");
-            VsControls.ShowComboBoxList(form, "cmb_102", inPara.AngleStart.ToString(), new[] { "-90", "-45" });
-            VsControls.ShowButton(form, "btn_102", false);
+            ui.ShowLabel("lbl_102", "起始角度");
+            ui.ShowComboBoxList("cmb_102", inPara.AngleStart.ToString(), new[] { "-90", "-45" });
+            ui.ShowButton("btn_102", false);
 
-            VsControls.ShowLabel(form, "lbl_103", "增量角度");
-            VsControls.ShowComboBoxList(form, "cmb_103", inPara.AngleExtent.ToString(), new[] { "90", "180" });
-            VsControls.ShowButton(form, "btn_103", false);
+            ui.ShowLabel("lbl_103", "增量角度");
+            ui.ShowComboBoxList("cmb_103", inPara.AngleExtent.ToString(), new[] { "90", "180" });
+            ui.ShowButton("btn_103", false);
 
-            VsControls.ShowLabel(form, "lbl_104", "最大重叠率");
-            VsControls.ShowComboBoxList(form, "cmb_104", inPara.MaxOverlap.ToString(), new[] { "0", "0.3", "0.5" });
-            VsControls.ShowButton(form, "btn_104", false);
+            ui.ShowLabel("lbl_104", "最大重叠率");
+            ui.ShowComboBoxList("cmb_104", inPara.MaxOverlap.ToString(), new[] { "0", "0.3", "0.5" });
+            ui.ShowButton("btn_104", false);
 
-            VsControls.ShowLabel(form, "lbl_110", "匹配数量");
-            VsControls.ShowComboBoxList(form, "cmb_110", inPara.NumMatches == 0 ? "多个" : inPara.NumMatches.ToString(), new[] { "1", "2", "3", "多个" });
-            VsControls.ShowButton(form, "btn_110", false);
+            ui.ShowLabel("lbl_110", "匹配数量");
+            ui.ShowComboBoxList("cmb_110", inPara.NumMatches == 0 ? "多个" : inPara.NumMatches.ToString(), new[] { "1", "2", "3", "多个" });
+            ui.ShowButton("btn_110", false);
 
-            VsControls.ShowLabel(form, "lbl_111", "得分");
-            VsControls.ShowComboBoxDropDown(form, "cmb_111", inPara.MinScore.ToString(), new[] { "0.5", "0.7" });
+            ui.ShowLabel("lbl_111", "得分");
+            ui.ShowComboBoxDropDown("cmb_111", inPara.MinScore.ToString(), new[] { "0.5", "0.7" });
 
-            VsControls.ShowLabel(form, "lbl_112", "金字塔");
-            VsControls.ShowComboBoxList(form, "cmb_112", inPara.NumLevels.ToString(), new[] { "0", "2" });
+            ui.ShowLabel("lbl_112", "金字塔");
+            ui.ShowComboBoxList("cmb_112", inPara.NumLevels.ToString(), new[] { "0", "2" });
 
-            VsControls.ShowLabel(form, "lbl_113", "最小缩放");
-            VsControls.ShowComboBoxDropDown(form, "cmb_113", inPara.ScaleMin.ToString(), new[] { "0.8", "0.7" });
+            ui.ShowLabel("lbl_113", "最小缩放");
+            ui.ShowComboBoxDropDown("cmb_113", inPara.ScaleMin.ToString(), new[] { "0.8", "0.7" });
 
-            VsControls.ShowLabel(form, "lbl_114", "最大缩放");
-            VsControls.ShowComboBoxDropDown(form, "cmb_114", inPara.ScaleMax.ToString(), new[] { "1.2", "1.5" });
+            ui.ShowLabel("lbl_114", "最大缩放");
+            ui.ShowComboBoxDropDown("cmb_114", inPara.ScaleMax.ToString(), new[] { "1.2", "1.5" });
 
             //------------------------------------------
-            VsControls.ShowCheckBox(form, "ckb_disp0", "显示文本", inPara.DispText);
-            VsControls.ShowCheckBox(form, "ckb_disp1", "查找区域", inPara.DispRegion);
-            VsControls.ShowCheckBox(form, "ckb_disp2", "显示轮廓", inPara.DispContour);
-            VsControls.ShowCheckBox(form, "ckb_disp3", "显示点", inPara.DispPoint);
+            ui.ShowCheckBox("ckb_disp0", "显示文本", inPara.DispText);
+            ui.ShowCheckBox("ckb_disp1", "查找区域", inPara.DispRegion);
+            ui.ShowCheckBox("ckb_disp2", "显示轮廓", inPara.DispContour);
+            ui.ShowCheckBox("ckb_disp3", "显示点", inPara.DispPoint);
 
-            VsControls.ShowComboBoxDropDown(form, "CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
-            VsControls.ShowComboBoxDropDown(form, "CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
-            VsControls.ShowComboBoxDropDown(form, "CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
+            ui.ShowComboBoxDropDown("CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
+            ui.ShowComboBoxDropDown("CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
+            ui.ShowComboBoxDropDown("CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
         }
-        public override void SavePara(Control form, Dictionary<string, VsControlModel> VsControls)
+        public override void SavePara(IParaUiHost ui)
         {
             //基本参数
-            inPara.CoordIn = VsControls["cmb_CoordIn"].AsString();
-            inPara.ImageIn = VsControls["cmb_100"].AsString();
-            inPara.RegionIn = VsControls["cmb_101"].AsString();
-            inPara.AngleStart = VsControls["cmb_102"].AsDouble();
-            inPara.AngleExtent = VsControls["cmb_103"].AsDouble();
-            inPara.MaxOverlap = VsControls["cmb_104"].AsDouble();
+            inPara.CoordIn = ui.GetString("cmb_CoordIn");
+            inPara.ImageIn = ui.GetString("cmb_100");
+            inPara.RegionIn = ui.GetString("cmb_101");
+            inPara.AngleStart = ui.GetDouble("cmb_102");
+            inPara.AngleExtent = ui.GetDouble("cmb_103");
+            inPara.MaxOverlap = ui.GetDouble("cmb_104");
 
-            inPara.NumMatches = VsControls["cmb_110"].AsString() == "多个" ? 0 : VsControls["cmb_110"].AsInt();
-            inPara.MinScore = VsControls["cmb_111"].AsDouble();
-            inPara.NumLevels = VsControls["cmb_112"].AsInt();
-            inPara.ScaleMin = VsControls["cmb_113"].AsDouble();
-            inPara.ScaleMax = VsControls["cmb_114"].AsDouble();
+            inPara.NumMatches = ui.GetString("cmb_110") == "多个" ? 0 : ui.GetInt("cmb_110");
+            inPara.MinScore = ui.GetDouble("cmb_111");
+            inPara.NumLevels = ui.GetInt("cmb_112");
+            inPara.ScaleMin = ui.GetDouble("cmb_113");
+            inPara.ScaleMax = ui.GetDouble("cmb_114");
 
             //------------------------------------------
-            inPara.DispText = VsControls["ckb_disp0"].AsBool();
-            inPara.DispRegion = VsControls["ckb_disp1"].AsBool();
-            inPara.DispContour = VsControls["ckb_disp2"].AsBool();
-            inPara.DispPoint = VsControls["ckb_disp3"].AsBool();
+            inPara.DispText = ui.GetBool("ckb_disp0");
+            inPara.DispRegion = ui.GetBool("ckb_disp1");
+            inPara.DispContour = ui.GetBool("ckb_disp2");
+            inPara.DispPoint = ui.GetBool("ckb_disp3");
 
-            inPara.FontX = VsControls["CB_FontX"].AsInt();
-            inPara.FontY = VsControls["CB_FontY"].AsInt();
-            inPara.FontSize = VsControls["CB_FontSize"].AsInt();
+            inPara.FontX = ui.GetInt("CB_FontX");
+            inPara.FontY = ui.GetInt("CB_FontY");
+            inPara.FontSize = ui.GetInt("CB_FontSize");
         }
-        public override void DrawROI(HDisplayUI display, RectEnum type, bool newROI)
+        public void DrawROI(IRoiHost host, RectEnum type, bool newROI)
         {
             if (newROI)
             {
                 inPara.HoRect.Type = type;
-                display.DrawRegion(inPara.HoRect);
+                host.DrawRegion(inPara.HoRect);
             }
-            else display.DrawRegionMod(inPara.HoRect);
+            else host.DrawRegionMod(inPara.HoRect);
 
-            display.Display.Disp(inPara.HoRect, DrawStyle.Of(HColor.Blue));
-            display.SetRectPara(inPara.HoRect);
+            host.Display.Disp(inPara.HoRect, DrawStyle.Of(HColor.Blue));
+            host.SetRectPara(inPara.HoRect);
         }
-        public override void DispROI(HDisplayUI display)
+        public void DispROI(IRoiHost host)
         {
-            display.SetModelPara(inPara.HoRect.HoRegion, inPara.HoContour, inPara.Coord);
+            host.SetModelPara(inPara.HoRect.HoRegion, inPara.HoContour, inPara.Coord);
         }
-        public override void SetTemplate(HDisplayUI display, RectEnum type, bool newModel)
+        public void SetTemplate(IRoiHost host, RectEnum type, bool newModel)
         {
             HObject imgReduced; HOperatorSet.GenEmptyObj(out imgReduced);
             HObject ho_Contour; HOperatorSet.GenEmptyObj(out ho_Contour);
@@ -218,11 +217,11 @@ namespace DotNet.HalconAlgo
             try
             {
                 inPara.ModeRect.Type = type;
-                if (newModel) display.DrawRegion(inPara.ModeRect);
-                else display.DrawRegionMod(inPara.ModeRect);
+                if (newModel) host.DrawRegion(inPara.ModeRect);
+                else host.DrawRegionMod(inPara.ModeRect);
 
                 inPara.ModelPath = Path.Combine(AlgoPaths.JobDir, RunIndex.ToString(), "matching.bmp");
-                var hImage = display.Display.HoImage;
+                var hImage = host.Display.HoImage;
 
                 imgReduced.Dispose();
                 HOperatorSet.ReduceDomain(hImage, inPara.ModeRect.HoRegion, out imgReduced);
@@ -256,19 +255,19 @@ namespace DotNet.HalconAlgo
 
                 HalconController.SaveSmallestRectImage(hImage, imgReduced, inPara.ModelPath);
 
-                display.SetModelPara(inPara.HoRect.HoRegion, inPara.HoContour, inPara.Coord);
-                display.Display.Disp(inPara.ModeRect, DrawStyle.Of(HColor.Orange));
+                host.SetModelPara(inPara.HoRect.HoRegion, inPara.HoContour, inPara.Coord);
+                host.Display.Disp(inPara.ModeRect, DrawStyle.Of(HColor.Orange));
 
-                display.DrawDone(inPara.ModelPath, inPara.ModeRect.HoRegion, inPara.HoContour, result);
+                host.DrawDone(inPara.ModelPath, inPara.ModeRect.HoRegion, inPara.HoContour, result);
 
                 if (score.Length > 0)
                 {
-                    display.Display.DispText("新建模板成功！", new Point2d(10, 10), DrawStyle.Of(HColor.Green));
+                    host.Display.DispText("新建模板成功！", new Point2d(10, 10), DrawStyle.Of(HColor.Green));
                     inPara.TmplPoint = new Point2d(result.X, result.Y);      //更改跟随坐标
                 }
                 else
                 {
-                    display.Display.DispText("新建模板失败！", new Point2d(10, 10), DrawStyle.Of(HColor.Red));
+                    host.Display.DispText("新建模板失败！", new Point2d(10, 10), DrawStyle.Of(HColor.Red));
                 }
             }
             catch
@@ -279,19 +278,6 @@ namespace DotNet.HalconAlgo
             {
                 imgReduced?.Dispose();
                 ho_Contour?.Dispose();
-            }
-        }
-
-        public override void Close(HDisplayUI display)
-        {
-            inPara.HoContour?.Dispose();
-            inPara.HoRect?.Dispose();
-            inPara.ModeRect?.Dispose();
-            if (inPara.ModelID != null && inPara.ModelID.Length > 0)
-            {
-                // ClearShapeModel 同时适用于 ScaledShapeModel
-                HOperatorSet.ClearShapeModel(inPara.ModelID);
-                inPara.ModelID = null;
             }
         }
 

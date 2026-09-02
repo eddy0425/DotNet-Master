@@ -1,15 +1,14 @@
 ﻿using DotNet.Drawing;
-using DotNet.HalconUI;
+using DotNet.Vision.Abstractions;
 using HalconDotNet;
 using System;
-using System.Windows.Forms;
 using System.Collections.Generic;
 using System.Threading;
 
 
 namespace DotNet.HalconAlgo
 {
-    public class FitArcMidpointStrategy : ParaStrategyBase<FitArcMidpoint>, IDisposable
+    public class FitArcMidpointStrategy : ParaStrategyBase<FitArcMidpoint>, IRoiEditable, IDisposable
     {
         public override AlgoEnum Algorithm => AlgoEnum.FitArcMidpoint;
         public override string Name { get; set; } = "圆弧中点";
@@ -33,7 +32,7 @@ namespace DotNet.HalconAlgo
         private FitArcMidpointRenderData _pendingRenderData;
         private bool _disposed;
 
-        public override void GenTreeNode(TreeVisualizer tree)
+        public override void GenTreeNode(ITreeVisualizer tree)
         {
             tree.Branch(Name, branch => branch
                        .Node("中点", OutEnum.Point, pt => pt
@@ -297,116 +296,116 @@ namespace DotNet.HalconAlgo
                 return Angle.FromRadians(start - span * 0.5);
             }
         }
-        public override void DispPara(Control form, Dictionary<string, VsControlModel> VsControls)
+        public override void DispPara(IParaUiHost ui)
         {
-            form.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Region, TabPageEnum.Display);
+            ui.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Region, TabPageEnum.Display);
 
-            VsControls.ShowComboBox(form, "cmb_CoordIn", inPara.CoordIn.ToString(), false);
+            ui.ShowComboBox("cmb_CoordIn", inPara.CoordIn.ToString(), false);
 
             CvRegion hRegion = inPara.HoRect;
-            VsControls.ShowComboBox(form, "cmb_Width", hRegion.Width.ToString(), false);
-            VsControls.ShowComboBox(form, "cmb_Height", hRegion.Height.ToString(), false);
-            VsControls.ShowComboBox(form, "cmb_TopLeft", $"{hRegion.TopLeft.X};{hRegion.TopLeft.Y}", false);
-            VsControls.ShowComboBox(form, "cmb_BottomRight", $"{hRegion.BottomRight.X};{hRegion.BottomRight.Y}", false);
-            VsControls.ShowComboBox(form, "cmb_Center", $"{hRegion.Center.X};{hRegion.Center.Y}", false);
+            ui.ShowComboBox("cmb_Width", hRegion.Width.ToString(), false);
+            ui.ShowComboBox("cmb_Height", hRegion.Height.ToString(), false);
+            ui.ShowComboBox("cmb_TopLeft", $"{hRegion.TopLeft.X};{hRegion.TopLeft.Y}", false);
+            ui.ShowComboBox("cmb_BottomRight", $"{hRegion.BottomRight.X};{hRegion.BottomRight.Y}", false);
+            ui.ShowComboBox("cmb_Center", $"{hRegion.Center.X};{hRegion.Center.Y}", false);
 
-            VsControls.ShowLabel(form, "lbl_100", "图像来源");
-            VsControls.ShowComboBox(form, "cmb_100", inPara.ImageIn, false);
-            VsControls.ShowButton(form, "btn_100", true);
+            ui.ShowLabel("lbl_100", "图像来源");
+            ui.ShowComboBox("cmb_100", inPara.ImageIn, false);
+            ui.ShowButton("btn_100", true);
 
-            VsControls.ShowLabel(form, "lbl_101", "区域来源");
-            VsControls.ShowComboBox(form, "cmb_101", inPara.RegionIn, false);
-            VsControls.ShowButton(form, "btn_101", true);
+            ui.ShowLabel("lbl_101", "区域来源");
+            ui.ShowComboBox("cmb_101", inPara.RegionIn, false);
+            ui.ShowButton("btn_101", true);
 
-            VsControls.ShowLabel(form, "lbl_102", "过渡方向");
-            VsControls.ShowComboBoxList(form, "cmb_102", inPara.Transition, new[] { "由黑到白", "由白到黑", "全部" });
-            VsControls.ShowButton(form, "btn_102", false);
+            ui.ShowLabel("lbl_102", "过渡方向");
+            ui.ShowComboBoxList("cmb_102", inPara.Transition, new[] { "由黑到白", "由白到黑", "全部" });
+            ui.ShowButton("btn_102", false);
 
-            VsControls.ShowLabel(form, "lbl_103", "选择");
-            VsControls.ShowComboBoxList(form, "cmb_103", inPara.ContourType, new[] { "第一条边", "第二条边", "最后一条", "全部" });
-            VsControls.ShowButton(form, "btn_103", false);
+            ui.ShowLabel("lbl_103", "选择");
+            ui.ShowComboBoxList("cmb_103", inPara.ContourType, new[] { "第一条边", "第二条边", "最后一条", "全部" });
+            ui.ShowButton("btn_103", false);
 
-            VsControls.ShowLabel(form, "lbl_104", "滤波");
-            VsControls.ShowComboBoxDropDown(form, "cmb_104", inPara.Sigma.ToString(), new[] { "0", "1" });
-            VsControls.ShowButton(form, "btn_104", false);
+            ui.ShowLabel("lbl_104", "滤波");
+            ui.ShowComboBoxDropDown("cmb_104", inPara.Sigma.ToString(), new[] { "0", "1" });
+            ui.ShowButton("btn_104", false);
 
-            VsControls.ShowLabel(form, "lbl_105", "阈值");
-            VsControls.ShowComboBoxDropDown(form, "cmb_105", inPara.Threshold.ToString(), new[] { "30", "50" });
-            VsControls.ShowButton(form, "btn_105", false);
+            ui.ShowLabel("lbl_105", "阈值");
+            ui.ShowComboBoxDropDown("cmb_105", inPara.Threshold.ToString(), new[] { "30", "50" });
+            ui.ShowButton("btn_105", false);
 
-            VsControls.ShowLabel(form, "lbl_110", "步距");
-            VsControls.ShowComboBoxDropDown(form, "cmb_110", inPara.StepPace.ToString(), new[] { "2", "5", "10" });
+            ui.ShowLabel("lbl_110", "步距");
+            ui.ShowComboBoxDropDown("cmb_110", inPara.StepPace.ToString(), new[] { "2", "5", "10" });
 
-            VsControls.ShowLabel(form, "lbl_111", "步宽");
-            VsControls.ShowComboBoxDropDown(form, "cmb_111", inPara.StepWidth.ToString(), new[] { "2", "5", "10" });
+            ui.ShowLabel("lbl_111", "步宽");
+            ui.ShowComboBoxDropDown("cmb_111", inPara.StepWidth.ToString(), new[] { "2", "5", "10" });
 
-            VsControls.ShowLabel(form, "lbl_112", "最大偏差");
-            VsControls.ShowComboBoxDropDown(form, "cmb_112", inPara.MaxErr.ToString(), new[] { "1", "3", "5", "10" });
+            ui.ShowLabel("lbl_112", "最大偏差");
+            ui.ShowComboBoxDropDown("cmb_112", inPara.MaxErr.ToString(), new[] { "1", "3", "5", "10" });
 
-            VsControls.ShowLabel(form, "lbl_113", "裁剪首尾");
-            VsControls.ShowComboBoxList(form, "cmb_113", inPara.TrimEnds, new[] { "否", "是" });
-            VsControls.ShowButton(form, "btn_113", false);
+            ui.ShowLabel("lbl_113", "裁剪首尾");
+            ui.ShowComboBoxList("cmb_113", inPara.TrimEnds, new[] { "否", "是" });
+            ui.ShowButton("btn_113", false);
 
             //------------------------------------------
-            VsControls.ShowCheckBox(form, "ckb_disp0", "显示文本", inPara.DispText);
-            VsControls.ShowCheckBox(form, "ckb_disp1", "查找区域", inPara.DispRegion);
-            VsControls.ShowCheckBox(form, "ckb_disp2", "拟合区域", inPara.DispFixRegion);
-            VsControls.ShowCheckBox(form, "ckb_disp3", "拟合点", inPara.DispFixPoint);
-            VsControls.ShowCheckBox(form, "ckb_disp4", "显示结果", inPara.DispResult);
+            ui.ShowCheckBox("ckb_disp0", "显示文本", inPara.DispText);
+            ui.ShowCheckBox("ckb_disp1", "查找区域", inPara.DispRegion);
+            ui.ShowCheckBox("ckb_disp2", "拟合区域", inPara.DispFixRegion);
+            ui.ShowCheckBox("ckb_disp3", "拟合点", inPara.DispFixPoint);
+            ui.ShowCheckBox("ckb_disp4", "显示结果", inPara.DispResult);
 
-            VsControls.ShowComboBoxDropDown(form, "CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
-            VsControls.ShowComboBoxDropDown(form, "CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
-            VsControls.ShowComboBoxDropDown(form, "CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
+            ui.ShowComboBoxDropDown("CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
+            ui.ShowComboBoxDropDown("CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
+            ui.ShowComboBoxDropDown("CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
         }
-        public override void SavePara(Control form, Dictionary<string, VsControlModel> VsControls)
+        public override void SavePara(IParaUiHost ui)
         {
-            inPara.CoordIn = VsControls["cmb_CoordIn"].AsString();
+            inPara.CoordIn = ui.GetString("cmb_CoordIn");
 
-            inPara.ImageIn = VsControls["cmb_100"].AsString();
-            inPara.RegionIn = VsControls["cmb_101"].AsString();
-            inPara.Transition = VsControls["cmb_102"].AsString();
-            inPara.ContourType = VsControls["cmb_103"].AsString();
-            inPara.Sigma = VsControls["cmb_104"].AsInt();
-            inPara.Threshold = VsControls["cmb_105"].AsInt();
+            inPara.ImageIn = ui.GetString("cmb_100");
+            inPara.RegionIn = ui.GetString("cmb_101");
+            inPara.Transition = ui.GetString("cmb_102");
+            inPara.ContourType = ui.GetString("cmb_103");
+            inPara.Sigma = ui.GetInt("cmb_104");
+            inPara.Threshold = ui.GetInt("cmb_105");
 
-            inPara.StepPace = VsControls["cmb_110"].AsInt();
-            inPara.StepWidth = VsControls["cmb_111"].AsInt();
-            inPara.MaxErr = VsControls["cmb_112"].AsInt();
-            inPara.TrimEnds = VsControls["cmb_113"].AsString();
+            inPara.StepPace = ui.GetInt("cmb_110");
+            inPara.StepWidth = ui.GetInt("cmb_111");
+            inPara.MaxErr = ui.GetInt("cmb_112");
+            inPara.TrimEnds = ui.GetString("cmb_113");
 
             //------------------------------------------
-            inPara.DispText = VsControls["ckb_disp0"].AsBool();
-            inPara.DispRegion = VsControls["ckb_disp1"].AsBool();
-            inPara.DispFixRegion = VsControls["ckb_disp2"].AsBool();
-            inPara.DispFixPoint = VsControls["ckb_disp3"].AsBool();
-            inPara.DispResult = VsControls["ckb_disp4"].AsBool();
+            inPara.DispText = ui.GetBool("ckb_disp0");
+            inPara.DispRegion = ui.GetBool("ckb_disp1");
+            inPara.DispFixRegion = ui.GetBool("ckb_disp2");
+            inPara.DispFixPoint = ui.GetBool("ckb_disp3");
+            inPara.DispResult = ui.GetBool("ckb_disp4");
 
-            inPara.FontX = VsControls["CB_FontX"].AsInt();
-            inPara.FontY = VsControls["CB_FontY"].AsInt();
-            inPara.FontSize = VsControls["CB_FontSize"].AsInt();
+            inPara.FontX = ui.GetInt("CB_FontX");
+            inPara.FontY = ui.GetInt("CB_FontY");
+            inPara.FontSize = ui.GetInt("CB_FontSize");
         }
-        public override void DrawROI(HDisplayUI display, RectEnum type, bool newROI)
+        public void DrawROI(IRoiHost host, RectEnum type, bool newROI)
         {
             if (newROI)
             {
                 inPara.HoRect.Type = type;
-                display.DrawRegion(inPara.HoRect);
+                host.DrawRegion(inPara.HoRect);
             }
-            else display.DrawRegionMod(inPara.HoRect);
+            else host.DrawRegionMod(inPara.HoRect);
 
-            display.Display.Disp(inPara.HoRect, DrawStyle.Of(HColor.Blue));
-            display.SetRectPara(inPara.HoRect);
+            host.Display.Disp(inPara.HoRect, DrawStyle.Of(HColor.Blue));
+            host.SetRectPara(inPara.HoRect);
         }
-        public override void DispROI(HDisplayUI display)
+        public void DispROI(IRoiHost host)
         {
             inPara.HoRect.Type = RectEnum.AffRect;
-            display.SetRectPara(inPara.HoRect);
+            host.SetRectPara(inPara.HoRect);
         }
         /// <summary>
         /// 关闭工具页. 只丢弃运行期的显示数据, 不碰配置态的 <c>inPara.HoRect</c> —— 原实现直接
         /// 转调 Dispose, 会把配置 ROI 一并销毁; 而策略实例在宿主里是长期复用的, 再次打开必 NRE.
         /// </summary>
-        public override void Close(HDisplayUI display)
+        public override void Close(IRoiHost host)
         {
             TakeRenderData()?.Dispose();
         }

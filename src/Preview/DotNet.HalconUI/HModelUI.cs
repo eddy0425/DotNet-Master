@@ -2,6 +2,7 @@
 using HalconDotNet;
 using System;
 using System.Windows.Forms;
+using DotNet.Vision.Abstractions;
 
 
 namespace DotNet.HalconUI

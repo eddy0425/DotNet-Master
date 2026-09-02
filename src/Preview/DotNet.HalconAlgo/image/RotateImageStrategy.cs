@@ -1,9 +1,8 @@
 ﻿using DotNet.Drawing;
-using DotNet.HalconUI;
+using DotNet.Vision.Abstractions;
 using HalconDotNet;
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
 
 
 namespace DotNet.HalconAlgo
@@ -14,7 +13,7 @@ namespace DotNet.HalconAlgo
         public override string Name { get; set; } = "旋转图像";
         public override int RunIndex { get; set; }
 
-        public override void GenTreeNode(TreeVisualizer tree)
+        public override void GenTreeNode(ITreeVisualizer tree)
         {
             tree.Branch(Name, branch => branch
                        .Node("图像", OutEnum.Image)
@@ -113,60 +112,60 @@ namespace DotNet.HalconAlgo
                 throw;
             }
         }
-        public override void DispPara(Control form, Dictionary<string, VsControlModel> VsControls)
+        public override void DispPara(IParaUiHost ui)
         {
-            form.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Display);
+            ui.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Display);
 
-            VsControls.ShowLabel(form, "lbl_100", "图像来源");
-            VsControls.ShowComboBox(form, "cmb_100", inPara.ImageIn, false);
-            VsControls.ShowButton(form, "btn_100", true);
+            ui.ShowLabel("lbl_100", "图像来源");
+            ui.ShowComboBox("cmb_100", inPara.ImageIn, false);
+            ui.ShowButton("btn_100", true);
 
-            VsControls.ShowLabel(form, "lbl_101", "选择方式");
-            VsControls.ShowComboBoxList(form, "cmb_101", inPara.RotateType, new[] { "图像中心", "坐标系", "坐标系X轴", "坐标系Y轴" });
-            VsControls.ShowButton(form, "btn_101", false);
+            ui.ShowLabel("lbl_101", "选择方式");
+            ui.ShowComboBoxList("cmb_101", inPara.RotateType, new[] { "图像中心", "坐标系", "坐标系X轴", "坐标系Y轴" });
+            ui.ShowButton("btn_101", false);
 
             if (inPara.RotateType == "图像中心")
             {
-                VsControls.ShowLabel(form, "lbl_102", "旋转角度");
-                VsControls.ShowComboBoxDropDown(form, "cmb_102", inPara.RotateAngle.ToString(), new[] { "0", "90", "180", "270" });
-                VsControls.ShowButton(form, "btn_102", false);
+                ui.ShowLabel("lbl_102", "旋转角度");
+                ui.ShowComboBoxDropDown("cmb_102", inPara.RotateAngle.ToString(), new[] { "0", "90", "180", "270" });
+                ui.ShowButton("btn_102", false);
             }
             else
             {
-                VsControls.ShowLabel(form, "lbl_102", "坐标系");
-                VsControls.ShowComboBox(form, "cmb_102", inPara.CoordIn, false);
-                VsControls.ShowButton(form, "btn_102", true);
+                ui.ShowLabel("lbl_102", "坐标系");
+                ui.ShowComboBox("cmb_102", inPara.CoordIn, false);
+                ui.ShowButton("btn_102", true);
             }
 
             //------------------------------------------
-            VsControls.ShowCheckBox(form, "ckb_disp0", "显示文本", inPara.DispText);
+            ui.ShowCheckBox("ckb_disp0", "显示文本", inPara.DispText);
 
-            VsControls.ShowComboBoxDropDown(form, "CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
-            VsControls.ShowComboBoxDropDown(form, "CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
-            VsControls.ShowComboBoxDropDown(form, "CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
+            ui.ShowComboBoxDropDown("CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
+            ui.ShowComboBoxDropDown("CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
+            ui.ShowComboBoxDropDown("CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
         }
-        public override void SavePara(Control form, Dictionary<string, VsControlModel> VsControls)
+        public override void SavePara(IParaUiHost ui)
         {
-            inPara.ImageIn = VsControls["cmb_100"].AsString();
-            inPara.RotateType = VsControls["cmb_101"].AsString();
+            inPara.ImageIn = ui.GetString("cmb_100");
+            inPara.RotateType = ui.GetString("cmb_101");
 
             if (inPara.RotateType == "图像中心")
             {
                 // 用户可能输入非数字, 这里保留 TryParse 的容错: 解析失败时不覆盖原值.
-                if (float.TryParse(VsControls["cmb_102"].AsString(), out float angle))
+                if (float.TryParse(ui.GetString("cmb_102"), out float angle))
                     inPara.RotateAngle = angle;
             }
             else
             {
-                inPara.CoordIn = VsControls["cmb_102"].AsString();
+                inPara.CoordIn = ui.GetString("cmb_102");
             }
 
             //------------------------------------------
-            inPara.DispText = VsControls["ckb_disp0"].AsBool();
+            inPara.DispText = ui.GetBool("ckb_disp0");
 
-            inPara.FontX = VsControls["CB_FontX"].AsInt();
-            inPara.FontY = VsControls["CB_FontY"].AsInt();
-            inPara.FontSize = VsControls["CB_FontSize"].AsInt();
+            inPara.FontX = ui.GetInt("CB_FontX");
+            inPara.FontY = ui.GetInt("CB_FontY");
+            inPara.FontSize = ui.GetInt("CB_FontSize");
         }
 
     }

@@ -1,6 +1,7 @@
 using Sunny.UI;
 using System;
 using DotNet.HalconUI;
+using DotNet.Vision.Abstractions;
 using DotNet.HalconAlgo;
 using System.Windows.Forms;
 using System.Collections.Generic;
@@ -131,7 +132,8 @@ namespace DotNet.VisionMaster
             TreeVisualizer treeVisualizer = new TreeVisualizer(treeView1);
             for (int i = 0; i < index; i++)
             {
-                paraStrategies[i].GenTreeNode(treeVisualizer);
+                if (paraStrategies[i] is ITreeNodeProvider provider)
+                    provider.GenTreeNode(treeVisualizer);
             }
         }
  

@@ -1,5 +1,6 @@
 using DotNet.Drawing;
 using DotNet.HalconUI;
+using DotNet.Vision.Abstractions;
 using DotNet.HalconAlgo;
 using HalconDotNet;
 using System;
@@ -208,7 +209,8 @@ namespace DotNet.VisionMaster
                 }
                 var drawType = _rectDrawMap.FirstOrDefault(kv => kv.Key.Checked).Value;
                 _disPlay.ReDispImage();
-                strategy.DrawROI(_disPlay, drawType, true);
+                if (strategy is IRoiEditable roi)
+                    roi.DrawROI(_disPlay, drawType, true);
             }
             catch (Exception ex) { MessageBox.Show(ex.Message); }
         }
@@ -219,7 +221,8 @@ namespace DotNet.VisionMaster
                 var strategy = _strategys[_index];
                 _disPlay.ReDispImage();
                 var drawType = _rectDrawMap.FirstOrDefault(kv => kv.Key.Checked).Value;
-                strategy.DrawROI(_disPlay, drawType, false);
+                if (strategy is IRoiEditable roi)
+                    roi.DrawROI(_disPlay, drawType, false);
             }
             catch (Exception ex) { MessageBox.Show(ex.Message); }
         }
@@ -230,7 +233,8 @@ namespace DotNet.VisionMaster
                 var strategy = _strategys[_index];
                 var drawType = _modelDrawMap.FirstOrDefault(kv => kv.Key.Checked).Value;
                 _disPlay.ReDispImage();
-                strategy.SetTemplate(_disPlay, drawType, true);
+                if (strategy is ITemplateEditable template)
+                    template.SetTemplate(_disPlay, drawType, true);
             }
             catch (Exception ex) { MessageBox.Show(ex.Message); }
 
@@ -243,7 +247,8 @@ namespace DotNet.VisionMaster
                 var strategy = _strategys[_index];
                 var drawType = _modelDrawMap.FirstOrDefault(kv => kv.Key.Checked).Value;
                 _disPlay.ReDispImage();
-                strategy.SetTemplate(_disPlay, drawType, false);
+                if (strategy is ITemplateEditable template)
+                    template.SetTemplate(_disPlay, drawType, false);
             }
             catch (Exception ex) { MessageBox.Show(ex.Message); }
         }

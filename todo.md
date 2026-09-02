@@ -652,8 +652,8 @@ private void PublishRenderData(FitArcMidpointRenderData data)
 
 ### 阶段 4：分层与交互重构（2~4 周，需单独排期）
 
-- [ ] A1 抽出 `DotNet.Vision.Abstractions`，打断 `HalconAlgo → HalconUI`
-- [ ] A2 `IParaStrategy` 拆分为 5 个小接口
+- [x] A1 抽出 `DotNet.Vision.Abstractions`，打断 `HalconAlgo → HalconUI`
+- [x] A2 `IParaStrategy` 拆分为 5 个小接口
 - [ ] C3 `DrawHelper` 三步走：加超时/取消 → 拆类 → `DrawAsync` 消灭 `DoEvents`
 - [ ] C4 `DispPara`/`SavePara` 改为特性驱动的声明式绑定
 - [ ] C5 中文文案与业务状态解耦（enum + 资源文件）

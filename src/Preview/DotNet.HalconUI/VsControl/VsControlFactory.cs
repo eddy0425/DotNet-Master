@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Windows.Forms;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using DotNet.Vision.Abstractions;
 
 
 namespace DotNet.HalconUI

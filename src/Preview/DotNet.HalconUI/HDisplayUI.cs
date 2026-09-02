@@ -3,6 +3,7 @@ using HalconDotNet;
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using DotNet.Vision.Abstractions;
 
 
 namespace DotNet.HalconUI
@@ -16,7 +17,7 @@ namespace DotNet.HalconUI
     /// 三处各写一遍签名，改一次动三处。现在改为组合——绘制走 <see cref="Display"/>，
     /// 本类只保留「控件才有」的职责：鼠标交互模式、刷新通知、按钮状态。
     /// </remarks>
-    public partial class HDisplayUI : UserControl
+    public partial class HDisplayUI : UserControl, IRoiHost
     {
         readonly HDisplay display;
         readonly HWindowMouse mouse;

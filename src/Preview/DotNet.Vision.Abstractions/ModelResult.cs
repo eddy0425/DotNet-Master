@@ -3,7 +3,7 @@ using HalconDotNet;
 using Newtonsoft.Json;
 
 
-namespace DotNet.HalconUI
+namespace DotNet.Vision.Abstractions
 {
     public struct ModelResult
     {

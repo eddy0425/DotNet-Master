@@ -1,8 +1,7 @@
 ﻿using HalconDotNet;
 using System;
 using DotNet.Drawing;
-using DotNet.HalconUI;
-using System.Windows.Forms;
+using DotNet.Vision.Abstractions;
 using System.Collections.Generic;
 
 
@@ -17,7 +16,7 @@ namespace DotNet.HalconAlgo
         private int Index  = 0;       //图像下标
         private string[] ImagePaths;   //图像路径
 
-        public override void GenTreeNode(TreeVisualizer tree)
+        public override void GenTreeNode(ITreeVisualizer tree)
         {
             tree.Branch(Name, branch => branch
                        .Node("图像", OutEnum.Image)
@@ -94,35 +93,35 @@ namespace DotNet.HalconAlgo
                 throw;
             }
         }
-        public override void DispPara(Control form, Dictionary<string, VsControlModel> VsControls)
+        public override void DispPara(IParaUiHost ui)
         {
-            form.ShowTabs(TabPageEnum.FileImage, TabPageEnum.Display);
+            ui.ShowTabs(TabPageEnum.FileImage, TabPageEnum.Display);
 
-            VsControls.ShowComboBoxList(form, "cmb_Rotate", inPara.Rotate.ToString(), new[] { "0", "90", "180", "270" });
-            VsControls.ShowComboBoxList(form, "cmb_Mirror", inPara.Mirror, new[] { "无", "行镜像", "列镜像", "原点镜像" });
-            VsControls.ShowComboBox(form, "cmb_ImageFolder", inPara.ImageFolder, true);
+            ui.ShowComboBoxList("cmb_Rotate", inPara.Rotate.ToString(), new[] { "0", "90", "180", "270" });
+            ui.ShowComboBoxList("cmb_Mirror", inPara.Mirror, new[] { "无", "行镜像", "列镜像", "原点镜像" });
+            ui.ShowComboBox("cmb_ImageFolder", inPara.ImageFolder, true);
 
             //------------------------------------------
-            VsControls.ShowCheckBox(form, "ckb_disp0", "显示文本", inPara.DispText);
+            ui.ShowCheckBox("ckb_disp0", "显示文本", inPara.DispText);
 
-            VsControls.ShowComboBoxDropDown(form, "CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
-            VsControls.ShowComboBoxDropDown(form, "CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
-            VsControls.ShowComboBoxDropDown(form, "CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
+            ui.ShowComboBoxDropDown("CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
+            ui.ShowComboBoxDropDown("CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
+            ui.ShowComboBoxDropDown("CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
         }
-        public override void SavePara(Control form, Dictionary<string, VsControlModel> VsControls)
+        public override void SavePara(IParaUiHost ui)
         {
-            inPara.Rotate = VsControls["cmb_Rotate"].AsInt();
-            inPara.Mirror = VsControls["cmb_Mirror"].AsString();
-            inPara.ImageFolder = VsControls["cmb_ImageFolder"].AsString();
+            inPara.Rotate = ui.GetInt("cmb_Rotate");
+            inPara.Mirror = ui.GetString("cmb_Mirror");
+            inPara.ImageFolder = ui.GetString("cmb_ImageFolder");
 
             //------------------------------------------
-            inPara.DispText = VsControls["ckb_disp0"].AsBool();
+            inPara.DispText = ui.GetBool("ckb_disp0");
 
-            inPara.FontX = VsControls["CB_FontX"].AsInt();
-            inPara.FontY = VsControls["CB_FontY"].AsInt();
-            inPara.FontSize = VsControls["CB_FontSize"].AsInt();
+            inPara.FontX = ui.GetInt("CB_FontX");
+            inPara.FontY = ui.GetInt("CB_FontY");
+            inPara.FontSize = ui.GetInt("CB_FontSize");
         }
-        public override void Init(HDisplayUI display)
+        public override void Init(IRoiHost host)
         {
             try
             {
@@ -139,7 +138,7 @@ namespace DotNet.HalconAlgo
                 Log.Error(nameof(FileImageStrategy), $"初始化图像目录失败: {inPara.ImageFolder}", ex);
             }
         }
-        public override void Close(HDisplayUI displayw)
+        public override void Close(IRoiHost host)
         {
 
         }

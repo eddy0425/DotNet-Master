@@ -1,20 +1,19 @@
 ﻿using DotNet.Drawing;
-using DotNet.HalconUI;
+using DotNet.Vision.Abstractions;
 using HalconDotNet;
 using System;
-using System.Windows.Forms;
 using System.Collections.Generic;
 
 
 namespace DotNet.HalconAlgo
 {
-    public class MergeRegionStrategy : ParaStrategyBase<RegionMerge>
+    public class MergeRegionStrategy : ParaStrategyBase<RegionMerge>, IRoiEditable
     {
         public override AlgoEnum Algorithm => AlgoEnum.MergeRegion;
         public override string Name { get; set; } = "区域合并";
         public override int RunIndex { get; set; }
 
-        public override void GenTreeNode(TreeVisualizer tree)
+        public override void GenTreeNode(ITreeVisualizer tree)
         {
             tree.Branch(Name, branch => branch
                        .Node("坐标系", OutEnum.Coord, line => line
@@ -156,57 +155,62 @@ namespace DotNet.HalconAlgo
             inPara.Coord = new CvCoord();
         }
 
-        public override void DispPara(Control form, Dictionary<string, VsControlModel> VsControls)
+        public override void DispPara(IParaUiHost ui)
         {
-            form.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Display);
+            ui.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Display);
 
-            VsControls.ShowComboBox(form, "cmb_CoordIn", inPara.CoordIn.ToString(), false);
+            ui.ShowComboBox("cmb_CoordIn", inPara.CoordIn.ToString(), false);
 
             for (int i = 0; i < inPara.RegionSources.Length; i++)
             {
                 int id = 100 + i;
-                VsControls.ShowLabel(form, $"lbl_{id}", $"输入区域{i}");
-                VsControls.ShowComboBox(form, $"cmb_{id}", inPara.RegionSources[i], false);
-                VsControls.ShowButton(form, $"btn_{id}", true);
+                ui.ShowLabel($"lbl_{id}", $"输入区域{i}");
+                ui.ShowComboBox($"cmb_{id}", inPara.RegionSources[i], false);
+                ui.ShowButton($"btn_{id}", true);
             }
 
             //------------------------------------------
-            VsControls.ShowCheckBox(form, "ckb_disp0", "显示文本", inPara.DispText);
-            VsControls.ShowCheckBox(form, "ckb_disp1", "查找区域", inPara.DispRegion);
+            ui.ShowCheckBox("ckb_disp0", "显示文本", inPara.DispText);
+            ui.ShowCheckBox("ckb_disp1", "查找区域", inPara.DispRegion);
 
-            VsControls.ShowComboBoxDropDown(form, "CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
-            VsControls.ShowComboBoxDropDown(form, "CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
-            VsControls.ShowComboBoxDropDown(form, "CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
+            ui.ShowComboBoxDropDown("CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
+            ui.ShowComboBoxDropDown("CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
+            ui.ShowComboBoxDropDown("CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
         }
-        public override void SavePara(Control form, Dictionary<string, VsControlModel> VsControls)
+        public override void SavePara(IParaUiHost ui)
         {
             //基本参数
-            inPara.CoordIn = VsControls["cmb_CoordIn"].AsString();
+            inPara.CoordIn = ui.GetString("cmb_CoordIn");
 
             for (int i = 0; i < inPara.RegionSources.Length; i++)
             {
-                inPara.RegionSources[i] = VsControls[$"cmb_{100 + i}"].AsString();
+                inPara.RegionSources[i] = ui.GetString($"cmb_{100 + i}");
             }
 
             //------------------------------------------
-            inPara.DispText = VsControls["ckb_disp0"].AsBool();
-            inPara.DispRegion = VsControls["ckb_disp1"].AsBool();
+            inPara.DispText = ui.GetBool("ckb_disp0");
+            inPara.DispRegion = ui.GetBool("ckb_disp1");
 
-            inPara.FontX = VsControls["CB_FontX"].AsInt();
-            inPara.FontY = VsControls["CB_FontY"].AsInt();
-            inPara.FontSize = VsControls["CB_FontSize"].AsInt();
+            inPara.FontX = ui.GetInt("CB_FontX");
+            inPara.FontY = ui.GetInt("CB_FontY");
+            inPara.FontSize = ui.GetInt("CB_FontSize");
         }
-        public override void DrawROI(HDisplayUI display, RectEnum type, bool newROI)
+        public void DrawROI(IRoiHost host, RectEnum type, bool newROI)
         {
             if (newROI)
             {
                 inPara.HoRect.Type = type;
-                display.DrawRegion(inPara.HoRect);
+                host.DrawRegion(inPara.HoRect);
             }
-            else display.DrawRegionMod(inPara.HoRect);
+            else host.DrawRegionMod(inPara.HoRect);
 
-            display.Display.Disp(inPara.HoRect, DrawStyle.Of(HColor.Blue));
-            display.SetRectPara(inPara.HoRect);
+            host.Display.Disp(inPara.HoRect, DrawStyle.Of(HColor.Blue));
+            host.SetRectPara(inPara.HoRect);
+        }
+
+        public void DispROI(IRoiHost host)
+        {
+            host.SetRectPara(inPara.HoRect);
         }
     }
 

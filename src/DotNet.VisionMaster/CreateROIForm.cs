@@ -1,5 +1,6 @@
 using DotNet.HalconAlgo;
 using DotNet.HalconUI;
+using DotNet.Vision.Abstractions;
 using DotNet.Json;
 using System;
 using System.Collections.Generic;
@@ -80,8 +81,10 @@ namespace DotNet.VisionMaster
             _index = index;
             _vsControls.ClearAll();
             _formPara.SelectPara(_index, _strategys);
-            _currentStrategy.DispPara(_formPara, _vsControls);
-            _currentStrategy.DispROI(_display);
+            if (_currentStrategy is IParaBinding binding)
+                binding.DispPara(new WinFormsParaUiHost(_formPara, _vsControls));
+            if (_currentStrategy is IRoiEditable roi)
+                roi.DispROI(_display);
         }
 
         private void but_Run_Click(object sender, EventArgs e)
@@ -99,7 +102,8 @@ namespace DotNet.VisionMaster
                         break;
                 }
 
-                _currentStrategy.SavePara(_formPara, _vsControls);
+                if (_currentStrategy is IParaBinding binding)
+                    binding.SavePara(new WinFormsParaUiHost(_formPara, _vsControls));
                 _currentStrategy.Fun_action(_display.Display, _strategys);
             }
             catch (Exception ex)

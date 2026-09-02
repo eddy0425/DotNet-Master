@@ -2,6 +2,7 @@
 using HalconDotNet;
 using System;
 using System.Collections.Generic;
+using DotNet.Vision.Abstractions;
 
 namespace DotNet.HalconUI
 {
