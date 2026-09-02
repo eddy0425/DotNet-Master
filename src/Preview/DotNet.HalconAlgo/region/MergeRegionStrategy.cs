@@ -33,7 +33,7 @@ namespace DotNet.HalconAlgo
             RegisterOutput("坐标系/原点", () => inPara.Coord.Center);
             RegisterOutput("坐标系/原点/行", () => inPara.Coord.Y);
             RegisterOutput("坐标系/原点/列", () => inPara.Coord.X);
-            RegisterOutput("坐标系/角度", () => inPara.Coord.Angle);
+            RegisterOutput("坐标系/角度", () => inPara.Coord.Angle.Radians);
             // 输出的是本次合并结果, 不是用户画的配置 ROI (inPara.HoRect).
             RegisterOutput("区域", () => inPara.Result);
 
@@ -93,7 +93,7 @@ namespace DotNet.HalconAlgo
                     ClearResult();
                     if (inPara.DispText)
                     {
-                        display.DispText($"{Name} : 无有效输入区域", inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Red);
+                        display.DispText($"{Name} : 无有效输入区域", new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Red, inPara.FontSize));
                     }
                     return false;
                 }
@@ -106,7 +106,7 @@ namespace DotNet.HalconAlgo
                 {
                     var inCoord = strategys.ResolveFrom<CvCoord>(inPara.CoordIn);
                     var tmplPoint = strategys.ResolveFrom<Point2d>(inPara.CoordIn.ToTmplPoint());
-                    HalconHelper.TransRegion(tmplPoint, inCoord.Center, merged, out transformed);
+                    HalconController.TransRegion(tmplPoint, inCoord.Center, merged, out transformed);
                     result = transformed;
                 }
 
@@ -117,13 +117,13 @@ namespace DotNet.HalconAlgo
                 HOperatorSet.AreaCenter(result, out _, out HTuple row, out HTuple column);
                 inPara.Coord = new CvCoord(new Point2d(column, row));
 
-                if (inPara.DispRegion) display.DispRegion(result, HColor.Blue);
+                if (inPara.DispRegion) display.Disp(result, DrawStyle.Of(HColor.Blue));
 
                 if (inPara.DispText)
                 {
                     string message = $"{Name} : 合并数量:{srcCnt}" + (missCnt > 0 ? $" 无效来源:{missCnt}" : string.Empty)
                                    + $" 中心:({inPara.Coord.X:F2},{inPara.Coord.Y:F2}) 跟随坐标:{inPara.CoordIn}";
-                    display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
+                    display.DispText(message, new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Green, inPara.FontSize));
                 }
 
                 return true;
@@ -205,7 +205,7 @@ namespace DotNet.HalconAlgo
             }
             else display.DrawRegionMod(inPara.HoRect);
 
-            display.DispRegion(inPara.HoRect, HColor.Blue);
+            display.Display.Disp(inPara.HoRect, DrawStyle.Of(HColor.Blue));
             display.SetRectPara(inPara.HoRect);
         }
     }

@@ -100,7 +100,7 @@ namespace DotNet.VisionMaster
                 }
 
                 _currentStrategy.SavePara(_formPara, _vsControls);
-                _currentStrategy.Fun_action(_display, _strategys);
+                _currentStrategy.Fun_action(_display.Display, _strategys);
             }
             catch (Exception ex)
             {
@@ -114,7 +114,7 @@ namespace DotNet.VisionMaster
             {
                 for (int i = 0; i < _strategys.Count; i++)
                 {
-                    _strategys[i].Fun_action(_display, _strategys);
+                    _strategys[i].Fun_action(_display.Display, _strategys);
                 }
             }
             catch (Exception ex)

@@ -10,12 +10,12 @@ namespace DotNet.HalconUI
     /// </summary>
     public class DispModelMouse : IMouseHandler
     {
-        private HDisplayUI _display;
+        private IHDisplay _display;
         private HObject _findMode;
         private HObject _contour;
         private CvCoord _coord;
 
-        public void SetUp(HDisplayUI display, HObject shrFindMode, HObject shrContour, CvCoord shrCoord)
+        public void SetUp(IHDisplay display, HObject shrFindMode, HObject shrContour, CvCoord shrCoord)
         {
             _display = display;
             _findMode = shrFindMode;
@@ -40,9 +40,9 @@ namespace DotNet.HalconUI
 
         public void OnMouseMove(HMouseEventArgs e)
         {
-            _display.DispRegion(_findMode, HColor.Blue);
-            _display.DispRegion(_contour, HColor.Green);
-            _display.DispCross(_coord, HColor.OrangeRed);
+            _display.Disp(_findMode, DrawStyle.Of(HColor.Blue));
+            _display.Disp(_contour, DrawStyle.Of(HColor.Green));
+            _display.Disp(_coord, DrawStyle.Of(HColor.OrangeRed));
         }
 
     }

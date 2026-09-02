@@ -1,4 +1,4 @@
-# Preview 三工程 代码审查与重构方案
+﻿# Preview 三工程 代码审查与重构方案
 
 > 审查范围：`src/Preview/DotNet.Drawing`（6901 行）、`src/Preview/DotNet.HalconUI`（7552 行）、`src/Preview/DotNet.HalconAlgo`（4000 行）
 > 审查方式：逐文件通读 + 跨工程模式扫描
@@ -643,12 +643,12 @@ private void PublishRenderData(FitArcMidpointRenderData data)
 
 ### 阶段 3：API 收敛（1~2 周）
 
-- [ ] A4 `IHDisplay` 从 60 成员收敛到约 15；`string color` → `HColor` 强类型
-- [ ] C1 统一坐标序为 `Point2d`(X, Y)，Halcon (Row, Col) 转换只保留在最内层
-- [ ] B5 后续：引入 `readonly struct Angle`，从类型上消灭单位混淆
-- [ ] A3 删除 `HDisplayCore`；`HDisplayUI` 改为组合暴露 `Display` 属性
-- [ ] D5 提取 `EdgeMeasurePipeline` / `RobustFitPipeline`，消除 `FitLine` 与 `FitArcMidpoint` 的重复，同时修掉 O(n²) 重拟合
-- [ ] B1 后续：删除 `HalconHelper`，统一到 `HalconController`（且改为静态无状态类）
+- [x] A4 `IHDisplay` 62 → 34 成员（`Disp*` 46 → 15）；统一为 `Disp(图元, DrawStyle)`，`string color` → `HColor` 强类型
+- [x] C1 统一坐标序为 `Point2d`(X, Y)，Halcon (Row, Col) 转换只保留在最内层（`TransPixel` → `TransPoint`/`TransPoints`；算法层点集与 `FitArcMidpointRenderData` 改为 `List<Point2d>`）
+- [x] B5 后续：引入 `readonly struct Angle`，从类型上消灭单位混淆（`CvCoord.Angle` 改为强类型，`AngleJsonConverter` 保持 JSON 落盘形状不变）
+- [x] A3 删除 `HDisplayCore`；`HDisplayUI` 不再实现 `IHDisplay`，改为组合暴露 `Display` 属性
+- [x] D5 提取 `EdgeMeasurePipeline` / `RobustFitPipeline`，消除 `FitLine` 与 `FitArcMidpoint` 的重复，同时修掉 O(n²) 重拟合（改为按残差降序分批剔除，重拟合轮数降到约 log₂n；**行为变更**：临界点取舍可能与旧实现不同，需现场回归）
+- [x] B1 后续：删除 `HalconHelper`，统一到 `HalconController`（且改为静态无状态类）
 
 ### 阶段 4：分层与交互重构（2~4 周，需单独排期）
 

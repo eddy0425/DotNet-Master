@@ -7,9 +7,22 @@ using System.Windows.Forms;
 
 namespace DotNet.HalconUI
 {
-    public partial class HDisplayUI : UserControl, IHDisplay
+    /// <summary>
+    /// 承载 HALCON 显示窗口的用户控件。
+    /// </summary>
+    /// <remarks>
+    /// 本类不再实现 <see cref="IHDisplay"/>：原先它把 46 个 <c>Disp*</c> 重载
+    /// 逐个转发给内部的 <c>HDisplay</c>，一个绘制方法要在接口、HDisplay、HDisplayUI
+    /// 三处各写一遍签名，改一次动三处。现在改为组合——绘制走 <see cref="Display"/>，
+    /// 本类只保留「控件才有」的职责：鼠标交互模式、刷新通知、按钮状态。
+    /// </remarks>
+    public partial class HDisplayUI : UserControl
     {
-        readonly HDisplayCore display;
+        readonly HDisplay display;
+        readonly HWindowMouse mouse;
+
+        /// <summary> 绘制接口。所有 <c>Disp*</c> 调用都经由它，不再由本控件转发。 </summary>
+        public IHDisplay Display => display;
         public event HMouseEventHandler HMouseUp { add => hWindowControl.HMouseUp += value; remove => hWindowControl.HMouseUp -= value; }
         public event HMouseEventHandler HMouseMove { add => hWindowControl.HMouseMove += value; remove => hWindowControl.HMouseMove -= value; }
         public event HMouseEventHandler HMouseDown { add => hWindowControl.HMouseDown += value; remove => hWindowControl.HMouseDown -= value; }
@@ -31,16 +44,11 @@ namespace DotNet.HalconUI
         }
 
         #region 属性
-        public double HoWidth => display.HoWidth;
-        public double HoHeight => display.HoHeight;
-        public Size2d HoSize => display.Size;
-        public Point2d HoCentre => display.Centre;
-        public HObject HoImage => display.HoImage;  //图像
+
+        // 宽/高/尺寸/中心/图像/颜色/字号等一律经 Display 访问，本控件不再镜像一份。
         public HWindow HoWindow => hWindowControl.HalconWindow;  //窗体句柄
-        public bool HoMouseDown { get { return display.MouseDown; } set { display.MouseDown = value; } } //鼠标按下
-        public bool HoMouseDouble { get { return display.MouseDouble; } set { display.MouseDouble = value; } }  //鼠标双击按下
-        public bool IsCross { get { return display.IsCross; } set { display.IsCross = value; } } //是否画十字
-        public bool Adaptive { get { return display.Adaptive; } set { display.Adaptive = value; } } //自适应
+        public bool HoMouseDown { get { return mouse.MouseDown; } set { mouse.MouseDown = value; } } //鼠标按下
+        public bool HoMouseDouble { get { return mouse.MouseDouble; } set { mouse.MouseDouble = value; } }  //鼠标双击按下
 
         #endregion
 
@@ -65,8 +73,11 @@ namespace DotNet.HalconUI
             InitializeComponent();
             this.Dock = DockStyle.Fill;
 
-            display = new HDisplayCore(hWindowControl);
-            display.RefreshUI += Display_RefreshUI;
+            // 直接组合 HDisplay + HWindowMouse：原先夹在中间的 HDisplayCore 除了这两个字段的
+            // 转发外没有任何行为，却让每个新增的绘制方法都要改三处签名。
+            display = new HDisplay(hWindowControl);
+            mouse = new HWindowMouse(hWindowControl, display);
+            mouse.RefreshUI += Display_RefreshUI;
 
             //HMouseDown += (s, e) => DrawHelper.Active?.OnMouseDown(e);
             //HMouseUp += (s, e) => DrawHelper.Active?.OnMouseUp(e);
@@ -88,25 +99,17 @@ namespace DotNet.HalconUI
 
         private void btn_ReSetPart_Click(object sender, EventArgs e)
         {
-            Adaptive = !Adaptive;
+            display.Adaptive = !display.Adaptive;
         }
 
         private void but_IsCross_Click(object sender, EventArgs e)
         {
-            IsCross = !IsCross;
+            display.IsCross = !display.IsCross;
         }
 
         public void Reset()
         {
             hWindowControl.Focus();
-        }
-
-
-        /// <summary> 设置绘制模式 </summary>
-        /// <param name="mode">"margin" 外接矩形, "fill" 填充矩形</param>
-        public void SetDraw(string mode)
-        {
-            display.SetDraw(mode);
         }
 
         #region Mouse Events
@@ -178,10 +181,13 @@ namespace DotNet.HalconUI
             HMouseWheel -= OnMouseWheel;
             HMouseMove -= OnMouseMove;
 
-            // 2) 释放 HDisplayCore（它会级联释放 HWindowMouse / HWindowImage / HDisplay 中持有的 HObject）
-            //    HDisplayCore.Dispose 自身已具备幂等性；这里不把 display 字段置 null，
+            // 2) 先释放鼠标交互（解除它对 hWindowControl 的事件订阅），再释放 HDisplay 持有的 HObject。
+            //    两者的 Dispose 自身都具备幂等性；这里不把字段置 null，
             //    避免外部在控件销毁后仍访问属性时引发 NullReferenceException——
-            //    Disposed 后属性会通过 HDisplayCore 内部的 _disposed 保护返回安全默认值。
+            //    Disposed 后属性会通过各自内部的 _disposed 保护返回安全默认值。
+            try { mouse?.Dispose(); }
+            catch (Exception ex) { Log.Error(nameof(HDisplayUI), "释放鼠标交互资源失败.", ex); }
+
             try { display?.Dispose(); }
             catch (Exception ex) { Log.Error(nameof(HDisplayUI), "释放显示资源失败.", ex); }
         }
@@ -198,7 +204,7 @@ namespace DotNet.HalconUI
             Reset();
             ReDispImage();
             DrawType = DrawEnum.DispRect;
-            dispRect.SetUp(this, shrRegion);
+            dispRect.SetUp(Display, shrRegion);
         }
 
         public void SetModelPara(HObject shrFindMode, HObject shrContour, CvCoord shrCoord)
@@ -206,52 +212,16 @@ namespace DotNet.HalconUI
             Reset();
             ReDispImage();
             DrawType = DrawEnum.DispModel;
-            dispModel.SetUp(this, shrFindMode, shrContour, shrCoord);
-        }
-
-        #endregion
-
-        #region IHWindowFont
-
-        /// <summary> 获取颜色 </summary>
-        public string GetColor()
-        {
-            return display.GetColor();
-        }
-
-        /// <summary> 设置颜色 </summary>
-        public void SetColor(string color)
-        {
-            display.SetColor(color);
-        }
-
-        /// <summary> 设置字体大小 </summary>
-        public void SetFontSize(HTuple hv_Size)
-        {
-            display.SetFontSize(hv_Size);
-        }
-
-        /// <summary> 显示字体 </summary>
-        public void DispText(string message, HTuple FontX, HTuple FontY, string color)
-        {
-            display.DispText(message, FontX, FontY, color);
-        }
-
-        /// <summary> 显示字体 </summary>
-        public void DispText(string message, HTuple FontX, HTuple FontY, HTuple size, string color)
-        {
-            display.DispText(message, FontX, FontY, size, color);
+            dispModel.SetUp(Display, shrFindMode, shrContour, shrCoord);
         }
 
         #endregion
 
         #region DispImage
 
-        /// <summary> 设置图像 </summary>
-        public void SetImage(HObject image)
-        {
-            display?.SetImage(image);
-        }
+        // 这三个方法之所以留在控件上而没有交给 Display：DispImage 需要在刷新后触发 OnShow，
+        // ReDispImage 是鼠标事件处理的内部依赖。其余图像操作（SetImage / ClearWinDisp）
+        // 是纯转发，已删除，请改用 Display。
 
         /// <summary> 重新显示图片 </summary>
         public void ReDispImage()
@@ -271,184 +241,6 @@ namespace DotNet.HalconUI
         {
             display?.DispImage(image, isSetPart);
             OnShow?.Invoke();
-        }
-
-        public void ClearWinDisp(HObject objectVal)
-        {
-            display?.ClearWinDisp(objectVal);
-        }
-
-        #endregion
-
-
-        #region 点相关
-        public void DispPoint(double crossX, double crossY, double size = 20)
-        {
-            display.DispPoint(crossX, crossY, size);
-        }
-        public void DispPoint(double crossX, double crossY, string color, int size = 20)
-        {
-            display.DispPoint(crossX, crossY, color, size);
-        }
-        public void DispPoint(HTuple crossX, HTuple crossY, double size = 20)
-        {
-            display.DispPoint(crossX, crossY, size);
-        }
-        public void DispPoint(HTuple crossX, HTuple crossY, string color, int size = 20)
-        {
-            display.DispPoint(crossX, crossY, color, size);
-        }
-        public void DispPoint(double[] rowPoints, double[] columnPoints, int size = 20)
-        {
-            display.DispPoint(rowPoints, columnPoints, size);
-        }
-        public void DispPoint(double[] rowPoints, double[] columnPoints, string color, int size = 20)
-        {
-            display.DispPoint(rowPoints, columnPoints, color, size);
-        }
-        public void DispPoint(List<Point2d> polygons, int size = 20)
-        {
-            display.DispPoint(polygons, size);
-        }
-        public void DispPoint(List<Point2d> polygons, string color, int size = 20)
-        {
-            display.DispPoint(polygons, color, size);
-        }
-        public void DispPoint(Point2d point, double size = 20)
-        {
-            display.DispPoint(point, size);
-        }
-        public void DispPoint(Point2d point, string color, double size = 20)
-        {
-            display.DispPoint(point, color, size);
-        }
-
-        #endregion
-
-        #region 坐标相关
-        public void DispCross(double crossX, double crossY, double angle, double size = 20)
-        {
-            display.DispCross(crossX, crossY, angle, size);
-        }
-        public void DispCross(double crossX, double crossY, double angle, string color, double size = 20)
-        {
-            display.DispCross(crossX, crossY, angle, color, size);
-        }
-        public void DispCross(Point2d point, double angle, double size = 20)
-        {
-            display.DispCross(point, angle, size);
-        }
-        public void DispCross(Point2d point, double angle, string color, double size = 20)
-        {
-            display.DispCross(point, angle, color, size);
-        }
-        public void DispCross(CvCoord coord, double size = 20)
-        {
-            display.DispCross(coord, size);
-        }
-        public void DispCross(CvCoord coord, string color, double size = 20)
-        {
-            display.DispCross(coord, color, size);
-        }
-
-        #endregion
-
-        #region 线相关
-        public void DispLine(double startX, double startY, double endX, double endY)
-        {
-            display.DispLine(startX, startY, endX, endY);
-        }
-        public void DispLine(double startX, double startY, double endX, double endY, string color)
-        {
-            display.DispLine(startX, startY, endX, endY, color);
-        }
-        public void DispLine(CvLine line)
-        {
-            display.DispLine(line);
-        }
-        public void DispLine(CvLine line, string color)
-        {
-            display.DispLine(line, color);
-        }
-        public void DispLine(CvLine line, int radius)
-        {
-            display.DispLine(line, radius);
-        }
-        public void DispLine(CvLine line, int radius, string color)
-        {
-            display.DispLine(line, radius, color);
-        }
-
-        /// <summary>
-        /// 画两点一线
-        /// </summary>
-        /// <param name="point1"></param>
-        /// <param name="point2"></param>
-        /// <param name="step"></param>
-        /// <param name="color"></param>
-        public void DispLine(Point2d point1, Point2d point2, int step)
-        {
-            display.DispLine(point1, point2, step);
-        }
-
-        /// <summary>
-        /// 画两点一线
-        /// </summary>
-        /// <param name="point1"></param>
-        /// <param name="point2"></param>
-        /// <param name="step"></param>
-        /// <param name="color"></param>
-        public void DispLine(Point2d point1, Point2d point2, int step, string color)
-        {
-            display.DispLine(point1, point2, step, color);
-        }
-
-        #endregion
-
-        #region 方向线
-        public void DispArrow(double startX, double startY, double endX, double endY, double size = 20)
-        {
-            display.DispArrow(startX, startY, endX, endY, size);
-        }
-        public void DispArrow(double startX, double startY, double endX, double endY, string color, double size = 20)
-        {
-            display.DispArrow(startX, startY, endX, endY, color, size);
-        }
-        public void DispArrow(CvLine line, double size = 20)
-        {
-            display.DispArrow(line, size);
-        }
-        public void DispArrow(CvLine line, string color, double size = 20)
-        {
-            display.DispArrow(line, color, size);
-        }
-        public void DispArrow(CvArrow arrow)
-        {
-            display.DispArrow(arrow);
-        }
-        public void DispArrow(CvArrow arrow, string color)
-        {
-            display.DispArrow(arrow, color);
-        }
-
-        #endregion
-
-        #region 圆
-        public void DispCircle(double crossX, double crossY, double radius)
-        {
-            display.DispCircle(crossX, crossY, radius);
-        }
-        public void DispCircle(double crossX, double crossY, double radius, string color)
-        {
-            display.DispCircle(crossX, crossY, radius, color);
-        }
-        public void DispCircle(CvCircle circle)
-        {
-            display.DispCircle(circle);
-        }
-        public void DispCircle(CvCircle circle, string color)
-        {
-            display.DispCircle(circle, color);
         }
 
         #endregion
@@ -481,77 +273,6 @@ namespace DotNet.HalconUI
             DrawType = DrawEnum.None;
             Reset();
             display.DrawRegion(type, out rectangle);
-        }
-
-        #endregion
-
-        #region 区域相关
-
-        /// <summary> 显示橡皮筋区域 </summary>
-        public void DispGenRegion(CvRegion hRegion)
-        {
-            display.DispGenRegion(hRegion);
-        }
-
-        /// <summary> 获取坐标区域并显示 </summary>
-        public void GenCoordsRegion(CvRegion hRegion, List<CvCoord> coords)
-        {
-            display.GenCoordsRegion(hRegion, coords);
-        }
-
-        #endregion
-
-
-        #region Region
-
-        /// <summary>
-        /// 显示橡皮筋区域
-        /// </summary>
-        public void DispRegion(HObject hRegion)
-        {
-            display.DispRegion(hRegion);
-        }
-
-        /// <summary>
-        /// 显示ROI区域
-        /// </summary>
-        public void DispRegion(HObject hRegion, string color)
-        {
-            display.DispRegion(hRegion, color);
-        }
-
-        /// <summary>
-        /// 显示橡皮筋区域
-        /// </summary>
-        public void DispRegion(CvRegion hRegion)
-        {
-            display.DispRegion(hRegion);
-        }
-
-        /// <summary>
-        /// 显示橡皮筋区域
-        /// </summary>
-        public void DispRegion(CvRegion hRegion, string color)
-        {
-            display.DispRegion(hRegion, color);
-        }
-
-        /// <summary>
-        /// 显示橡皮筋区域
-        /// </summary>
-        public void DispCvRegion(CvRegion hRegion)
-        {
-            display.DispCvRegion(hRegion);
-        }
-
-        public void DispRectangle2(HTuple centerRow, HTuple centerCol, HTuple phi, HTuple length1, HTuple length2)
-        {
-            display.DispRectangle2(centerRow, centerCol, phi, length1, length2);
-        }
-
-        public void DispRectangle2(HTuple centerRow, HTuple centerCol, HTuple phi, HTuple length1, HTuple length2, string color)
-        {
-            display.DispRectangle2(centerRow, centerCol, phi, length1, length2, color);
         }
 
         #endregion

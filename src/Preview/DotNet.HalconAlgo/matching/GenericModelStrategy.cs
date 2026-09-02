@@ -33,7 +33,7 @@ namespace DotNet.HalconAlgo
             RegisterOutput("坐标系/原点", () => inPara.Coord.Center);
             RegisterOutput("坐标系/原点/行", () => inPara.Coord.Y);
             RegisterOutput("坐标系/原点/列", () => inPara.Coord.X);
-            RegisterOutput("坐标系/角度", () => inPara.Coord.Angle);
+            RegisterOutput("坐标系/角度", () => inPara.Coord.Angle.Radians);
         }
         public override bool Fun_action(HObject ho_Image, IHDisplay display)
         {
@@ -45,7 +45,7 @@ namespace DotNet.HalconAlgo
         {
             if (inPara.ModelID == null || inPara.ModelID.Length == 0)
             {
-                display.DispText("未建立模板，无法执行通用匹配！", 10, 10, HColor.Red);
+                display.DispText("未建立模板，无法执行通用匹配！", new Point2d(10, 10), DrawStyle.Of(HColor.Red));
                 return false;
             }
 
@@ -62,7 +62,7 @@ namespace DotNet.HalconAlgo
                     ? inPara.HoRect.HoRegion
                     : strategys.ResolveFrom<HObject>(inPara.RegionIn);
 
-                if (inPara.DispRegion) display.DispRegion(ho_Rect, HColor.Blue);
+                if (inPara.DispRegion) display.Disp(ho_Rect, DrawStyle.Of(HColor.Blue));
 
                 inPara.Results = new List<ModelResult>();
 
@@ -91,14 +91,14 @@ namespace DotNet.HalconAlgo
                     {
                         var result = new ModelResult(row[i], column[i], angle[i], score[i]);
                         inPara.Results.Add(result);
-                        inPara.Coord = new CvCoord(result.X, result.Y, result.Angle);
+                        inPara.Coord = result.Coord;
 
                         // 取该匹配实例对应的轮廓；先释放旧句柄，避免泄漏
                         inPara.HoContour?.Dispose();
                         HOperatorSet.GetGenericShapeModelResultObject(out inPara.HoContour, matchResultID, i, "contours");
 
-                        if (inPara.DispContour) display.DispRegion(inPara.HoContour, HColor.Green);
-                        if (inPara.DispPoint) display.DispCross(result.Coord, HColor.Red);
+                        if (inPara.DispContour) display.Disp(inPara.HoContour, DrawStyle.Of(HColor.Green));
+                        if (inPara.DispPoint) display.Disp(result.Coord, DrawStyle.Of(HColor.Red));
                     }
                 }
 
@@ -107,7 +107,7 @@ namespace DotNet.HalconAlgo
                     int cnt = inPara.Results.Count;
                     double bestScore = cnt > 0 ? inPara.Results[0].Score : 0;
                     string message = $"{Name} : 数量:{cnt} 最佳得分:{bestScore:F3} 缩放:[{inPara.ScaleMin},{inPara.ScaleMax}] 角度范围:[{inPara.AngleStart}°,{(inPara.AngleStart.D + inPara.AngleExtent.D)}°]";
-                    display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
+                    display.DispText(message, new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Green, inPara.FontSize));
                 }
 
                 return true;
@@ -231,7 +231,7 @@ namespace DotNet.HalconAlgo
             }
             else display.DrawRegionMod(inPara.HoRect);
 
-            display.DispRegion(inPara.HoRect, HColor.Blue);
+            display.Display.Disp(inPara.HoRect, DrawStyle.Of(HColor.Blue));
             display.SetRectPara(inPara.HoRect);
         }
         public override void DispROI(HDisplayUI display)
@@ -249,7 +249,7 @@ namespace DotNet.HalconAlgo
                 else display.DrawRegionMod(inPara.ModeRect);
 
                 inPara.ModelPath = Path.Combine(AlgoPaths.JobDir, RunIndex.ToString(), "matching.bmp");
-                var hImage = display.HoImage;
+                var hImage = display.Display.HoImage;
 
                 imgReduced.Dispose();
                 HOperatorSet.ReduceDomain(hImage, inPara.ModeRect.HoRegion, out imgReduced);
@@ -311,23 +311,23 @@ namespace DotNet.HalconAlgo
                 HOperatorSet.GetGenericShapeModelResultObject(out HObject objects, matchResultID, 0, "contours");
                 inPara.HoContour.Dispose();
                 inPara.HoContour = objects;
-                inPara.Coord = new CvCoord(result.X, result.Y, result.Angle);
+                inPara.Coord = result.Coord;
 
-                HalconHelper.SaveSmallestRectImage(hImage, imgReduced, inPara.ModelPath);
+                HalconController.SaveSmallestRectImage(hImage, imgReduced, inPara.ModelPath);
 
                 display.SetModelPara(inPara.HoRect.HoRegion, inPara.HoContour, inPara.Coord);
-                display.DispRegion(inPara.ModeRect, HColor.Orange);
+                display.Display.Disp(inPara.ModeRect, DrawStyle.Of(HColor.Orange));
 
                 display.DrawDone(inPara.ModelPath, inPara.ModeRect.HoRegion, inPara.HoContour, result);
 
                 if (numMatchResult.I > 0)
                 {
-                    display.DispText("新建模板成功！", 10, 10, HColor.Green);
+                    display.Display.DispText("新建模板成功！", new Point2d(10, 10), DrawStyle.Of(HColor.Green));
                     inPara.TmplPoint = new Point2d(result.X, result.Y);      //更改跟随坐标
                 }
                 else
                 {
-                    display.DispText("新建模板失败！", 10, 10, HColor.Red);
+                    display.Display.DispText("新建模板失败！", new Point2d(10, 10), DrawStyle.Of(HColor.Red));
                 }
             }
             catch

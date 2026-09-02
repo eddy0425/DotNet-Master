@@ -103,7 +103,7 @@ namespace DotNet.HalconAlgo
 
                 if (inPara.DispText)
                 {
-                    display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
+                    display.DispText(message, new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Green, inPara.FontSize));
                 }
 
                 return true;

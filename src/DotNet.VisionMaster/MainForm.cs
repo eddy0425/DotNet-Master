@@ -113,7 +113,7 @@ namespace DotNet.VisionMaster
                 }
 
                 _currentStrategy.SavePara(_formPara, _vsControls);
-                _currentStrategy.Fun_action(_display, _strategys);
+                _currentStrategy.Fun_action(_display.Display, _strategys);
             }
             catch (Exception ex)
             {

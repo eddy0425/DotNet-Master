@@ -120,7 +120,7 @@ namespace DotNet.HalconUI
             {
                 display.Reset();
                 display.ReDispImage();
-                display.DispRegion(findMode, HColor.Blue);
+                display.Display.Disp(findMode, DrawStyle.Of(HColor.Blue));
                 var drawType = GetModifyShape();
 
                 display.DrawRegion(drawType, out drawRegion);
@@ -139,7 +139,7 @@ namespace DotNet.HalconUI
                 regionResult = null;
 
                 display.ReDispImage();
-                display.DispRegion(shrFindMode, HColor.Green);
+                display.Display.Disp(shrFindMode, DrawStyle.Of(HColor.Green));
             }
             finally
             {
@@ -150,7 +150,7 @@ namespace DotNet.HalconUI
 
         private void but_ApplyRegion_Click(object sender, System.EventArgs e)
         {
-            eraseRect.SetUp(display, shrErase, shrFindMode, shrColor, shrLineWidth);
+            eraseRect.SetUp(display.Display, shrErase, shrFindMode, shrColor, shrLineWidth);
             _drawType = DrawEnum.Erase;
         }
 
@@ -163,27 +163,27 @@ namespace DotNet.HalconUI
             //display.DispImage(_srcImage);
 
             Point2d from = result.Coord.Center;
-            Point2d to = display.HoCentre;
+            Point2d to = display.Display.HoCentre;
 
             shrFindMode.Dispose();
             TransObject(from, to, ho_ModeRect, out shrFindMode);
-            //display.DispRegion(shrFindMode, HColor.Blue);
+            //display.Display.Disp(shrFindMode, DrawStyle.Of(HColor.Blue));
 
             _shrContour.Dispose();
             TransObject(from, to, ho_Contour, out _shrContour);
-            //display.DispRegion(_shrContour, HColor.Green);
+            //display.Display.Disp(_shrContour, DrawStyle.Of(HColor.Green));
 
-            HalconHelper.TransPixel(from, to, result.Row, result.Column, out HTuple rowTrans, out HTuple colTrans);
-            _shrCoord = new CvCoord(colTrans, rowTrans, result.Angle);
-            //display.DispCross(colTrans, rowTrans, result.Angle, HColor.Red);
+            Point2d centerTrans = HalconController.TransPoint(from, to, new Point2d(result.Column, result.Row));
+            _shrCoord = new CvCoord(centerTrans, Angle.FromRadians(result.Angle));
+            //display.Display.Disp(_shrCoord, DrawStyle.Of(HColor.Red));
 
             display.SetModelPara(shrFindMode, _shrContour, _shrCoord);
             _drawType = DrawEnum.DispModel;
 
             display.DispImage(_srcImage);
-            display.DispRegion(shrFindMode, HColor.Blue);
-            display.DispRegion(_shrContour, HColor.Green);
-            display.DispCross(colTrans, rowTrans, result.Angle, HColor.Red);
+            display.Display.Disp(shrFindMode, DrawStyle.Of(HColor.Blue));
+            display.Display.Disp(_shrContour, DrawStyle.Of(HColor.Green));
+            display.Display.Disp(_shrCoord, DrawStyle.Of(HColor.Red));
         }
 
         private static void TransObject(Point2d from, Point2d to, HObject obj, out HObject objTrans)
@@ -197,11 +197,11 @@ namespace DotNet.HalconUI
             HOperatorSet.GetObjClass(obj, out HTuple objClass);
             if (objClass.S.StartsWith("xld"))
             {
-                HalconHelper.TransContourXld(from, to, obj, out objTrans);
+                HalconController.TransContourXld(from, to, obj, out objTrans);
             }
             else
             {
-                HalconHelper.TransRegion(from, to, obj, out objTrans);
+                HalconController.TransRegion(from, to, obj, out objTrans);
             }
         }
 

@@ -53,7 +53,6 @@ namespace DotNet.HalconAlgo
             HObject regionGet; HOperatorSet.GenEmptyObj(out regionGet);
             HObject imgReduced; HOperatorSet.GenEmptyObj(out imgReduced);
             HObject contourFitting; HOperatorSet.GenEmptyObj(out contourFitting);
-            HObject arcContour; HOperatorSet.GenEmptyObj(out arcContour);
 
             try
             {
@@ -69,179 +68,109 @@ namespace DotNet.HalconAlgo
                 else
                     ho_Rect = strategys.ResolveFrom<HObject>(inPara.RegionIn);
 
-
-                HTuple fixRow = inPara.HoRect.Center.Y;
-                HTuple fixCol = inPara.HoRect.Center.X;
+                Point2d fixCenter = inPara.HoRect.Center;
                 if (inPara.CoordIn == "默认")
                 {
                     HOperatorSet.ReduceDomain(ho_Image, ho_Rect, out imgReduced);
-                    if (inPara.DispRegion) display.DispRegion(ho_Rect, HColor.Blue);
+                    if (inPara.DispRegion) display.Disp(ho_Rect, DrawStyle.Of(HColor.Blue));
                 }
                 else
                 {
                     var inCoord = strategys.ResolveFrom<CvCoord>(inPara.CoordIn);
                     var tmplPoint = strategys.ResolveFrom<Point2d>(inPara.CoordIn.ToTmplPoint());
-                    HalconHelper.TransRegion(tmplPoint, inCoord.Center, ho_Rect, out regionGet);
-                    HalconHelper.TransPixel(tmplPoint, inCoord.Center, fixRow, fixCol, out fixRow, out fixCol);
+                    HalconController.TransRegion(tmplPoint, inCoord.Center, ho_Rect, out regionGet);
+                    fixCenter = HalconController.TransPoint(tmplPoint, inCoord.Center, fixCenter);
 
                     HOperatorSet.ReduceDomain(ho_Image, regionGet, out imgReduced);
-                    if (inPara.DispRegion) display.DispRegion(regionGet, HColor.Blue);
+                    if (inPara.DispRegion) display.Disp(regionGet, DrawStyle.Of(HColor.Blue));
                 }
 
-                #region 变量
-                HTuple fixAgl = inPara.HoRect.Phi;
-                HTuple fixLen1 = inPara.HoRect.Width / 2;
-                HTuple fixLen2 = inPara.HoRect.Height / 2;
-                HTuple imgWid = display.HoWidth;
-                HTuple imgHei = display.HoHeight;
-                #endregion
-
                 #region 边缘查找
-                double stepPace = Convert.ToDouble(inPara.StepPace); if (stepPace < 1) stepPace = 1;
-                double stepWid = Convert.ToDouble(inPara.StepWidth) / 2; if (stepWid < 1) stepWid = 1;
-                string transition = inPara.GetTransition;
-                string select = inPara.GetContourType;
+                var setup = new EdgeMeasureSetup(
+                    fixCenter,
+                    Angle.FromRadians(inPara.HoRect.Phi.D),
+                    inPara.HoRect.Width / 2,
+                    inPara.HoRect.Height / 2,
+                    inPara.StepPace, inPara.StepWidth,
+                    inPara.Sigma, inPara.Threshold,
+                    inPara.GetTransition, inPara.GetContourType,
+                    (int)display.HoWidth, (int)display.HoHeight);
 
-                // 预先确定 MeasurePos 的 select 参数与取点下标，避免在循环内反复判断
-                string measureSelect = (select == "second") ? "all" : select;
-                int pickIndex = (select == "second") ? 1 : 0;
+                EdgeMeasureResult measured = EdgeMeasurePipeline.Run(imgReduced, setup);
+                List<Point2d> points = measured.Points;
 
-                int loop_cnt = (int)(fixLen2.D / stepPace + 0.5); if (loop_cnt < 1) loop_cnt = 1;
-                double cosLen2 = fixLen2 * Math.Cos(fixAgl) / loop_cnt;
-                double sinLen2 = fixLen2 * Math.Sin(fixAgl) / loop_cnt;
-
-                List<double> rowList = new List<double>(2 * loop_cnt + 1);
-                List<double> colList = new List<double>(2 * loop_cnt + 1);
-
-                for (int s = -loop_cnt; s <= loop_cnt; s++)
+                if (inPara.DispFixRegion)
                 {
-                    HTuple rowNew = fixRow + s * cosLen2;
-                    HTuple colNew = fixCol + s * sinLen2;
-
-                    HTuple hMHandle;
-                    HOperatorSet.GenMeasureRectangle2(rowNew, colNew, fixAgl, fixLen1, stepWid,
-                        imgWid, imgHei, "nearest_neighbor", out hMHandle);
-                    try
+                    foreach (Point2d rectCenter in measured.RectCenters)
                     {
-                        HTuple mRow, mCol, mAmp, mDis;
-                        HOperatorSet.MeasurePos(imgReduced, hMHandle, inPara.Sigma, inPara.Threshold,
-                            transition, measureSelect, out mRow, out mCol, out mAmp, out mDis);
-
-                        if (inPara.DispFixRegion)
-                        {
-                            display.DispRectangle2(rowNew, colNew, fixAgl, fixLen1, stepWid, HColor.Blue);
-                        }
-
-                        if (mRow.Length > pickIndex)
-                        {
-                            rowList.Add(mRow.TupleSelect(pickIndex).D);
-                            colList.Add(mCol.TupleSelect(pickIndex).D);
-                        }
-                    }
-                    finally
-                    {
-                        HOperatorSet.CloseMeasure(hMHandle);
+                        display.DispRect2(rectCenter, setup.Phi.Radians, setup.HalfLength, setup.HalfWidth,
+                            DrawStyle.Of(HColor.Blue));
                     }
                 }
                 #endregion
 
                 #region 拟合直线
-                if (rowList.Count < 2)
+                if (points.Count < MinFitPoints)
                 {
                     throw new InvalidOperationException("未找到足够的轮廓点！");
                 }
 
                 double maxErr = inPara.MaxErr; if (maxErr < 0) maxErr = 0;
+                var removed = new List<Point2d>();
 
-                List<double> rowRemoved = new List<double>();
-                List<double> colRemoved = new List<double>();
+                // 拟合结果：由下面的 refit 闭包更新，供残差函数与最终取值共用
+                HTuple rowBegin = 0, colBegin = 0, rowEnd = 0, colEnd = 0;
+                HTuple nr = 0, nc = 0, lineDist = 0;
 
-                #region Stage 1：gauss 鲁棒直线拟合
-                HTuple rowBegin, colBegin, rowEnd, colEnd, nr, nc, lineDist;
-                FitLineFromPoints(ref contourFitting, rowList, colList,
-                    out rowBegin, out colBegin, out rowEnd, out colEnd,
-                    out nr, out nc, out lineDist);
-                #endregion
-
-                #region Stage 2：依据最大偏差迭代精滤
-                if (maxErr > 0)
+                Action refit = () =>
                 {
-                    int safety = rowList.Count;
-                    for (int iter = 0; iter < safety; iter++)
-                    {
-                        double pn = nr.D, pc = nc.D, pd = lineDist.D;
-                        int worstIdx = -1;
-                        double worstErr = 0;
-                        for (int i = 0; i < rowList.Count; i++)
-                        {
-                            double err = Math.Abs(pn * rowList[i] + pc * colList[i] - pd);
-                            if (err > worstErr) { worstErr = err; worstIdx = i; }
-                        }
+                    RobustFitPipeline.GenContour(ref contourFitting, points);
+                    HOperatorSet.FitLineContourXld(contourFitting, "gauss", -1, 0, 5, 1.345,
+                        out rowBegin, out colBegin, out rowEnd, out colEnd, out nr, out nc, out lineDist);
+                };
 
-                        if (worstIdx < 0 || worstErr <= maxErr) break;
-                        if (rowList.Count <= 2) break;
+                // Stage 1：gauss 鲁棒直线拟合
+                refit();
 
-                        rowRemoved.Add(rowList[worstIdx]);
-                        colRemoved.Add(colList[worstIdx]);
-                        rowList.RemoveAt(worstIdx);
-                        colList.RemoveAt(worstIdx);
+                // Stage 2：依据最大偏差迭代精滤
+                RobustFitPipeline.Refine(points, removed, maxErr, MinFitPoints,
+                    pt => RobustFitPipeline.LineResidual(pt, nr.D, nc.D, lineDist.D), refit);
 
-                        FitLineFromPoints(ref contourFitting, rowList, colList,
-                            out rowBegin, out colBegin, out rowEnd, out colEnd,
-                            out nr, out nc, out lineDist);
-                    }
-                }
-
-                if (rowList.Count < 2)
+                if (points.Count < MinFitPoints)
                 {
                     throw new InvalidOperationException("最大偏差筛选后有效点不足，无法拟合直线！");
                 }
-                #endregion
 
-                #region Stage 3：可选裁剪筛选后首尾点并重新拟合
-                if (inPara.IsTrimEnds && rowList.Count >= 4)
+                // Stage 3：可选裁剪筛选后首尾点并重新拟合
+                if (inPara.IsTrimEnds &&
+                    RobustFitPipeline.TrimEnds(points, removed, MinFitPoints + 2))
                 {
-                    int last = rowList.Count - 1;
-                    rowRemoved.Add(rowList[0]);
-                    colRemoved.Add(colList[0]);
-                    rowRemoved.Add(rowList[last]);
-                    colRemoved.Add(colList[last]);
-
-                    rowList.RemoveAt(last);
-                    colList.RemoveAt(last);
-                    rowList.RemoveAt(0);
-                    colList.RemoveAt(0);
-
-                    FitLineFromPoints(ref contourFitting, rowList, colList,
-                        out rowBegin, out colBegin, out rowEnd, out colEnd,
-                        out nr, out nc, out lineDist);
+                    refit();
                 }
-                #endregion
 
                 inPara.Line = new CvLine(colBegin.D, rowBegin.D, colEnd.D, rowEnd.D);
-
                 #endregion
 
                 #region Display
 
                 if (inPara.DispFixPoint)
                 {
-                    for (int i = 0; i < rowRemoved.Count; i++)
+                    foreach (Point2d pt in removed)
                     {
-                        display.DispPoint(colRemoved[i], rowRemoved[i], HColor.Red, inPara.PointSize);
+                        display.Disp(pt, DrawStyle.Of(HColor.Red, inPara.PointSize));
                     }
-                    for (int i = 0; i < rowList.Count; i++)
+                    foreach (Point2d pt in points)
                     {
-                        display.DispPoint(colList[i], rowList[i], HColor.Green, inPara.PointSize);
+                        display.Disp(pt, DrawStyle.Of(HColor.Green, inPara.PointSize));
                     }
                 }
 
-                if (inPara.DispResult) display.DispArrow(inPara.Line, HColor.Red, 2);
+                if (inPara.DispResult) display.Disp(new CvArrow(inPara.Line, 2), DrawStyle.Of(HColor.Red));
 
                 if (inPara.DispText)
                 {
-                    string message = $"{Name} : 起点:({inPara.Line.Start.X:F2},{inPara.Line.Start.Y:F2}) 终点:({inPara.Line.End.X:F2},{inPara.Line.End.Y:F2}) 角度:{inPara.Line.AngleDegrees:F2}° 用点:{rowList.Count}";
-                    display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
+                    string message = $"{Name} : 起点:({inPara.Line.Start.X:F2},{inPara.Line.Start.Y:F2}) 终点:({inPara.Line.End.X:F2},{inPara.Line.End.Y:F2}) 角度:{inPara.Line.AngleDegrees:F2}° 用点:{points.Count}";
+                    display.DispText(message, new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Green, inPara.FontSize));
                 }
 
                 #endregion
@@ -253,22 +182,12 @@ namespace DotNet.HalconAlgo
                 regionGet.Dispose();
                 imgReduced.Dispose();
                 contourFitting.Dispose();
-                arcContour.Dispose();
             }
         }
 
-        /// <summary>
-        /// 重建轮廓并用 gauss 鲁棒直线拟合，得到端点与 Hesse 法线参数。
-        /// </summary>
-        private static void FitLineFromPoints(ref HObject contour, List<double> rowList, List<double> colList,
-            out HTuple rowBegin, out HTuple colBegin, out HTuple rowEnd, out HTuple colEnd,
-            out HTuple nr, out HTuple nc, out HTuple dist)
-        {
-            contour.Dispose();
-            HOperatorSet.GenContourPolygonXld(out contour, rowList.ToArray(), colList.ToArray());
-            HOperatorSet.FitLineContourXld(contour, "gauss", -1, 0, 5, 1.345,
-                out rowBegin, out colBegin, out rowEnd, out colEnd, out nr, out nc, out dist);
-        }
+        /// <summary> 拟合一条直线所需的最少点数 </summary>
+        private const int MinFitPoints = 2;
+
         public override void DispPara(Control form, Dictionary<string, VsControlModel> VsControls)
         {
             form.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Region, TabPageEnum.Display);
@@ -365,7 +284,7 @@ namespace DotNet.HalconAlgo
             }
             else display.DrawRegionMod(inPara.HoRect);
 
-            display.DispRegion(inPara.HoRect, HColor.Blue);
+            display.Display.Disp(inPara.HoRect, DrawStyle.Of(HColor.Blue));
             display.SetRectPara(inPara.HoRect);
         }
         public override void DispROI(HDisplayUI display)

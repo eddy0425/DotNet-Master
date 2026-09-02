@@ -17,11 +17,11 @@ namespace DotNet.HalconUI
         private HObject _erase;    //擦除区域 ShrErase
         private HObject _findMode; //查找模版区域 ShrFindMode
         private Phase _phase;
-        private string _color;
+        private HColor _color;
         private int _lineWidth;
-        private HDisplayUI _display;
+        private IHDisplay _display;
 
-        public void SetUp(HDisplayUI display, HObject shrErase, HObject shrFindMode, string color, int lineWidth)
+        public void SetUp(IHDisplay display, HObject shrErase, HObject shrFindMode, HColor color, int lineWidth)
         {
             //display.Reset();
             //display.ReDispImage();
@@ -33,7 +33,7 @@ namespace DotNet.HalconUI
             _lineWidth = lineWidth;
         }
 
-        public void SetPara(string color,int lineWidth)
+        public void SetPara(HColor color, int lineWidth)
         {
             _color = color;
             _lineWidth = lineWidth;
@@ -106,8 +106,8 @@ namespace DotNet.HalconUI
         {
             if (!_erase.NotNull()) return;
 
-            _display.SetDraw("fill");
-            _display.DispRegion(_erase, _color);
+            // 颜色与填充模式一并由 DrawStyle 描述，省掉一次单独的 SetDraw
+            _display.Disp(_erase, new DrawStyle { Color = _color, DrawMode = "fill" });
             _display.SetDraw("margin");
         }
 

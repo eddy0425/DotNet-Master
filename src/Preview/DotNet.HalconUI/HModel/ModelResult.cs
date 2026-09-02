@@ -38,7 +38,7 @@ namespace DotNet.HalconUI
         [JsonIgnore]
         public double ToDegrees { get { return Angle.ToDegrees(); } }
         [JsonIgnore]
-        public CvCoord Coord { get { return new CvCoord(Column, Row, Angle); } }
+        public CvCoord Coord { get { return new CvCoord(Column, Row, DotNet.Drawing.Angle.FromRadians(Angle)); } }
 
         #region Formatting
 

@@ -11,10 +11,10 @@ namespace DotNet.HalconUI
     /// </summary>
     public class DispRectMouse : IMouseHandler
     {
-        private HDisplayUI _display;
+        private IHDisplay _display;
         private CvRegion _shrRegion;
 
-        public void SetUp(HDisplayUI display, CvRegion shrRegion)
+        public void SetUp(IHDisplay display, CvRegion shrRegion)
         {
             _display = display;
             _shrRegion = shrRegion;
@@ -44,11 +44,11 @@ namespace DotNet.HalconUI
                 Point2d Center = _shrRegion.Center;
 
                 // 显示最终结果
-                //_display.DispPoint(TopLeft, HColor.OrangeRed, 50);
-                //_display.DispPoint(BottomRight, HColor.OrangeRed, 50);
-                _display.DispPoint(Center, HColor.Orange, 50);
+                //_display.Disp(TopLeft, DrawStyle.Of(HColor.OrangeRed, 50));
+                //_display.Disp(BottomRight, DrawStyle.Of(HColor.OrangeRed, 50));
+                _display.Disp(Center, DrawStyle.Of(HColor.Orange, 50));
 
-                _display.DispRegion(_shrRegion, HColor.Blue);
+                _display.Disp(_shrRegion, DrawStyle.Of(HColor.Blue));
             }
             catch (Exception ex)
             {

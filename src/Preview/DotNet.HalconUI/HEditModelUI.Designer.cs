@@ -69,11 +69,9 @@
             // 
             // display
             // 
-            this.display.Adaptive = true;
             this.display.Dock = System.Windows.Forms.DockStyle.Fill;
             this.display.HoMouseDouble = false;
             this.display.HoMouseDown = false;
-            this.display.IsCross = false;
             this.display.Location = new System.Drawing.Point(3, 3);
             this.display.Name = "display";
             this.display.Size = new System.Drawing.Size(397, 480);

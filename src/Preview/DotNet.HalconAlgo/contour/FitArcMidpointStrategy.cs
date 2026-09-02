@@ -134,8 +134,7 @@ namespace DotNet.HalconAlgo
                 else
                     ho_Rect = strategys.ResolveFrom<HObject>(inPara.RegionIn);
 
-                HTuple fixRow = inPara.HoRect.Center.Y;
-                HTuple fixCol = inPara.HoRect.Center.X;
+                Point2d fixCenter = inPara.HoRect.Center;
                 if (inPara.CoordIn == "默认")
                 {
                     imgReduced.Dispose();
@@ -147,73 +146,38 @@ namespace DotNet.HalconAlgo
                     var inCoord = strategys.ResolveFrom<CvCoord>(inPara.CoordIn);
                     var tmplPoint = strategys.ResolveFrom<Point2d>(inPara.CoordIn.ToTmplPoint());
                     regionGet.Dispose();
-                    HalconHelper.TransRegion(tmplPoint, inCoord.Center, ho_Rect, out regionGet);
-                    HalconHelper.TransPixel(tmplPoint, inCoord.Center, fixRow, fixCol, out fixRow, out fixCol);
+                    HalconController.TransRegion(tmplPoint, inCoord.Center, ho_Rect, out regionGet);
+                    fixCenter = HalconController.TransPoint(tmplPoint, inCoord.Center, fixCenter);
 
                     imgReduced.Dispose();
                     HOperatorSet.ReduceDomain(ho_Image, regionGet, out imgReduced);
                     render.SearchRegion = regionGet.Clone();
                 }
 
-                #region 变量
-                HTuple fixAgl = inPara.HoRect.Phi;
-                HTuple fixLen1 = inPara.HoRect.Width / 2;
-                HTuple fixLen2 = inPara.HoRect.Height / 2;
-                HOperatorSet.GetImageSize(ho_Image, out HTuple imgWid, out HTuple imgHei);
-                #endregion
-
                 #region 边缘查找
-                double stepPace = Convert.ToDouble(inPara.StepPace); if (stepPace < 1) stepPace = 1;
-                double stepWid = Convert.ToDouble(inPara.StepWidth) / 2; if (stepWid < 1) stepWid = 1;
-                string transition = inPara.GetTransition;
-                string select = inPara.GetContourType;
+                HOperatorSet.GetImageSize(ho_Image, out HTuple imgWid, out HTuple imgHei);
 
-                // 预先确定 MeasurePos 的 select 参数与取点下标，避免在循环内反复判断
-                string measureSelect = (select == "second") ? "all" : select;
-                int pickIndex = (select == "second") ? 1 : 0;
+                var setup = new EdgeMeasureSetup(
+                    fixCenter,
+                    Angle.FromRadians(inPara.HoRect.Phi.D),
+                    inPara.HoRect.Width / 2,
+                    inPara.HoRect.Height / 2,
+                    inPara.StepPace, inPara.StepWidth,
+                    inPara.Sigma, inPara.Threshold,
+                    inPara.GetTransition, inPara.GetContourType,
+                    imgWid.I, imgHei.I);
 
-                int loop_cnt = (int)(fixLen2.D / stepPace + 0.5); if (loop_cnt < 1) loop_cnt = 1;
-                double cosLen2 = fixLen2 * Math.Cos(fixAgl) / loop_cnt;
-                double sinLen2 = fixLen2 * Math.Sin(fixAgl) / loop_cnt;
+                EdgeMeasureResult measured = EdgeMeasurePipeline.Run(imgReduced, setup);
+                List<Point2d> points = measured.Points;
 
-                render.MeasurePhi = fixAgl.D;
-                render.MeasureLen1 = fixLen1.D;
-                render.MeasureLen2 = stepWid;
-
-                var rowList = new List<double>(2 * loop_cnt + 1);
-                var colList = new List<double>(2 * loop_cnt + 1);
-
-                for (int s = -loop_cnt; s <= loop_cnt; s++)
-                {
-                    HTuple rowNew = fixRow + s * cosLen2;
-                    HTuple colNew = fixCol + s * sinLen2;
-                    render.MeasureRows.Add(rowNew.D);
-                    render.MeasureCols.Add(colNew.D);
-
-                    HTuple hMHandle;
-                    HOperatorSet.GenMeasureRectangle2(rowNew, colNew, fixAgl, fixLen1, stepWid,
-                        imgWid, imgHei, "nearest_neighbor", out hMHandle);
-                    try
-                    {
-                        HTuple mRow, mCol, mAmp, mDis;
-                        HOperatorSet.MeasurePos(imgReduced, hMHandle, inPara.Sigma, inPara.Threshold,
-                            transition, measureSelect, out mRow, out mCol, out mAmp, out mDis);
-
-                        if (mRow.Length > pickIndex)
-                        {
-                            rowList.Add(mRow.TupleSelect(pickIndex).D);
-                            colList.Add(mCol.TupleSelect(pickIndex).D);
-                        }
-                    }
-                    finally
-                    {
-                        HOperatorSet.CloseMeasure(hMHandle);
-                    }
-                }
+                render.MeasurePoints = measured.RectCenters;
+                render.MeasurePhi = measured.Phi;
+                render.MeasureLen1 = measured.HalfLength;
+                render.MeasureLen2 = measured.HalfWidth;
                 #endregion
 
                 #region 拟合圆弧中点
-                if (rowList.Count < 3)
+                if (points.Count < MinFitPoints)
                 {
                     throw new InvalidOperationException("未找到足够的轮廓点！");
                 }
@@ -222,118 +186,78 @@ namespace DotNet.HalconAlgo
                 // 直线粗滤阈值适度放宽以容纳弧的凸量 (sagitta)
                 double lineGate = Math.Max(maxErr * LineGateErrScale, LineGateMinPixels);
 
-                var rowRemoved = new List<double>();
-                var colRemoved = new List<double>();
+                var removed = new List<Point2d>();
 
                 #region Stage 1：gauss 鲁棒直线拟合剔除严重跑偏的点
-                contourFitting.Dispose();
-                HOperatorSet.GenContourPolygonXld(out contourFitting, rowList.ToArray(), colList.ToArray());
+                RobustFitPipeline.GenContour(ref contourFitting, points);
 
                 HTuple lineRowBegin, lineColBegin, lineRowEnd, lineColEnd, lineNr, lineNc, lineDist;
                 HOperatorSet.FitLineContourXld(contourFitting, "gauss", -1, 0, 5, 1.345,
                     out lineRowBegin, out lineColBegin, out lineRowEnd, out lineColEnd,
                     out lineNr, out lineNc, out lineDist);
 
-                // 使用 Hesse 形式在 C# 侧直接算点到直线距离，省去循环内的 Halcon 调用
+                // 用 Hesse 形式在 C# 侧直接算点到直线距离，省去循环内的 Halcon 调用
                 double nr = lineNr.D, nc = lineNc.D, nd = lineDist.D;
-                for (int i = rowList.Count - 1; i >= 0; i--)
-                {
-                    double dist = Math.Abs(nr * rowList[i] + nc * colList[i] - nd);
-                    if (dist > lineGate)
-                    {
-                        rowRemoved.Add(rowList[i]);
-                        colRemoved.Add(colList[i]);
-                        rowList.RemoveAt(i);
-                        colList.RemoveAt(i);
-                    }
-                }
+                RobustFitPipeline.RemoveOutliers(points, removed, lineGate,
+                    pt => RobustFitPipeline.LineResidual(pt, nr, nc, nd));
 
-                if (rowList.Count < 3)
+                if (points.Count < MinFitPoints)
                 {
                     throw new InvalidOperationException("直线粗滤后有效点不足，无法拟合圆弧！");
                 }
                 #endregion
 
                 #region Stage 2：atukey 圆拟合 + 径向距离迭代精滤
-                HTuple circRow, circCol, circRadius, circStartPhi, circEndPhi, circPointOrder;
-                FitArcFromPoints(ref contourFitting, rowList, colList,
-                    out circRow, out circCol, out circRadius,
-                    out circStartPhi, out circEndPhi, out circPointOrder);
+                // 拟合结果：由下面的 refit 闭包更新，供残差函数与最终取值共用
+                HTuple circRow = 0, circCol = 0, circRadius = 0;
+                HTuple circStartPhi = 0, circEndPhi = 0, circPointOrder = "positive";
 
-                int safety = rowList.Count;
-                for (int iter = 0; iter < safety; iter++)
+                Action refit = () =>
                 {
-                    double cr = circRow.D, cc = circCol.D, rad = circRadius.D;
-                    int worstIdx = -1;
-                    double worstErr = 0;
-                    for (int i = 0; i < rowList.Count; i++)
-                    {
-                        double dRow = rowList[i] - cr;
-                        double dCol = colList[i] - cc;
-                        double err = Math.Abs(Math.Sqrt(dRow * dRow + dCol * dCol) - rad);
-                        if (err > worstErr) { worstErr = err; worstIdx = i; }
-                    }
-
-                    if (worstIdx < 0 || worstErr <= maxErr) break;
-                    if (rowList.Count <= 3) break;
-
-                    rowRemoved.Add(rowList[worstIdx]);
-                    colRemoved.Add(colList[worstIdx]);
-                    rowList.RemoveAt(worstIdx);
-                    colList.RemoveAt(worstIdx);
-
-                    FitArcFromPoints(ref contourFitting, rowList, colList,
+                    RobustFitPipeline.GenContour(ref contourFitting, points);
+                    HOperatorSet.FitCircleContourXld(contourFitting, "atukey", -1, 0, 0, 5, 2,
                         out circRow, out circCol, out circRadius,
                         out circStartPhi, out circEndPhi, out circPointOrder);
-                }
+                };
 
-                if (rowList.Count < 3)
+                refit();
+
+                RobustFitPipeline.Refine(points, removed, maxErr, MinFitPoints,
+                    pt => RobustFitPipeline.CircleResidual(pt, circRow.D, circCol.D, circRadius.D), refit);
+
+                if (points.Count < MinFitPoints)
                 {
                     throw new InvalidOperationException("最大偏差筛选后有效点不足，无法拟合圆弧！");
                 }
                 #endregion
 
                 #region Stage 3：可选裁剪筛选后首尾点并重新拟合
-                if (inPara.IsTrimEnds && rowList.Count >= 5)
+                if (inPara.IsTrimEnds &&
+                    RobustFitPipeline.TrimEnds(points, removed, MinFitPoints + 2))
                 {
-                    int last = rowList.Count - 1;
-                    rowRemoved.Add(rowList[0]);
-                    colRemoved.Add(colList[0]);
-                    rowRemoved.Add(rowList[last]);
-                    colRemoved.Add(colList[last]);
-
-                    rowList.RemoveAt(last);
-                    colList.RemoveAt(last);
-                    rowList.RemoveAt(0);
-                    colList.RemoveAt(0);
-
-                    FitArcFromPoints(ref contourFitting, rowList, colList,
-                        out circRow, out circCol, out circRadius,
-                        out circStartPhi, out circEndPhi, out circPointOrder);
+                    refit();
                 }
                 #endregion
 
-                double arcMidPhi = ComputeArcMidPhi(circStartPhi.D, circEndPhi.D, circPointOrder.S);
-                double midRow = circRow.D - circRadius.D * Math.Sin(arcMidPhi);
-                double midCol = circCol.D + circRadius.D * Math.Cos(arcMidPhi);
+                Angle arcMidPhi = ComputeArcMidPhi(
+                    Angle.FromRadians(circStartPhi.D), Angle.FromRadians(circEndPhi.D), circPointOrder.S);
+                double midRow = circRow.D - circRadius.D * Math.Sin(arcMidPhi.Radians);
+                double midCol = circCol.D + circRadius.D * Math.Cos(arcMidPhi.Radians);
                 inPara.ArcMidpoint = new Point2d(midCol, midRow);
 
                 #endregion
 
                 #region 显示数据
 
-                render.UsedRows = rowList;
-                render.UsedCols = colList;
-                render.RemovedRows = rowRemoved;
-                render.RemovedCols = colRemoved;
+                render.UsedPoints = points;
+                render.RemovedPoints = removed;
 
                 HOperatorSet.GenCircleContourXld(out HObject arcContour, circRow, circCol, circRadius, circStartPhi, circEndPhi, circPointOrder, 1);
                 render.ArcContour = arcContour;
 
-                render.MidRow = midRow;
-                render.MidCol = midCol;
+                render.Midpoint = inPara.ArcMidpoint;
                 render.HasMidpoint = true;
-                render.Message = $"{Name} : 中点:({inPara.ArcMidpoint.X:F2},{inPara.ArcMidpoint.Y:F2}) 半径:{circRadius.D:F2} 用点:{rowList.Count}";
+                render.Message = $"{Name} : 中点:({inPara.ArcMidpoint.X:F2},{inPara.ArcMidpoint.Y:F2}) 半径:{circRadius.D:F2} 用点:{points.Count}";
 
                 #endregion
 
@@ -348,37 +272,29 @@ namespace DotNet.HalconAlgo
             }
         }
 
-        /// <summary>
-        /// 重建轮廓并用 atukey 鲁棒圆拟合，得到圆心/半径/起止角与点序。
-        /// </summary>
-        private static void FitArcFromPoints(ref HObject contour, List<double> rowList, List<double> colList,
-            out HTuple circRow, out HTuple circCol, out HTuple circRadius,
-            out HTuple circStartPhi, out HTuple circEndPhi, out HTuple circPointOrder)
-        {
-            contour.Dispose();
-            HOperatorSet.GenContourPolygonXld(out contour, rowList.ToArray(), colList.ToArray());
-            HOperatorSet.FitCircleContourXld(contour, "atukey", -1, 0, 0, 5, 2,
-                out circRow, out circCol, out circRadius,
-                out circStartPhi, out circEndPhi, out circPointOrder);
-        }
+        /// <summary> 拟合一段圆弧所需的最少点数 </summary>
+        private const int MinFitPoints = 3;
 
         /// <summary>
         /// 根据拟合得到的起止角与点序，计算弧段中点所在角度（Halcon 图像坐标系）。
         /// </summary>
-        private static double ComputeArcMidPhi(double startPhi, double endPhi, string pointOrder)
+        private static Angle ComputeArcMidPhi(Angle startPhi, Angle endPhi, string pointOrder)
         {
             const double twoPi = 2 * Math.PI;
+            double start = startPhi.Radians;
+            double end = endPhi.Radians;
+
             if (pointOrder == "positive")
             {
-                double span = endPhi - startPhi;
+                double span = end - start;
                 if (span < 0) span += twoPi;
-                return startPhi + span * 0.5;
+                return Angle.FromRadians(start + span * 0.5);
             }
             else
             {
-                double span = startPhi - endPhi;
+                double span = start - end;
                 if (span < 0) span += twoPi;
-                return startPhi - span * 0.5;
+                return Angle.FromRadians(start - span * 0.5);
             }
         }
         public override void DispPara(Control form, Dictionary<string, VsControlModel> VsControls)
@@ -478,7 +394,7 @@ namespace DotNet.HalconAlgo
             }
             else display.DrawRegionMod(inPara.HoRect);
 
-            display.DispRegion(inPara.HoRect, HColor.Blue);
+            display.Display.Disp(inPara.HoRect, DrawStyle.Of(HColor.Blue));
             display.SetRectPara(inPara.HoRect);
         }
         public override void DispROI(HDisplayUI display)

@@ -32,7 +32,7 @@ namespace DotNet.HalconAlgo
             RegisterOutput("坐标系/原点", () => inPara.Coord.Center);
             RegisterOutput("坐标系/原点/行", () => inPara.Coord.Y);
             RegisterOutput("坐标系/原点/列", () => inPara.Coord.X);
-            RegisterOutput("坐标系/角度", () => inPara.Coord.Angle);
+            RegisterOutput("坐标系/角度", () => inPara.Coord.Angle.Radians);
             RegisterOutput("区域", () => inPara.HoRect);
 
         }
@@ -48,22 +48,22 @@ namespace DotNet.HalconAlgo
                 if (inPara.CoordIn == "默认")
                 {
                     inPara.Coord = new CvCoord(ho_ROI.Center);
-                    if (inPara.DispRegion) display.DispRegion(ho_ROI, HColor.Blue);
+                    if (inPara.DispRegion) display.Disp(ho_ROI, DrawStyle.Of(HColor.Blue));
                 }
                 else
                 {
                     var inCoord = strategys.ResolveFrom<CvCoord>(inPara.CoordIn);
                     var tmplPoint = strategys.ResolveFrom<Point2d>(inPara.CoordIn.ToTmplPoint());
-                    HalconHelper.TransRegion(tmplPoint, inCoord.Center, ho_ROI.HoRegion, out regionGet);
+                    HalconController.TransRegion(tmplPoint, inCoord.Center, ho_ROI.HoRegion, out regionGet);
                     HOperatorSet.AreaCenter(regionGet, out _, out HTuple row, out HTuple column);
                     inPara.Coord = new CvCoord(new Point2d(column, row));
-                    if (inPara.DispRegion) display.DispRegion(regionGet, HColor.Blue);
+                    if (inPara.DispRegion) display.Disp(regionGet, DrawStyle.Of(HColor.Blue));
                 }
 
                 if (inPara.DispText)
                 {
                     string message = $"{Name} : 中心:({inPara.Coord.X:F2},{inPara.Coord.Y:F2}) 宽:{ho_ROI.Width:F0} 高:{ho_ROI.Height:F0} 跟随坐标:{inPara.CoordIn}";
-                    display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
+                    display.DispText(message, new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Green, inPara.FontSize));
                 }
 
                 return true;
@@ -115,7 +115,7 @@ namespace DotNet.HalconAlgo
             }
             else display.DrawRegionMod(inPara.HoRect);
 
-            display.DispRegion(inPara.HoRect, HColor.Blue);
+            display.Display.Disp(inPara.HoRect, DrawStyle.Of(HColor.Blue));
             display.SetRectPara(inPara.HoRect);
         }
         public override void DispROI(HDisplayUI display)

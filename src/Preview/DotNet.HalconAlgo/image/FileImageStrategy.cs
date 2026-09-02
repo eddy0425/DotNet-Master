@@ -33,7 +33,7 @@ namespace DotNet.HalconAlgo
             {
                 if (ImagePaths == null)
                 {
-                    ImagePaths = HalconHelper.GetPaths(inPara.ImageFolder);
+                    ImagePaths = HalconController.GetPaths(inPara.ImageFolder);
                 }
 
                 if (Index >= ImagePaths.Length) Index = 0;
@@ -82,7 +82,7 @@ namespace DotNet.HalconAlgo
                 if (inPara.DispText)
                 {
                     string message = $"{Name} : W:{display.HoWidth} H:{display.HoHeight} 索引:{Index}/{ImagePaths.Length}";
-                    display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
+                    display.DispText(message, new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Green, inPara.FontSize));
                 }
 
                 Index++;
@@ -129,7 +129,7 @@ namespace DotNet.HalconAlgo
                 // Init 可能被重复调用，先释放上一次的句柄再重建，避免累积泄漏
                 inPara.Image?.Dispose();
                 HOperatorSet.GenEmptyObj(out inPara.Image);
-                ImagePaths = HalconHelper.GetPaths(inPara.ImageFolder);
+                ImagePaths = HalconController.GetPaths(inPara.ImageFolder);
             }
             catch (Exception ex)
             {

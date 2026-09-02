@@ -15,7 +15,7 @@ namespace DotNet.HalconUI
         bool _disposed;
 
         /// <summary>
-        /// 当前显示的图像。所有权由调用方（<see cref="HDisplayCore"/>）持有，本类只引用，不负责释放。
+        /// 当前显示的图像。所有权由调用方（<see cref="HDisplay"/>）持有，本类只引用，不负责释放。
         /// </summary>
         public HObject HoImage { get; private set; }
         public double HoWidth { get { return getInfo.width; } }

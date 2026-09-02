@@ -1,4 +1,4 @@
-using DotNet.Drawing;
+﻿using DotNet.Drawing;
 using DotNet.HalconUI;
 using HalconDotNet;
 using System;
@@ -61,23 +61,30 @@ namespace DotNet.HalconAlgo
         public HObject ArcContour;
 
         /// <summary> 逐步测量矩形中心（拟合区域，蓝），姿态与尺寸各步相同 </summary>
-        public List<double> MeasureRows = new List<double>();
-        public List<double> MeasureCols = new List<double>();
-        public double MeasurePhi;
+        /// <remarks>
+        /// 这里以及下面几组点集都用 <see cref="Point2d"/>(X=列, Y=行)，
+        /// 不再是并行的 rows / cols 两条 <c>List&lt;double&gt;</c>（审查项 C1）：
+        /// 两条并行列表既无法保证等长，也让「哪个是行哪个是列」只能靠变量名约定。
+        /// </remarks>
+        public List<Point2d> MeasurePoints = new List<Point2d>();
+
+        /// <summary> 测量矩形姿态 </summary>
+        public Angle MeasurePhi;
+
+        /// <summary> 测量矩形半长（Halcon Length1） </summary>
         public double MeasureLen1;
+
+        /// <summary> 测量矩形半宽（Halcon Length2） </summary>
         public double MeasureLen2;
 
         /// <summary> 参与拟合的点（绿） </summary>
-        public List<double> UsedRows = new List<double>();
-        public List<double> UsedCols = new List<double>();
+        public List<Point2d> UsedPoints = new List<Point2d>();
 
         /// <summary> 被剔除的点（红） </summary>
-        public List<double> RemovedRows = new List<double>();
-        public List<double> RemovedCols = new List<double>();
+        public List<Point2d> RemovedPoints = new List<Point2d>();
 
         /// <summary> 圆弧中点（橙红），HasMidpoint 为 true 时有效 </summary>
-        public double MidRow;
-        public double MidCol;
+        public Point2d Midpoint;
         public bool HasMidpoint;
 
         /// <summary> 结果文本（绿），拟合失败时为 null </summary>
@@ -102,38 +109,38 @@ namespace DotNet.HalconAlgo
         {
             if (ShowRegion && SearchRegion != null)
             {
-                display.DispRegion(SearchRegion, HColor.Blue);
+                display.Disp(SearchRegion, DrawStyle.Of(HColor.Blue));
             }
 
             if (ShowFixRegion)
             {
-                for (int i = 0; i < MeasureRows.Count; i++)
+                foreach (Point2d center in MeasurePoints)
                 {
-                    display.DispRectangle2(MeasureRows[i], MeasureCols[i], MeasurePhi, MeasureLen1, MeasureLen2, HColor.Blue);
+                    display.DispRect2(center, MeasurePhi.Radians, MeasureLen1, MeasureLen2, DrawStyle.Of(HColor.Blue));
                 }
             }
 
             if (ShowPoints)
             {
-                for (int i = 0; i < RemovedRows.Count; i++)
+                foreach (Point2d pt in RemovedPoints)
                 {
-                    display.DispPoint(RemovedCols[i], RemovedRows[i], HColor.Red, PointSize);
+                    display.Disp(pt, DrawStyle.Of(HColor.Red, PointSize));
                 }
-                for (int i = 0; i < UsedRows.Count; i++)
+                foreach (Point2d pt in UsedPoints)
                 {
-                    display.DispPoint(UsedCols[i], UsedRows[i], HColor.Green, PointSize);
+                    display.Disp(pt, DrawStyle.Of(HColor.Green, PointSize));
                 }
             }
 
             if (ShowResult)
             {
-                if (ArcContour != null) display.DispRegion(ArcContour, HColor.Red);
-                if (HasMidpoint) display.DispPoint(MidCol, MidRow, HColor.OrangeRed, PointSize + 50);
+                if (ArcContour != null) display.Disp(ArcContour, DrawStyle.Of(HColor.Red));
+                if (HasMidpoint) display.Disp(Midpoint, DrawStyle.Of(HColor.OrangeRed, PointSize + 50));
             }
 
             if (ShowText && !string.IsNullOrEmpty(Message))
             {
-                display.DispText(Message, FontX, FontY, FontSize, HColor.Green);
+                display.DispText(Message, new Point2d(FontX, FontY), DrawStyle.Of(HColor.Green, FontSize));
             }
         }
 

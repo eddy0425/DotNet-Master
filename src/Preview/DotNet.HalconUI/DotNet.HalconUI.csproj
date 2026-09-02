@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -70,7 +70,6 @@
     <Compile Include="HWindows\HMouse\Handlers\DispModelMouse.cs" />
     <Compile Include="HWindows\HMouse\Handlers\DispRectMouse.cs" />
     <Compile Include="HWindows\HMouse\IMouseHandler.cs" />
-    <Compile Include="HWindows\HDisplayCore.cs" />
     <Compile Include="HWindows\HWindowImage.cs" />
     <Compile Include="HWindows\HWindowMouse.cs" />
     <Compile Include="HModelUI.cs">

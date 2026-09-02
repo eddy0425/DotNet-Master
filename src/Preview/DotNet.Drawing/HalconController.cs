@@ -7,12 +7,12 @@ using System.Collections.Generic;
 
 namespace DotNet.Drawing
 {
-    public class HalconController
+    public static class HalconController
     {
         /// <summary>
         /// 获取文件路径
         /// </summary>
-        public string[] GetPaths(string imageFolder)
+        public static string[] GetPaths(string imageFolder)
         {
             var imagePaths = Directory.GetFiles(imageFolder);
             if (imagePaths.Length == 0)
@@ -38,26 +38,13 @@ namespace DotNet.Drawing
             return sorted;
         }
 
-        /// <summary>
-        /// 计算两点的中心点
-        /// </summary>
-        public Point2d Cal2P(double x1, double y1, double x2, double y2)
-        {
-            return new Point2d((x1 + x2) / 2, (y1 + y2) / 2);
-        }
-
-        /// <summary>
-        /// 计算两点之间的距离是否小于阈值
-        /// </summary>
-        public bool IsNearPoint(double x1, double y1, double x2, double y2, double threshold = 3)
-        {
-            return Math.Abs(x1 - x2) < threshold && Math.Abs(y1 - y2) < threshold;
-        }
+        // 已删除 Cal2P / IsNearPoint：两者都是散着 4 个 double 的裸坐标 API（C1 要消除的形态），
+        // 且全工程无调用方，功能分别等价于 Point2d.Lerp(other, 0.5) 与 Point2d.DistanceTo。
 
         /// <summary>
         /// 根据点坐标生成 XLD 轮廓 (Point2d: X=Column, Y=Row)
         /// </summary>
-        public void GenContours(List<Point2d> points, out HObject contour)
+        public static void GenContours(List<Point2d> points, out HObject contour)
         {
             HOperatorSet.GenEmptyObj(out contour);
             if (points == null || points.Count < 2) return;
@@ -86,99 +73,121 @@ namespace DotNet.Drawing
             }
         }
 
-        /// <summary>
-        /// 根据行点和列点生成多边形
-        /// </summary>
-        /// <param name="rowPoints">行点</param>
-        /// <param name="columnPoints">列点</param>
-        /// <returns>多边形</returns>
-        public List<Point2d>? GetPolygons(double[] rowPoints, double[] columnPoints)
-        {
-            if (rowPoints.Length != columnPoints.Length) return null;
-
-            var polygons = new List<Point2d>();
-
-            for (int i = 0; i < rowPoints.Length; i++)
-            {
-                polygons.Add(new Point2d(columnPoints[i], rowPoints[i]));
-            }
-
-            return polygons;
-        }
-
         #region AffineTrans
 
         /// <summary> 获取仿射变换矩阵 </summary>
-        public void VectorAngleToRigid(Point2d point, Point2d pointTrans, out HTuple hv_HomMat2D)
+        public static void VectorAngleToRigid(Point2d point, Point2d pointTrans, out HTuple hv_HomMat2D)
         {
             HOperatorSet.VectorAngleToRigid(point.Y, point.X, 0, pointTrans.Y, pointTrans.X, 0, out hv_HomMat2D);
         }
 
         /// <summary> 获取仿射变换矩阵 </summary>
-        public void VectorAngleToRigid(CvCoord coord, CvCoord coordTrans, out HTuple hv_HomMat2D)
+        public static void VectorAngleToRigid(CvCoord coord, CvCoord coordTrans, out HTuple hv_HomMat2D)
         {
-            // CvCoord.Angle 已是弧度，vector_angle_to_rigid 也要求弧度，不可再做角度→弧度转换
-            HOperatorSet.VectorAngleToRigid(coord.Y, coord.X, coord.Angle,
-                                            coordTrans.Y, coordTrans.X, coordTrans.Angle,
+            // vector_angle_to_rigid 要求弧度；CvCoord.Angle 是强类型 Angle，取 .Radians 即可，
+            // 不存在也不可能再出现「多补一次 ToRadians」的单位错误（B5）。
+            HOperatorSet.VectorAngleToRigid(coord.Y, coord.X, coord.Angle.Radians,
+                                            coordTrans.Y, coordTrans.X, coordTrans.Angle.Radians,
                                             out hv_HomMat2D);
         }
 
-        /// <summary> 获取仿射变换点 </summary>
-        public void TransPixel(Point2d point, Point2d pointTrans, HTuple row, HTuple col, out HTuple rowTrans, out HTuple colTrans)
+        /// <summary>
+        /// 按刚体变换映射单点
+        /// </summary>
+        /// <remarks>
+        /// 对应审查项 C1：对外只认 <see cref="Point2d"/>(X, Y)，HALCON 的 (Row, Column) 顺序
+        /// 只在本方法内部翻转一次。原来的 <c>TransPixel(..., HTuple row, HTuple col, out ...)</c>
+        /// 把行列序暴露给了每一个调用方，且两端都是 <c>HTuple</c>，传反了编译器不会报错。
+        /// </remarks>
+        public static Point2d TransPoint(Point2d origin, Point2d target, Point2d source)
         {
-            VectorAngleToRigid(point, pointTrans, out HTuple hv_HomMat2D);
-            HOperatorSet.AffineTransPixel(hv_HomMat2D, row, col, out rowTrans, out colTrans);
+            VectorAngleToRigid(origin, target, out HTuple hv_HomMat2D);
+            return AffineTransPoint(hv_HomMat2D, source);
         }
 
-        /// <summary> 获取仿射变换点 </summary>
-        public void TransPixel(CvCoord coord, CvCoord coordTrans, HTuple row, HTuple col, out HTuple rowTrans, out HTuple colTrans)
+        /// <summary> 按刚体变换映射单点（含旋转） </summary>
+        public static Point2d TransPoint(CvCoord origin, CvCoord target, Point2d source)
         {
-            VectorAngleToRigid(coord, coordTrans, out HTuple hv_HomMat2D);
-            HOperatorSet.AffineTransPixel(hv_HomMat2D, row, col, out rowTrans, out colTrans);
+            VectorAngleToRigid(origin, target, out HTuple hv_HomMat2D);
+            return AffineTransPoint(hv_HomMat2D, source);
+        }
+
+        /// <summary> 按刚体变换批量映射点 </summary>
+        public static Point2d[] TransPoints(Point2d origin, Point2d target, IReadOnlyList<Point2d> sources)
+        {
+            VectorAngleToRigid(origin, target, out HTuple hv_HomMat2D);
+            return AffineTransPoints(hv_HomMat2D, sources);
+        }
+
+        /// <summary> 按刚体变换批量映射点（含旋转） </summary>
+        public static Point2d[] TransPoints(CvCoord origin, CvCoord target, IReadOnlyList<Point2d> sources)
+        {
+            VectorAngleToRigid(origin, target, out HTuple hv_HomMat2D);
+            return AffineTransPoints(hv_HomMat2D, sources);
+        }
+
+        /// <summary>
+        /// (X, Y) → HALCON (Row, Column) 的唯一翻转点：单点。
+        /// </summary>
+        private static Point2d AffineTransPoint(HTuple homMat2D, Point2d source)
+        {
+            HOperatorSet.AffineTransPixel(homMat2D, source.Y, source.X, out HTuple rowTrans, out HTuple colTrans);
+            return new Point2d(colTrans.D, rowTrans.D);
+        }
+
+        /// <summary>
+        /// (X, Y) → HALCON (Row, Column) 的唯一翻转点：点集。
+        /// </summary>
+        private static Point2d[] AffineTransPoints(HTuple homMat2D, IReadOnlyList<Point2d> sources)
+        {
+            if (sources == null) throw new ArgumentNullException(nameof(sources));
+            if (sources.Count == 0) return new Point2d[0];
+
+            double[] rows = new double[sources.Count];
+            double[] cols = new double[sources.Count];
+            for (int i = 0; i < sources.Count; i++)
+            {
+                rows[i] = sources[i].Y;
+                cols[i] = sources[i].X;
+            }
+
+            HOperatorSet.AffineTransPixel(homMat2D, new HTuple(rows), new HTuple(cols),
+                                          out HTuple rowTrans, out HTuple colTrans);
+
+            var result = new Point2d[sources.Count];
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = new Point2d(colTrans[i].D, rowTrans[i].D);
+            }
+            return result;
         }
 
         /// <summary> 获取仿射变换区域 </summary>
-        public void TransRegion(Point2d point, Point2d pointTrans, HObject region, out HObject regionTrans)
+        public static void TransRegion(Point2d point, Point2d pointTrans, HObject region, out HObject regionTrans)
         {
             VectorAngleToRigid(point, pointTrans, out HTuple hv_HomMat2D);
             HOperatorSet.AffineTransRegion(region, out regionTrans, hv_HomMat2D, "nearest_neighbor");
         }
 
         /// <summary> 获取仿射变换区域 </summary>
-        public void TransRegion(CvCoord coord, CvCoord coordTrans, HObject region, out HObject regionTrans)
+        public static void TransRegion(CvCoord coord, CvCoord coordTrans, HObject region, out HObject regionTrans)
         {
             VectorAngleToRigid(coord, coordTrans, out HTuple hv_HomMat2D);
             HOperatorSet.AffineTransRegion(region, out regionTrans, hv_HomMat2D, "nearest_neighbor");
         }
 
         /// <summary> 获取仿射变换轮廓 </summary>
-        public void TransContourXld(Point2d point, Point2d pointTrans, HObject contours, out HObject contoursTrans)
+        public static void TransContourXld(Point2d point, Point2d pointTrans, HObject contours, out HObject contoursTrans)
         {
             VectorAngleToRigid(point, pointTrans, out HTuple hv_HomMat2D);
             HOperatorSet.AffineTransContourXld(contours, out contoursTrans, hv_HomMat2D);
         }
 
         /// <summary> 获取仿射变换轮廓 </summary>
-        public void TransContourXld(CvCoord coord, CvCoord coordTrans, HObject contours, out HObject contoursTrans)
+        public static void TransContourXld(CvCoord coord, CvCoord coordTrans, HObject contours, out HObject contoursTrans)
         {
             VectorAngleToRigid(coord, coordTrans, out HTuple hv_HomMat2D);
             HOperatorSet.AffineTransContourXld(contours, out contoursTrans, hv_HomMat2D);
-        }
-
-        /// <summary> 获取仿射变换区域和点 </summary>
-        public void TransRegionAndPixel(Point2d point, Point2d pointTrans, HObject inRegion, out HObject outRegion, HTuple row, HTuple col, out HTuple rowTrans, out HTuple colTrans)
-        {
-            VectorAngleToRigid(point, pointTrans, out HTuple hv_HomMat2D);
-            HOperatorSet.AffineTransRegion(inRegion, out outRegion, hv_HomMat2D, "nearest_neighbor");
-            HOperatorSet.AffineTransPixel(hv_HomMat2D, row, col, out rowTrans, out colTrans);
-        }
-
-        /// <summary> 获取仿射变换区域和点 </summary>
-        public void TransRegionAndPixel(CvCoord coord, CvCoord coordTrans, HObject inRegion, out HObject outRegion, HTuple row, HTuple col, out HTuple rowTrans, out HTuple colTrans)
-        {
-            VectorAngleToRigid(coord, coordTrans, out HTuple hv_HomMat2D);
-            HOperatorSet.AffineTransRegion(inRegion, out outRegion, hv_HomMat2D, "nearest_neighbor");
-            HOperatorSet.AffineTransPixel(hv_HomMat2D, row, col, out rowTrans, out colTrans);
         }
 
         /// <summary>
@@ -190,7 +199,7 @@ namespace DotNet.Drawing
         /// 保持一致：纯平移，不旋转，target 的角度原样保留。
         /// 需要含旋转的变换请使用 CvCoord 重载。
         /// </remarks>
-        public void GetTransformedCoord(Point2d point, Point2d pointTrans, CvCoord target, out CvCoord result)
+        public static void GetTransformedCoord(Point2d point, Point2d pointTrans, CvCoord target, out CvCoord result)
         {
             double transformedX = target.X - point.X + pointTrans.X;
             double transformedY = target.Y - point.Y + pointTrans.Y;
@@ -201,13 +210,13 @@ namespace DotNet.Drawing
         /// <summary>
         /// 计算经过刚体变换后的坐标
         /// </summary>
-        public void GetTransformedCoord(CvCoord coord, CvCoord coordTrans, CvCoord target, out CvCoord result)
+        public static void GetTransformedCoord(CvCoord coord, CvCoord coordTrans, CvCoord target, out CvCoord result)
         {
-            // CvCoord.Angle 已是弧度，直接相减即为旋转量
-            double angleDiff = coordTrans.Angle - coord.Angle;
+            // Angle 是强类型角度，相减即为旋转量；取三角函数时显式落到弧度
+            Angle angleDiff = coordTrans.Angle - coord.Angle;
 
-            double cosTheta = Math.Cos(angleDiff);
-            double sinTheta = Math.Sin(angleDiff);
+            double cosTheta = Math.Cos(angleDiff.Radians);
+            double sinTheta = Math.Sin(angleDiff.Radians);
 
             double transformedX = cosTheta * (target.X - coord.X) - sinTheta * (target.Y - coord.Y) + coordTrans.X;
             double transformedY = sinTheta * (target.X - coord.X) + cosTheta * (target.Y - coord.Y) + coordTrans.Y;
@@ -223,7 +232,7 @@ namespace DotNet.Drawing
         /// 检查文件路径对应的文件夹是否存在，不存在则创建
         /// </summary>
         /// <param name="filePath">文件路径</param>
-        public void FileExists(string filePath)
+        public static void FileExists(string filePath)
         {
             // Null或空字符串检查
             if (filePath == null)
@@ -270,7 +279,7 @@ namespace DotNet.Drawing
         }
 
         /// <summary> 保存图像 </summary>
-        public void SaveImage(HObject imgTemp, string filePath)
+        public static void SaveImage(HObject imgTemp, string filePath)
         {
             try
             {
@@ -317,7 +326,7 @@ namespace DotNet.Drawing
         /// 同一个调用写法会落到不同重载上。现在去掉全部默认值，让三者的参数个数分别为 2 / 3 / 4，
         /// 调用点必须显式表达意图。
         /// </remarks>
-        public void SaveImage(HObject imgTemp, string folderPath, string imageType)
+        public static void SaveImage(HObject imgTemp, string folderPath, string imageType)
         {
             try
             {
@@ -360,7 +369,7 @@ namespace DotNet.Drawing
         /// <param name="folderPath">保存根目录，传空则回落到 <see cref="DrawingPaths.OriginalImageDir"/></param>
         /// <param name="imageType">图片格式："bmp", "tiff", "png", etc.</param>
         /// <remarks>原默认值是硬编码的 D:\Picture\SaveOriginalImages，换台机器就写不进去；改为由 DrawingPaths 统一配置。</remarks>
-        public void SaveImage(HObject imgTemp, string cameraName, string folderPath, string imageType)
+        public static void SaveImage(HObject imgTemp, string cameraName, string folderPath, string imageType)
         {
             try
             {
@@ -402,7 +411,7 @@ namespace DotNet.Drawing
         }
 
         /// <summary> 获取窗体图像 </summary>
-        public void GetCropWindow(HTuple hWindowHandle, out HObject croppedImage, string imageType = "tiff")
+        public static void GetCropWindow(HTuple hWindowHandle, out HObject croppedImage, string imageType = "tiff")
         {
             HOperatorSet.GenEmptyObj(out croppedImage);
 
@@ -447,7 +456,7 @@ namespace DotNet.Drawing
         /// <param name="folderPath">保存目录，文件名由时间戳生成</param>
         /// <param name="imageType">图片格式："bmp", "tiff", "png", etc.</param>
         /// <remarks>与 SaveImage 同理去掉默认值，使两个重载的参数个数分别为 3 / 4，不再互相遮蔽。</remarks>
-        public void SaveCropWindow(HTuple hWindowHandle, string folderPath, string imageType)
+        public static void SaveCropWindow(HTuple hWindowHandle, string folderPath, string imageType)
         {
             HObject croppedImage; HOperatorSet.GenEmptyObj(out croppedImage);
 
@@ -507,7 +516,7 @@ namespace DotNet.Drawing
         /// <param name="folderPath">保存根目录，传空则回落到 <see cref="DrawingPaths.CropWindowDir"/></param>
         /// <param name="imageType">图片格式："bmp", "tiff", "png", etc.</param>
         /// <remarks>原默认值是硬编码的 D:\Picture\SaveCropWindow；改为由 DrawingPaths 统一配置。</remarks>
-        public void SaveCropWindow(HTuple hWindowHandle, string cameraName, string folderPath, string imageType)
+        public static void SaveCropWindow(HTuple hWindowHandle, string cameraName, string folderPath, string imageType)
         {
             HObject croppedImage; HOperatorSet.GenEmptyObj(out croppedImage);
 
@@ -562,7 +571,7 @@ namespace DotNet.Drawing
         /// <summary>
         /// 保存小区域图像
         /// </summary>
-        public void SaveSmallestRectImage(HObject hImage, HObject imgReduced, string ModelPath, string format = "bmp")
+        public static void SaveSmallestRectImage(HObject hImage, HObject imgReduced, string ModelPath, string format = "bmp")
         {
             HObject rectangle; HOperatorSet.GenEmptyObj(out rectangle);
             HObject imageReduced; HOperatorSet.GenEmptyObj(out imageReduced);
@@ -599,7 +608,7 @@ namespace DotNet.Drawing
         #endregion
 
         /// <summary> 由 XLD 轮廓生成"白底黑色填充"的掩膜图像 </summary>
-        public void GetContourImage(HObject hImage, HObject contour, out HObject ho_ResultImage)
+        public static void GetContourImage(HObject hImage, HObject contour, out HObject ho_ResultImage)
         {
             HObject ho_Region = null;
             HObject ho_WhiteImage = null;
