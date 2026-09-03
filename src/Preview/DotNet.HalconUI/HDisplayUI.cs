@@ -65,7 +65,9 @@ namespace DotNet.HalconUI
             set { _drawType = value; }
         }
 
-        readonly NoneMouse dispNone = new NoneMouse();
+        // 在构造函数里创建: 需要 InitializeComponent() 之后才拿得到 hWindowControl.HalconWindow,
+        // 而字段初始化器先于构造函数体执行。
+        readonly NoneMouse dispNone;
         readonly DispRectMouse dispRect = new DispRectMouse();
         readonly DispModelMouse dispModel = new DispModelMouse();
 
@@ -80,9 +82,8 @@ namespace DotNet.HalconUI
             mouse = new HWindowMouse(hWindowControl, display);
             mouse.RefreshUI += Display_RefreshUI;
 
-            //HMouseDown += (s, e) => DrawHelper.Active?.OnMouseDown(e);
-            //HMouseUp += (s, e) => DrawHelper.Active?.OnMouseUp(e);
-            //HMouseMove += (s, e) => DrawHelper.Active?.OnMouseMove(e);
+            // 绑定本控件的窗口: 绘制会话按窗口对象注册, 多个 HDisplayUI 并存时事件不会串台
+            dispNone = new NoneMouse(hWindowControl.HalconWindow);
 
             HMouseDown  += OnMouseDown;
             HMouseUp    += OnMouseUp;
@@ -125,7 +126,7 @@ namespace DotNet.HalconUI
         /// Erase 的处理器不由 HDisplayUI 持有：它由 <c>HEditModelUI</c> 自行订阅
         /// HMouseXxx 事件驱动 <c>EraseRectMouse</c>。
         /// 因此这里显式返回 null，保持“本控件不插手”的既有行为，而不是回落到 <c>dispNone</c>
-        /// ——后者会把事件转发给 <c>DrawHelper.Active</c>，属于行为变更。
+        /// ——后者会把事件转发给本窗口当前的 <c>DrawHelper</c> 绘制会话，属于行为变更。
         /// </para>
         /// </remarks>
         private IMouseHandler ResolveMouseHandler()
