@@ -274,9 +274,9 @@ private static DrawHelper _active;   // 全局可变静态，无 lock / volatile
 - **方案**（风险较高，建议单独排期，分三步）：
   1. ~~**短期**：给 `BlockUntilDone` 加超时（如 5 分钟）与 `CancellationToken`；`_active` 加 `volatile` 并改为「每 `HWindow` 一个会话」的字典，支持多窗口；~~ **已完成**
   2. ~~**中期**：拆为 `DrawSession`（状态机 + 几何）+ `DrawRenderer`（绘制）+ `DrawInteraction`（命中测试）；类改 `sealed` 并实现 `IDisposable`；12 个静态入口收敛到一个泛型模板方法；~~ **已完成**
-  3. **长期**（未做）：改为 `Task<DrawResult> DrawAsync(...)` + `TaskCompletionSource`，由鼠标事件驱动完成，彻底消灭 `DoEvents`。
+  3. ~~**长期**：改为 `Task<DrawResult> DrawAsync(...)` + `TaskCompletionSource`，由鼠标事件驱动完成，彻底消灭 `DoEvents`。~~ **已完成**
 
-- **已落地**（步骤 1 + 2）：
+- **已落地**（步骤 1 + 2 + 3）：
 
   | 新文件（`HWindows/HMouse/Draw/`） | 职责 |
   | --- | --- |
@@ -285,14 +285,25 @@ private static DrawHelper _active;   // 全局可变静态，无 lock / volatile
   | `DrawRenderer.cs` | 窗口双缓冲、背景快照、`PixelSize` 缓存与全部绘制图元；`IDisposable`，`Dispose` 即原 `End()` |
   | `DrawShape.cs` | 图元状态机基类（`DrawPhase` / `DrawHandle` / 拖拽 / 确认） |
   | `Draw/Shapes/*.cs` | Point / Line / Rect1 / Rect2 / Circle / Ellipse / Region 七个 `sealed` 子类 |
-  | `DrawSession.cs` | `sealed` + `IDisposable`；会话注册表、鼠标分发、`WaitForCompletion(timeout, token)` |
+  | `DrawSession.cs` | `sealed` + `IDisposable`；会话注册表、鼠标分发、`WaitForCompletionAsync(timeout, token)` |
+  | `DrawResults.cs` | 7 个 `readonly struct` 结果类型（`async` 方法不能带 `out`），均带 `Completed` 标志 |
 
-  - **超时与取消**：`DrawSession.WaitForCompletion` 用 `Stopwatch` 计时，默认上限 5 分钟（`DrawHelper.Timeout` 可调，设为 `TimeSpan.Zero` 退回不限时），超时写 `Log.Warn` 并自动结束；12 个入口新增可选 `CancellationToken` 参数。
+  - **超时与取消**：`DrawSession.WaitForCompletionAsync` 返回 `TaskCompletionSource<bool>` 的 `Task`，超时由 `CancellationTokenSource(timeout)` 触发，默认上限 5 分钟（`DrawHelper.Timeout` 可调，设为 `TimeSpan.Zero` 退回不限时），超时写 `Log.Warn` 并自动结束；12 个入口新增可选 `CancellationToken` 参数。
   - **多窗口**：会话按 `HWindow` **对象引用**注册在列表里（`HMouseEventArgs` 不带窗口标识，只能由调用方提供），`ActiveFor(window)` 取该窗口最新的会话；`NoneMouse` 改为构造注入 `HWindow`，`HDisplayUI` 在构造函数里绑定自身窗口（原字段初始化器早于 `InitializeComponent()`，拿不到 `HalconWindow`）。
   - **入口收敛**：12 处 `CancelDraw(); Begin(); try{ BlockUntilDone(); 拷贝字段 } finally{ End(h); }` 收敛为 `Run<TShape>(window, shape, edit, token)`，`DrawHelper` 只剩「参数换算 + 调用模板」；参数类型由 `HTuple windowHandle` 改为 `HWindow window`（对现有调用点源码兼容）。
-  - **规模**：`DrawHelper` 1702 行 → 335 行；`Active` 属性移除，外部改用 `ForwardMouseDown/Up/Move/Wheel`。
-  - **行为保持**：`DoEvents` 轮询、`OnMouseDown` 的防抖（临时清零 `Dragging`，避免 Rect2 控制点被吸附导致闪烁）、Region 的两段式右键（先闭合再确认）、椭圆输出 `radius1 >= radius2` 的归一化，全部逐字保留。
-  - **未做步骤 3 的原因**：`DrawAsync` 会连带改造 `IRoiHost.DrawRegion` → 8 个策略的 `DrawROI` → `ParaForm` → `IHDisplay`/`HDisplay` 整条调用链，属于另一次独立排期。
+  - **规模**：`DrawHelper` 1702 行 → 353 行；`Active` 属性移除，外部改用 `ForwardMouseDown/Up/Move/Wheel`。
+  - **行为保持**：`OnMouseDown` 的防抖（临时清零 `Dragging`，避免 Rect2 控制点被吸附导致闪烁）、Region 的两段式右键（先闭合再确认）、椭圆输出 `radius1 >= radius2` 的归一化，全部逐字保留。
+
+- **步骤 3（`DrawAsync`）落地**：
+
+  - **`DoEvents` 彻底消失**：`BlockUntilDone` 的 `while { Application.DoEvents(); Thread.Sleep(10); }` 换成 `TaskCompletionSource<bool>`，由鼠标事件 `TrySetResult` 驱动。生产代码中已无任何 `Application.DoEvents()`。
+  - **续体会内联，靠顺序而非 `Post` 保证安全**：`TrySetResult` 在鼠标事件里调用时，捕获的 `SynchronizationContext` 与 `SynchronizationContext.Current` 是同一个实例，BCL 走内联快路径**直接在当前栈上跑续体**，并不会 `Post` 回消息队列；.NET Framework 4.5 也没有 `RunContinuationsAsynchronously`（4.6+）可以关掉它。因此 `DrawSession.Finish` 的次序是**先 `Unregister` + 释放句柄，最后才 `TrySetResult`** —— 续体执行期间本会话已不在注册表里，它若泵消息也不会再收到鼠标事件。
+  - **调用链**：`DrawSession` → `DrawHelper`（12 个 `…Async` 入口）→ `HDisplay` → `IHDisplay`/`IRoiHost`/`IParaStrategy` → `HDisplayUI`/`HEditModelUI` → 8 个策略 → `ParaForm` 全链改完；旧同步签名**全部删除**，不留 `[Obsolete]` 包装。
+  - **签名变化**：`async` 不能带 `out`，因此 12 个入口改为返回 `DrawXxxResult` 结构体；`IHDisplay.DrawRegion(RectEnum, out HObject)` → `Task<HObject> DrawRegionAsync(RectEnum)`；两个 `CvRegion` 重载 → `Task<bool>`，把用户是否确认一路透传到算法层（`IRoiHost` / `HDisplayUI` 同步改签名）。
+  - **空对象语义（易踩）**：`DrawRegionAsync(RectEnum)` 取消 / 超时返回的是 `gen_empty_obj`（**空对象元组**，`count_obj == 0`），不是 `gen_empty_region`（空区域，`count_obj == 1`）。只有后者喂给 `union2` / `difference` 才是无操作；0 长度元组会报错或得到空结果，把模板区域整片清掉。调用方必须先 `CountObj` 判空短路 —— 见 `HEditModelUI.DrawROIAsync`。
+  - **行为变更（需现场回归）**：取消 / 超时时**不再回写几何**，保留原 ROI。改造前取消一个**新建** ROI 会把 `(0,0,0,0)` 写进参数，属于旧 bug，现已修正。圆环的两步交互（外圆 + 内圆）任一步取消则整个交互放弃。4 个 `SetTemplateAsync` 在未确认时直接返回，不再按旧几何重建模板（否则用户一取消就丢原模板）；8 个 `DrawROIAsync` 则**故意不短路**，取消后仍要把原 ROI 重画回去（`ParaForm` 事先 `ReDispImage()` 已清屏）。
+  - **重入防护**：`ParaForm` 的 4 个 `async void` 入口用 `_drawBusy` 标志串行化，`HEditModelUI` 的添加 / 删除区域按钮在绘制期间禁用。不加防护时第二次点击会 `CancelDraw` 掉前一次会话，两条协程交叉读写同一个策略对象与 `HObject`（先 `Dispose` 再赋值），可能访问已释放对象。
+  - **调用方约束**：必须在 UI 线程 `await`，绝不能 `.Wait()` / `.Result` —— 等待期间 UI 线程要继续泵消息才能收到鼠标事件，阻塞即死锁。
 
 ### C4. `DispPara`/`SavePara` 靠魔法字符串手工双向同步
 
@@ -672,7 +683,7 @@ private void PublishRenderData(FitArcMidpointRenderData data)
 
 - [x] A1 抽出 `DotNet.Vision.Abstractions`，打断 `HalconAlgo → HalconUI`
 - [x] A2 `IParaStrategy` 拆分为 5 个小接口
-- [~] C3 `DrawHelper` 三步走：~~加超时/取消~~ → ~~拆类~~ → `DrawAsync` 消灭 `DoEvents`（前两步已完成，第三步待单独排期）
+- [x] C3 `DrawHelper` 三步走：~~加超时/取消~~ → ~~拆类~~ → ~~`DrawAsync` 消灭 `DoEvents`~~
 - [ ] C4 `DispPara`/`SavePara` 改为特性驱动的声明式绑定
 - [ ] C5 中文文案与业务状态解耦（enum + 资源文件）
 - [ ] C10 / C11 ROI 跟随坐标系补全旋转变换，输出与显示保持一致

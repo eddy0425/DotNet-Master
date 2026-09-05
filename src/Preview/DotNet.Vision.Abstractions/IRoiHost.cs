@@ -1,5 +1,6 @@
 using DotNet.Drawing;
 using HalconDotNet;
+using System.Threading.Tasks;
 
 namespace DotNet.Vision.Abstractions
 {
@@ -16,11 +17,16 @@ namespace DotNet.Vision.Abstractions
         /// <summary> 底层绘制窗口 </summary>
         IHDisplay Display { get; }
 
-        /// <summary> 交互式绘制（新建）橡皮筋区域 </summary>
-        void DrawRegion(CvRegion hRegion);
+        /// <summary> 交互式绘制（新建）橡皮筋区域；取消 / 超时时保留原几何 </summary>
+        /// <returns>
+        /// 用户右键确认返回 true；取消 / 超时 / 绘制失败返回 false，此时 <paramref name="hRegion"/> 未被改动。
+        /// 有副作用的后续操作（如据此重建模板）必须先判断本返回值。
+        /// </returns>
+        Task<bool> DrawRegionAsync(CvRegion hRegion);
 
-        /// <summary> 交互式绘制（修改）橡皮筋区域 </summary>
-        void DrawRegionMod(CvRegion hRegion);
+        /// <summary> 交互式绘制（修改）橡皮筋区域；取消 / 超时时保留原几何 </summary>
+        /// <returns>语义同 <see cref="DrawRegionAsync(CvRegion)"/>。</returns>
+        Task<bool> DrawRegionModAsync(CvRegion hRegion);
 
         /// <summary> 把 ROI 几何参数回填到宿主的参数面板 </summary>
         void SetRectPara(CvRegion shrRegion);

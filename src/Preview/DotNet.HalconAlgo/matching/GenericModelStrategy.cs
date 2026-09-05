@@ -4,6 +4,7 @@ using HalconDotNet;
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 
 namespace DotNet.HalconAlgo
@@ -193,12 +194,12 @@ namespace DotNet.HalconAlgo
             inPara.ScaleMin = ui.GetDouble("cmb_113");
             inPara.ScaleMax = ui.GetDouble("cmb_114");
 
-            // 仅当模板已建立时才更新模型参数；否则等下一次 SetTemplate 时统一应用
+            // 仅当模板已建立时才更新模型参数；否则等下一次 SetTemplateAsync 时统一应用
             if (inPara.ModelID != null && inPara.ModelID.Length > 0)
             {
                 // 注意：iso_scale_*, num_levels 等属于"修改模型"参数，改动后必须重新训练。
                 // 这里 SavePara 没有图像可重训，所以只更新"查找"类参数；
-                // 如需修改 iso_scale / num_levels / optimization，请用户重新设置模板触发 SetTemplate。
+                // 如需修改 iso_scale / num_levels / optimization，请用户重新设置模板触发 SetTemplateAsync。
                 HTuple angleStartRad = ((HTuple)inPara.AngleStart.D).TupleRad();
                 HTuple angleEndRad = ((HTuple)(inPara.AngleStart.D + inPara.AngleExtent.D)).TupleRad();
 
@@ -221,15 +222,20 @@ namespace DotNet.HalconAlgo
             inPara.FontY = ui.GetInt("CB_FontY");
             inPara.FontSize = ui.GetInt("CB_FontSize");
         }
-        public void DrawROI(IRoiHost host, RectEnum type, bool newROI)
+        public async Task DrawROIAsync(IRoiHost host, RectEnum type, bool newROI)
         {
             if (newROI)
             {
+                // Type 必须在绘制前写入(HDisplay 按它分发图元), 但取消时几何不会被回写,
+                // 所以要连 Type 一起还原, 否则 Type 与 HoRegion / 外接框对不上, 还会存进 job 配置.
+                var prevType = inPara.HoRect.Type;
                 inPara.HoRect.Type = type;
-                host.DrawRegion(inPara.HoRect);
+                if (!await host.DrawRegionAsync(inPara.HoRect))
+                    inPara.HoRect.Type = prevType;
             }
-            else host.DrawRegionMod(inPara.HoRect);
+            else await host.DrawRegionModAsync(inPara.HoRect);
 
+            // 这里故意不短路: 取消后仍要把原 ROI 重画回去(ParaForm 事先 ReDispImage 已清屏)
             host.Display.Disp(inPara.HoRect, DrawStyle.Of(HColor.Blue));
             host.SetRectPara(inPara.HoRect);
         }
@@ -237,15 +243,31 @@ namespace DotNet.HalconAlgo
         {
             host.SetModelPara(inPara.HoRect.HoRegion, inPara.HoContour, inPara.Coord);
         }
-        public void SetTemplate(IRoiHost host, RectEnum type, bool newModel)
+        public async Task SetTemplateAsync(IRoiHost host, RectEnum type, bool newModel)
         {
             HObject imgReduced; HOperatorSet.GenEmptyObj(out imgReduced);
 
             try
             {
+                // Type 必须在绘制前写入(DrawRegionAsync 按它分发图元), 但取消时几何不会被回写,
+                // 所以要连 Type 一起还原, 否则 Type 与 HoRegion 的实际形状对不上.
+                var prevType = inPara.ModeRect.Type;
                 inPara.ModeRect.Type = type;
-                if (newModel) host.DrawRegion(inPara.ModeRect);
-                else host.DrawRegionMod(inPara.ModeRect);
+
+                bool confirmed = newModel
+                    ? await host.DrawRegionAsync(inPara.ModeRect)
+                    : await host.DrawRegionModAsync(inPara.ModeRect);
+
+                // 取消 / 超时: ModeRect 保持原样, 这里必须直接返回.
+                // 继续往下会 ModelID = null 并按"旧几何 + 新参数"重建一份用户没有要求的模板,
+                // 原模板就此丢失 —— 这正是"取消不应有副作用"的关键一步.
+                if (!confirmed)
+                {
+                    inPara.ModeRect.Type = prevType;
+                    // 绘制会话结束时窗口只剩底图, 把原模板区域重新画回去, 避免画面像是被清空
+                    host.Display.Disp(inPara.ModeRect, DrawStyle.Of(HColor.Orange));
+                    return;
+                }
 
                 inPara.ModelPath = Path.Combine(AlgoPaths.JobDir, RunIndex.ToString(), "matching.bmp");
                 var hImage = host.Display.HoImage;

@@ -2,6 +2,7 @@ using DotNet.Drawing;
 using HalconDotNet;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace DotNet.Vision.Abstractions
 {
@@ -42,7 +43,13 @@ namespace DotNet.Vision.Abstractions
     /// </summary>
     public interface IRoiEditable
     {
-        void DrawROI(IRoiHost host, RectEnum type, bool newROI);
+        /// <summary>
+        /// 交互式绘制 / 修改 ROI。要等用户在画面上右键确认，因此是异步的：
+        /// 调用方必须在 UI 线程 await，不要 .Wait()（会死锁）。
+        /// </summary>
+        Task DrawROIAsync(IRoiHost host, RectEnum type, bool newROI);
+
+        /// <summary>把已有 ROI 画到画面上，无交互，保持同步。</summary>
         void DispROI(IRoiHost host);
     }
 
@@ -51,7 +58,10 @@ namespace DotNet.Vision.Abstractions
     /// </summary>
     public interface ITemplateEditable
     {
-        void SetTemplate(IRoiHost host, RectEnum type, bool newModel);
+        /// <summary>
+        /// 交互式框选模板区域并创建模板。内含 ROI 绘制交互，故为异步；调用方须在 UI 线程 await。
+        /// </summary>
+        Task SetTemplateAsync(IRoiHost host, RectEnum type, bool newModel);
     }
 
     /// <summary>
@@ -83,7 +93,7 @@ namespace DotNet.Vision.Abstractions
     /// <see cref="ITreeNodeProvider"/>；本接口只保留所有策略共有的执行、输出和生命周期能力。
     /// <para>
     /// 宿主应按能力接口做类型判断，例如
-    /// <c>if (s is IRoiEditable roi) roi.DrawROI(...)</c>。
+    /// <c>if (s is IRoiEditable roi) await roi.DrawROIAsync(...)</c>。
     /// </para>
     /// </remarks>
     public interface IParaStrategy : IAlgoStrategy, IOutputProvider

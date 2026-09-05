@@ -78,6 +78,14 @@ namespace DotNet.VisionMaster
         /// </summary>
         private void SwitchStrategy(int index)
         {
+            // 同 MainForm.SwitchStrategy: 绘制期间切换会让会话收不到鼠标事件(卡到超时),
+            // 并使 ParaForm 的索引与本窗体脱节。必须在改动任何状态之前拦下来。
+            if (_formPara.IsDrawBusy)
+            {
+                MessageBox.Show("当前正在绘制 ROI / 模板，请先在图像上右键确认或取消后再切换工具。");
+                return;
+            }
+
             _index = index;
             _vsControls.ClearAll();
             _formPara.SelectPara(_index, _strategys);

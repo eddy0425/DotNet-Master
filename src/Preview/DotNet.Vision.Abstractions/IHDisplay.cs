@@ -2,6 +2,7 @@ using DotNet.Drawing;
 using HalconDotNet;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace DotNet.Vision.Abstractions
 {
@@ -144,14 +145,35 @@ namespace DotNet.Vision.Abstractions
         /// <summary> 由坐标列表生成区域并显示 </summary>
         void GenCoordsRegion(CvRegion region, List<CvCoord> coords);
 
-        /// <summary> 绘制（创建）橡皮筋区域 </summary>
-        void DrawRegion(CvRegion region);
+        /// <summary>
+        /// 交互式绘制（新建）橡皮筋区域。用户右键确认后把几何写回 <paramref name="region"/>；
+        /// 取消 / 超时则原样保留旧几何。
+        /// </summary>
+        /// <returns>
+        /// 用户右键确认返回 true；取消 / 超时 / 绘制失败返回 false，此时 <paramref name="region"/> 未被改动。
+        /// </returns>
+        Task<bool> DrawRegionAsync(CvRegion region);
 
-        /// <summary> 绘制（修改）橡皮筋区域 </summary>
-        void DrawRegionMod(CvRegion region);
+        /// <summary>
+        /// 交互式绘制（修改）橡皮筋区域：以现有几何为初值进入编辑。
+        /// 取消 / 超时不改动 <paramref name="region"/>。
+        /// </summary>
+        /// <returns>语义同 <see cref="DrawRegionAsync(CvRegion)"/>。</returns>
+        Task<bool> DrawRegionModAsync(CvRegion region);
 
-        /// <summary> 绘制（创建）指定类型的区域 </summary>
-        void DrawRegion(RectEnum type, out HObject rectangle);
+        /// <summary>
+        /// 交互式绘制（新建）指定类型的区域，直接返回结果区域。
+        /// </summary>
+        /// <returns>
+        /// 新绘制的区域，所有权归调用方，用完必须 <c>Dispose</c>。
+        /// <para>
+        /// 取消 / 超时 / 失败时返回<b>空对象元组</b>（<c>gen_empty_obj</c>，<c>count_obj == 0</c>），
+        /// 不会是 null，调用方可无条件释放。注意它<b>不是</b>“空区域”(<c>gen_empty_region</c>,
+        /// <c>count_obj == 1</c>)：把它喂给 <c>union2</c> / <c>difference</c> 这类算子并非无操作，
+        /// 而是会报错或返回空结果。调用方必须先用 <c>count_obj</c> 判空并短路，参见 <c>HEditModelUI.DrawROIAsync</c>。
+        /// </para>
+        /// </returns>
+        Task<HObject> DrawRegionAsync(RectEnum type);
 
         #endregion
     }

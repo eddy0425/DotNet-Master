@@ -1,7 +1,9 @@
 ﻿using DotNet.HalconUI.Draw;
 using HalconDotNet;
 using System;
+using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace DotNet.HalconUI
 {
@@ -14,33 +16,44 @@ namespace DotNet.HalconUI
     /// <list type="bullet">
     /// <item><description><see cref="DrawRenderer"/> —— 窗口双缓冲、背景快照与全部绘制图元；</description></item>
     /// <item><description><see cref="DrawShape"/> 及其子类 —— 每种 ROI 的状态机、命中测试与渲染；</description></item>
-    /// <item><description><see cref="DrawSession"/> —— 会话生命周期、鼠标分发、超时/取消的阻塞等待；</description></item>
+    /// <item><description><see cref="DrawSession"/> —— 会话生命周期、鼠标分发、由鼠标事件驱动的等待；</description></item>
     /// <item><description><see cref="DrawGeometry"/> —— 与 HALCON 无关的纯几何计算(可单测)。</description></item>
     /// </list>
     /// <para>
-    /// 本类只剩“参数换算 + 调用模板”，12 个入口共用 <see cref="Run{TShape}"/>，不再逐个复制会话样板代码。
+    /// 本类只剩“参数换算 + 调用模板”，12 个入口共用 <see cref="RunAsync{TShape}"/>，不再逐个复制会话样板代码。
+    /// </para>
+    /// <para>
+    /// <b>全异步</b>：不再有 <c>Application.DoEvents()</c> 轮询，等待完全由
+    /// <see cref="DrawSession.WaitForCompletionAsync"/> 返回的 <see cref="Task{TResult}"/> 驱动。
+    /// 所有入口都必须在 UI 线程调用。由于 <c>async</c> 方法不能带 <c>out</c> 参数，
+    /// 原来的 <c>out HTuple</c> 改为返回 <c>Draw*Result</c> 只读结构体(见 <c>DrawResults.cs</c>)；
+    /// 其中的 <c>Completed</c> 表示“用户是否真的右键确认了”，为 <c>false</c> 时调用方不应把几何写回配置。
     /// </para>
     /// </remarks>
     public static class DrawHelper
     {
         /// <summary>
-        /// 阻塞等待的默认上限，超时后自动结束绘制并返回当前几何。
-        /// 设为 <see cref="TimeSpan.Zero"/> 或负值表示不限时(退回旧行为)。
+        /// 等待的默认上限，超时后自动结束绘制并返回 <c>Completed == false</c> 的结果。
+        /// 设为 <see cref="TimeSpan.Zero"/> 或负值表示不限时。
         /// </summary>
         public static TimeSpan Timeout { get; set; } = DrawSession.DefaultTimeout;
 
         #region 调用模板
 
         /// <summary>
-        /// 所有 <c>Draw*</c> / <c>Draw*Mod</c> 的公共骨架：
-        /// 取消旧会话 → 开新会话 → (可选)按初始几何渲染一帧 → 阻塞等待 → 释放。
+        /// 所有 <c>Draw*Async</c> / <c>Draw*ModAsync</c> 的公共骨架：
+        /// 取消旧会话 → 开新会话 → (可选)按初始几何渲染一帧 → 异步等待 → 释放。
         /// </summary>
         /// <param name="window">目标窗口。会话按该对象注册，多窗口互不干扰。</param>
-        /// <param name="shape">已填好初始几何的图元状态机。</param>
+        /// <param name="shape">已填好初始几何的图元状态机；返回后其几何字段即为最终结果。</param>
         /// <param name="edit">true 表示 <c>Mod</c> 语义：直接进入编辑阶段并先画一帧。</param>
         /// <param name="token">调用方的取消令牌。</param>
-        /// <returns>同一个 <paramref name="shape"/>，此时其几何字段即为用户确认的结果。</returns>
-        private static TShape Run<TShape>(HWindow window, TShape shape, bool edit, CancellationToken token)
+        /// <returns>用户右键确认返回 true；取消 / 超时 / 被新会话顶掉返回 false。</returns>
+        /// <remarks>
+        /// <c>using</c> 的释放点在 <c>await</c> 之后：窗口的 flush/autodraw 状态与背景快照
+        /// 会在结果交还调用方之前还原，与旧实现 <c>finally</c> 的时序一致。
+        /// </remarks>
+        private static async Task<bool> RunAsync<TShape>(HWindow window, TShape shape, bool edit, CancellationToken token)
             where TShape : DrawShape
         {
             if (window == null) throw new ArgumentNullException(nameof(window));
@@ -53,9 +66,8 @@ namespace DotNet.HalconUI
                     shape.BeginEdit();
                     session.RenderInitial();
                 }
-                session.WaitForCompletion(Timeout, token);
+                return await session.WaitForCompletionAsync(Timeout, token);
             }
-            return shape;
         }
 
         #endregion
@@ -65,73 +77,75 @@ namespace DotNet.HalconUI
         /// <summary>
         /// 交互式绘制一个点 ROI: 左键点击设置位置后进入编辑, 可拖拽十字调整, 右键确认.
         /// </summary>
-        public static void DrawPoint(HWindow window,
-            out HTuple row, out HTuple column, CancellationToken token = default)
+        public static async Task<DrawPointResult> DrawPointAsync(HWindow window,
+            CancellationToken token = default)
         {
-            var s = Run(window, new PointShape(), edit: false, token);
-            row = s.Y; column = s.X;
+            var s = new PointShape();
+            bool ok = await RunAsync(window, s, edit: false, token);
+            return new DrawPointResult(ok, s.Y, s.X);
         }
 
         /// <summary>
         /// 交互式绘制一条线段 ROI: 左键按下→拖拽→释放定义两端点后进入编辑,
         /// 可拖拽端点或中点平移整条线, 右键确认.
         /// </summary>
-        public static void DrawLine(HWindow window,
-            out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2,
+        public static async Task<DrawLineResult> DrawLineAsync(HWindow window,
             CancellationToken token = default)
         {
-            var s = Run(window, new LineShape(), edit: false, token);
-            row1 = s.Y1; column1 = s.X1;
-            row2 = s.Y2; column2 = s.X2;
+            var s = new LineShape();
+            bool ok = await RunAsync(window, s, edit: false, token);
+            return new DrawLineResult(ok, s.Y1, s.X1, s.Y2, s.X2);
         }
 
         /// <summary>交互式绘制一个轴对齐矩形 ROI, 右键确认。输出已归一化为左上/右下。</summary>
-        public static void DrawRectangle1(HWindow window,
-            out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2,
+        public static async Task<DrawRectangle1Result> DrawRectangle1Async(HWindow window,
             CancellationToken token = default)
         {
-            var s = Run(window, new Rect1Shape(), edit: false, token);
-            DrawGeometry.NormalizeRect1(s.X1, s.Y1, s.X2, s.Y2,
-                out double left, out double top, out double right, out double bottom);
-            row1 = top; column1 = left;
-            row2 = bottom; column2 = right;
+            var s = new Rect1Shape();
+            bool ok = await RunAsync(window, s, edit: false, token);
+            return NormalizeRect1(ok, s);
         }
 
         /// <summary>交互式绘制一个可旋转矩形 ROI, 右键确认。</summary>
-        public static void DrawRectangle2(HWindow window,
-            out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2,
+        public static async Task<DrawRectangle2Result> DrawRectangle2Async(HWindow window,
             CancellationToken token = default)
         {
-            var s = Run(window, new Rect2Shape(), edit: false, token);
-            row = s.CY; column = s.CX;
-            phi = s.Phi; length1 = s.HalfLen1; length2 = s.HalfLen2;
+            var s = new Rect2Shape();
+            bool ok = await RunAsync(window, s, edit: false, token);
+            return new DrawRectangle2Result(ok, s.CY, s.CX, s.Phi, s.HalfLen1, s.HalfLen2);
         }
 
         /// <summary>交互式绘制一个圆 ROI, 右键确认。</summary>
-        public static void DrawCircle(HWindow window,
-            out HTuple row, out HTuple column, out HTuple radius, CancellationToken token = default)
+        public static async Task<DrawCircleResult> DrawCircleAsync(HWindow window,
+            CancellationToken token = default)
         {
-            var s = Run(window, new CircleShape(), edit: false, token);
-            row = s.CY; column = s.CX; radius = s.Radius;
+            var s = new CircleShape();
+            bool ok = await RunAsync(window, s, edit: false, token);
+            return new DrawCircleResult(ok, s.CY, s.CX, s.Radius);
         }
 
         /// <summary>交互式绘制一个椭圆 ROI, 右键确认。输出 radius1 &gt;= radius2, phi 为长轴方向。</summary>
-        public static void DrawEllipse(HWindow window,
-            out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2,
+        public static async Task<DrawEllipseResult> DrawEllipseAsync(HWindow window,
             CancellationToken token = default)
         {
-            var s = Run(window, new EllipseShape(), edit: false, token);
-            NormalizeEllipse(s, out row, out column, out phi, out radius1, out radius2);
+            var s = new EllipseShape();
+            bool ok = await RunAsync(window, s, edit: false, token);
+            return NormalizeEllipse(ok, s);
         }
 
-        /// <summary>交互式绘制一个多边形区域 ROI: 左键逐点添加顶点, 右键闭合并确认。</summary>
-        public static void DrawRegion(out HObject region, HWindow window, CancellationToken token = default)
+        /// <summary>
+        /// 交互式绘制一个多边形区域 ROI: 左键逐点添加顶点, 右键闭合并确认。
+        /// 返回的 <see cref="DrawRegionResult.Region"/> 所有权归调用方，未确认时是一个可正常释放的空区域。
+        /// </summary>
+        public static async Task<DrawRegionResult> DrawRegionAsync(HWindow window,
+            CancellationToken token = default)
         {
-            // 默认输出空 region, 即使中间步骤抛异常调用方也能拿到可释放对象
-            HOperatorSet.GenEmptyRegion(out region);
+            // 先备好空 region: 无论走哪条失败路径, 调用方拿到的都是可释放对象
+            HOperatorSet.GenEmptyRegion(out HObject region);
 
-            var s = Run(window, new RegionShape(), edit: false, token);
-            if (!s.Completed || s.Rows.Count < 3) return;
+            var s = new RegionShape();
+            bool ok = await RunAsync(window, s, edit: false, token);
+            if (!ok || s.Rows.Count < 3) return new DrawRegionResult(false, region);
 
             HObject? contour = null;
             try
@@ -143,14 +157,22 @@ namespace DotNet.HalconUI
                 cols = cols.TupleConcat(s.Cols[0]);
                 HOperatorSet.GenContourPolygonXld(out contour, rows, cols);
 
-                var empty = region;
-                HOperatorSet.GenRegionContourXld(contour, out region, "filled");
-                DrawSafe.Dispose(empty);
+                HOperatorSet.GenRegionContourXld(contour, out HObject filled, "filled");
+                DrawSafe.Dispose(region);
+                region = filled;
+            }
+            catch
+            {
+                // 抛异常时调用方拿不到返回值, 占位对象只能在这里兜底释放
+                DrawSafe.Dispose(region);
+                throw;
             }
             finally
             {
                 DrawSafe.Dispose(contour);
             }
+
+            return new DrawRegionResult(true, region);
         }
 
         #endregion
@@ -161,54 +183,48 @@ namespace DotNet.HalconUI
         /// 修改一个已有的点 ROI: 以 (rowIn, columnIn) 为初始位置进入编辑模式,
         /// 用户可拖拽十字调整位置, 右键确认.
         /// </summary>
-        public static void DrawPointMod(HWindow window,
-            HTuple rowIn, HTuple columnIn,
-            out HTuple row, out HTuple column, CancellationToken token = default)
+        public static async Task<DrawPointResult> DrawPointModAsync(HWindow window,
+            double rowIn, double columnIn, CancellationToken token = default)
         {
-            var s = Run(window, new PointShape { X = columnIn.D, Y = rowIn.D }, edit: true, token);
-            row = s.Y; column = s.X;
+            var s = new PointShape { X = columnIn, Y = rowIn };
+            bool ok = await RunAsync(window, s, edit: true, token);
+            return new DrawPointResult(ok, s.Y, s.X);
         }
 
         /// <summary>
         /// 修改一条已有的线段 ROI: 以两端点为初始几何进入编辑模式,
         /// 可拖拽两端点或中点平移整条线, 右键确认.
         /// </summary>
-        public static void DrawLineMod(HWindow window,
-            HTuple row1In, HTuple column1In, HTuple row2In, HTuple column2In,
-            out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2,
+        public static async Task<DrawLineResult> DrawLineModAsync(HWindow window,
+            double row1In, double column1In, double row2In, double column2In,
             CancellationToken token = default)
         {
-            var shape = new LineShape
+            var s = new LineShape
             {
-                X1 = column1In.D, Y1 = row1In.D,
-                X2 = column2In.D, Y2 = row2In.D,
+                X1 = column1In, Y1 = row1In,
+                X2 = column2In, Y2 = row2In,
             };
-            var s = Run(window, shape, edit: true, token);
-            row1 = s.Y1; column1 = s.X1;
-            row2 = s.Y2; column2 = s.X2;
+            bool ok = await RunAsync(window, s, edit: true, token);
+            return new DrawLineResult(ok, s.Y1, s.X1, s.Y2, s.X2);
         }
 
         /// <summary>
         /// 修改一个轴对齐矩形 ROI: 以 (row1,col1)-(row2,col2) 为初始对角点进入编辑模式,
         /// 可拖拽两个角点或中心点平移, 右键确认.
         /// </summary>
-        public static void DrawRectangle1Mod(HWindow window,
-            HTuple row1In, HTuple column1In, HTuple row2In, HTuple column2In,
-            out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2,
+        public static async Task<DrawRectangle1Result> DrawRectangle1ModAsync(HWindow window,
+            double row1In, double column1In, double row2In, double column2In,
             CancellationToken token = default)
         {
-            var shape = new Rect1Shape
+            var s = new Rect1Shape
             {
-                X1 = column1In.D, Y1 = row1In.D,
-                X2 = column2In.D, Y2 = row2In.D,
+                X1 = column1In, Y1 = row1In,
+                X2 = column2In, Y2 = row2In,
             };
-            shape.SyncCenter();
+            s.SyncCenter();
 
-            var s = Run(window, shape, edit: true, token);
-            DrawGeometry.NormalizeRect1(s.X1, s.Y1, s.X2, s.Y2,
-                out double left, out double top, out double right, out double bottom);
-            row1 = top; column1 = left;
-            row2 = bottom; column2 = right;
+            bool ok = await RunAsync(window, s, edit: true, token);
+            return NormalizeRect1(ok, s);
         }
 
         /// <summary>
@@ -216,40 +232,37 @@ namespace DotNet.HalconUI
         /// 半轴长 length1In/length2In 为初始几何进入编辑模式,
         /// 可拖拽中心 / 主轴端点 / 短轴端点, 右键确认.
         /// </summary>
-        public static void DrawRectangle2Mod(HWindow window,
-            HTuple rowIn, HTuple columnIn, HTuple phiIn, HTuple length1In, HTuple length2In,
-            out HTuple row, out HTuple column, out HTuple phi, out HTuple length1, out HTuple length2,
+        public static async Task<DrawRectangle2Result> DrawRectangle2ModAsync(HWindow window,
+            double rowIn, double columnIn, double phiIn, double length1In, double length2In,
             CancellationToken token = default)
         {
-            var shape = new Rect2Shape
+            var s = new Rect2Shape
             {
-                CX = columnIn.D,
-                CY = rowIn.D,
-                Phi = phiIn.D,
-                HalfLen1 = Math.Max(1, length1In.D),
-                HalfLen2 = Math.Max(1, length2In.D),
+                CX = columnIn,
+                CY = rowIn,
+                Phi = phiIn,
+                HalfLen1 = Math.Max(1, length1In),
+                HalfLen2 = Math.Max(1, length2In),
             };
-            var s = Run(window, shape, edit: true, token);
-            row = s.CY; column = s.CX;
-            phi = s.Phi; length1 = s.HalfLen1; length2 = s.HalfLen2;
+            bool ok = await RunAsync(window, s, edit: true, token);
+            return new DrawRectangle2Result(ok, s.CY, s.CX, s.Phi, s.HalfLen1, s.HalfLen2);
         }
 
         /// <summary>
         /// 修改一个圆 ROI: 以中心 (rowIn, columnIn)、半径 radiusIn 为初始几何进入编辑模式,
         /// 可拖拽圆心或半径端点, 右键确认.
         /// </summary>
-        public static void DrawCircleMod(HWindow window,
-            HTuple rowIn, HTuple columnIn, HTuple radiusIn,
-            out HTuple row, out HTuple column, out HTuple radius, CancellationToken token = default)
+        public static async Task<DrawCircleResult> DrawCircleModAsync(HWindow window,
+            double rowIn, double columnIn, double radiusIn, CancellationToken token = default)
         {
-            var shape = new CircleShape
+            var s = new CircleShape
             {
-                CX = columnIn.D,
-                CY = rowIn.D,
-                Radius = Math.Max(1, radiusIn.D),
+                CX = columnIn,
+                CY = rowIn,
+                Radius = Math.Max(1, radiusIn),
             };
-            var s = Run(window, shape, edit: true, token);
-            row = s.CY; column = s.CX; radius = s.Radius;
+            bool ok = await RunAsync(window, s, edit: true, token);
+            return new DrawCircleResult(ok, s.CY, s.CX, s.Radius);
         }
 
         /// <summary>
@@ -258,21 +271,20 @@ namespace DotNet.HalconUI
         /// 可拖拽中心 / 主轴端点 / 副轴端点, 右键确认.
         /// 输出 radius1 始终 &gt;= radius2, phi 自动调整为长轴方向.
         /// </summary>
-        public static void DrawEllipseMod(HWindow window,
-            HTuple rowIn, HTuple columnIn, HTuple phiIn, HTuple radius1In, HTuple radius2In,
-            out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2,
+        public static async Task<DrawEllipseResult> DrawEllipseModAsync(HWindow window,
+            double rowIn, double columnIn, double phiIn, double radius1In, double radius2In,
             CancellationToken token = default)
         {
-            var shape = new EllipseShape
+            var s = new EllipseShape
             {
-                CX = columnIn.D,
-                CY = rowIn.D,
-                Phi = phiIn.D,
-                R1 = Math.Max(1, radius1In.D),
-                R2 = Math.Max(1, radius2In.D),
+                CX = columnIn,
+                CY = rowIn,
+                Phi = phiIn,
+                R1 = Math.Max(1, radius1In),
+                R2 = Math.Max(1, radius2In),
             };
-            var s = Run(window, shape, edit: true, token);
-            NormalizeEllipse(s, out row, out column, out phi, out radius1, out radius2);
+            bool ok = await RunAsync(window, s, edit: true, token);
+            return NormalizeEllipse(ok, s);
         }
 
         #endregion
@@ -313,17 +325,23 @@ namespace DotNet.HalconUI
 
         #region 输出换算
 
-        // HALCON 约定 radius1 为长半轴, 因此长短轴颠倒时要交换并把 phi 旋转 90°
-        private static void NormalizeEllipse(EllipseShape s,
-            out HTuple row, out HTuple column, out HTuple phi, out HTuple radius1, out HTuple radius2)
+        // 两个对角点的先后取决于用户往哪个方向拖, 统一归一化为 (左上, 右下)
+        private static DrawRectangle1Result NormalizeRect1(bool completed, Rect1Shape s)
         {
-            row = s.CY; column = s.CX;
-            phi = s.R1 >= s.R2 ? s.Phi : s.Phi + Math.PI / 2;
-            radius1 = Math.Max(s.R1, s.R2);
-            radius2 = Math.Min(s.R1, s.R2);
+            DrawGeometry.NormalizeRect1(s.X1, s.Y1, s.X2, s.Y2,
+                out double left, out double top, out double right, out double bottom);
+            return new DrawRectangle1Result(completed, top, left, bottom, right);
         }
 
-        private static double[] ToArray(System.Collections.Generic.IReadOnlyList<double> src)
+        // HALCON 约定 radius1 为长半轴, 因此长短轴颠倒时要交换并把 phi 旋转 90°
+        private static DrawEllipseResult NormalizeEllipse(bool completed, EllipseShape s)
+        {
+            double phi = s.R1 >= s.R2 ? s.Phi : s.Phi + Math.PI / 2;
+            return new DrawEllipseResult(completed, s.CY, s.CX, phi,
+                Math.Max(s.R1, s.R2), Math.Min(s.R1, s.R2));
+        }
+
+        private static double[] ToArray(IReadOnlyList<double> src)
         {
             var arr = new double[src.Count];
             for (int i = 0; i < src.Count; i++) arr[i] = src[i];

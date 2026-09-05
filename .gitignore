@@ -12,3 +12,4 @@
 
 # Local development files
 /scripts/normalize_crlf.py
+/.vscode/settings.json

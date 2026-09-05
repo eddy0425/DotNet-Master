@@ -91,6 +91,16 @@ namespace DotNet.VisionMaster
         /// </summary>
         private void SwitchStrategy(int index)
         {
+            // 绘制未结束就切换会出两件事: 下面的 DispROI → SetRectPara 会改写 DrawType,
+            // 进行中的绘制会话从此收不到鼠标事件、一直卡到 5 分钟超时; 且本窗体已经切到新策略,
+            // ParaForm 的索引却停在旧的, 之后 ParaForm 上的操作会静默作用到错误的策略上。
+            // 所以必须在改动任何状态之前拦下来。
+            if (_formPara.IsDrawBusy)
+            {
+                MessageBox.Show("当前正在绘制 ROI / 模板，请先在图像上右键确认或取消后再切换工具。");
+                return;
+            }
+
             _index = index;
             _vsControls.ClearAll();
             _formPara.SelectPara(_index, _strategys);

@@ -68,6 +68,7 @@
     <Compile Include="HWindows\HMouse\DrawHelper.cs" />
     <Compile Include="HWindows\HMouse\Draw\DrawGeometry.cs" />
     <Compile Include="HWindows\HMouse\Draw\DrawSafe.cs" />
+    <Compile Include="HWindows\HMouse\Draw\DrawResults.cs" />
     <Compile Include="HWindows\HMouse\Draw\DrawRenderer.cs" />
     <Compile Include="HWindows\HMouse\Draw\DrawShape.cs" />
     <Compile Include="HWindows\HMouse\Draw\DrawSession.cs" />

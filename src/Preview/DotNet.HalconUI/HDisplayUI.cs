@@ -3,6 +3,7 @@ using HalconDotNet;
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using System.Threading.Tasks;
 using DotNet.Vision.Abstractions;
 
 
@@ -173,15 +174,45 @@ namespace DotNet.HalconUI
         }
 
         /// <summary>
+        /// 控件是否正在释放显示资源。
+        /// </summary>
+        /// <remarks>
+        /// 不能用 <see cref="System.Windows.Forms.Control.Disposing"/> 代替：
+        /// Designer 里 <c>Dispose(bool)</c> 是先调 <see cref="ReleaseDisplayResources"/>、
+        /// 后调 <c>base.Dispose(disposing)</c>，而 <c>STATE_DISPOSING</c> 是在后者里才置位的 ——
+        /// 被 <c>CancelDraw</c> 内联唤醒的续体正好跑在这个窗口期里，那时 <c>Disposing</c> 还是 false。
+        /// 调用方(如 <c>ParaForm</c> 的绘制 handler)靠它判断"现在不能弹模态框"。
+        /// </remarks>
+        public bool IsReleasing { get; private set; }
+
+        /// <summary>
         /// 释放显示相关的托管资源，由 <see cref="Dispose(bool)"/> 的 disposing 分支调用。
         /// </summary>
         private void ReleaseDisplayResources()
         {
-            // 1) 先解绑自身订阅，确保后续即便 display 内部触发事件也不再回到当前实例
+            IsReleasing = true;
+
+            // 0) 先解绑自身订阅：一是确保后续即便 display 内部触发事件也不再回到当前实例；
+            //    二是下一步的 CancelDraw 会**就地内联**跑完调用方 await 之后的整段代码
+            //    （见 DrawSession.Finish —— TrySetResult 在当前调用栈上直接执行续体），
+            //    续体里的 SetRectPara / SetModelPara 会回头重新配置 dispRect / dispModel 并改 DrawType。
+            //    先摘掉订阅，这些配置就影响不到已销毁控件的事件派发了。
             HMouseDown -= OnMouseDown;
             HMouseUp -= OnMouseUp;
             HMouseWheel -= OnMouseWheel;
             HMouseMove -= OnMouseMove;
+
+            // 1) 再终止挂起的绘制会话：否则它会一直持有本控件的 HWindow
+            //    直到 5 分钟超时，续体恢复时还会去操作已销毁的窗口。
+            try
+            {
+                // 必须先判空再调用: CancelDraw(null) 在 DrawSession.CancelAll 里是"取消所有窗口",
+                // 拿不到自己的窗口就误伤了其他 HDisplayUI 上正在进行的绘制。宁可不取消。
+                var window = hWindowControl?.HalconWindow;
+                if (window != null) DrawHelper.CancelDraw(window);
+                else Log.Warn(nameof(HDisplayUI), "释放时取不到 HalconWindow, 跳过取消绘制会话.");
+            }
+            catch (Exception ex) { Log.Warn(nameof(HDisplayUI), "取消绘制会话失败.", ex); }
 
             // 2) 先释放鼠标交互（解除它对 hWindowControl 的事件订阅），再释放 HDisplay 持有的 HObject。
             //    两者的 Dispose 自身都具备幂等性；这里不把字段置 null，
@@ -249,32 +280,47 @@ namespace DotNet.HalconUI
 
         #region Draw Region
 
+        // 三个入口都只是"先把控件自身的交互状态清干净，再把活交给 display"。
+        // 绘制要等用户在画面上确认，所以全部返回 Task —— 调用方必须在 UI 线程 await，
+        // 绝不能 .Wait()/.Result：等待期间 UI 线程要继续泵消息才能收到鼠标事件，阻塞即死锁。
+        //
+        // 两个 CvRegion 重载的返回值必须一路透传到算法层: 取消 / 超时时 HDisplay 不回写几何,
+        // 调用方若不看返回值就继续"按新 ROI 重建模板", 会拿旧几何做出一份不是用户想要的模板。
+
         /// <summary>
         /// 绘制（创建）橡皮筋区域
         /// </summary>
-        public void DrawRegion(CvRegion hRegion)
+        /// <returns>
+        /// 用户右键确认返回 true；取消 / 超时 / 绘制失败返回 false，此时 <paramref name="hRegion"/> 未被改动。
+        /// </returns>
+        public Task<bool> DrawRegionAsync(CvRegion hRegion)
         {
             DrawType = DrawEnum.None;
             Reset();
-            display.DrawRegion(hRegion);
+            return display.DrawRegionAsync(hRegion);
         }
 
         /// <summary>
         /// 绘制（修改）橡皮筋区域
         /// </summary>
-        public void DrawRegionMod(CvRegion hRegion)
+        /// <returns>语义同 <see cref="DrawRegionAsync(CvRegion)"/>。</returns>
+        public Task<bool> DrawRegionModAsync(CvRegion hRegion)
         {
             DrawType = DrawEnum.None;
             Reset();
-            display.DrawRegionMod(hRegion);
+            return display.DrawRegionModAsync(hRegion);
         }
 
-        /// <summary> 绘制区域 </summary>
-        public void DrawRegion(RectEnum type, out HObject rectangle)
+        /// <summary> 绘制区域；返回的对象所有权归调用方 </summary>
+        /// <returns>
+        /// 取消 / 超时返回<b>空对象元组</b>（<c>count_obj == 0</c>，不是 null，也不是空区域），
+        /// 调用方必须先用 <c>CountObj</c> 判空再喂给 <c>Union2</c> / <c>Difference</c>。
+        /// </returns>
+        public Task<HObject> DrawRegionAsync(RectEnum type)
         {
             DrawType = DrawEnum.None;
             Reset();
-            display.DrawRegion(type, out rectangle);
+            return display.DrawRegionAsync(type);
         }
 
         #endregion
