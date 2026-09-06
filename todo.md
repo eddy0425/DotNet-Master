@@ -684,8 +684,8 @@ private void PublishRenderData(FitArcMidpointRenderData data)
 - [x] A1 抽出 `DotNet.Vision.Abstractions`，打断 `HalconAlgo → HalconUI`
 - [x] A2 `IParaStrategy` 拆分为 5 个小接口
 - [x] C3 `DrawHelper` 三步走：~~加超时/取消~~ → ~~拆类~~ → ~~`DrawAsync` 消灭 `DoEvents`~~
-- [ ] C4 `DispPara`/`SavePara` 改为特性驱动的声明式绑定
-- [ ] C5 中文文案与业务状态解耦（enum + 资源文件）
+- [跳过] C4 `DispPara`/`SavePara` 改为特性驱动的声明式绑定
+- [跳过] C5 中文文案与业务状态解耦（enum + 资源文件）
 - [ ] C10 / C11 ROI 跟随坐标系补全旋转变换，输出与显示保持一致
 - [ ] C12 圆弧拟合 Stage 1 改用圆拟合稳健权重
 - [ ] C16 统一图像所有权，消除 `HWindowImage.HoImage` 悬挂引用
