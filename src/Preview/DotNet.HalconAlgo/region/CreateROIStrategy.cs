@@ -1,6 +1,7 @@
 ﻿using DotNet.Drawing;
 using DotNet.Vision.Abstractions;
 using HalconDotNet;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -8,8 +9,10 @@ using System.Threading.Tasks;
 
 namespace DotNet.HalconAlgo
 {
-    public class CreateROIStrategy : ParaStrategyBase<CreateROI>, IRoiEditable
+    public class CreateROIStrategy : ParaStrategyBase<CreateROI>, IRoiEditable, IDisposable
     {
+        private bool _disposed;
+
         public override AlgoEnum Algorithm => AlgoEnum.CreateROI;
         public override string Name { get; set; } = "创建ROI";
         public override int RunIndex { get; set; }
@@ -22,43 +25,73 @@ namespace DotNet.HalconAlgo
                                .Node("行", OutEnum.Number)
                                .Node("列", OutEnum.Number)
                            )
-                           .Node("角度", OutEnum.Array)
+                           .Node("角度", OutEnum.Number)
                        )
                        .Node("区域", OutEnum.Region)
                    );
 
             ClearResolvers();
+            // 模板协议: TmplPoint 是配置态(零角)参考原点, 下游 CoordIn 靠它算刚体变换.
+            RegisterOutput("TmplPoint", () => inPara.HoRect.Center);
             RegisterOutput("坐标系", () => inPara.Coord);
             RegisterOutput("坐标系/原点", () => inPara.Coord.Center);
             RegisterOutput("坐标系/原点/行", () => inPara.Coord.Y);
             RegisterOutput("坐标系/原点/列", () => inPara.Coord.X);
             RegisterOutput("坐标系/角度", () => inPara.Coord.Angle.Radians);
-            RegisterOutput("区域", () => inPara.HoRect);
+            // 只给 HoRegion 而不给整个 CvRegion: Result 只有 HoRegion 一项是真的, Bounds / Type / Phi
+            // 从未随本轮结果更新, 恒为默认值。对外只交付确实有效的那部分, 免得下游读到假数据。
+            // TryResolveRegionFrom 两种形态都收, 解析侧无需改动。
+            RegisterOutput("区域", () => inPara.Result.HoRegion);
 
         }
         public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
         {
-            HObject regionGet; HOperatorSet.GenEmptyObj(out regionGet);
+            HObject regionGet = null;   // 两条分支都会赋值; 所有权转交 Result 时置 null
 
             try
             {
                 inPara.Coord = new CvCoord();
                 var ho_ROI = inPara.HoRect;
 
+                // 未绘制 ROI 时 HoRegion 是 gen_empty_obj 的 0 长度元组: 两条分支 (CopyObj / TransRegion)
+                // 都会让它一路流到下游, 报出与真实原因无关的 HALCON 错误.
+                // 与 MergeRegion 的"无有效输入区域"同口径: 清结果 + 红字返回 false, 不抛异常 ——
+                // CreateROIForm 的循环执行只在最外层包 try, 抛异常会让后续工具全部不执行;
+                // 真正消费本输出的下游走 ResolveRegionFrom, 会抛出带完整路径的 AlgoOutputNotFoundException.
+                if (!ho_ROI.HoRegion.IsUsableRegion())
+                {
+                    ClearResult();
+                    // 不受 DispText 门控: 这是错误而不是装饰。"显示文本"是个显示偏好复选框, 关掉它
+                    // 连报错一起消失是不对的 —— Fun_action 的返回值没有任何调用方检查, 静音就等于
+                    // 工具默默什么都不做, 现场没有任何线索。
+                    display.DispText($"{Name} : 尚未绘制 ROI", new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Red, inPara.FontSize));
+                    return false;
+                }
+
                 if (inPara.CoordIn == "默认")
                 {
+                    regionGet = ho_ROI.HoRegion.CopyObj(1, -1);
                     inPara.Coord = new CvCoord(ho_ROI.Center);
-                    if (inPara.DispRegion) display.Disp(ho_ROI, DrawStyle.Of(HColor.Blue));
                 }
                 else
                 {
                     var inCoord = strategys.ResolveFrom<CvCoord>(inPara.CoordIn);
                     var tmplPoint = strategys.ResolveFrom<Point2d>(inPara.CoordIn.ToTmplPoint());
-                    HalconController.TransRegion(tmplPoint, inCoord.Center, ho_ROI.HoRegion, out regionGet);
-                    HOperatorSet.AreaCenter(regionGet, out _, out HTuple row, out HTuple column);
-                    inPara.Coord = new CvCoord(new Point2d(column, row));
-                    if (inPara.DispRegion) display.Disp(regionGet, DrawStyle.Of(HColor.Blue));
+                    var tmplCoord = new CvCoord(tmplPoint);
+
+                    HalconController.TransRegion(tmplCoord, inCoord, ho_ROI.HoRegion, out regionGet);
+                    // 与 FitLine / FitArcMidpoint 同口径: 亚像素刚体变换, 不取区域光栅化重心
+                    inPara.Coord = new CvCoord(
+                        HalconController.TransPoint(tmplCoord, inCoord, ho_ROI.Center),
+                        inCoord.Angle);
                 }
+
+                // 配置 ROI 不变；发布与显示共用本轮的区域句柄，下一轮才释放旧结果。
+                var previous = inPara.Result.HoRegion;
+                inPara.Result.HoRegion = regionGet;
+                regionGet = null; // 所有权转交给 Result
+                previous?.Dispose();
+                if (inPara.DispRegion) display.Disp(inPara.Result.HoRegion, DrawStyle.Of(HColor.Blue));
 
                 if (inPara.DispText)
                 {
@@ -68,11 +101,53 @@ namespace DotNet.HalconAlgo
 
                 return true;
             }
+            catch
+            {
+                ClearResult();
+                throw;
+            }
             finally
             {
-                regionGet.Dispose();
+                regionGet?.Dispose();
             }
         }
+
+        private void ClearResult()
+        {
+            HOperatorSet.GenEmptyObj(out HObject empty);
+            var previous = inPara.Result.HoRegion;
+            inPara.Result.HoRegion = empty;
+            previous?.Dispose();
+            inPara.Coord = new CvCoord();
+        }
+
+        /// <summary>
+        /// 只清理运行结果，重新打开工具页仍可复用配置 ROI。
+        /// 注意: 宿主目前只调用 <c>Init</c>, 尚未接线 <c>Close</c>。
+        /// </summary>
+        public override void Close(IRoiHost host)
+        {
+            if (_disposed) return;
+            ClearResult();
+        }
+
+        /// <summary>
+        /// 策略实例生命周期结束时释放运行态资源. 幂等.
+        /// 注意: 宿主既未接线 <c>Close</c>, 也未对策略集合做 IDisposable 分发, 本方法目前<b>无调用方</b>,
+        /// 句柄仍依赖 HObject 自身的 finalizer 回收 —— 属预留接口, 待宿主在移除工具 / 关闭 job 时接线.
+        /// <para>
+        /// 这里<b>只</b>释放 <c>Result</c>: <c>HoRect</c> 是随 job 落盘的配置态 ROI, 一旦在此释放,
+        /// 将来宿主真接上 Dispose 后, 保存配置 / 复制工具就会读到已释放的句柄。
+        /// 配置态句柄的归属在 <c>CvRegion</c> 自己身上, 不由策略代管。
+        /// </para>
+        /// </summary>
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            inPara?.Result?.Dispose();
+        }
+
         public override void DispPara(IParaUiHost ui)
         {
             ui.ShowTabs(TabPageEnum.Region, TabPageEnum.Display);
@@ -139,6 +214,10 @@ namespace DotNet.HalconAlgo
 
         /// <summary> 区域 </summary>
         public CvRegion HoRect { set; get; } = new CvRegion();
+
+        /// <summary>运行期区域输出；仅 HoRegion 表示实际形状，不用于编辑或重建。</summary>
+        [JsonIgnore]
+        public CvRegion Result { get; } = new CvRegion();
 
         /// <summary> 显示区域 </summary>
         public bool DispRegion { set; get; } = true;

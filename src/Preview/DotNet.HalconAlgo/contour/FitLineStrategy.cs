@@ -62,33 +62,45 @@ namespace DotNet.HalconAlgo
                 else
                     ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
 
-                HObject ho_Rect;
-                if (inPara.RegionIn == "默认")
-                    ho_Rect = inPara.HoRect.HoRegion;
-                else
-                    ho_Rect = strategys.ResolveFrom<HObject>(inPara.RegionIn);
+                bool useLocalRegion = inPara.RegionIn == "默认";
+                HObject searchRegion = useLocalRegion
+                    ? inPara.HoRect.HoRegion
+                    : strategys.ResolveRegionFrom(inPara.RegionIn);
+
+                // 上游路径的空句柄已由 ResolveRegionFrom 拦下; 本地配置 ROI 不经过它, 需在此补同一层判断,
+                // 否则未绘制 ROI 的 0 长度空元组会一路流进 reduce_domain, 抛出与真实原因无关的 HALCON 原生异常。
+                if (useLocalRegion && !searchRegion.IsUsableRegion())
+                    throw new InvalidOperationException($"{Name} : 尚未绘制 ROI，无法执行拟合！");
 
                 Point2d fixCenter = inPara.HoRect.Center;
-                if (inPara.CoordIn == "默认")
-                {
-                    HOperatorSet.ReduceDomain(ho_Image, ho_Rect, out imgReduced);
-                    if (inPara.DispRegion) display.Disp(ho_Rect, DrawStyle.Of(HColor.Blue));
-                }
-                else
+                Angle fixPhi = Angle.FromRadians(inPara.HoRect.Phi.D);
+                if (inPara.CoordIn != "默认")
                 {
                     var inCoord = strategys.ResolveFrom<CvCoord>(inPara.CoordIn);
                     var tmplPoint = strategys.ResolveFrom<Point2d>(inPara.CoordIn.ToTmplPoint());
-                    HalconController.TransRegion(tmplPoint, inCoord.Center, ho_Rect, out regionGet);
-                    fixCenter = HalconController.TransPoint(tmplPoint, inCoord.Center, fixCenter);
+                    var tmplCoord = new CvCoord(tmplPoint);
 
-                    HOperatorSet.ReduceDomain(ho_Image, regionGet, out imgReduced);
-                    if (inPara.DispRegion) display.Disp(regionGet, DrawStyle.Of(HColor.Blue));
+                    // 本地测量几何独立跟随，不能因使用上游区域而跳过。
+                    fixCenter = HalconController.TransPoint(tmplCoord, inCoord, fixCenter);
+                    fixPhi = (fixPhi + inCoord.Angle).Normalized;
+
+                    // 上游运行结果已在当前图像坐标系；只变换本地配置区域。
+                    if (useLocalRegion)
+                    {
+                        regionGet.Dispose();
+                        HalconController.TransRegion(tmplCoord, inCoord, searchRegion, out regionGet);
+                        searchRegion = regionGet;
+                    }
                 }
+
+                imgReduced.Dispose();
+                HOperatorSet.ReduceDomain(ho_Image, searchRegion, out imgReduced);
+                if (inPara.DispRegion) display.Disp(searchRegion, DrawStyle.Of(HColor.Blue));
 
                 #region 边缘查找
                 var setup = new EdgeMeasureSetup(
                     fixCenter,
-                    Angle.FromRadians(inPara.HoRect.Phi.D),
+                    fixPhi,
                     inPara.HoRect.Width / 2,
                     inPara.HoRect.Height / 2,
                     inPara.StepPace, inPara.StepWidth,

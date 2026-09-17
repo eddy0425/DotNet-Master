@@ -185,6 +185,45 @@ namespace DotNet.Vision.Abstractions
             return new List<IParaStrategy>(0);
         }
 
+        /// <summary>
+        /// 解析上游区域的借用句柄: 上游可能注册 <see cref="CvRegion"/> (CreateROIStrategy 等),
+        /// 也可能直接注册 <see cref="HObject"/>, 两种都接受; 解析不到返回 false.
+        /// 返回的句柄归上游所有, <b>不得</b>由调用方释放.
+        /// </summary>
+        /// <remarks>
+        /// 已释放 (null) / 未初始化 / 长度为 0 的空元组一律算解析失败: <see cref="CvRegion"/> 构造与
+        /// 各策略的 ClearResult 都会把句柄置成 <c>gen_empty_obj</c> 的空元组, 直接送进 reduce_domain
+        /// 会抛与真实原因 (上游尚未运行 / 结果已清空) 毫无关系的 HALCON 原生异常, 而 count_obj 为 0
+        /// 的区域在匹配里则会静默跑出 0 个结果. 因此把这层判断收敛在解析入口, 保证调用方拿到的
+        /// 一定是能直接交给 HALCON 算子的句柄.
+        /// <para>
+        /// 判断本身放在 <see cref="HObjectExtension.IsUsableRegion"/>: 本地配置 ROI 不走解析路径,
+        /// 各策略需自行调用同一个方法, 两条路径口径必须一致。
+        /// </para>
+        /// </remarks>
+        public static bool TryResolveRegionFrom(this IList<IParaStrategy> strategies, string fullPath, out HObject region)
+        {
+            var value = strategies.ResolveFrom(fullPath);
+            region = (value as CvRegion)?.HoRegion ?? value as HObject;
+            if (!region.IsUsableRegion())
+            {
+                region = null;
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 解析上游区域的借用句柄；所有权仍属于上游，调用方不得释放。
+        /// 解析不到、或句柄为空 (未运行 / 已清空) 时抛异常。
+        /// </summary>
+        public static HObject ResolveRegionFrom(this IList<IParaStrategy> strategies, string fullPath)
+        {
+            if (strategies.TryResolveRegionFrom(fullPath, out HObject region)) return region;
+            // 期望类型写 CvRegion: 本方法同时接受 CvRegion 与裸 HObject, 报 HObject 会让人误以为不收 CvRegion.
+            throw new AlgoOutputNotFoundException(fullPath, typeof(CvRegion));
+        }
+
         public static object ResolveFrom(this IList<IParaStrategy> strategies, string fullPath, char separator = '/')
         {
             if (strategies == null) return null;

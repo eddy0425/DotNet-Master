@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System;
 using System.Runtime.CompilerServices;
 
@@ -40,6 +41,8 @@ namespace DotNet.Drawing
         /// <summary>
         /// 角度（度数）
         /// </summary>
+        /// <remarks>由 Angle 推导, 只读; 落盘会写出却无法读回, 标 JsonIgnore 免得污染 job 文件。</remarks>
+        [JsonIgnore]
         public double AngleDegrees
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -49,6 +52,8 @@ namespace DotNet.Drawing
         /// <summary>
         /// 中心点
         /// </summary>
+        /// <remarks>由 X / Y 推导, 只读; 落盘会写出却无法读回, 标 JsonIgnore 免得污染 job 文件。</remarks>
+        [JsonIgnore]
         public Point2d Center
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -58,6 +63,8 @@ namespace DotNet.Drawing
         /// <summary>
         /// 单位方向向量
         /// </summary>
+        /// <remarks>由 Angle 推导, 只读; 落盘会写出却无法读回, 标 JsonIgnore 免得污染 job 文件。</remarks>
+        [JsonIgnore]
         public Point2d Direction
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -67,6 +74,8 @@ namespace DotNet.Drawing
         /// <summary>
         /// 是否为单位坐标系（位于原点且无旋转）
         /// </summary>
+        /// <remarks>由 X / Y / Angle 推导, 只读; 落盘会写出却无法读回, 标 JsonIgnore 免得污染 job 文件。</remarks>
+        [JsonIgnore]
         public bool IsIdentity
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -242,6 +251,13 @@ namespace DotNet.Drawing
         /// <summary>
         /// 获取逆变换
         /// </summary>
+        /// <remarks>
+        /// 由 X / Y / Angle 推导, 只读; 必须标 JsonIgnore —— 它本身又是 CvCoord, 序列化会一层层往下钻,
+        /// 逆的逆约等于自身, 只能靠 Newtonsoft 的循环引用检测收住(<c>JsonOptions.IgnoreReferenceLoop</c>
+        /// 默认 true 才不抛). 换成默认设置的 <c>SerializeConvert.ToJson</c> 就会直接报
+        /// "Self referencing loop detected"。
+        /// </remarks>
+        [JsonIgnore]
         public CvCoord Inverse
         {
             get

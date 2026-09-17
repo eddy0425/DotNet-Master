@@ -23,7 +23,7 @@ namespace DotNet.HalconAlgo
                                .Node("行", OutEnum.Number)
                                .Node("列", OutEnum.Number)
                            )
-                           .Node("角度", OutEnum.Array)
+                           .Node("角度", OutEnum.Number)
                        )
                    );
 
@@ -43,6 +43,13 @@ namespace DotNet.HalconAlgo
         }
         public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
         {
+            // 清空必须在所有前置校验之前: Fun_action 的 bool 返回值在每个调用方都被丢弃
+            // (各 Form 的 but_Run_Click / but_Cycle_Click 都只调用不判断), 校验失败只是屏幕上多一行红字,
+            // 下游工具照旧继续跑。此时若 Results / Coord 还留着上一轮的值, "编辑模板"与下游"坐标系"
+            // 读到的就是旧数据, 界面上看不出任何异常。
+            inPara.Results = new List<ModelResult>();
+            inPara.Coord = new CvCoord();
+
             HObject imgReduced; HOperatorSet.GenEmptyObj(out imgReduced);
             HObject ho_SelRect; HOperatorSet.GenEmptyObj(out ho_SelRect);
 
@@ -52,15 +59,25 @@ namespace DotNet.HalconAlgo
                     ? display.HoImage
                     : strategys.ResolveFrom<HObject>(inPara.ImageIn);
 
-                HObject ho_Rect = (inPara.RegionIn == "默认")
+                bool useLocalRegion = inPara.RegionIn == "默认";
+                HObject ho_Rect = useLocalRegion
                     ? inPara.HoRect.HoRegion
-                    : strategys.ResolveFrom<HObject>(inPara.RegionIn);
+                    : strategys.ResolveRegionFrom(inPara.RegionIn);
+
+                // 上游路径的空句柄已由 ResolveRegionFrom 拦下; 本地配置 ROI 不经过它, 需在此补同一层判断,
+                // 否则未绘制 ROI 时 CountObj() 为 0, 下面的循环一次都不进, 静默跑出 0 个结果。
+                if (useLocalRegion && !ho_Rect.IsUsableRegion())
+                {
+                    // 位置/字号跟随"显示"页的配置, 与本策略其它文本同一口径: 硬编码 (10,10) 与默认字号
+                    // 在大分辨率图上几乎看不见, 且与下面那行状态文本错位。
+                    display.DispText($"{Name} : 尚未绘制 ROI，无法执行匹配！", new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Red, inPara.FontSize));
+                    return false;
+                }
 
                 if (inPara.DispRegion) display.Disp(ho_Rect, DrawStyle.Of(HColor.Blue));
 
-                inPara.Results = new List<ModelResult>();
-
-                for (int j = 0; j < ho_Rect.CountObj(); j++)
+                int rectCnt = ho_Rect.CountObj();
+                for (int j = 0; j < rectCnt; j++)
                 {
                     // 释放上轮句柄，避免 SelectObj/ReduceDomain 反复 out 造成泄漏
                     ho_SelRect.Dispose();
@@ -78,7 +95,6 @@ namespace DotNet.HalconAlgo
                     {
                         var result = new ModelResult(row[i], column[i], angle[i], score[i]);
                         inPara.Results.Add(result);
-                        inPara.Coord = result.Coord;
 
                         inPara.HoContour.Dispose();
                         HOperatorSet.GetShapeModelContours(out inPara.HoContour, inPara.ModelID, 1);
@@ -93,12 +109,18 @@ namespace DotNet.HalconAlgo
                     }
                 }
 
+                // 对外发布的坐标系取最佳匹配(FindShapeModel 按得分降序返回), 而不是循环里最后一个实例:
+                // 多 ROI / 多匹配时"最后一个"是任意的, 下游跟随坐标会在各实例间跳。与下面状态文本里
+                // 的"最佳得分"同取 Results[0], 口径一致。
+                if (inPara.Results.Count > 0) inPara.Coord = inPara.Results[0].Coord;
+
                 if (inPara.DispText)
                 {
                     int cnt = inPara.Results.Count;
                     double bestScore = cnt > 0 ? inPara.Results[0].Score : 0;
                     string message = $"{Name} : 数量:{cnt} 最佳得分:{bestScore:F3} 角度范围:[{inPara.AngleStart}°,{(inPara.AngleStart.D + inPara.AngleExtent.D)}°]";
-                    display.DispText(message, new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Green, inPara.FontSize));
+                    // 0 匹配用红字: 绿字在本仓的惯例里是"正常跑完", 一个都没找到不该长得跟成功一样。
+                    display.DispText(message, new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(cnt > 0 ? HColor.Green : HColor.Red, inPara.FontSize));
                 }
 
                 return true;

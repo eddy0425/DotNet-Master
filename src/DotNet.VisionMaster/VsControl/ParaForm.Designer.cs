@@ -407,6 +407,7 @@
             this.btn_105.Size = new System.Drawing.Size(30, 20);
             this.btn_105.TabIndex = 271;
             this.btn_105.UseVisualStyleBackColor = false;
+            this.btn_105.Click += new System.EventHandler(this.btn_regionSource_Click);
             // 
             // lbl_105
             // 
@@ -445,6 +446,7 @@
             this.btn_104.Size = new System.Drawing.Size(30, 20);
             this.btn_104.TabIndex = 268;
             this.btn_104.UseVisualStyleBackColor = false;
+            this.btn_104.Click += new System.EventHandler(this.btn_regionSource_Click);
             // 
             // btn_103
             // 
@@ -460,6 +462,7 @@
             this.btn_103.Size = new System.Drawing.Size(30, 20);
             this.btn_103.TabIndex = 267;
             this.btn_103.UseVisualStyleBackColor = false;
+            this.btn_103.Click += new System.EventHandler(this.btn_regionSource_Click);
             // 
             // btn_102
             // 
@@ -475,6 +478,7 @@
             this.btn_102.Size = new System.Drawing.Size(30, 20);
             this.btn_102.TabIndex = 266;
             this.btn_102.UseVisualStyleBackColor = false;
+            this.btn_102.Click += new System.EventHandler(this.btn_regionSource_Click);
             // 
             // btn_101
             // 
@@ -652,6 +656,7 @@
             this.btn_110.Size = new System.Drawing.Size(30, 20);
             this.btn_110.TabIndex = 221;
             this.btn_110.UseVisualStyleBackColor = false;
+            this.btn_110.Click += new System.EventHandler(this.btn_coordSource_Click);
             // 
             // btn_114
             // 

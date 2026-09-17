@@ -165,6 +165,16 @@ namespace DotNet.VisionMaster
                             }
                         }
                         break;
+                    // 区域合并的 cmb_100 是"输入区域0"而不是图像来源, 单列一支选 Region。
+                    case AlgoEnum.MergeRegion:
+                        {
+                            _form_Value.setValueForm(_index, _strategys, cmb_100.Text, OutEnum.Region);
+                            if (_form_Value.DialogResult == DialogResult.OK)
+                            {
+                                cmb_100.Text = _form_Value.StrReturn;
+                            }
+                        }
+                        break;
                 }
             }
             catch (Exception ex) { MessageBox.Show(ex.Message); }
@@ -182,6 +192,7 @@ namespace DotNet.VisionMaster
                     case AlgoEnum.GenericModel:
                     case AlgoEnum.FitLine:
                     case AlgoEnum.FitArcMidpoint:
+                    case AlgoEnum.MergeRegion:   // cmb_101 = 输入区域1, 同样是选区域
                         {
                             _form_Value.setValueForm(_index, _strategys, cmb_101.Text, OutEnum.Region);
                             if (_form_Value.DialogResult == DialogResult.OK)
@@ -199,6 +210,62 @@ namespace DotNet.VisionMaster
                             }
                         }
                         break;
+                }
+            }
+            catch (Exception ex) { MessageBox.Show(ex.Message); }
+        }
+
+        /// <summary>
+        /// 区域合并的"输入区域 2..5"。
+        /// </summary>
+        /// <remarks>
+        /// <c>cmb_100</c>..<c>cmb_105</c> 与 <c>btn_100</c>..<c>btn_105</c> 一一对应, 但前两个按钮
+        /// 被其它算法当作"图像来源 / 区域来源"占用, 所以只能在各自的 Click 里单独分派;
+        /// 后四个目前只有区域合并会点亮 (其它算法一律 <c>ShowButton(..., false)</c> 隐藏), 共用本方法。
+        /// 仍然判一次 <c>Algorithm</c>: 隐藏只是不可见, 将来别的算法启用这几个按钮时不该误入这里。
+        /// </remarks>
+        private void btn_regionSource_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var strategy = _strategys[_index];
+                if (strategy.Algorithm != AlgoEnum.MergeRegion) return;
+
+                ComboBox combo = null;
+                if (sender == btn_102) combo = cmb_102;
+                else if (sender == btn_103) combo = cmb_103;
+                else if (sender == btn_104) combo = cmb_104;
+                else if (sender == btn_105) combo = cmb_105;
+                if (combo == null) return;
+
+                _form_Value.setValueForm(_index, _strategys, combo.Text, OutEnum.Region);
+                if (_form_Value.DialogResult == DialogResult.OK)
+                {
+                    combo.Text = _form_Value.StrReturn;
+                }
+            }
+            catch (Exception ex) { MessageBox.Show(ex.Message); }
+        }
+
+        /// <summary>
+        /// 区域合并的"跟随坐标"(参数页 110 号槽位)。
+        /// </summary>
+        /// <remarks>
+        /// 其它算法的跟随坐标用的是 Region 页的 <c>cmb_CoordIn</c> / <c>btn_setCoordIn</c>; 区域合并
+        /// 不开 Region 页, 那两个控件永远不可见, 只能借参数页的空闲槽位, 故单列一个 handler。
+        /// <c>btn_110</c> 此前没有任何 handler —— 用到该槽位的拟合/匹配都 <c>ShowButton(..., false)</c>
+        /// 把它隐藏了; 隐藏只是不可见, 所以这里仍判一次 <c>Algorithm</c> 兜底。
+        /// </remarks>
+        private void btn_coordSource_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_strategys[_index].Algorithm != AlgoEnum.MergeRegion) return;
+
+                _form_Value.setValueForm(_index, _strategys, cmb_110.Text, OutEnum.Coord);
+                if (_form_Value.DialogResult == DialogResult.OK)
+                {
+                    cmb_110.Text = _form_Value.StrReturn;
                 }
             }
             catch (Exception ex) { MessageBox.Show(ex.Message); }
@@ -261,6 +328,7 @@ namespace DotNet.VisionMaster
                     case AlgoEnum.FitLine:
                     case AlgoEnum.FitArcMidpoint:
                     case AlgoEnum.RotateImage:
+                    // 区域合并不在此列: 它的跟随坐标在参数页的 cmb_110, 见 btn_coordSource_Click。
                         {
                             _form_Value.setValueForm(_index, _strategys, cmb_CoordIn.Text, OutEnum.Coord);
                             if (_form_Value.DialogResult == DialogResult.OK)

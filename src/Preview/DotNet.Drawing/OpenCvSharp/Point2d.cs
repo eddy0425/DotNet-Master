@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -32,6 +33,8 @@ namespace DotNet.Drawing
         /// <summary>
         /// 向量模长（到原点的距离）
         /// </summary>
+        /// <remarks>由 X / Y 推导, 只读; 落盘会写出却无法读回, 标 JsonIgnore 免得污染 job 文件。</remarks>
+        [JsonIgnore]
         public double Magnitude
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -41,6 +44,8 @@ namespace DotNet.Drawing
         /// <summary>
         /// 向量角度（弧度）
         /// </summary>
+        /// <remarks>由 X / Y 推导, 只读; 落盘会写出却无法读回, 标 JsonIgnore 免得污染 job 文件。</remarks>
+        [JsonIgnore]
         public double Angle
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -50,6 +55,8 @@ namespace DotNet.Drawing
         /// <summary>
         /// 向量角度（度数）
         /// </summary>
+        /// <remarks>由 X / Y 推导, 只读; 落盘会写出却无法读回, 标 JsonIgnore 免得污染 job 文件。</remarks>
+        [JsonIgnore]
         public double AngleDegrees
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -59,6 +66,8 @@ namespace DotNet.Drawing
         /// <summary>
         /// 是否为零向量
         /// </summary>
+        /// <remarks>由 X / Y 推导, 只读; 落盘会写出却无法读回, 标 JsonIgnore 免得污染 job 文件。</remarks>
+        [JsonIgnore]
         public bool IsZero
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
