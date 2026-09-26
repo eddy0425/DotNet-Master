@@ -57,7 +57,8 @@ namespace DotNet.Drawing
                             Log.Warn(nameof(RegionExtension), "多边形点集为空，跳过区域重建。");
                             return;
                         }
-                        HOperatorSet.GenRegionPolygon(out HObject region, hRegion.PolygonX, hRegion.PolygonY);
+                        // gen_region_polygon(Region, Rows, Columns)：首参为 Row，而 PolygonX/PolygonY 分别存 Column/Row
+                        HOperatorSet.GenRegionPolygon(out HObject region, hRegion.PolygonY, hRegion.PolygonX);
                         ReplaceHandle(hRegion, region);
                     }
                     break;

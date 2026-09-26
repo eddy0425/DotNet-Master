@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DotNet.Drawing.Tests
@@ -6,6 +6,24 @@ namespace DotNet.Drawing.Tests
     [TestClass]
     public class MathHelperTests
     {
+        [TestMethod]
+        public void AreEqualQuantized_AgreesWithQuantizeToTolerance()
+        {
+            Assert.IsTrue(MathHelper.AreEqualQuantized(1, 1 + 1e-12));
+            Assert.IsFalse(MathHelper.AreEqualQuantized(1, 1 + 1e-6));
+            Assert.IsTrue(MathHelper.AreEqualQuantized(double.NaN, double.NaN), "NaN 判等须自反");
+            Assert.IsFalse(MathHelper.AreEqualQuantized(double.NaN, 0));
+            Assert.IsTrue(MathHelper.AreEqualQuantized(double.PositiveInfinity, double.PositiveInfinity));
+
+            var pairs = new[] { new[] { 0.4e-9, 0.6e-9 }, new[] { 1.4e-9, 1.6e-9 }, new[] { -0.4e-9, 0.4e-9 }, new[] { 3.0, 3.0 + 5e-10 } };
+            foreach (var pair in pairs)
+            {
+                double a = pair[0], b = pair[1];
+                bool equal = MathHelper.AreEqualQuantized(a, b);
+                Assert.AreEqual(MathHelper.QuantizeToTolerance(a).Equals(MathHelper.QuantizeToTolerance(b)), equal, $"{a} vs {b}");
+            }
+        }
+
         #region 角度规范化
 
         [DataTestMethod]
@@ -90,7 +108,8 @@ namespace DotNet.Drawing.Tests
         {
             Assert.IsTrue(MathHelper.AreEqualGeometric(1.0, 1.004));
             Assert.IsFalse(MathHelper.AreEqualGeometric(1.0, 1.006));
-            Assert.IsFalse(MathHelper.AreEqualGeometric(double.NaN, double.NaN));
+            Assert.IsTrue(MathHelper.AreEqualGeometric(double.NaN, double.NaN), "NaN 判等须自反");
+            Assert.IsFalse(MathHelper.AreEqualGeometric(double.NaN, 0));
             Assert.IsTrue(MathHelper.IsZeroGeometric(0.004));
             Assert.IsFalse(MathHelper.IsZeroGeometric(0.02));
         }

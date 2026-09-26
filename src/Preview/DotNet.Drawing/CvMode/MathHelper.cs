@@ -105,12 +105,31 @@ namespace DotNet.Drawing
         /// 网格判等是等价关系，并与 <see cref="QuantizeGeometric"/> 生成的哈希分量严格一致；
         /// 避免使用 <c>|a-b| &lt; tolerance</c> 时因不具传递性、跨网格边界而破坏
         /// <c>Equals/GetHashCode</c> 契约。
+        /// NaN 与 NaN 判等（与 <see cref="Angle.Equals(Angle)"/> 一致），保证含 NaN 的对象 <c>x.Equals(x)</c> 自反，
+        /// 放进哈希集合后仍能查到。
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool AreEqualGeometric(double a, double b)
         {
-            if (double.IsNaN(a) || double.IsNaN(b)) return false;
+            if (double.IsNaN(a) || double.IsNaN(b)) return double.IsNaN(a) && double.IsNaN(b);
             return QuantizeGeometric(a).Equals(QuantizeGeometric(b));
+        }
+
+        /// <summary>
+        /// 将两个值量化到 <see cref="Tolerance"/> 网格后判断是否相等。
+        /// </summary>
+        /// <remarks>
+        /// 与 <see cref="QuantizeToTolerance"/> 生成的哈希分量严格一致，用于判等必须与 1e-9 网格哈希配套的场景
+        /// （弧度、以及 <see cref="CvRegion"/> 中沿用 1e-9 网格的半径 / 多边形坐标等）。
+        /// 不能改用 <see cref="AreEqual"/>：|a-b| &lt; 1e-9 的两值可能跨越网格边界，判等为真而哈希不同。
+        /// 修改调用处的判等网格时，必须同步修改对应的 GetHashCode。
+        /// NaN 规则同 <see cref="AreEqualGeometric"/>。
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool AreEqualQuantized(double a, double b)
+        {
+            if (double.IsNaN(a) || double.IsNaN(b)) return double.IsNaN(a) && double.IsNaN(b);
+            return QuantizeToTolerance(a).Equals(QuantizeToTolerance(b));
         }
 
         /// <summary>
@@ -154,7 +173,9 @@ namespace DotNet.Drawing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static double QuantizeToTolerance(double value, double tolerance = Tolerance)
         {
-            if (tolerance <= 0 || double.IsNaN(value) || double.IsInfinity(value)) return value;
+            // NaN 统一为规范 NaN：不同载荷位的 NaN 在 .NET Framework 上哈希不同，而判等视其相等
+            if (double.IsNaN(value)) return double.NaN;
+            if (tolerance <= 0 || double.IsInfinity(value)) return value;
             return Math.Round(value / tolerance) * tolerance;
         }
 

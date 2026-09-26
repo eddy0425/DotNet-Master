@@ -28,6 +28,8 @@ namespace DotNet.Drawing
         /// </summary>
         public double Y { get; init; }
 
+        private readonly Angle _angle;
+
         /// <summary>
         /// 朝向角
         /// </summary>
@@ -36,8 +38,16 @@ namespace DotNet.Drawing
         /// 但调用方屡屡再补一次 <c>ToRadians()</c>（审查项 B5），编译器无从发现。
         /// 现在取值必须显式写 <c>.Radians</c> 或 <c>.Degrees</c>，单位由类型保证。
         /// JSON 落盘形状不变，仍是一个弧度数字（见 <see cref="AngleJsonConverter"/>）。
+        /// <para>
+        /// 归一化到 [-π, π) 放在 init 访问器里：<c>coord with { Angle = ... }</c> 与 JSON 反序列化
+        /// 都不经过构造函数，否则 2π 与 0 会被判为不同朝向。
+        /// </para>
         /// </remarks>
-        public Angle Angle { get; init; }
+        public Angle Angle
+        {
+            get => _angle;
+            init => _angle = value.Normalized;
+        }
 
         /// <summary>
         /// 角度（度数）
@@ -99,7 +109,7 @@ namespace DotNet.Drawing
         {
             X = x;
             Y = y;
-            Angle = angle.Normalized;
+            _angle = angle.Normalized;
         }
 
         /// <summary>
@@ -112,7 +122,7 @@ namespace DotNet.Drawing
         {
             X = center.X;
             Y = center.Y;
-            Angle = angle.Normalized;
+            _angle = angle.Normalized;
         }
 
         /// <summary>

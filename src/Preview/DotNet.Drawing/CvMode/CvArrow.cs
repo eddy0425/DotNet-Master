@@ -17,10 +17,20 @@ namespace DotNet.Drawing
     {
         #region Properties
 
+        private readonly CvLine _line;
+
         /// <summary>
         /// 箭头的线段部分
         /// </summary>
-        public CvLine Line { get; init; }
+        /// <remarks>
+        /// 判空放在 init 访问器里：<c>arrow with { Line = null }</c> 不经过构造函数，
+        /// 否则之后访问 Start/End/Length 或判等都会 NRE。
+        /// </remarks>
+        public CvLine Line
+        {
+            get => _line;
+            init => _line = value ?? throw new ArgumentNullException(nameof(Line));
+        }
 
         /// <summary>
         /// 箭头头部大小
@@ -64,7 +74,8 @@ namespace DotNet.Drawing
         /// </summary>
         public CvArrow(CvLine line, double headSize = 10.0, double headAngle = 30.0)
         {
-            Line = line ?? throw new ArgumentNullException(nameof(line));
+            if (line is null) throw new ArgumentNullException(nameof(line));
+            Line = line;
             HeadSize = headSize;
             HeadAngle = headAngle;
         }
@@ -117,7 +128,7 @@ namespace DotNet.Drawing
             if (other is null) return false;
             return Line.Equals(other.Line) &&
                    MathHelper.AreEqualGeometric(HeadSize, other.HeadSize) &&
-                   MathHelper.AreEqual(HeadAngle, other.HeadAngle);
+                   MathHelper.AreEqualQuantized(HeadAngle, other.HeadAngle);
         }
 
         public override int GetHashCode() => HashCode.Combine(

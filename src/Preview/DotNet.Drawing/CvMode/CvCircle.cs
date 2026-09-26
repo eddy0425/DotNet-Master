@@ -258,8 +258,8 @@ namespace DotNet.Drawing
             if (other is null) return false;
             return Center.Equals(other.Center) &&
                    MathHelper.AreEqualGeometric(Radius, other.Radius) &&
-                   MathHelper.AreEqual(StartPhi, other.StartPhi) &&
-                   MathHelper.AreEqual(EndPhi, other.EndPhi);
+                   MathHelper.AreEqualQuantized(StartPhi, other.StartPhi) &&
+                   MathHelper.AreEqualQuantized(EndPhi, other.EndPhi);
         }
 
         public override int GetHashCode() => HashCode.Combine(

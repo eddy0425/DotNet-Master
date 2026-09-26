@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 
@@ -57,6 +57,28 @@ namespace DotNet.Drawing.Tests
             string json = JsonConvert.SerializeObject(c);
             Assert.AreEqual("{\"X\":1.5,\"Y\":-2.0,\"Angle\":0.75}", json);
             AreClose(1.5, -2, 0.75, JsonConvert.DeserializeObject<CvCoord>(json));
+        }
+
+        [TestMethod]
+        public void WithExpression_NormalizesAngle()
+        {
+            // with 绕过构造函数，归一化必须由 init 访问器兜底
+            var c = CvCoord.Identity with { Angle = Angle.FromRadians(2 * Math.PI) };
+            AreClose(0, 0, 0, c);
+            Assert.AreEqual(CvCoord.Identity, c);
+            AreClose(0, 0, -Math.PI / 2, CvCoord.Identity with { Angle = Angle.FromDegrees(270) });
+        }
+
+        [TestMethod]
+        public void Json_UnnormalizedAngle_IsNormalized()
+        {
+            AreClose(0, 0, 7 - 2 * Math.PI, JsonConvert.DeserializeObject<CvCoord>("{\"X\":0,\"Y\":0,\"Angle\":7}"));
+        }
+
+        [TestMethod]
+        public void ToString_IsReadable()
+        {
+            StringAssert.Contains(CvCoord.FromDegrees(1, 2, 90).ToString(), "90");
         }
     }
 }

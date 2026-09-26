@@ -278,9 +278,9 @@ namespace DotNet.Drawing
             // CvRegion 扩展字段
             return Type == other.Type
                 && AddOrDecrease == other.AddOrDecrease
-                && MathHelper.AreEqual(MaxRadius, other.MaxRadius)
-                && MathHelper.AreEqual(MinRadius, other.MinRadius)
-                && MathHelper.AreEqual(RingWidth, other.RingWidth)
+                && MathHelper.AreEqualQuantized(MaxRadius, other.MaxRadius)
+                && MathHelper.AreEqualQuantized(MinRadius, other.MinRadius)
+                && MathHelper.AreEqualQuantized(RingWidth, other.RingWidth)
                 && HTupleEquals(Phi, other.Phi)
                 && HTupleEquals(PolygonX, other.PolygonX)
                 && HTupleEquals(PolygonY, other.PolygonY);
@@ -313,7 +313,7 @@ namespace DotNet.Drawing
             if (a.Length != b.Length) return false;
             for (int i = 0; i < a.Length; i++)
             {
-                if (!MathHelper.AreEqual(a[i].D, b[i].D)) return false;
+                if (!MathHelper.AreEqualQuantized(a[i].D, b[i].D)) return false;
             }
             return true;
         }

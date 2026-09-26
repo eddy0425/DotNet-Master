@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DotNet.Drawing.Tests
@@ -92,6 +92,23 @@ namespace DotNet.Drawing.Tests
             Assert.AreNotEqual(a, new CvCircle(0, 0, 5, 0, 1));
             Geom.AreClose(0, 0, CvCircle.Unit.Center);
             Geom.AreClose(1, CvCircle.Unit.Radius);
+        }
+
+        [TestMethod]
+        public void Equality_Phi_ConsistentWithHash()
+        {
+            // 相差不足 1e-9 但跨越 1e-9 网格边界：判等为真时哈希必须相同
+            var a = new CvCircle(0, 0, 5, 0.4e-9, 1);
+            var b = new CvCircle(0, 0, 5, 0.6e-9, 1);
+            if (a.Equals(b))
+                Assert.AreEqual(a.GetHashCode(), b.GetHashCode());
+
+            var c = new CvCircle(0, 0, 5, 0, 1 + 0.4e-9);
+            var d = new CvCircle(0, 0, 5, 0, 1 + 0.6e-9);
+            if (c.Equals(d))
+                Assert.AreEqual(c.GetHashCode(), d.GetHashCode());
+
+            Assert.AreEqual(new CvCircle(0, 0, 5, 0, 1), new CvCircle(0, 0, 5, 1e-12, 1));
         }
     }
 }
