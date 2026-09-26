@@ -254,6 +254,60 @@ namespace DotNet.HalconAlgo.Tests
         }
 
         [TestMethod]
+        public void RegionIn_UpstreamRegionExcludingEdge_Throws()
+        {
+            // measure_pos 忽略定义域：原先上游区域只影响显示，区域外的边照样被找到并拟合成功
+            using (var upstreamRegion = Rectangle1(0, 0, Size - 1, 90))
+            {
+                _strategy.inPara.RegionIn = "区域源/区域";
+                var upstream = new StubStrategy("区域源").Output("区域", upstreamRegion);
+
+                var ex = Assert.ThrowsException<InvalidOperationException>(() => _strategy.Fun_action(_display, Strategies.Of(upstream)));
+                StringAssert.Contains(ex.Message, "未找到足够的轮廓点");
+                Assert.IsTrue(_strategy.inPara.Line.IsDegenerate);
+            }
+        }
+
+        [TestMethod]
+        public void RegionIn_UpstreamRegion_LimitsPointsToRegion()
+        {
+            // 上游区域只覆盖行 0..100：测量矩形行 40..100 共 7 个有点，裁剪首尾后行 50..90
+            using (var upstreamRegion = Rectangle1(0, 0, 100, Size - 1))
+            {
+                _strategy.inPara.RegionIn = "区域源/区域";
+                var upstream = new StubStrategy("区域源").Output("区域", upstreamRegion);
+
+                Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of(upstream)));
+
+                var line = _strategy.inPara.Line;
+                Assert.AreEqual(50, Math.Min(line.Start.Y, line.End.Y), 0.5);
+                Assert.AreEqual(90, Math.Max(line.Start.Y, line.End.Y), 0.5);
+                StringAssert.Contains(_display.LastText, "用点:5");
+            }
+        }
+
+        [TestMethod]
+        public void SigmaZero_FromUi_StillFits()
+        {
+            // "滤波"下拉提供 0：原先直接传给 measure_pos 抛 HALCON #1302
+            _strategy.inPara.Sigma = 0;
+
+            Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of()));
+            Assert.AreEqual(99.5, _strategy.inPara.Line.Start.X, 0.5);
+        }
+
+        [TestMethod]
+        public void MaxErrZero_DisablesRefinement()
+        {
+            _strategy.inPara.MaxErr = 0;
+            _strategy.inPara.TrimEnds = "否";
+
+            Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of()));
+            StringAssert.Contains(_display.LastText, "用点:13");
+            Assert.AreEqual(0, _display.Points.Count(p => p.ColorName == HColor.Red.Name));
+        }
+
+        [TestMethod]
         public void RegionIn_Unresolvable_Throws()
         {
             _strategy.inPara.RegionIn = "区域源/区域";
@@ -295,6 +349,30 @@ namespace DotNet.HalconAlgo.Tests
                 Assert.AreEqual(99.5, line.Start.Y, 0.5);
                 Assert.AreEqual(99.5, line.End.Y, 0.5);
                 Assert.AreEqual(100, Math.Abs(line.End.X - line.Start.X), 1, "11 个点沿列展开 100 像素");
+            }
+        }
+
+        [TestMethod]
+        public void CoordIn_RotationWithTranslation_RotatesAroundTmplPointThenMoves()
+        {
+            // 示教原点 (100,100) → 当前 (130,120) 且转 90°：ROI 中心本就在示教原点，跟随后落在 (130,120)，
+            // 改为沿行测量；水平阶跃边在行 120。旋转中心或平移顺序写错时 ROI 会落在别处而找不到边。
+            using (var dark = ConstImage(Size, Size, 0))
+            using (var bottom = Rectangle1(120, 0, Size - 1, Size - 1))
+            using (var image = Paint(dark, bottom, 255))
+            {
+                _display.SetImage(image);
+                _strategy.inPara.Transition = "全部";
+                _strategy.inPara.CoordIn = "定位/坐标系";
+                var locator = StubStrategy.Coord("定位", new Point2d(100, 100), CvCoord.FromDegrees(130, 120, 90));
+
+                Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of(locator)));
+
+                var line = _strategy.inPara.Line;
+                Assert.AreEqual(119.5, line.Start.Y, 0.5);
+                Assert.AreEqual(119.5, line.End.Y, 0.5);
+                Assert.AreEqual(130, (line.Start.X + line.End.X) / 2, 1, "点沿列以跟随后的中心 130 对称展开");
+                Assert.AreEqual(100, Math.Abs(line.End.X - line.Start.X), 1);
             }
         }
 

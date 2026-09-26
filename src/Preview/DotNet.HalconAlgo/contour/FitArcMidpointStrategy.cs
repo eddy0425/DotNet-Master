@@ -515,11 +515,11 @@ namespace DotNet.HalconAlgo
             }
         }
 
-        /// <summary> 滤波 </summary>
+        /// <summary> 滤波（measure_pos 的 Sigma；小于 0.4 时按 0.4 处理） </summary>
         public int Sigma { set; get; } = 1;
 
         /// <summary>
-        /// 阈值 val = 0: 自动阈值, val > 0: 手动阈值, val = -1: 能量最强, val 小于 -1: 百分比阈值
+        /// 边缘幅值阈值：原样作为 measure_pos 的 Threshold，只接受幅值不低于它的边缘
         /// </summary>
         public int Threshold { set; get; } = 60;
 

@@ -67,6 +67,7 @@
     <Compile Include="image\LineRotImageStrategy.cs" />
     <Compile Include="image\RotateImageStrategy.cs" />
     <Compile Include="matching\GenericModelStrategy.cs" />
+    <Compile Include="matching\ModelImage.cs" />
     <Compile Include="region\MergeRegionStrategy.cs" />
     <Compile Include="matching\NccModelStrategy.cs" />
     <Compile Include="matching\ScaledModelStrategy.cs" />

@@ -25,19 +25,44 @@ namespace DotNet.HalconAlgo
         public override bool Fun_action(HObject ho_Image, IHDisplay display)
         {
             display.SetImage(ho_Image);
-            // 传空集合而不是 null: 另一重载内部会对 strategys 做 ResolveFrom, null 会直接 NRE.
-            return Fun_action(display, StrategyExtensions.EmptyList());
+            // 直接处理传入的图像, 不再转到另一重载按 ImageIn 取图: 单图重载没有上游,
+            // ImageIn 一旦不是"默认"就必然解析失败 —— 与 FitLineStrategy 的单图重载同口径。
+            // 传空集合而不是 null: Run 内部会对 strategys 做 ResolveFrom, null 会直接 NRE.
+            return RunWithReset(() => ho_Image.RequireImage(Name), display, StrategyExtensions.EmptyList());
         }
         public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
         {
-            HObject ho_Image;
-            if (inPara.ImageIn == "默认")
-                ho_Image = display.HoImage.RequireImage(Name);
-            else
-                ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
+            return RunWithReset(() => inPara.ImageIn == "默认"
+                    ? display.HoImage.RequireImage(Name)
+                    : strategys.ResolveFrom<HObject>(inPara.ImageIn).RequireImage(Name),
+                display, strategys);
+        }
+
+        /// <summary>
+        /// 每轮开头先把输出图像复位成空对象, 与匹配 / 拟合类"先清空再校验"同口径:
+        /// 失败都是抛异常退出, 不清的话宿主吞掉异常后, 下游读到的是上一轮的图像, 静默按旧帧继续算。
+        /// 旧句柄在 finally 里才释放: "默认"来源下传入的图像可能正是上一轮的输出 (显示窗口不复制时),
+        /// 必须等本轮结果算完再放。
+        /// </summary>
+        private bool RunWithReset(Func<HObject> getImage, IHDisplay display, List<IParaStrategy> strategys)
+        {
+            HObject previous = inPara.Image;
+            HOperatorSet.GenEmptyObj(out inPara.Image);
+            try
+            {
+                return Run(getImage(), display, strategys);
+            }
+            finally
+            {
+                previous.Dispose();
+            }
+        }
+
+        private bool Run(HObject ho_Image, IHDisplay display, List<IParaStrategy> strategys)
+        {
 
             string message;
-            // 本轮结果先落在局部变量, 成功后再替换 inPara.Image: 算子抛异常时不会留下已释放的死句柄
+            // 本轮结果先落在局部变量, 成功后再替换 inPara.Image (此时是 RunWithReset 放进去的空对象)
             HObject result;
 
             if (inPara.RotateType == "图像中心")
@@ -137,9 +162,13 @@ namespace DotNet.HalconAlgo
         public override void SavePara(IParaUiHost ui)
         {
             inPara.ImageIn = ui.GetString("cmb_100");
+
+            // cmb_102 的含义由 DispPara 时的旋转方式决定 (角度 / 坐标系路径), 必须按"旧"方式解读:
+            // 界面切换 cmb_101 不会重新 DispPara, 按新方式读会把角度文本 "90" 写进 CoordIn, 丢掉已配置的坐标系。
+            bool slot102IsAngle = inPara.RotateType == "图像中心";
             inPara.RotateType = ui.GetString("cmb_101");
 
-            if (inPara.RotateType == "图像中心")
+            if (slot102IsAngle)
             {
                 // 用户可能输入非数字, 这里保留 TryParse 的容错: 解析失败时不覆盖原值.
                 if (float.TryParse(ui.GetString("cmb_102"), out float angle))

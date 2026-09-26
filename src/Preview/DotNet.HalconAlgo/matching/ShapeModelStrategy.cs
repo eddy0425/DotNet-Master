@@ -48,11 +48,7 @@ namespace DotNet.HalconAlgo
             // (各 Form 的 but_Run_Click / but_Cycle_Click 都只调用不判断), 校验失败只是屏幕上多一行红字,
             // 下游工具照旧继续跑。此时若 Results / Coord 还留着上一轮的值, "编辑模板"与下游"坐标系"
             // 读到的就是旧数据, 界面上看不出任何异常。
-            inPara.Results = new List<ModelResult>();
-            inPara.Coord = new CvCoord();
-            // 轮廓与 Coord 是一对 (DispROI / "编辑模板"一起取用), 同样要清, 否则失败轮次会把旧轮廓配上零坐标系
-            inPara.HoContour?.Dispose();
-            HOperatorSet.GenEmptyObj(out inPara.HoContour);
+            ResetOutputs();
 
             // 与通用匹配同口径: 未建模板属于可恢复的配置问题, 红字 + 返回 false。
             // 不拦的话 null 的 ModelID 会一路传进查找算子, 报出与真实原因无关的 HALCON 参数错误。
@@ -161,12 +157,31 @@ namespace DotNet.HalconAlgo
 
                 return true;
             }
+            catch
+            {
+                // 循环中途抛异常时, 前面 ROI 的结果已写进 Results / HoContour: 与开头同样复位,
+                // 不把半截结果留给"编辑模板"和下游 (宿主吞掉异常后下游照跑)。
+                ResetOutputs();
+                throw;
+            }
             finally
             {
                 imgReduced.Dispose();
                 ho_SelRect.Dispose();
             }
         }
+        /// <summary>
+        /// 复位本轮输出: 结果列表、坐标系, 以及与坐标系配对显示的轮廓
+        /// (DispROI / "编辑模板"一起取用, 不清的话失败轮次会把旧轮廓配上零坐标系)。
+        /// </summary>
+        private void ResetOutputs()
+        {
+            inPara.Results = new List<ModelResult>();
+            inPara.Coord = new CvCoord();
+            inPara.HoContour?.Dispose();
+            HOperatorSet.GenEmptyObj(out inPara.HoContour);
+        }
+
         public override void DispPara(IParaUiHost ui)
         {
             ui.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Region, TabPageEnum.Matching, TabPageEnum.Display);
@@ -270,30 +285,32 @@ namespace DotNet.HalconAlgo
         {
             HObject imgReduced; HOperatorSet.GenEmptyObj(out imgReduced);
             HObject ho_Contour; HOperatorSet.GenEmptyObj(out ho_Contour);
+            HObject newContour = null;
+            HTuple modelID = null;
+            // 绘制会就地改写 ModeRect (Type / 几何 / 区域)。走不到"提交"这一步 —— 取消、试匹配失败、
+            // 取图 / 训练 / 存图抛异常 —— 都整体换回快照, 模板区域始终与仍在用的模板配套。
+            CvRegion snapshot = inPara.ModeRect.Clone();
 
             try
             {
-                // Type 必须在绘制前写入(DrawRegionAsync 按它分发图元), 但取消时几何不会被回写,
-                // 所以要连 Type 一起还原, 否则 Type 与 HoRegion 的实际形状对不上.
-                var prevType = inPara.ModeRect.Type;
+                // Type 必须在绘制前写入(DrawRegionAsync 按它分发图元)
                 inPara.ModeRect.Type = type;
 
                 bool confirmed = newModel
                     ? await host.DrawRegionAsync(inPara.ModeRect)
                     : await host.DrawRegionModAsync(inPara.ModeRect);
 
-                // 取消 / 超时: ModeRect 保持原样, 这里必须直接返回.
-                // 继续往下会 ModelID = null 并按"旧几何 + 新参数"重建一份用户没有要求的模板,
+                // 取消 / 超时: 必须直接返回.
+                // 继续往下会按"旧几何 + 新参数"重建一份用户没有要求的模板,
                 // 原模板就此丢失 —— 这正是"取消不应有副作用"的关键一步.
                 if (!confirmed)
                 {
-                    inPara.ModeRect.Type = prevType;
+                    RestoreModeRect(ref snapshot);
                     // 绘制会话结束时窗口只剩底图, 把原模板区域重新画回去, 避免画面像是被清空
                     host.Display.Disp(inPara.ModeRect, DrawStyle.Of(HColor.Orange));
                     return;
                 }
 
-                inPara.ModelPath = Path.Combine(AlgoPaths.JobDir, RunIndex.ToString(), "matching.bmp");
                 var hImage = host.Display.HoImage.RequireImage(Name);
 
                 imgReduced.Dispose();
@@ -301,7 +318,7 @@ namespace DotNet.HalconAlgo
 
                 //制作模板
                 HOperatorSet.CreateShapeModel(imgReduced, inPara.NumLevels, inPara.AngleStart.TupleRad(), inPara.AngleExtent.TupleRad(),
-                                          "auto", "auto", "use_polarity", "auto", "auto", out HTuple modelID);
+                                          "auto", "auto", "use_polarity", "auto", "auto", out modelID);
 
                 // 先用新模板试匹配, 确认可用后再替换: 若先替换, 试匹配失败时旧模板已被释放,
                 // 新模板却配着旧模板示教出的 TmplPoint, 下游跟随会静默偏移。
@@ -310,50 +327,67 @@ namespace DotNet.HalconAlgo
                                             out HTuple row, out HTuple column, out HTuple angle, out HTuple score);
 
                 // 试匹配一个都没找到时必须在构造 ModelResult 之前返回: 空 HTuple 隐式转 double 会直接抛
-                // HTupleAccessException。丢弃新模板, 旧模板与旧 TmplPoint 仍是一致的一对。
+                // HTupleAccessException。新模板在 finally 里丢弃, 旧模板与旧 TmplPoint 仍是一致的一对。
                 if (score.Length == 0)
                 {
-                    HOperatorSet.ClearShapeModel(modelID);
+                    RestoreModeRect(ref snapshot);
                     host.Display.Disp(inPara.ModeRect, DrawStyle.Of(HColor.Orange));
                     host.Display.DispText("新建模板失败！", new Point2d(10, 10), DrawStyle.Of(HColor.Red));
                     return;
                 }
 
-                // 转移所有权：先释放旧模板，再装入新模板，防止重复 SetTemplateAsync 累计泄漏
+                var result = new ModelResult(row, column, angle, score);
+                ho_Contour.Dispose();
+                HOperatorSet.GetShapeModelContours(out ho_Contour, modelID, 1);
+                HOperatorSet.VectorAngleToRigid(0, 0, 0, result.Row, result.Column, result.Angle, out HTuple hv_HomMat2D);
+                HOperatorSet.AffineTransContourXld(ho_Contour, out newContour, hv_HomMat2D);
+
+                // 模板图先落盘再提交: 原先先换模板再存图, 存图一失败, 新模板就配着旧 TmplPoint / 旧 ModelPath,
+                // 下游跟随静默偏移。现在保存失败时新模板在 finally 里丢弃, 旧的一套 (含旧模板图) 原样保留。
+                string modelPath = Path.Combine(AlgoPaths.JobDir, RunIndex.ToString(), "matching.bmp");
+                ModelImage.Save(hImage, imgReduced, modelPath);
+
+                // 提交: 以下只做赋值与释放旧句柄, 模型 / 路径 / 结果 / 示教原点一起换。
                 if (inPara.ModelID != null && inPara.ModelID.Length > 0)
                 {
                     HOperatorSet.ClearShapeModel(inPara.ModelID);
                 }
                 inPara.ModelID = modelID;
-
-                inPara.Results = new List<ModelResult>();
-                inPara.Coord = new CvCoord();
-
-                var result = new ModelResult(row, column, angle, score);
-                inPara.Results.Add(result);
-                ho_Contour.Dispose();
-                HOperatorSet.GetShapeModelContours(out ho_Contour, modelID, 1);
-                HOperatorSet.VectorAngleToRigid(0, 0, 0, result.Row, result.Column, result.Angle, out HTuple hv_HomMat2D);
-                HOperatorSet.AffineTransContourXld(ho_Contour, out HObject contoursAffineTrans, hv_HomMat2D);
+                modelID = null;
+                inPara.ModelPath = modelPath;
+                inPara.Results = new List<ModelResult> { result };
                 inPara.HoContour.Dispose();
-                inPara.HoContour = contoursAffineTrans;
+                inPara.HoContour = newContour;
+                newContour = null;
                 inPara.Coord = result.Coord;
+                inPara.TmplPoint = new Point2d(result.X, result.Y);      //更改跟随坐标
+                snapshot.Dispose();
+                snapshot = null;
 
-                HalconController.SaveSmallestRectImage(hImage, imgReduced, inPara.ModelPath);
-                
                 host.SetModelPara(inPara.HoRect.HoRegion, inPara.HoContour, inPara.Coord);
                 host.Display.Disp(inPara.ModeRect, DrawStyle.Of(HColor.Orange));
 
                 host.DrawDone(inPara.ModelPath, inPara.ModeRect.HoRegion, inPara.HoContour, result);
 
                 host.Display.DispText("新建模板成功！", new Point2d(10, 10), DrawStyle.Of(HColor.Green));
-                inPara.TmplPoint = new Point2d(result.X, result.Y);      //更改跟随坐标
             }
             finally
             {
-                imgReduced?.Dispose();
-                ho_Contour?.Dispose();
+                // 未提交: 丢弃新模板; 模板区域换回快照 (取消 / 试匹配失败已提前换回, 这里兜底异常路径)
+                if (modelID != null) HOperatorSet.ClearShapeModel(modelID);
+                if (snapshot != null) RestoreModeRect(ref snapshot);
+                newContour?.Dispose();
+                imgReduced.Dispose();
+                ho_Contour.Dispose();
             }
+        }
+
+        /// <summary>丢弃绘制改写过的 ModeRect, 换回绘制前的快照。</summary>
+        private void RestoreModeRect(ref CvRegion snapshot)
+        {
+            inPara.ModeRect.Dispose();
+            inPara.ModeRect = snapshot;
+            snapshot = null;
         }
 
     }

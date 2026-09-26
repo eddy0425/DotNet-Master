@@ -82,6 +82,12 @@ namespace DotNet.HalconAlgo
                         // (空句柄的判断在 TryResolveRegionFrom 内部, 这里不必重复.)
                         if (!strategys.TryResolveRegionFrom(path, out HObject src)) { missCnt++; continue; }
 
+                        // 句柄有效(count_obj > 0)不代表有像素: 上游 gen_empty_region / 空 threshold 的结果
+                        // 能通过 TryResolveRegionFrom。同样计为无效来源 —— 否则全空时 area_center 的 (0,0)
+                        // 会被当成重心发布, 部分为空时残缺重心会被示教成 TmplPoint、文本还显示成绿字。
+                        HOperatorSet.AreaCenter(src, out HTuple srcArea, out _, out _);
+                        if (srcArea.TupleSum().D <= 0) { missCnt++; continue; }
+
                         HObject concat;
                         HOperatorSet.ConcatObj(collected, src, out concat);
                         collected.Dispose();

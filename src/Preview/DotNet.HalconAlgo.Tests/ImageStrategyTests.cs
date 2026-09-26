@@ -416,6 +416,98 @@ namespace DotNet.HalconAlgo.Tests
         }
 
         [TestMethod]
+        public void ImageOverload_IgnoresImageIn_UsesGivenImage()
+        {
+            // 单图重载没有上游：原先转到另一重载按 ImageIn 取图，明明给了图却抛 AlgoOutputNotFoundException
+            _strategy.inPara.ImageIn = "取像/图像";
+
+            Assert.IsTrue(_strategy.Fun_action(_source, new FakeDisplay()));
+            Assert.AreEqual(50, GrayAt(_strategy.inPara.Image, 0, 0));
+        }
+
+        [TestMethod]
+        public void Success_ReleasesPreviousOutput()
+        {
+            Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of()));
+            var first = _strategy.inPara.Image;
+
+            // 显示窗口此时引用的正是上一轮输出（FakeDisplay 不复制）：新结果必须先算完再释放旧图
+            Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of()));
+
+            Assert.AreNotSame(first, _strategy.inPara.Image);
+            Assert.IsFalse(first.IsInitialized(), "上一轮输出应被释放");
+            Assert.AreEqual(50, GrayAt(_strategy.inPara.Image, 10, 10));
+        }
+
+        [TestMethod]
+        public void Failure_ResetsPreviousOutput()
+        {
+            Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of()));
+            Assert.AreEqual(1, _strategy.inPara.Image.CountObj());
+
+            _strategy.inPara.RotateType = "坐标系";
+            _strategy.inPara.CoordIn = "定位/坐标系";
+            Assert.ThrowsException<AlgoOutputNotFoundException>(() => _strategy.Fun_action(_display, Strategies.Of()));
+
+            // 宿主吞掉异常后下游照跑：必须拿到空图像（下游 RequireImage 会明确报错），而不是上一轮的旧图
+            Assert.IsTrue(_strategy.inPara.Image.IsInitialized());
+            Assert.AreEqual(0, _strategy.inPara.Image.CountObj());
+        }
+
+        [TestMethod]
+        public void FailedOutput_IsRejectedDownstream()
+        {
+            _strategy.inPara.RotateType = "坐标系";
+            _strategy.inPara.CoordIn = "定位/坐标系";
+            Assert.ThrowsException<AlgoOutputNotFoundException>(() => _strategy.Fun_action(_display, Strategies.Of()));
+            _strategy.GenTreeNode(new FakeTree());
+
+            var downstream = new RotateImageStrategy { Name = "下游" };
+            downstream.inPara.ImageIn = "旋转图像/图像";
+            try
+            {
+                var ex = Assert.ThrowsException<InvalidOperationException>(() => downstream.Fun_action(_display, Strategies.Of(_strategy)));
+                StringAssert.Contains(ex.Message, "下游");
+            }
+            finally
+            {
+                downstream.inPara.Image.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void CoordMode_RotatesAroundCoordOrigin_Clockwise()
+        {
+            // 坐标系转 +90°（逆时针），"坐标系"方式反转 -90°：以坐标原点 (列20, 行15) 为轴顺时针转。
+            // 原点右侧 10 像素的标记 → 原点下方 10 像素。行列互换 / 漏换弧度 / 方向取反都会落到别处。
+            using (var mark = Rectangle1(14, 29, 16, 31))
+            using (var marked = Paint(_source, mark, 255))
+            {
+                _display.SetImage(marked);
+                RunWithCoord("坐标系", 90);
+            }
+
+            var image = _strategy.inPara.Image;
+            Assert.AreEqual(50, GrayAt(image, 15, 20), "旋转中心处不变");
+            Assert.AreEqual(255, GrayAt(image, 25, 20), "标记转到原点正下方");
+            Assert.AreEqual(50, GrayAt(image, 15, 30), "原位置不再有标记");
+            Assert.AreEqual(50, GrayAt(image, 5, 20), "不是逆时针");
+        }
+
+        [TestMethod]
+        public void UpstreamEmptyImage_ThrowsWithToolName()
+        {
+            HOperatorSet.GenEmptyObj(out HObject empty);
+            using (empty)
+            {
+                _strategy.inPara.ImageIn = "取像/图像";
+                var ex = Assert.ThrowsException<InvalidOperationException>(
+                    () => _strategy.Fun_action(_display, Strategies.Of(new StubStrategy("取像").Output("图像", empty))));
+                StringAssert.Contains(ex.Message, "旋转图像");
+            }
+        }
+
+        [TestMethod]
         public void SavePara_ImageCenter_InvalidAngleKeepsOld()
         {
             _strategy.inPara.RotateAngle = 45;
@@ -428,6 +520,38 @@ namespace DotNet.HalconAlgo.Tests
 
             _strategy.SavePara(ui.Set("cmb_102", "12.5"));
             Assert.AreEqual(12.5f, _strategy.inPara.RotateAngle);
+        }
+
+        [TestMethod]
+        public void SavePara_SwitchImageCenterToCoord_KeepsCoordIn()
+        {
+            // 界面切换"选择方式"不会重新 DispPara：cmb_102 里仍是角度，不能当成坐标系路径写进 CoordIn
+            _strategy.inPara.RotateAngle = 90;
+            _strategy.inPara.CoordIn = "定位/坐标系";
+            var ui = new FakeUiHost();
+            _strategy.DispPara(ui);
+
+            _strategy.SavePara(ui.Set("cmb_101", "坐标系"));
+
+            Assert.AreEqual("坐标系", _strategy.inPara.RotateType);
+            Assert.AreEqual("定位/坐标系", _strategy.inPara.CoordIn);
+            Assert.AreEqual(90f, _strategy.inPara.RotateAngle);
+        }
+
+        [TestMethod]
+        public void SavePara_SwitchCoordToImageCenter_KeepsAngle()
+        {
+            _strategy.inPara.RotateType = "坐标系";
+            _strategy.inPara.RotateAngle = 45;
+            _strategy.inPara.CoordIn = "定位/坐标系";
+            var ui = new FakeUiHost();
+            _strategy.DispPara(ui);
+
+            _strategy.SavePara(ui.Set("cmb_101", "图像中心"));
+
+            Assert.AreEqual("图像中心", _strategy.inPara.RotateType);
+            Assert.AreEqual(45f, _strategy.inPara.RotateAngle);
+            Assert.AreEqual("定位/坐标系", _strategy.inPara.CoordIn);
         }
 
         [TestMethod]
@@ -523,6 +647,51 @@ namespace DotNet.HalconAlgo.Tests
         {
             Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of(LineSource(new CvLine(0, 0, 10, 0)))));
             Assert.AreEqual(50, GrayAt(_strategy.inPara.Image, 15, 20));
+        }
+
+        [TestMethod]
+        public void DiagonalLine_IsLeveled_AroundImageCenter()
+        {
+            // 45° 直线（向右下）→ 逆时针转 45° 摆平：中心 (行15, 列20) 右下方沿线 ~9.9 像素的标记
+            // 应落到中心正右方同一行。方向取反或行列互换时标记会落到别处。
+            using (var mark = Rectangle1(21, 26, 23, 28))
+            using (var marked = Paint(_source, mark, 255))
+            {
+                _display.SetImage(marked);
+                Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of(LineSource(new CvLine(0, 0, 10, 10)))));
+            }
+
+            var image = _strategy.inPara.Image;
+            Assert.AreEqual(255, GrayAt(image, 15, 30), "标记转到中心正右方");
+            Assert.AreEqual(50, GrayAt(image, 22, 27), "原位置不再有标记");
+            Assert.AreEqual(50, GrayAt(image, 25, 20), "不是顺时针");
+        }
+
+        [TestMethod]
+        public void Failure_ResetsPreviousOutput()
+        {
+            Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of(LineSource(new CvLine(0, 0, 10, 0)))));
+            var first = _strategy.inPara.Image;
+            Assert.AreEqual(1, first.CountObj());
+
+            var degenerate = new CvLine(new Point2d(5, 5), new Point2d(5, 5));
+            Assert.ThrowsException<InvalidOperationException>(() => _strategy.Fun_action(_display, Strategies.Of(LineSource(degenerate))));
+
+            Assert.AreEqual(0, _strategy.inPara.Image.CountObj(), "失败轮次不能留下上一轮的旋转图");
+            Assert.IsFalse(first.IsInitialized(), "上一轮输出应被释放");
+        }
+
+        [TestMethod]
+        public void UpstreamEmptyImage_ThrowsWithToolName()
+        {
+            HOperatorSet.GenEmptyObj(out HObject empty);
+            using (empty)
+            {
+                _strategy.inPara.ImageIn = "取像/图像";
+                var sources = Strategies.Of(LineSource(new CvLine(0, 0, 10, 0)), new StubStrategy("取像").Output("图像", empty));
+                var ex = Assert.ThrowsException<InvalidOperationException>(() => _strategy.Fun_action(_display, sources));
+                StringAssert.Contains(ex.Message, "直线图像");
+            }
         }
 
         [TestMethod]

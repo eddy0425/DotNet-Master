@@ -390,6 +390,17 @@ namespace DotNet.Drawing.Tests
             }
             Assert.ThrowsException<InvalidOperationException>(() => new HObject().RequireImage("T"));
         }
+
+        [TestMethod]
+        public void RequireImage_EmptyObject_ThrowsWithToolName()
+        {
+            HOperatorSet.GenEmptyObj(out HObject empty);
+            using (empty)
+            {
+                var ex = Assert.ThrowsException<InvalidOperationException>(() => empty.RequireImage("Blob1"));
+                StringAssert.Contains(ex.Message, "Blob1");
+            }
+        }
     }
 
     [TestClass]

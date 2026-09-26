@@ -238,6 +238,59 @@ namespace DotNet.HalconAlgo.Tests
         }
 
         [TestMethod]
+        public void RegionIn_UpstreamRegionExcludingArc_Throws()
+        {
+            // 圆盘右缘在列 ~150；上游区域只到列 140。原先 measure_pos 忽略定义域，区域外的弧照样拟合成功
+            using (var upstreamRegion = Rectangle1(0, 0, Size - 1, 140))
+            {
+                _strategy.inPara.RegionIn = "上游/区域";
+                var upstream = new StubStrategy("上游").Output("区域", upstreamRegion);
+
+                var ex = Assert.ThrowsException<InvalidOperationException>(() => _strategy.Fun_action(_display, Strategies.Of(upstream)));
+                StringAssert.Contains(ex.Message, "未找到足够的轮廓点");
+                Assert.AreEqual(default(Point2d), _strategy.inPara.ArcMidpoint);
+            }
+        }
+
+        [TestMethod]
+        public void RegionIn_UpstreamRegionCoveringArc_Fits()
+        {
+            using (var upstreamRegion = Rectangle1(0, 0, Size - 1, Size - 1))
+            {
+                _strategy.inPara.RegionIn = "上游/区域";
+                var upstream = new StubStrategy("上游").Output("区域", upstreamRegion);
+
+                Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of(upstream)));
+                Assert.AreEqual(150, _strategy.inPara.ArcMidpoint.X, 1.0);
+                Assert.AreEqual(100, _strategy.inPara.ArcMidpoint.Y, 1.0);
+            }
+        }
+
+        [TestMethod]
+        public void MaxErrAndCoarseGateZero_DisableFiltering()
+        {
+            // 两个门限都为 0 时粗滤门限也是 0：原先 RemoveOutliers 没有 <= 0 守卫，残差非零的点全被剔光
+            _strategy.inPara.MaxErr = 0;
+            _strategy.inPara.CoarseGate = 0;
+            _strategy.inPara.TrimEnds = "否";
+
+            Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of()));
+
+            Assert.AreEqual(150, _strategy.inPara.ArcMidpoint.X, 1.0);
+            Assert.AreEqual(0, _display.Points.Count(p => p.ColorName == HColor.Red.Name));
+            StringAssert.Contains(_display.LastText, "用点:7");
+        }
+
+        [TestMethod]
+        public void SigmaZero_FromUi_StillFits()
+        {
+            _strategy.inPara.Sigma = 0;
+
+            Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of()));
+            Assert.AreEqual(150, _strategy.inPara.ArcMidpoint.X, 1.0);
+        }
+
+        [TestMethod]
         public void RegionIn_Unresolvable_Throws()
         {
             _strategy.inPara.RegionIn = "上游/区域";

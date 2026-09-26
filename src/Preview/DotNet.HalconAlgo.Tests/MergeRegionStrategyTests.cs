@@ -146,6 +146,42 @@ namespace DotNet.HalconAlgo.Tests
         }
 
         [TestMethod]
+        public void ZeroAreaUpstreamRegion_ReturnsFalse_ClearsResult_DoesNotTeach()
+        {
+            // gen_empty_region：count_obj 为 1、能通过来源校验，但没有像素。
+            // 原先 area_center 给出 (0,0)，被当成重心发布并示教成 TmplPoint
+            HOperatorSet.GenEmptyRegion(out HObject emptyRegion);
+            var c = new StubStrategy("C").Output("区域", Own(emptyRegion));
+            Sources("A/区域");
+            Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of(_a)));
+            _strategy.inPara.TmplPoint = null;
+
+            Sources("C/区域");
+            Assert.IsFalse(_strategy.Fun_action(_display, Strategies.Of(c)));
+
+            Assert.AreEqual("区域合并 : 无有效输入区域", _display.LastText);
+            Assert.AreEqual(HColor.Red.Name, _display.Texts[_display.Texts.Count - 1].ColorName);
+            Assert.IsFalse(_strategy.inPara.Result.HoRegion.IsUsableRegion(), "上一轮结果不能留给下游");
+            Assert.IsNull(_strategy.inPara.TmplPoint);
+        }
+
+        [TestMethod]
+        public void ZeroAreaRegion_AlongsideValidRegion_CountsAsMissing_DoesNotTeach()
+        {
+            // 与空句柄同口径: 这一轮上游什么都没找到, 重心是残缺的, 不能示教、也不能显示成绿字
+            HOperatorSet.GenEmptyRegion(out HObject emptyRegion);
+            var c = new StubStrategy("C").Output("区域", Own(emptyRegion));
+            Sources("A/区域", "C/区域");
+
+            Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of(_a, c)));
+
+            Assert.AreEqual(121, AreaCenter(_strategy.inPara.Result.HoRegion, out _));
+            Assert.IsNull(_strategy.inPara.TmplPoint, "残缺重心不能当示教基准");
+            StringAssert.Contains(_display.LastText, "合并数量:1 无效来源:1");
+            Assert.AreEqual(HColor.Red.Name, _display.Texts[_display.Texts.Count - 1].ColorName);
+        }
+
+        [TestMethod]
         public void CoordIn_Follow_TransformsResult_TeachesUntransformedCenter()
         {
             Sources("A/区域", "B/区域");

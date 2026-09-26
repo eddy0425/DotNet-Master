@@ -48,11 +48,7 @@ namespace DotNet.HalconAlgo
             // (各 Form 的 but_Run_Click / but_Cycle_Click 都只调用不判断), 校验失败只是屏幕上多一行红字,
             // 下游工具照旧继续跑。此时若 Results / Coord 还留着上一轮的值, "编辑模板"与下游"坐标系"
             // 读到的就是旧数据, 界面上看不出任何异常。
-            inPara.Results = new List<ModelResult>();
-            inPara.Coord = new CvCoord();
-            // 轮廓与 Coord 是一对 (DispROI / "编辑模板"一起取用), 同样要清, 否则失败轮次会把旧轮廓配上零坐标系
-            inPara.HoContour?.Dispose();
-            HOperatorSet.GenEmptyObj(out inPara.HoContour);
+            ResetOutputs();
 
             if (inPara.ModelID == null || inPara.ModelID.Length == 0)
             {
@@ -105,46 +101,52 @@ namespace DotNet.HalconAlgo
                     HOperatorSet.SelectObj(ho_Rect, out ho_SelRect, j + 1);
                     HOperatorSet.ReduceDomain(ho_Image, ho_SelRect, out imgReduced);
 
-                    #region 查找模板
-                    // 注:CvHalconDotNet 22.11 未暴露 ClearGenericShapeModelResult,
-                    // matchResultID 句柄由 HALCON 内部生命周期管理。
                     HOperatorSet.FindGenericShapeModel(imgReduced, inPara.ModelID, out HTuple matchResultID, out HTuple numMatchResult);
-
-                    if (numMatchResult.I <= 0) continue;
-
-                    HOperatorSet.GetGenericShapeModelResult(matchResultID, "all", "row", out HTuple row);
-                    HOperatorSet.GetGenericShapeModelResult(matchResultID, "all", "column", out HTuple column);
-                    HOperatorSet.GetGenericShapeModelResult(matchResultID, "all", "angle", out HTuple angle);
-                    HOperatorSet.GetGenericShapeModelResult(matchResultID, "all", "score", out HTuple score);
-                    #endregion
-
-                    for (int i = 0; i < score.Length; i++)
+                    // 22.11 没有 ClearGenericShapeModelResult, 但结果句柄同样可由 clear_handle 释放;
+                    // 取出的轮廓是独立对象, 本轮结果不再引用该句柄。原先一直留给 GC, 连续运行时句柄堆积。
+                    try
                     {
-                        var result = new ModelResult(row[i], column[i], angle[i], score[i]);
-                        inPara.Results.Add(result);
+                        if (numMatchResult.I <= 0) continue;
 
-                        // 取该匹配实例对应的轮廓
-                        HOperatorSet.GetGenericShapeModelResultObject(out HObject contour, matchResultID, i, "contours");
+                        #region 查找结果
+                        HOperatorSet.GetGenericShapeModelResult(matchResultID, "all", "row", out HTuple row);
+                        HOperatorSet.GetGenericShapeModelResult(matchResultID, "all", "column", out HTuple column);
+                        HOperatorSet.GetGenericShapeModelResult(matchResultID, "all", "angle", out HTuple angle);
+                        HOperatorSet.GetGenericShapeModelResult(matchResultID, "all", "score", out HTuple score);
+                        #endregion
 
-                        // 只留全局最佳实例的轮廓: 原先每个实例都覆盖一次, 留下的是"最后一个"的轮廓,
-                        // 与 Coord / Results[0] 对不上 (编辑模板窗口正是把两者配对显示的)。
-                        bool isBest = result.Score > bestSoFar;
-                        if (isBest)
+                        for (int i = 0; i < score.Length; i++)
                         {
-                            bestSoFar = result.Score;
-                            inPara.HoContour.Dispose();
-                            inPara.HoContour = contour;
-                        }
+                            var result = new ModelResult(row[i], column[i], angle[i], score[i]);
+                            inPara.Results.Add(result);
 
-                        try
-                        {
-                            if (inPara.DispContour) display.Disp(contour, DrawStyle.Of(HColor.Green));
-                            if (inPara.DispPoint) display.Disp(result.Coord, DrawStyle.Of(HColor.Red));
+                            // 取该匹配实例对应的轮廓
+                            HOperatorSet.GetGenericShapeModelResultObject(out HObject contour, matchResultID, i, "contours");
+
+                            // 只留全局最佳实例的轮廓: 原先每个实例都覆盖一次, 留下的是"最后一个"的轮廓,
+                            // 与 Coord / Results[0] 对不上 (编辑模板窗口正是把两者配对显示的)。
+                            bool isBest = result.Score > bestSoFar;
+                            if (isBest)
+                            {
+                                bestSoFar = result.Score;
+                                inPara.HoContour.Dispose();
+                                inPara.HoContour = contour;
+                            }
+
+                            try
+                            {
+                                if (inPara.DispContour) display.Disp(contour, DrawStyle.Of(HColor.Green));
+                                if (inPara.DispPoint) display.Disp(result.Coord, DrawStyle.Of(HColor.Red));
+                            }
+                            finally
+                            {
+                                if (!isBest) contour.Dispose();
+                            }
                         }
-                        finally
-                        {
-                            if (!isBest) contour.Dispose();
-                        }
+                    }
+                    finally
+                    {
+                        HOperatorSet.ClearHandle(matchResultID);
                     }
                 }
 
@@ -164,12 +166,31 @@ namespace DotNet.HalconAlgo
 
                 return true;
             }
+            catch
+            {
+                // 循环中途抛异常时, 前面 ROI 的结果已写进 Results / HoContour: 与开头同样复位,
+                // 不把半截结果留给"编辑模板"和下游 (宿主吞掉异常后下游照跑)。
+                ResetOutputs();
+                throw;
+            }
             finally
             {
                 imgReduced?.Dispose();
                 ho_SelRect?.Dispose();
             }
         }
+        /// <summary>
+        /// 复位本轮输出: 结果列表、坐标系, 以及与坐标系配对显示的轮廓
+        /// (DispROI / "编辑模板"一起取用, 不清的话失败轮次会把旧轮廓配上零坐标系)。
+        /// </summary>
+        private void ResetOutputs()
+        {
+            inPara.Results = new List<ModelResult>();
+            inPara.Coord = new CvCoord();
+            inPara.HoContour?.Dispose();
+            HOperatorSet.GenEmptyObj(out inPara.HoContour);
+        }
+
         public override void DispPara(IParaUiHost ui)
         {
             ui.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Region, TabPageEnum.Matching, TabPageEnum.Display);
@@ -246,6 +267,18 @@ namespace DotNet.HalconAlgo
             inPara.ScaleMin = ui.GetDouble("cmb_113");
             inPara.ScaleMax = ui.GetDouble("cmb_114");
 
+            //------------------------------------------
+            inPara.DispText = ui.GetBool("ckb_disp0");
+            inPara.DispRegion = ui.GetBool("ckb_disp1");
+            inPara.DispContour = ui.GetBool("ckb_disp2");
+            inPara.DispPoint = ui.GetBool("ckb_disp3");
+
+            inPara.FontX = ui.GetInt("CB_FontX");
+            inPara.FontY = ui.GetInt("CB_FontY");
+            inPara.FontSize = ui.GetInt("CB_FontSize");
+
+            // 界面值全部读完之后再写模型: HALCON 拒收某个值 (如得分 > 1) 时会抛异常,
+            // 原先写模型夹在中间, 一抛"显示"页的改动就全部丢失。
             // 仅当模板已建立时才更新模型参数；否则等下一次 SetTemplateAsync 时统一应用
             if (inPara.ModelID != null && inPara.ModelID.Length > 0)
             {
@@ -263,16 +296,6 @@ namespace DotNet.HalconAlgo
                 HOperatorSet.SetGenericShapeModelParam(inPara.ModelID, "greediness", inPara.Greediness);
                 HOperatorSet.SetGenericShapeModelParam(inPara.ModelID, "subpixel", inPara.SubPixel);
             }
-
-            //------------------------------------------
-            inPara.DispText = ui.GetBool("ckb_disp0");
-            inPara.DispRegion = ui.GetBool("ckb_disp1");
-            inPara.DispContour = ui.GetBool("ckb_disp2");
-            inPara.DispPoint = ui.GetBool("ckb_disp3");
-
-            inPara.FontX = ui.GetInt("CB_FontX");
-            inPara.FontY = ui.GetInt("CB_FontY");
-            inPara.FontSize = ui.GetInt("CB_FontSize");
         }
         public async Task DrawROIAsync(IRoiHost host, RectEnum type, bool newROI)
         {
@@ -298,37 +321,40 @@ namespace DotNet.HalconAlgo
         public async Task SetTemplateAsync(IRoiHost host, RectEnum type, bool newModel)
         {
             HObject imgReduced; HOperatorSet.GenEmptyObj(out imgReduced);
+            HTuple matchResultID = null;
+            HObject newContour = null;
+            HTuple modelID = null;
+            // 绘制会就地改写 ModeRect (Type / 几何 / 区域)。走不到"提交"这一步 —— 取消、试匹配失败、
+            // 取图 / 训练 / 存图抛异常 —— 都整体换回快照, 模板区域始终与仍在用的模板配套。
+            CvRegion snapshot = inPara.ModeRect.Clone();
 
             try
             {
-                // Type 必须在绘制前写入(DrawRegionAsync 按它分发图元), 但取消时几何不会被回写,
-                // 所以要连 Type 一起还原, 否则 Type 与 HoRegion 的实际形状对不上.
-                var prevType = inPara.ModeRect.Type;
+                // Type 必须在绘制前写入(DrawRegionAsync 按它分发图元)
                 inPara.ModeRect.Type = type;
 
                 bool confirmed = newModel
                     ? await host.DrawRegionAsync(inPara.ModeRect)
                     : await host.DrawRegionModAsync(inPara.ModeRect);
 
-                // 取消 / 超时: ModeRect 保持原样, 这里必须直接返回.
-                // 继续往下会 ModelID = null 并按"旧几何 + 新参数"重建一份用户没有要求的模板,
+                // 取消 / 超时: 必须直接返回.
+                // 继续往下会按"旧几何 + 新参数"重建一份用户没有要求的模板,
                 // 原模板就此丢失 —— 这正是"取消不应有副作用"的关键一步.
                 if (!confirmed)
                 {
-                    inPara.ModeRect.Type = prevType;
+                    RestoreModeRect(ref snapshot);
                     // 绘制会话结束时窗口只剩底图, 把原模板区域重新画回去, 避免画面像是被清空
                     host.Display.Disp(inPara.ModeRect, DrawStyle.Of(HColor.Orange));
                     return;
                 }
 
-                inPara.ModelPath = Path.Combine(AlgoPaths.JobDir, RunIndex.ToString(), "matching.bmp");
                 var hImage = host.Display.HoImage.RequireImage(Name);
 
                 imgReduced.Dispose();
                 HOperatorSet.ReduceDomain(hImage, inPara.ModeRect.HoRegion, out imgReduced);
 
                 #region 1) 创建模板
-                HOperatorSet.CreateGenericShapeModel(out HTuple modelID);
+                HOperatorSet.CreateGenericShapeModel(out modelID);
                 #endregion
 
                 #region 2) 训练前必须设置的“修改模型”类参数 (改动这些参数需要重训)
@@ -358,36 +384,26 @@ namespace DotNet.HalconAlgo
                 HOperatorSet.SetGenericShapeModelParam(modelID, "num_matches", 1);
                 #endregion
 
-                #region 5) 试匹配 (matchResultID 由 HALCON 内部生命周期管理)
+                #region 5) 试匹配
                 // 先用新模板试匹配, 确认可用后再替换: 若先替换, 试匹配失败时旧模板已被释放,
                 // 新模板却配着旧模板示教出的 TmplPoint, 下游跟随会静默偏移。
-                HOperatorSet.FindGenericShapeModel(hImage, modelID, out HTuple matchResultID, out HTuple numMatchResult);
+                // 与另外三种匹配同口径只搜模板区域 (原先搜整图): 图里有同样的工件时, 同分的另一个可能排在前面,
+                // 示教原点就落到了别的工件上。
+                HOperatorSet.FindGenericShapeModel(imgReduced, modelID, out matchResultID, out HTuple numMatchResult);
                 #endregion
 
                 // 试匹配完成后，恢复用户设定的匹配数量供 Fun_action 使用
                 HOperatorSet.SetGenericShapeModelParam(modelID, "num_matches", inPara.NumMatches);
 
                 // 一个都没找到时必须在取结果之前返回: 对 0 个结果取索引 0 会直接抛 HALCON 错误。
-                // 丢弃新模板, 旧模板与旧 TmplPoint 仍是一致的一对。
+                // 新模板在 finally 里丢弃, 旧模板与旧 TmplPoint 仍是一致的一对。
                 if (numMatchResult.I <= 0)
                 {
-                    HOperatorSet.ClearHandle(modelID);
+                    RestoreModeRect(ref snapshot);
                     host.Display.Disp(inPara.ModeRect, DrawStyle.Of(HColor.Orange));
                     host.Display.DispText("新建模板失败！", new Point2d(10, 10), DrawStyle.Of(HColor.Red));
                     return;
                 }
-
-                // 新模板试匹配成功后才替换: 原先一进来就把 ModelID 置 null, 训练一旦抛异常旧模板也跟着丢了。
-                // 旧句柄用 ClearHandle 显式释放(22.11 没有 ClearGenericShapeModel, 但通用句柄都可由它释放),
-                // 与另外三种匹配的 Clear*Model 同口径, 防止重复 SetTemplateAsync 累计泄漏。
-                if (inPara.ModelID != null && inPara.ModelID.Length > 0)
-                {
-                    HOperatorSet.ClearHandle(inPara.ModelID);
-                }
-                inPara.ModelID = modelID;
-
-                inPara.Results = new List<ModelResult>();
-                inPara.Coord = new CvCoord();
 
                 HOperatorSet.GetGenericShapeModelResult(matchResultID, 0, "row", out HTuple row);
                 HOperatorSet.GetGenericShapeModelResult(matchResultID, 0, "column", out HTuple column);
@@ -396,14 +412,31 @@ namespace DotNet.HalconAlgo
 
                 var result = new ModelResult(row, column, angle, score);
                 result.ResultID = matchResultID;
-                inPara.Results.Add(result);
+                HOperatorSet.GetGenericShapeModelResultObject(out newContour, matchResultID, 0, "contours");
 
-                HOperatorSet.GetGenericShapeModelResultObject(out HObject objects, matchResultID, 0, "contours");
+                // 模板图先落盘再提交: 原先先换模板再存图, 存图一失败, 新模板就配着旧 TmplPoint / 旧 ModelPath,
+                // 下游跟随静默偏移。现在保存失败时新模板在 finally 里丢弃, 旧的一套 (含旧模板图) 原样保留。
+                string modelPath = Path.Combine(AlgoPaths.JobDir, RunIndex.ToString(), "matching.bmp");
+                ModelImage.Save(hImage, imgReduced, modelPath);
+
+                // 提交: 以下只做赋值与释放旧句柄, 模型 / 路径 / 结果 / 示教原点一起换。
+                if (inPara.ModelID != null && inPara.ModelID.Length > 0)
+                {
+                    HOperatorSet.ClearHandle(inPara.ModelID);
+                }
+                inPara.ModelID = modelID;
+                modelID = null;
+                inPara.ModelPath = modelPath;
+                inPara.Results = new List<ModelResult> { result };
                 inPara.HoContour.Dispose();
-                inPara.HoContour = objects;
+                inPara.HoContour = newContour;
+                newContour = null;
                 inPara.Coord = result.Coord;
-
-                HalconController.SaveSmallestRectImage(hImage, imgReduced, inPara.ModelPath);
+                inPara.TmplPoint = new Point2d(result.X, result.Y);      //更改跟随坐标
+                // 试匹配结果句柄随 result.ResultID 交给宿主 (编辑模板窗口据此取轮廓), 不在这里释放
+                matchResultID = null;
+                snapshot.Dispose();
+                snapshot = null;
 
                 host.SetModelPara(inPara.HoRect.HoRegion, inPara.HoContour, inPara.Coord);
                 host.Display.Disp(inPara.ModeRect, DrawStyle.Of(HColor.Orange));
@@ -411,15 +444,24 @@ namespace DotNet.HalconAlgo
                 host.DrawDone(inPara.ModelPath, inPara.ModeRect.HoRegion, inPara.HoContour, result);
 
                 host.Display.DispText("新建模板成功！", new Point2d(10, 10), DrawStyle.Of(HColor.Green));
-                inPara.TmplPoint = new Point2d(result.X, result.Y);      //更改跟随坐标
             }
             finally
             {
-                imgReduced?.Dispose();
-
-                // 注:CvHalconDotNet 22.11 未暴露 ClearGenericShapeModelResult,
-                // 匹配结果句柄由 HALCON 内部生命周期管理。
+                // 未提交: 丢弃新模板; 模板区域换回快照 (取消 / 试匹配失败已提前换回, 这里兜底异常路径)
+                if (modelID != null) HOperatorSet.ClearHandle(modelID);
+                if (matchResultID != null) HOperatorSet.ClearHandle(matchResultID);
+                if (snapshot != null) RestoreModeRect(ref snapshot);
+                newContour?.Dispose();
+                imgReduced.Dispose();
             }
+        }
+
+        /// <summary>丢弃绘制改写过的 ModeRect, 换回绘制前的快照。</summary>
+        private void RestoreModeRect(ref CvRegion snapshot)
+        {
+            inPara.ModeRect.Dispose();
+            inPara.ModeRect = snapshot;
+            snapshot = null;
         }
 
     }

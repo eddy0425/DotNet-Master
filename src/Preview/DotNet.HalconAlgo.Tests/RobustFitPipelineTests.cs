@@ -68,6 +68,19 @@ namespace DotNet.HalconAlgo.Tests
         }
 
         [TestMethod]
+        public void RemoveOutliers_NonPositiveGate_IsDisabled()
+        {
+            // 与 Refine 的 maxErr <= 0 同口径：门限为 0 时不做粗滤，否则所有残差非零的点都会被剔光
+            var points = Pts(0, 5, 1, -7);
+            var removed = new List<Point2d>();
+
+            Assert.AreEqual(0, RobustFitPipeline.RemoveOutliers(points, removed, 0, DistToXAxis));
+            Assert.AreEqual(0, RobustFitPipeline.RemoveOutliers(points, removed, -1, DistToXAxis));
+            Assert.AreEqual(4, points.Count);
+            Assert.AreEqual(0, removed.Count);
+        }
+
+        [TestMethod]
         public void RemoveOutliers_NullArguments_Throw()
         {
             var list = new List<Point2d>();
@@ -187,6 +200,31 @@ namespace DotNet.HalconAlgo.Tests
             Assert.IsFalse(RobustFitPipeline.TrimEnds(points, removed, 4));
             Assert.AreEqual(3, points.Count);
             Assert.AreEqual(0, removed.Count);
+        }
+
+        [DataTestMethod]
+        [DataRow(0)]
+        [DataRow(1)]
+        public void TrimEnds_FewerThanTwoPoints_NeverTrims(int count)
+        {
+            // minCountToTrim 给得过小时也不能越界：少于 2 个点没有"首尾"可言
+            var points = Pts(new double[count]);
+            var removed = new List<Point2d>();
+
+            Assert.IsFalse(RobustFitPipeline.TrimEnds(points, removed, 0));
+            Assert.AreEqual(count, points.Count);
+            Assert.AreEqual(0, removed.Count);
+        }
+
+        [TestMethod]
+        public void TrimEnds_TwoPoints_MinCountZero_RemovesBoth()
+        {
+            var points = Pts(1, 2);
+            var removed = new List<Point2d>();
+
+            Assert.IsTrue(RobustFitPipeline.TrimEnds(points, removed, 0));
+            Assert.AreEqual(0, points.Count);
+            CollectionAssert.AreEqual(new double[] { 1, 2 }, removed.Select(p => p.Y).ToArray());
         }
 
         [TestMethod]

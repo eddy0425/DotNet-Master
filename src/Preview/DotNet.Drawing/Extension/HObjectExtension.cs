@@ -49,7 +49,9 @@ namespace DotNet.Drawing
         /// <param name="toolName">出错时写进消息的工具名，通常传策略的 <c>Name</c>。</param>
         public static HObject RequireImage(this HObject image, string toolName)
         {
-            if (!image.NotNull())
+            // 空对象（0 个 object）同样视为没有图像：上游图像类工具失败时会把输出复位成空对象，
+            // 放行的话下游要么静默产出空结果，要么在后续算子里炸出与真实原因无关的原生异常。
+            if (!image.NotNull() || image.CountObj() == 0)
                 throw new InvalidOperationException($"{toolName} : 图像来源为空，无法执行！");
 
             return image;

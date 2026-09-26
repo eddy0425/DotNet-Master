@@ -25,16 +25,41 @@ namespace DotNet.HalconAlgo
         public override bool Fun_action(HObject ho_Image, IHDisplay display)
         {
             display.SetImage(ho_Image);
-            // 传空集合而不是 null: 另一重载内部会对 strategys 做 ResolveFrom, null 会直接 NRE.
-            return Fun_action(display, StrategyExtensions.EmptyList());
+            // 直接处理传入的图像, 不再转到另一重载按 ImageIn 取图: 单图重载没有上游,
+            // ImageIn 一旦不是"默认"就必然解析失败 —— 与 FitLineStrategy 的单图重载同口径。
+            // 传空集合而不是 null: Run 内部会对 strategys 做 ResolveFrom, null 会直接 NRE.
+            return RunWithReset(() => ho_Image.RequireImage(Name), display, StrategyExtensions.EmptyList());
         }
         public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
         {
-            HObject ho_Image;
-            if (inPara.ImageIn == "默认")
-                ho_Image = display.HoImage.RequireImage(Name);
-            else
-                ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
+            return RunWithReset(() => inPara.ImageIn == "默认"
+                    ? display.HoImage.RequireImage(Name)
+                    : strategys.ResolveFrom<HObject>(inPara.ImageIn).RequireImage(Name),
+                display, strategys);
+        }
+
+        /// <summary>
+        /// 每轮开头先把输出图像复位成空对象, 与匹配 / 拟合类"先清空再校验"同口径:
+        /// 失败都是抛异常退出, 不清的话宿主吞掉异常后, 下游读到的是上一轮的图像, 静默按旧帧继续算。
+        /// 旧句柄在 finally 里才释放: "默认"来源下传入的图像可能正是上一轮的输出 (显示窗口不复制时),
+        /// 必须等本轮结果算完再放。
+        /// </summary>
+        private bool RunWithReset(Func<HObject> getImage, IHDisplay display, List<IParaStrategy> strategys)
+        {
+            HObject previous = inPara.Image;
+            HOperatorSet.GenEmptyObj(out inPara.Image);
+            try
+            {
+                return Run(getImage(), display, strategys);
+            }
+            finally
+            {
+                previous.Dispose();
+            }
+        }
+
+        private bool Run(HObject ho_Image, IHDisplay display, List<IParaStrategy> strategys)
+        {
 
             CvLine line = strategys.ResolveFrom<CvLine>(inPara.LineIn);
             // 退化直线是上游拟合结果无效, 属于业务错误而不是"意外的空引用", 不再抛 NullReferenceException
@@ -62,7 +87,7 @@ namespace DotNet.HalconAlgo
 
             HOperatorSet.HomMat2dIdentity(out HTuple HomMat2D);
             HOperatorSet.HomMat2dRotate(HomMat2D, rotateAngle, centerRow, centerCol, out HTuple HomMat2DRotate);
-            // 先生成新图再释放旧图: 算子抛异常时 inPara.Image 仍是上一轮的有效句柄, 不会留下死句柄
+            // 先生成新图再替换输出 (此时是 RunWithReset 放进去的空对象)
             HOperatorSet.AffineTransImage(ho_Image, out HObject rotated, HomMat2DRotate, "constant", "false");
             inPara.Image.Dispose();
             inPara.Image = rotated;

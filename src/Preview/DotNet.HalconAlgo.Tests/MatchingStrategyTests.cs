@@ -75,6 +75,22 @@ namespace DotNet.HalconAlgo.Tests
             }
         }
 
+        /// <summary>宽 2W 的图上左右各一个完全相同的 L。</summary>
+        private static HObject TwinLImage()
+        {
+            using (var dark = ConstImage(2 * W, H, 0))
+            using (var a1 = Rectangle1(40, 50, 90, 60))
+            using (var a2 = Rectangle1(80, 50, 90, 100))
+            using (var b1 = Rectangle1(40, 50 + W, 90, 60 + W))
+            using (var b2 = Rectangle1(80, 50 + W, 90, 100 + W))
+            using (var s1 = Paint(dark, a1, 255))
+            using (var s2 = Paint(s1, a2, 255))
+            using (var s3 = Paint(s2, b1, 255))
+            {
+                return Paint(s3, b2, 255);
+            }
+        }
+
         /// <summary>轮廓 / 区域的外接列范围 (XLD 与 region 两种都收: NCC 的"轮廓"是区域)。</summary>
         private protected static void ColumnRange(HObject obj, out double minCol, out double maxCol)
         {
@@ -532,6 +548,168 @@ namespace DotNet.HalconAlgo.Tests
         }
 
         [TestMethod]
+        public void SetTemplate_TrialNoMatch_FirstTime_LeavesNoTrace()
+        {
+            // 失败轮次不能留下半截状态: ModelPath 指向一张根本没写出的图, ModeRect 已是新画的几何却没有配套模板
+            var bounds = ModeRect(Strategy).Bounds;
+            bool hadRegion = ModeRect(Strategy).HoRegion.IsUsableRegion();
+
+            SetSearchRange(85, 10, 0.9);
+            var host = TemplateHost();
+            Strategy.SetTemplateAsync(host, RectEnum.Rectangle, true).GetAwaiter().GetResult();
+
+            Assert.AreEqual("新建模板失败！", host.FakeDisplay.LastText);
+            Assert.IsNull(ModelID(Strategy));
+            Assert.AreEqual(string.Empty, ModelPath(Strategy));
+            Assert.AreEqual(bounds, ModeRect(Strategy).Bounds, "模板区域几何回滚");
+            Assert.AreEqual(hadRegion, ModeRect(Strategy).HoRegion.IsUsableRegion());
+        }
+
+        [TestMethod]
+        public void SetTemplate_Exception_RestoresModeRect()
+        {
+            var bounds = ModeRect(Strategy).Bounds;
+            var host = TemplateHost();
+            host.FakeDisplay.HoImage = null;
+
+            Assert.ThrowsException<InvalidOperationException>(
+                () => Strategy.SetTemplateAsync(host, RectEnum.Circle, true).GetAwaiter().GetResult());
+
+            Assert.AreEqual(RectEnum.Rectangle, ModeRect(Strategy).Type, "类型回滚");
+            Assert.AreEqual(bounds, ModeRect(Strategy).Bounds, "几何回滚");
+            Assert.AreEqual(string.Empty, ModelPath(Strategy));
+        }
+
+        [TestMethod]
+        public void SetTemplate_SaveImageFails_KeepsPreviousModelAndTmplPoint()
+        {
+            CreateTemplate();
+            var id = ModelID(Strategy);
+            var tmpl = TmplPoint(Strategy);
+            var path = ModelPath(Strategy);
+
+            // 同名文件占住 JobDir/4: 新模板图的目录建不出来, 保存必然失败
+            Strategy.RunIndex = 4;
+            File.WriteAllText(Path.Combine(AlgoPaths.JobDir, "4"), string.Empty);
+            var host = TemplateHost();
+            host.OnDraw = r =>
+            {
+                r.Bounds = new Rect2d(TemplateBounds.X + 5, TemplateBounds.Y + 5, TemplateBounds.Width, TemplateBounds.Height);
+                r.RebuildRegion();
+            };
+
+            Assert.ThrowsException<Exception>(() => Strategy.SetTemplateAsync(host, RectEnum.Rectangle, false).GetAwaiter().GetResult());
+
+            // 原先先换模板再存图: 存图一失败, 新模板配着旧 TmplPoint, 下游跟随整体偏 5 像素
+            Assert.AreSame(id, ModelID(Strategy), "保存失败不能换掉旧模板");
+            Assert.AreEqual(tmpl, TmplPoint(Strategy));
+            Assert.AreEqual(path, ModelPath(Strategy));
+            Assert.AreEqual(TemplateBounds, ModeRect(Strategy).Bounds, "模板区域与仍在用的旧模板一致");
+            Assert.IsNull(host.DonePath);
+
+            UseFullImageRoi();
+            _display.SetImage(_image);
+            Assert.IsTrue(Strategy.Fun_action(_display, Strategies.Of()));
+            Assert.AreEqual(tmpl.X, Coord(Strategy).X, 1.0, "旧模板句柄仍然可用");
+        }
+
+        [TestMethod]
+        public void SetTemplate_SaveImageFails_OldModelImageUntouched()
+        {
+            CreateTemplate();
+            string path = ModelPath(Strategy);
+            byte[] before = File.ReadAllBytes(path);
+
+            // 临时文件的位置被同名目录占住: 新模板图写不出来。
+            // 原先直接覆盖 matching.bmp, 写到一半失败时旧模板还在用、它的模板图却已损坏
+            Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(path), "matching.tmp.bmp"));
+            var host = TemplateHost();
+            host.OnDraw = r =>
+            {
+                r.Bounds = new Rect2d(TemplateBounds.X + 5, TemplateBounds.Y + 5, TemplateBounds.Width, TemplateBounds.Height);
+                r.RebuildRegion();
+            };
+
+            Assert.ThrowsException<Exception>(() => Strategy.SetTemplateAsync(host, RectEnum.Rectangle, false).GetAwaiter().GetResult());
+
+            Assert.AreEqual(path, ModelPath(Strategy));
+            CollectionAssert.AreEqual(before, File.ReadAllBytes(path), "旧模板图不能被改动");
+        }
+
+        [TestMethod]
+        public void SetTemplate_Reteach_ReplacesModelImage_LeavesNoTempFile()
+        {
+            CreateTemplate();
+            string path = ModelPath(Strategy);
+            byte[] before = File.ReadAllBytes(path);
+
+            var host = TemplateHost();
+            host.OnDraw = r =>
+            {
+                r.Bounds = new Rect2d(TemplateBounds.X, TemplateBounds.Y, TemplateBounds.Width + 10, TemplateBounds.Height);
+                r.RebuildRegion();
+            };
+            Strategy.SetTemplateAsync(host, RectEnum.Rectangle, false).GetAwaiter().GetResult();
+
+            Assert.AreEqual(path, ModelPath(Strategy));
+            CollectionAssert.AreNotEqual(before, File.ReadAllBytes(path), "重新示教应换成新模板图");
+            CollectionAssert.AreEqual(new[] { path }, Directory.GetFiles(Path.GetDirectoryName(path)), "不留临时文件");
+        }
+
+        [TestMethod]
+        public void SetTemplate_TrialSearchesTemplateRegionOnly()
+        {
+            // 图里左右各一个一模一样的 L, 模板框在右边那个上。试匹配若搜整图, 同分的左边那个可能排在前面,
+            // 示教原点 (TmplPoint) 就落到了另一个工件上
+            using (var twin = TwinLImage())
+            {
+                var host = new FakeRoiHost
+                {
+                    OnDraw = r =>
+                    {
+                        r.Bounds = new Rect2d(TemplateBounds.X + W, TemplateBounds.Y, TemplateBounds.Width, TemplateBounds.Height);
+                        r.RebuildRegion();
+                    },
+                };
+                host.FakeDisplay.SetImage(twin);
+
+                Strategy.SetTemplateAsync(host, RectEnum.Rectangle, true).GetAwaiter().GetResult();
+            }
+
+            Assert.AreEqual(TemplateCenter.X + W, TmplPoint(Strategy).X, 1.0);
+            Assert.AreEqual(TemplateCenter.Y, TmplPoint(Strategy).Y, 1.0);
+        }
+
+        [TestMethod]
+        public void Run_ExceptionMidLoop_ResetsPartialResults()
+        {
+            CreateTemplate();
+            // 上游"区域"第 1 个是整图矩形 (能匹配到), 第 2 个是 XLD: reduce_domain 在循环中途抛异常。
+            // 此时第 1 个 ROI 的结果已写进 Results / HoContour, 不清就把半截结果留给"编辑模板"和下游
+            HOperatorSet.GenContourPolygonXld(out HObject xld, new HTuple(0.0, 10.0), new HTuple(0.0, 10.0));
+            using (xld)
+            using (var roi = Rectangle1(0, 0, H - 1, W - 1))
+            {
+                HOperatorSet.ConcatObj(roi, xld, out HObject mixed);
+                using (mixed)
+                {
+                    SetRegionIn("上游/区域");
+                    _display.SetImage(_image);
+                    try
+                    {
+                        Strategy.Fun_action(_display, Strategies.Of(new StubStrategy("上游").Output("区域", mixed)));
+                        Assert.Fail("第 2 个 ROI 是 XLD, 应抛 HALCON 异常");
+                    }
+                    catch (HalconException) { }
+                }
+            }
+
+            Assert.AreEqual(0, Results(Strategy).Count);
+            Assert.AreEqual(new CvCoord(), Coord(Strategy));
+            Assert.AreEqual(0, HoContour(Strategy).CountObj());
+        }
+
+        [TestMethod]
         public void DrawROIAsync_Cancel_RestoresType_StillRedraws()
         {
             var host = new FakeRoiHost { Confirm = false };
@@ -780,6 +958,21 @@ namespace DotNet.HalconAlgo.Tests
             Assert.AreEqual(0.8, minScore.D, 1e-9);
             Assert.AreEqual("all", numMatches.S, "\"多个\" 映射为 0, 模型内读回为 all（找全部）");
             Assert.AreEqual(0.3, maxOverlap.D, 1e-9);
+        }
+
+        [TestMethod]
+        public void SavePara_ModelRejectsValue_DisplaySettingsStillSaved()
+        {
+            CreateTemplate();
+            var ui = new FakeUiHost();
+            Strategy.DispPara(ui);
+
+            // HALCON 拒收 min_score 1.5: 原先写模型参数夹在中间, 一抛异常"显示"页的改动全部丢失
+            ui.Set("cmb_111", "1.5").Set("CB_FontSize", "30").Check("ckb_disp0", false);
+            Assert.ThrowsException<HOperatorException>(() => Strategy.SavePara(ui));
+
+            Assert.IsFalse(Strategy.inPara.DispText);
+            Assert.AreEqual(30, Strategy.inPara.FontSize);
         }
 
         [TestMethod]

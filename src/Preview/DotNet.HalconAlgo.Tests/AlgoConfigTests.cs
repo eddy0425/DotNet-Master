@@ -95,14 +95,15 @@ namespace DotNet.HalconAlgo.Tests
         }
 
         [DataTestMethod]
-        [DataRow("first")]
-        [DataRow("last")]
-        [DataRow("all")]
-        public void OtherSelections_PassThroughWithPickIndexZero(string contourType)
+        [DataRow("first", 0)]
+        [DataRow("last", -1)]
+        [DataRow("all", 0)]
+        public void OtherSelections_MapToAllWithPickIndex(string contourType, int pickIndex)
         {
+            // measure_pos 忽略定义域: 一律取 all, 滤掉域外点之后再按下标挑 (-1 = 最后一个)
             var s = Make(contourType: contourType);
-            Assert.AreEqual(contourType, s.MeasureSelect);
-            Assert.AreEqual(0, s.PickIndex);
+            Assert.AreEqual("all", s.MeasureSelect);
+            Assert.AreEqual(pickIndex, s.PickIndex);
         }
     }
 

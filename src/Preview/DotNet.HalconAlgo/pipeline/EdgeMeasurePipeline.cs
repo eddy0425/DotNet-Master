@@ -35,8 +35,11 @@ namespace DotNet.HalconAlgo
         /// <summary> 采样步距（像素），最小 1 </summary>
         public double StepPace { get; }
 
-        /// <summary> 高斯平滑 sigma </summary>
-        public int Sigma { get; }
+        /// <summary> 高斯平滑 sigma，最小 <see cref="MinSigma"/> </summary>
+        public double Sigma { get; }
+
+        /// <summary> measure_pos 允许的最小 Sigma（Halcon 约束 Sigma &gt;= 0.4） </summary>
+        public const double MinSigma = 0.4;
 
         /// <summary> 边缘幅值阈值 </summary>
         public int Threshold { get; }
@@ -44,16 +47,16 @@ namespace DotNet.HalconAlgo
         /// <summary> 过渡方向：positive / negative / all </summary>
         public string Transition { get; }
 
-        /// <summary> 传给 measure_pos 的 Select 参数 </summary>
+        /// <summary> 传给 measure_pos 的 Select 参数：恒为 all，挑点留到定义域过滤之后 </summary>
         public string MeasureSelect { get; }
 
-        /// <summary> 从 measure_pos 结果里取第几个点 </summary>
+        /// <summary> 从定义域内的边缘点里取第几个；-1 表示最后一个 </summary>
         public int PickIndex { get; }
 
         public int ImageWidth { get; }
         public int ImageHeight { get; }
 
-        /// <param name="contourType">first / second / last / all。"second" 需要先取 all 再取下标 1，此处一并翻译。</param>
+        /// <param name="contourType">first / second / last / all（all 与 first 相同，取第一条），此处翻译成 <see cref="PickIndex"/>。</param>
         public EdgeMeasureSetup(Point2d center, Angle phi, double halfLength, double halfHeight,
             int stepPace, int stepWidth, int sigma, int threshold,
             string transition, string contourType, int imageWidth, int imageHeight)
@@ -64,14 +67,15 @@ namespace DotNet.HalconAlgo
             HalfHeight = halfHeight;
             HalfWidth = Math.Max(stepWidth / 2.0, 1);
             StepPace = Math.Max(stepPace, 1);
-            Sigma = sigma;
+            // 界面"滤波"下拉提供 0（本意是"不平滑"），原样传给 measure_pos 会抛 #1302；钳到允许的最小值
+            Sigma = Math.Max(sigma, MinSigma);
             Threshold = threshold;
             Transition = transition;
 
-            // "第二条边" 在 Halcon 里没有直接对应的 Select，只能取全部再按下标挑
-            bool second = contourType == "second";
-            MeasureSelect = second ? "all" : contourType;
-            PickIndex = second ? 1 : 0;
+            // 一律取全部再按下标挑：measure_pos 忽略定义域，first / last 挑中的可能是域外的边，
+            // 必须先滤掉域外点再数"第几条"（Halcon 也没有 second 选项）
+            MeasureSelect = "all";
+            PickIndex = contourType == "second" ? 1 : contourType == "last" ? -1 : 0;
 
             ImageWidth = imageWidth;
             ImageHeight = imageHeight;
@@ -116,10 +120,26 @@ namespace DotNet.HalconAlgo
     /// </remarks>
     public static class EdgeMeasurePipeline
     {
-        /// <param name="reducedImage">已 reduce_domain 到 ROI 的图像</param>
+        /// <param name="reducedImage">已 reduce_domain 到 ROI 的图像；定义域之外的边缘点会被丢弃</param>
         public static EdgeMeasureResult Run(HObject reducedImage, EdgeMeasureSetup setup)
         {
             if (reducedImage == null) throw new ArgumentNullException(nameof(reducedImage));
+
+            // measure_pos 为了效率忽略图像定义域，只看测量矩形；调用方 reduce_domain 的意图
+            // （"区域来源" / 跟随后的搜索区域）必须在这里按定义域过滤边缘点来兑现，否则只影响显示。
+            HOperatorSet.GetDomain(reducedImage, out HObject domain);
+            try
+            {
+                return Run(reducedImage, domain, setup);
+            }
+            finally
+            {
+                domain.Dispose();
+            }
+        }
+
+        private static EdgeMeasureResult Run(HObject reducedImage, HObject domain, EdgeMeasureSetup setup)
+        {
 
             int stepCount = (int)(setup.HalfHeight / setup.StepPace + 0.5);
             if (stepCount < 1) stepCount = 1;
@@ -148,12 +168,18 @@ namespace DotNet.HalconAlgo
                     HOperatorSet.MeasurePos(reducedImage, measureHandle, setup.Sigma, setup.Threshold,
                         setup.Transition, setup.MeasureSelect, out mRow, out mCol, out mAmp, out mDis);
 
-                    if (mRow.Length > setup.PickIndex)
+                    // 先滤掉定义域外的边缘点，再按序挑点
+                    var inside = new List<Point2d>(mRow.Length);
+                    for (int k = 0; k < mRow.Length; k++)
                     {
+                        double r = mRow[k].D, c = mCol[k].D;
+                        HOperatorSet.TestRegionPoint(domain, r, c, out HTuple isInside);
                         // (Row, Col) → (X, Y) 的唯一翻转点
-                        points.Add(new Point2d(mCol.TupleSelect(setup.PickIndex).D,
-                                               mRow.TupleSelect(setup.PickIndex).D));
+                        if (isInside.I == 1) inside.Add(new Point2d(c, r));
                     }
+
+                    int pick = setup.PickIndex < 0 ? inside.Count - 1 : setup.PickIndex;
+                    if (pick >= 0 && pick < inside.Count) points.Add(inside[pick]);
                 }
                 finally
                 {

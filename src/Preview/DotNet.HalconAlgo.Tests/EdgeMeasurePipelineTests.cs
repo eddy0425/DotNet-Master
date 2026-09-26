@@ -13,9 +13,10 @@ namespace DotNet.HalconAlgo.Tests
 
         /// <summary>中心 (100,50)，phi=0：沿列方向测量，沿行方向步进。</summary>
         private static EdgeMeasureSetup Setup(string transition, string select,
-            double halfHeight = 30, int stepPace = 10, int threshold = 30, double phiDeg = 0, Point2d? center = null)
+            double halfHeight = 30, int stepPace = 10, int threshold = 30, double phiDeg = 0, Point2d? center = null,
+            int sigma = 1)
             => new EdgeMeasureSetup(center ?? new Point2d(100, 50), Angle.FromDegrees(phiDeg), 30, halfHeight,
-                stepPace, 5, 1, threshold, transition, select, W, H);
+                stepPace, 5, sigma, threshold, transition, select, W, H);
 
         /// <summary>列 [100, 120) 为亮条：列 99.5 处上升沿，119.5 处下降沿（都在测量矩形 70..130 内）。</summary>
         private static HObject StripeImage()
@@ -143,6 +144,128 @@ namespace DotNet.HalconAlgo.Tests
                 Assert.AreEqual(7, result.Points.Count);
                 foreach (var p in result.Points)
                     Assert.AreEqual(49.5, p.Y, 0.5);
+            }
+        }
+
+        [TestMethod]
+        public void Setup_SigmaBelowHalconMinimum_IsClamped()
+        {
+            // measure_pos 要求 Sigma >= 0.4；界面的"滤波"下拉提供 0，不钳位会让每一轮都抛 HALCON 参数异常
+            Assert.AreEqual(0.4, Setup("positive", "first", sigma: 0).Sigma, 1e-12);
+            Assert.AreEqual(0.4, Setup("positive", "first", sigma: -3).Sigma, 1e-12);
+            Assert.AreEqual(2, Setup("positive", "first", sigma: 2).Sigma, 1e-12);
+        }
+
+        [TestMethod]
+        public void Run_SigmaZero_StillFindsEdge()
+        {
+            using (var image = VerticalStepImage(W, H, 100))
+            {
+                var result = EdgeMeasurePipeline.Run(image, Setup("positive", "first", sigma: 0));
+                Assert.AreEqual(7, result.Points.Count);
+                foreach (var p in result.Points)
+                    Assert.AreEqual(99.5, p.X, 0.5);
+            }
+        }
+
+        [TestMethod]
+        public void Run_DropsEdgesOutsideImageDomain()
+        {
+            // measure_pos 为了效率忽略图像定义域；调用方 reduce_domain 到搜索区域是想限制找边范围，
+            // 因此域外的边缘点必须丢弃，否则"区域来源"只影响显示、不影响结果。
+            using (var image = VerticalStepImage(W, H, 100))
+            using (var left = Rectangle1(0, 0, H - 1, 90))
+            {
+                HOperatorSet.ReduceDomain(image, left, out HObject reduced);
+                using (reduced)
+                {
+                    var result = EdgeMeasurePipeline.Run(reduced, Setup("positive", "first"));
+                    Assert.AreEqual(0, result.Points.Count, "边在列 99.5，搜索区域只到列 90");
+                    Assert.AreEqual(7, result.RectCenters.Count);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void Run_KeepsEdgesInsidePartialDomain()
+        {
+            // 只保留上半部分：行 0..45 的测量矩形 (行 20,30,40) 有点，其余丢弃
+            using (var image = VerticalStepImage(W, H, 100))
+            using (var top = Rectangle1(0, 0, 45, W - 1))
+            {
+                HOperatorSet.ReduceDomain(image, top, out HObject reduced);
+                using (reduced)
+                {
+                    var result = EdgeMeasurePipeline.Run(reduced, Setup("positive", "first"));
+                    CollectionAssert.AreEqual(new[] { 20.0, 30, 40 }, result.Points.Select(p => Math.Round(p.Y, 3)).ToArray());
+                }
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow("first", 105, W - 1, 119.5)]
+        [DataRow("last", 0, 110, 99.5)]
+        public void Run_SelectionAppliesWithinDomain(string select, int col1, int col2, double expectedX)
+        {
+            // 亮条两条边 99.5 / 119.5 都在测量矩形内, 但只有一条在搜索区域里。
+            // 先挑"第一条 / 最后一条"再判定域 —— 挑中的恰是域外那条, 整个采样被丢掉, 区域内的有效边拿不到
+            using (var image = StripeImage())
+            using (var roi = Rectangle1(0, col1, H - 1, col2))
+            {
+                HOperatorSet.ReduceDomain(image, roi, out HObject reduced);
+                using (reduced)
+                {
+                    var result = EdgeMeasurePipeline.Run(reduced, Setup("all", select));
+                    Assert.AreEqual(7, result.Points.Count);
+                    foreach (var p in result.Points)
+                        Assert.AreEqual(expectedX, p.X, 0.5);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void Run_SecondCountsOnlyEdgesInsideDomain()
+        {
+            // 域内只有一条边: "第二条"应当找不到, 而不是把域外的那条算作第一条
+            using (var image = StripeImage())
+            using (var roi = Rectangle1(0, 105, H - 1, W - 1))
+            {
+                HOperatorSet.ReduceDomain(image, roi, out HObject reduced);
+                using (reduced)
+                {
+                    Assert.AreEqual(0, EdgeMeasurePipeline.Run(reduced, Setup("all", "second")).Points.Count);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void Run_ObliquePhi_StepsPerpendicularToMeasureAxis()
+        {
+            // phi=30°：步进方向 (行 += cos, 列 += sin)，与测量方向 (行 -= sin, 列 += cos) 正交
+            using (var image = VerticalStepImage(W, H, 100))
+            {
+                var result = EdgeMeasurePipeline.Run(image, Setup("all", "first", halfHeight: 20, stepPace: 10, phiDeg: 30));
+
+                Assert.AreEqual(5, result.RectCenters.Count);
+                double c = Math.Cos(Math.PI / 6), s = Math.Sin(Math.PI / 6);
+                for (int i = 0; i < 5; i++)
+                {
+                    int k = i - 2;
+                    Assert.AreEqual(50 + k * 10 * c, result.RectCenters[i].Y, 1e-9);
+                    Assert.AreEqual(100 + k * 10 * s, result.RectCenters[i].X, 1e-9);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void Run_StripeNegativeFirst_PicksFallingEdge()
+        {
+            using (var image = StripeImage())
+            {
+                var result = EdgeMeasurePipeline.Run(image, Setup("negative", "first"));
+                Assert.AreEqual(7, result.Points.Count);
+                foreach (var p in result.Points)
+                    Assert.AreEqual(119.5, p.X, 0.5);
             }
         }
     }

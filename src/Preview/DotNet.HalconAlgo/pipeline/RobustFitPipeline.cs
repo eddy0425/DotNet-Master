@@ -49,6 +49,9 @@ namespace DotNet.HalconAlgo
             if (removed == null) throw new ArgumentNullException(nameof(removed));
             if (residual == null) throw new ArgumentNullException(nameof(residual));
 
+            // 与 Refine 的 maxErr <= 0 同口径：门限 <= 0 表示不做粗滤，否则残差非零的点会被全部剔光
+            if (gate <= 0) return 0;
+
             int count = 0;
             for (int i = points.Count - 1; i >= 0; i--)
             {
@@ -146,7 +149,8 @@ namespace DotNet.HalconAlgo
             if (points == null) throw new ArgumentNullException(nameof(points));
             if (removed == null) throw new ArgumentNullException(nameof(removed));
 
-            if (points.Count < minCountToTrim) return false;
+            // 少于 2 个点没有"首尾"可言：1 个点会被加进 removed 两次再越界删除
+            if (points.Count < Math.Max(minCountToTrim, 2)) return false;
 
             int last = points.Count - 1;
             removed.Add(points[0]);
