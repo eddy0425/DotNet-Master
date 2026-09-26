@@ -47,14 +47,24 @@ namespace DotNet.HalconAlgo
             }
             if (Index >= ImagePaths.Length) Index = 0;
 
-            inPara.Image.Dispose();
-            HOperatorSet.ReadImage(out inPara.Image, ImagePaths[Index]);
+            // 先读到局部变量, 成功后再替换: 原先先 Dispose 再 ReadImage, 读图一旦抛异常(文件损坏/被占用),
+            // inPara.Image 就停在已释放的句柄上, 下游经"图像"输出拿到的是个死句柄。
+            // 游标在读图之前前移: 否则某张图损坏时 Index 永远停在它身上, 每轮都读同一张坏图,
+            // 轮播就此卡死。读失败照样抛出, 下一轮自然跳到下一张。
+            int current = Index;
+            string path = ImagePaths[current];
+            Index = current + 1;
+            HOperatorSet.ReadImage(out HObject loaded, path);
 
             //判断图像是否为空
-            if (!inPara.Image.NotNull())
+            if (!loaded.NotNull())
             {
-                throw new InvalidOperationException($"加载图像失败，读到的图像为空: {ImagePaths[Index]}");
+                loaded.Dispose();
+                throw new InvalidOperationException($"加载图像失败，读到的图像为空: {path}");
             }
+
+            inPara.Image.Dispose();
+            inPara.Image = loaded;
 
             //旋转
             if (inPara.Rotate != 0)
@@ -90,11 +100,10 @@ namespace DotNet.HalconAlgo
 
             if (inPara.DispText)
             {
-                string message = $"{Name} : W:{display.HoWidth} H:{display.HoHeight} 索引:{Index}/{ImagePaths.Length}";
+                string message = $"{Name} : W:{display.HoWidth} H:{display.HoHeight} 索引:{current}/{ImagePaths.Length}";
                 display.DispText(message, new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Green, inPara.FontSize));
             }
 
-            Index++;
             return true;
         }
         public override void DispPara(IParaUiHost ui)
@@ -116,7 +125,16 @@ namespace DotNet.HalconAlgo
         {
             inPara.Rotate = ui.GetInt("cmb_Rotate");
             inPara.Mirror = ui.GetString("cmb_Mirror");
-            inPara.ImageFolder = ui.GetString("cmb_ImageFolder");
+            string folder = ui.GetString("cmb_ImageFolder");
+            // 目录一改, 缓存的文件列表与游标就作废: ImagePaths 只在 Init / 为 null 时重扫,
+            // 不在这里作废的话, 改了目录后仍会继续轮播旧目录里的图, 界面上毫无提示。
+            // null 与 "" 同视为"未设置": 宿主对空下拉返回 null 时不能每次保存都误判为改了目录
+            if (!string.Equals(folder ?? string.Empty, inPara.ImageFolder ?? string.Empty, StringComparison.Ordinal))
+            {
+                ImagePaths = null;
+                Index = 0;
+            }
+            inPara.ImageFolder = folder;
 
             //------------------------------------------
             inPara.DispText = ui.GetBool("ckb_disp0");

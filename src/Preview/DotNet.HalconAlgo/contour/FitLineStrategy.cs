@@ -45,10 +45,24 @@ namespace DotNet.HalconAlgo
         public override bool Fun_action(HObject ho_Image, IHDisplay display)
         {
             display.SetImage(ho_Image);
-            // 传空集合而不是 null: 另一重载内部会对 strategys 做 ResolveFrom, null 会直接 NRE.
-            return Fun_action(display, StrategyExtensions.EmptyList());
+            // 直接处理传入的图像, 不再转到另一重载按 ImageIn 取图: 单图重载没有上游,
+            // ImageIn 一旦不是"默认"就必然解析失败 —— 明明给了图却报"找不到图像来源"。
+            // 与 FitArcMidpointStrategy 的单图重载同口径。
+            // 传空集合而不是 null: Run 内部会对 strategys 做 ResolveFrom, null 会直接 NRE.
+            return Run(ho_Image, display, StrategyExtensions.EmptyList());
         }
         public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
+        {
+            HObject ho_Image;
+            if (inPara.ImageIn == "默认")
+                ho_Image = display.HoImage.RequireImage(Name);
+            else
+                ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
+
+            return Run(ho_Image, display, strategys);
+        }
+
+        private bool Run(HObject ho_Image, IHDisplay display, List<IParaStrategy> strategys)
         {
             HObject regionGet; HOperatorSet.GenEmptyObj(out regionGet);
             HObject imgReduced; HOperatorSet.GenEmptyObj(out imgReduced);
@@ -56,12 +70,6 @@ namespace DotNet.HalconAlgo
 
             try
             {
-                HObject ho_Image;
-                if (inPara.ImageIn == "默认")
-                    ho_Image = display.HoImage.RequireImage(Name);
-                else
-                    ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
-
                 bool useLocalRegion = inPara.RegionIn == "默认";
                 HObject searchRegion;
                 if (useLocalRegion)

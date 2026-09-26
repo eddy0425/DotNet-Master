@@ -50,6 +50,14 @@ namespace DotNet.HalconAlgo
             inPara.Results = new List<ModelResult>();
             inPara.Coord = new CvCoord();
 
+            // 与通用匹配同口径: 未建模板属于可恢复的配置问题, 红字 + 返回 false。
+            // 不拦的话 null 的 ModelID 会一路传进查找算子, 报出与真实原因无关的 HALCON 参数错误。
+            if (inPara.ModelID == null || inPara.ModelID.Length == 0)
+            {
+                display.DispText($"{Name} : 未建立模板，无法执行匹配！", new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Red, inPara.FontSize));
+                return false;
+            }
+
             HObject imgReduced; HOperatorSet.GenEmptyObj(out imgReduced);
             HObject ho_SelRect; HOperatorSet.GenEmptyObj(out ho_SelRect);
 
@@ -274,18 +282,32 @@ namespace DotNet.HalconAlgo
                 HOperatorSet.CreateNccModel(imgReduced, inPara.NumLevels, inPara.AngleStart.TupleRad(), inPara.AngleExtent.TupleRad(),
                                  "auto", "use_polarity", out HTuple modelID);
 
-                // 立即转移所有权：先释放旧模板，再装入新模板
+                // 先用新模板试匹配, 确认可用后再替换: 若先替换, 试匹配失败时旧模板已被释放,
+                // 新模板却配着旧模板示教出的 TmplPoint, 下游跟随会静默偏移。
+                HOperatorSet.FindNccModel(imgReduced, modelID, inPara.AngleStart.TupleRad(), inPara.AngleExtent.TupleRad(),
+                                            inPara.MinScore, 1, inPara.MaxOverlap, inPara.SubPixel, inPara.NumLevels,
+                                            out HTuple row, out HTuple column, out HTuple angle, out HTuple score);
+
+                // 试匹配一个都没找到时必须在构造 ModelResult 之前返回: 空 HTuple 隐式转 double 会直接抛
+                // HTupleAccessException。丢弃新模板, 旧模板与旧 TmplPoint 仍是一致的一对。
+                if (score.Length == 0)
+                {
+                    HOperatorSet.ClearNccModel(modelID);
+                    host.Display.Disp(inPara.ModeRect, DrawStyle.Of(HColor.Orange));
+                    host.Display.DispText("新建模板失败！", new Point2d(10, 10), DrawStyle.Of(HColor.Red));
+                    return;
+                }
+
+                // 转移所有权：先释放旧模板，再装入新模板
                 if (inPara.ModelID != null && inPara.ModelID.Length > 0)
                 {
                     HOperatorSet.ClearNccModel(inPara.ModelID);
                 }
                 inPara.ModelID = modelID;
 
-                HOperatorSet.FindNccModel(imgReduced, inPara.ModelID, inPara.AngleStart.TupleRad(), inPara.AngleExtent.TupleRad(),
-                                            inPara.MinScore, 1, inPara.MaxOverlap, inPara.SubPixel, inPara.NumLevels,
-                                            out HTuple row, out HTuple column, out HTuple angle, out HTuple score);
-
                 inPara.Results = new List<ModelResult>();
+                inPara.Coord = new CvCoord();
+
                 var result = new ModelResult(row, column, angle, score);
                 inPara.Results.Add(result);
                 ho_Contour.Dispose();
@@ -303,19 +325,8 @@ namespace DotNet.HalconAlgo
 
                 host.DrawDone(inPara.ModelPath, inPara.ModeRect.HoRegion, inPara.HoContour, result);
 
-                if (score.Length > 0)
-                {
-                    host.Display.DispText("新建模板成功！", new Point2d(10, 10), DrawStyle.Of(HColor.Green));
-                    inPara.TmplPoint = new Point2d(result.X, result.Y);      //更改跟随坐标
-                }
-                else
-                {
-                    host.Display.DispText("新建模板失败！", new Point2d(10, 10), DrawStyle.Of(HColor.Red));
-                }
-            }
-            catch
-            {
-                throw;
+                host.Display.DispText("新建模板成功！", new Point2d(10, 10), DrawStyle.Of(HColor.Green));
+                inPara.TmplPoint = new Point2d(result.X, result.Y);      //更改跟随坐标
             }
             finally
             {

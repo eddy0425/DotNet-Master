@@ -306,10 +306,6 @@ namespace DotNet.HalconAlgo
                 imgReduced.Dispose();
                 HOperatorSet.ReduceDomain(hImage, inPara.ModeRect.HoRegion, out imgReduced);
 
-                // 注:CvHalconDotNet 22.11 未暴露 ClearGenericShapeModel,
-                // 旧模板句柄由 HALCON 内部生命周期管理；这里仅置空,让新 modelID 接管。
-                inPara.ModelID = null;
-
                 #region 1) 创建模板
                 HOperatorSet.CreateGenericShapeModel(out HTuple modelID);
                 #endregion
@@ -341,21 +337,42 @@ namespace DotNet.HalconAlgo
                 HOperatorSet.SetGenericShapeModelParam(modelID, "num_matches", 1);
                 #endregion
 
-                inPara.ModelID = modelID;
-
                 #region 5) 试匹配 (matchResultID 由 HALCON 内部生命周期管理)
-                HOperatorSet.FindGenericShapeModel(hImage, inPara.ModelID, out HTuple matchResultID, out HTuple numMatchResult);
+                // 先用新模板试匹配, 确认可用后再替换: 若先替换, 试匹配失败时旧模板已被释放,
+                // 新模板却配着旧模板示教出的 TmplPoint, 下游跟随会静默偏移。
+                HOperatorSet.FindGenericShapeModel(hImage, modelID, out HTuple matchResultID, out HTuple numMatchResult);
                 #endregion
 
                 // 试匹配完成后，恢复用户设定的匹配数量供 Fun_action 使用
-                HOperatorSet.SetGenericShapeModelParam(inPara.ModelID, "num_matches", inPara.NumMatches);
+                HOperatorSet.SetGenericShapeModelParam(modelID, "num_matches", inPara.NumMatches);
+
+                // 一个都没找到时必须在取结果之前返回: 对 0 个结果取索引 0 会直接抛 HALCON 错误。
+                // 丢弃新模板, 旧模板与旧 TmplPoint 仍是一致的一对。
+                if (numMatchResult.I <= 0)
+                {
+                    HOperatorSet.ClearHandle(modelID);
+                    host.Display.Disp(inPara.ModeRect, DrawStyle.Of(HColor.Orange));
+                    host.Display.DispText("新建模板失败！", new Point2d(10, 10), DrawStyle.Of(HColor.Red));
+                    return;
+                }
+
+                // 新模板试匹配成功后才替换: 原先一进来就把 ModelID 置 null, 训练一旦抛异常旧模板也跟着丢了。
+                // 旧句柄用 ClearHandle 显式释放(22.11 没有 ClearGenericShapeModel, 但通用句柄都可由它释放),
+                // 与另外三种匹配的 Clear*Model 同口径, 防止重复 SetTemplateAsync 累计泄漏。
+                if (inPara.ModelID != null && inPara.ModelID.Length > 0)
+                {
+                    HOperatorSet.ClearHandle(inPara.ModelID);
+                }
+                inPara.ModelID = modelID;
+
+                inPara.Results = new List<ModelResult>();
+                inPara.Coord = new CvCoord();
 
                 HOperatorSet.GetGenericShapeModelResult(matchResultID, 0, "row", out HTuple row);
                 HOperatorSet.GetGenericShapeModelResult(matchResultID, 0, "column", out HTuple column);
                 HOperatorSet.GetGenericShapeModelResult(matchResultID, 0, "angle", out HTuple angle);
                 HOperatorSet.GetGenericShapeModelResult(matchResultID, 0, "score", out HTuple score);
 
-                inPara.Results = new List<ModelResult>();
                 var result = new ModelResult(row, column, angle, score);
                 result.ResultID = matchResultID;
                 inPara.Results.Add(result);
@@ -372,19 +389,8 @@ namespace DotNet.HalconAlgo
 
                 host.DrawDone(inPara.ModelPath, inPara.ModeRect.HoRegion, inPara.HoContour, result);
 
-                if (numMatchResult.I > 0)
-                {
-                    host.Display.DispText("新建模板成功！", new Point2d(10, 10), DrawStyle.Of(HColor.Green));
-                    inPara.TmplPoint = new Point2d(result.X, result.Y);      //更改跟随坐标
-                }
-                else
-                {
-                    host.Display.DispText("新建模板失败！", new Point2d(10, 10), DrawStyle.Of(HColor.Red));
-                }
-            }
-            catch
-            {
-                throw;
+                host.Display.DispText("新建模板成功！", new Point2d(10, 10), DrawStyle.Of(HColor.Green));
+                inPara.TmplPoint = new Point2d(result.X, result.Y);      //更改跟随坐标
             }
             finally
             {

@@ -19,6 +19,9 @@ using System.Runtime.InteropServices;
 //请将此类型的 ComVisible 特性设置为 true。
 [assembly: ComVisible(false)]
 
+// 测试需要直接校验 GetTransition / GetContourType / IsTrimEnds 等 internal 映射。
+[assembly: InternalsVisibleTo("DotNet.HalconAlgo.Tests")]
+
 // 如果此项目向 COM 公开，则下列 GUID 用于类型库的 ID
 [assembly: Guid("90ffd348-89ae-46ad-995f-780490a7865f")]
 

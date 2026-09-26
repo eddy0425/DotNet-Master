@@ -186,6 +186,13 @@ namespace DotNet.HalconAlgo
                 render.MeasurePhi = measured.Phi;
                 render.MeasureLen1 = measured.HalfLength;
                 render.MeasureLen2 = measured.HalfWidth;
+
+                // 点集在测量后立即挂到显示数据上(同一列表实例, 后续筛选原地增删, 发布时即为最终状态):
+                // 原先只在拟合成功后才赋值, 恰恰是"点不足 / 筛选后点不足"这类失败最需要看点落在哪,
+                // 却什么都不显示。发布发生在 finally, 此后不再修改这两个列表。
+                var removed = new List<Point2d>();
+                render.UsedPoints = points;
+                render.RemovedPoints = removed;
                 #endregion
 
                 #region 拟合圆弧中点
@@ -197,8 +204,6 @@ namespace DotNet.HalconAlgo
                 double maxErr = inPara.MaxErr; if (maxErr < 0) maxErr = 0;
                 double coarseFloor = inPara.CoarseGate; if (coarseFloor < 0) coarseFloor = 0;
                 double coarseGate = Math.Max(maxErr * CoarseGateErrScale, coarseFloor);
-
-                var removed = new List<Point2d>();
 
                 // 拟合结果：由下面的 refit 闭包更新，供残差函数与最终取值共用
                 HTuple circRow = 0, circCol = 0, circRadius = 0;
@@ -262,9 +267,6 @@ namespace DotNet.HalconAlgo
                 #endregion
 
                 #region 显示数据
-
-                render.UsedPoints = points;
-                render.RemovedPoints = removed;
 
                 HOperatorSet.GenCircleContourXld(out HObject arcContour, circRow, circCol, circRadius, circStartPhi, circEndPhi, circPointOrder, 1);
                 render.ArcContour = arcContour;

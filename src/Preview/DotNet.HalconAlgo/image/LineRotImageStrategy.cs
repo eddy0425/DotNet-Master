@@ -30,56 +30,53 @@ namespace DotNet.HalconAlgo
         }
         public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
         {
-            try
+            HObject ho_Image;
+            if (inPara.ImageIn == "默认")
+                ho_Image = display.HoImage.RequireImage(Name);
+            else
+                ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
+
+            CvLine line = strategys.ResolveFrom<CvLine>(inPara.LineIn);
+            // 退化直线是上游拟合结果无效, 属于业务错误而不是"意外的空引用", 不再抛 NullReferenceException
+            // (与 HDisplay 审查项 D10 同口径), 否则现场堆栈会被误读成本策略自身的空指针 bug。
+            if (line == null || line.IsDegenerate)
+                throw new InvalidOperationException($"{Name} : 直线数据为空或退化 ({inPara.LineIn})");
+
+            double dx = line.End.X - line.Start.X;
+            double dy = line.End.Y - line.Start.Y;
+            double lineAngle = Math.Atan2(dy, dx); // 弧度
+
+            double rotateAngle;
+            if (inPara.AlignAxis == "平行Y轴")
+                rotateAngle = lineAngle - Math.PI / 2;
+            else
+                rotateAngle = lineAngle;
+
+            // 归一化到 [-π/2, π/2]，取最小旋转角度（直线无方向性）
+            while (rotateAngle > Math.PI / 2) rotateAngle -= Math.PI;
+            while (rotateAngle < -Math.PI / 2) rotateAngle += Math.PI;
+
+            HOperatorSet.GetImageSize(ho_Image, out HTuple imgWidth, out HTuple imgHeight);
+            double centerRow = imgHeight.D / 2;
+            double centerCol = imgWidth.D / 2;
+
+            HOperatorSet.HomMat2dIdentity(out HTuple HomMat2D);
+            HOperatorSet.HomMat2dRotate(HomMat2D, rotateAngle, centerRow, centerCol, out HTuple HomMat2DRotate);
+            // 先生成新图再释放旧图: 算子抛异常时 inPara.Image 仍是上一轮的有效句柄, 不会留下死句柄
+            HOperatorSet.AffineTransImage(ho_Image, out HObject rotated, HomMat2DRotate, "constant", "false");
+            inPara.Image.Dispose();
+            inPara.Image = rotated;
+            double angleDeg = rotateAngle * 180.0 / Math.PI;
+
+            display.DispImage(inPara.Image);
+
+            if (inPara.DispText)
             {
-                HObject ho_Image;
-                if (inPara.ImageIn == "默认")
-                    ho_Image = display.HoImage.RequireImage(Name);
-                else
-                    ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
-
-                CvLine line = strategys.ResolveFrom<CvLine>(inPara.LineIn);
-                if (line == null || line.IsDegenerate)
-                    throw new NullReferenceException("直线数据为空！！");
-
-                double dx = line.End.X - line.Start.X;
-                double dy = line.End.Y - line.Start.Y;
-                double lineAngle = Math.Atan2(dy, dx); // 弧度
-
-                double rotateAngle;
-                if (inPara.AlignAxis == "平行Y轴")
-                    rotateAngle = lineAngle - Math.PI / 2;
-                else
-                    rotateAngle = lineAngle;
-
-                // 归一化到 [-π/2, π/2]，取最小旋转角度（直线无方向性）
-                while (rotateAngle > Math.PI / 2) rotateAngle -= Math.PI;
-                while (rotateAngle < -Math.PI / 2) rotateAngle += Math.PI;
-
-                HOperatorSet.GetImageSize(ho_Image, out HTuple imgWidth, out HTuple imgHeight);
-                double centerRow = imgHeight.D / 2;
-                double centerCol = imgWidth.D / 2;
-
-                HOperatorSet.HomMat2dIdentity(out HTuple HomMat2D);
-                HOperatorSet.HomMat2dRotate(HomMat2D, rotateAngle, centerRow, centerCol, out HTuple HomMat2DRotate);
-                inPara.Image.Dispose();
-                HOperatorSet.AffineTransImage(ho_Image, out inPara.Image, HomMat2DRotate, "constant", "false");
-                double angleDeg = rotateAngle * 180.0 / Math.PI;
-              
-                display.DispImage(inPara.Image);
-
-                if (inPara.DispText)
-                {
-                    string message = $"{Name} : 对齐:{inPara.AlignAxis} 旋转:{angleDeg:F2}°";
-                    display.DispText(message, new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Green, inPara.FontSize));
-                }
-
-                return true;
+                string message = $"{Name} : 对齐:{inPara.AlignAxis} 旋转:{angleDeg:F2}°";
+                display.DispText(message, new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Green, inPara.FontSize));
             }
-            catch
-            {
-                throw;
-            }
+
+            return true;
         }
         public override void DispPara(IParaUiHost ui)
         {

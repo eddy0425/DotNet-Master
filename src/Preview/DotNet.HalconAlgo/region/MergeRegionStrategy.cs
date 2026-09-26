@@ -192,11 +192,12 @@ namespace DotNet.HalconAlgo
             ui.ShowComboBox("cmb_110", inPara.CoordIn, false);
             ui.ShowButton("btn_110", true);
 
-            for (int i = 0; i < inPara.RegionSources.Length; i++)
+            string[] sources = SourceSlots();
+            for (int i = 0; i < sources.Length; i++)
             {
                 int id = 100 + i;
                 ui.ShowLabel($"lbl_{id}", $"输入区域{i}");
-                ui.ShowComboBox($"cmb_{id}", inPara.RegionSources[i], false);
+                ui.ShowComboBox($"cmb_{id}", sources[i], false);
                 ui.ShowButton($"btn_{id}", true);
             }
 
@@ -208,6 +209,16 @@ namespace DotNet.HalconAlgo
             ui.ShowComboBoxDropDown("CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
             ui.ShowComboBoxDropDown("CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
         }
+        /// <summary>
+        /// 参数页上的输入区域槽位。job 文件里 <c>"RegionSources": null</c> 反序列化后就是 null ——
+        /// Fun_action 已容忍这种情况, 参数页若不同样处理, 打开工具页 / 点运行就直接 NRE。
+        /// 此时补回默认的 6 个空槽位(对应 cmb_100..cmb_105)。
+        /// </summary>
+        private string[] SourceSlots()
+        {
+            return inPara.RegionSources ?? (inPara.RegionSources = new string[6]);
+        }
+
         /// <summary>
         /// 配置项等值比较: 把 null 与 "" 视为同一个"未设置"。
         /// <c>RegionSources</c> 新建时是 <c>new string[6]</c> (全 null), 落盘再读回来也是 null,
@@ -233,11 +244,12 @@ namespace DotNet.HalconAlgo
             if (!SameConfig(coordIn, inPara.CoordIn)) configChanged = true;
             inPara.CoordIn = coordIn;
 
-            for (int i = 0; i < inPara.RegionSources.Length; i++)
+            string[] sources = SourceSlots();
+            for (int i = 0; i < sources.Length; i++)
             {
                 string source = ui.GetString($"cmb_{100 + i}");
-                if (!SameConfig(source, inPara.RegionSources[i])) configChanged = true;
-                inPara.RegionSources[i] = source;
+                if (!SameConfig(source, sources[i])) configChanged = true;
+                sources[i] = source;
             }
 
             // 配置一经改动, 旧的示教原点即失效: 清空后由下一次成功合并重新记录。
