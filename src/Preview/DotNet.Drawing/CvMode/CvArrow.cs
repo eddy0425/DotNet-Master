@@ -13,7 +13,7 @@ namespace DotNet.Drawing
     /// - 使用组合模式，将箭头视为线段的特化
     /// - 自动支持 with 表达式进行函数式更新
     /// </remarks>
-    public sealed record CvArrow : ICvShape, ICvTransformable<CvArrow>
+    public sealed record CvArrow
     {
         #region Properties
 
@@ -68,11 +68,6 @@ namespace DotNet.Drawing
         public Point2d MidPoint => Line.MidPoint;
 
         /// <summary>
-        /// 中心点（同 MidPoint）
-        /// </summary>
-        public Point2d Center => MidPoint;
-
-        /// <summary>
         /// 方向向量
         /// </summary>
         public Point2d Direction => Line.Direction;
@@ -81,23 +76,6 @@ namespace DotNet.Drawing
         /// 单位方向向量
         /// </summary>
         public Point2d UnitDirection => Line.UnitDirection;
-
-        /// <summary>
-        /// 边界框
-        /// </summary>
-        public Rect2d BoundingBox
-        {
-            get
-            {
-                // 计算包含箭头头部的边界框
-                GetHeadPoints(out Point2d left, out Point2d right);
-                double minX = Math.Min(Start.X, Math.Min(End.X, Math.Min(left.X, right.X)));
-                double minY = Math.Min(Start.Y, Math.Min(End.Y, Math.Min(left.Y, right.Y)));
-                double maxX = Math.Max(Start.X, Math.Max(End.X, Math.Max(left.X, right.X)));
-                double maxY = Math.Max(Start.Y, Math.Max(End.Y, Math.Max(left.Y, right.Y)));
-                return new Rect2d(minX, minY, maxX - minX, maxY - minY);
-            }
-        }
 
         /// <summary>
         /// 箭头头部角度（弧度）
@@ -263,48 +241,6 @@ namespace DotNet.Drawing
         #region Transform Methods
 
         /// <summary>
-        /// 平移箭头
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvArrow Translate(double dx, double dy)
-        {
-            return new CvArrow(Line.Translate(dx, dy), HeadSize, HeadAngle, Style);
-        }
-
-        /// <summary>
-        /// 平移箭头
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvArrow Translate(Point2d offset)
-        {
-            return new CvArrow(Line.Translate(offset), HeadSize, HeadAngle, Style);
-        }
-
-        /// <summary>
-        /// 缩放箭头（同时缩放线段长度和箭头头部大小）
-        /// </summary>
-        public CvArrow Scale(double scale)
-        {
-            return new CvArrow(Line.Scale(scale), HeadSize * scale, HeadAngle, Style);
-        }
-
-        /// <summary>
-        /// 绕中点旋转
-        /// </summary>
-        public CvArrow Rotate(double angle)
-        {
-            return new CvArrow(Line.Rotate(angle), HeadSize, HeadAngle, Style);
-        }
-
-        /// <summary>
-        /// 绕指定点旋转
-        /// </summary>
-        public CvArrow RotateAround(double angle, Point2d pivot)
-        {
-            return new CvArrow(Line.RotateAround(angle, pivot), HeadSize, HeadAngle, Style);
-        }
-
-        /// <summary>
         /// 反转箭头方向
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -317,28 +253,6 @@ namespace DotNet.Drawing
         {
             return new CvArrow(Line.Extend(startExtension, endExtension), HeadSize, HeadAngle, Style);
         }
-
-        #endregion
-
-        #region With Methods
-
-        /// <summary>
-        /// 创建修改了头部大小的新箭头
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvArrow WithHeadSize(double headSize) => this with { HeadSize = headSize };
-
-        /// <summary>
-        /// 创建修改了头部角度的新箭头
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvArrow WithHeadAngle(double headAngle) => this with { HeadAngle = headAngle };
-
-        /// <summary>
-        /// 创建修改了样式的新箭头
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvArrow WithStyle(ArrowStyle style) => this with { Style = style };
 
         #endregion
 

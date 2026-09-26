@@ -32,7 +32,7 @@ namespace DotNet.Drawing.Tests
         public void NegativeRadius_IsRejected_IncludingWithExpression()
         {
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => new CvCircle(0, 0, -1));
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => new CvCircle(Point2d.Zero, -1, 0, 1));
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => new CvCircle(default(Point2d), -1, 0, 1));
             var c = new CvCircle(0, 0, 1);
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => c with { Radius = -1 });
         }
@@ -46,33 +46,6 @@ namespace DotNet.Drawing.Tests
             Geom.AreClose(4 * Math.PI, c.Area);
             Assert.IsFalse(c.IsDegenerate);
             Assert.IsTrue(new CvCircle(0, 0, 0).IsDegenerate);
-        }
-
-        [TestMethod]
-        public void BoundingBox_FullCircle()
-        {
-            Geom.AreClose(-1, 0, 4, 4, new CvCircle(1, 2, 2).BoundingBox);
-        }
-
-        [TestMethod]
-        public void BoundingBox_SmallArc_ExcludesCenter()
-        {
-            // π/6..π/3 的弧只在第一象限：包围盒 x/y 均为 [5, 8.66]，不含圆心 (0,0)
-            var arc = new CvCircle(0, 0, 10, Math.PI / 6, Math.PI / 3);
-            double c = 10 * Math.Cos(Math.PI / 6);
-            Geom.AreClose(5, 5, c - 5, c - 5, arc.BoundingBox, 1e-9);
-        }
-
-        [TestMethod]
-        public void BoundingBox_ArcAcrossZero_IncludesExtremePoint()
-        {
-            var arc = new CvCircle(0, 0, 10, -Math.PI / 4, Math.PI / 4);
-            var box = arc.BoundingBox;
-            double c = 10 * Math.Cos(Math.PI / 4);
-            Geom.AreClose(c, box.Left);
-            Geom.AreClose(10, box.Right, "跨越 0 弧度时要包含 (r, 0) 这个极值点");
-            Geom.AreClose(-c, box.Top);
-            Geom.AreClose(c, box.Bottom);
         }
 
         [TestMethod]
@@ -127,23 +100,18 @@ namespace DotNet.Drawing.Tests
         }
 
         [TestMethod]
-        public void Containment_FullCircle()
+        public void Circumference_FullCircle()
         {
             var c = new CvCircle(0, 0, 5);
-            Assert.IsTrue(c.Contains(new Point2d(3, 4)));
-            Assert.IsTrue(c.Contains(Point2d.Zero));
-            Assert.IsFalse(c.Contains(new Point2d(4, 4)));
             Assert.IsTrue(c.IsOnCircumference(new Point2d(3, 4)));
             Assert.IsFalse(c.IsOnCircumference(new Point2d(1, 1)));
-            Assert.IsTrue(c.IsOnBoundary(new Point2d(0, -5)));
+            Assert.IsTrue(c.IsOnCircumference(new Point2d(0, -5)));
         }
 
         [TestMethod]
-        public void Containment_Arc_ChecksAngleRange()
+        public void Circumference_Arc_ChecksAngleRange()
         {
             var arc = new CvCircle(0, 0, 5, 0, Math.PI / 2);
-            Assert.IsTrue(arc.Contains(new Point2d(1, 1)));
-            Assert.IsFalse(arc.Contains(new Point2d(-1, 1)));
             Assert.IsTrue(arc.IsOnCircumference(new Point2d(3, 4)));
             Assert.IsFalse(arc.IsOnCircumference(new Point2d(-3, 4)));
         }
@@ -153,7 +121,7 @@ namespace DotNet.Drawing.Tests
         {
             var c = new CvCircle(0, 0, 5);
             Geom.AreClose(5, c.DistanceToPoint(new Point2d(6, 8)));
-            Geom.AreClose(5, c.DistanceToPoint(Point2d.Zero));
+            Geom.AreClose(5, c.DistanceToPoint(default(Point2d)));
 
             var arc = new CvCircle(0, 0, 5, 0, Math.PI / 2);
             Geom.AreClose(1, arc.DistanceToPoint(new Point2d(0, 6)));
@@ -162,33 +130,12 @@ namespace DotNet.Drawing.Tests
         }
 
         [TestMethod]
-        public void Transforms()
+        public void ArcHelpers()
         {
             var arc = new CvCircle(1, 1, 2, 0, Math.PI / 2);
-
-            var moved = arc.Translate(3, 4);
-            Geom.AreClose(4, 5, moved.Center);
-            Geom.AreClose(Math.PI / 2, moved.EndPhi);
-            Geom.AreClose(4, 5, arc.Translate(new Point2d(3, 4)).Center);
-
-            var scaled = arc.Scale(3);
-            Geom.AreClose(1, 1, scaled.Center, Geom.Eps);   // 以自身中心缩放
-            Geom.AreClose(6, scaled.Radius);
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => arc.Scale(-1));
-
-            var rotated = arc.Rotate(Math.PI);
-            Geom.AreClose(1, 1, rotated.Center);
-            Geom.AreClose(Math.PI, rotated.StartPhi);
-            Geom.AreClose(1.5 * Math.PI, rotated.EndPhi);
-
-            var around = arc.RotateAround(Math.PI / 2, Point2d.Zero);
-            Geom.AreClose(-1, 1, around.Center);
-            Geom.AreClose(Math.PI / 2, around.StartPhi);
-
             var reversed = arc.ReverseArc();
             Geom.AreClose(Math.PI / 2, reversed.StartPhi);
             Geom.AreClose(0, reversed.EndPhi);
-
             Assert.IsTrue(arc.ToFullCircle().IsFullCircle);
         }
 

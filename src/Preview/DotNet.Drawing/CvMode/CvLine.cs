@@ -11,9 +11,8 @@ namespace DotNet.Drawing
     /// 设计特点：
     /// - sealed record class: 不可变引用类型，线程安全
     /// - 自动支持 with 表达式进行函数式更新
-    /// - 实现几何变换接口
     /// </remarks>
-    public sealed record CvLine : ICvShape, ICvTransformable<CvLine>, ICvContainable
+    public sealed record CvLine
     {
         #region Properties
 
@@ -33,7 +32,7 @@ namespace DotNet.Drawing
         public double Length
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => Start.DistanceTo(End);
+            get => Math.Sqrt(LengthSquared);
         }
 
         /// <summary>
@@ -42,7 +41,11 @@ namespace DotNet.Drawing
         public double LengthSquared
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => Start.DistanceSquaredTo(End);
+            get
+            {
+                var dir = Direction;
+                return dir.X * dir.X + dir.Y * dir.Y;
+            }
         }
 
         /// <summary>
@@ -73,11 +76,6 @@ namespace DotNet.Drawing
         }
 
         /// <summary>
-        /// 中心点（同 MidPoint）
-        /// </summary>
-        public Point2d Center => MidPoint;
-
-        /// <summary>
         /// 方向向量（从起点到终点）
         /// </summary>
         public Point2d Direction
@@ -92,7 +90,7 @@ namespace DotNet.Drawing
         public Point2d UnitDirection
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => Direction.Normalized;
+            get => Normalize(Direction);
         }
 
         /// <summary>
@@ -104,22 +102,7 @@ namespace DotNet.Drawing
             get
             {
                 var dir = Direction;
-                return new Point2d(-dir.Y, dir.X).Normalized;
-            }
-        }
-
-        /// <summary>
-        /// 边界框
-        /// </summary>
-        public Rect2d BoundingBox
-        {
-            get
-            {
-                double minX = Math.Min(Start.X, End.X);
-                double minY = Math.Min(Start.Y, End.Y);
-                double maxX = Math.Max(Start.X, End.X);
-                double maxY = Math.Max(Start.Y, End.Y);
-                return new Rect2d(minX, minY, maxX - minX, maxY - minY);
+                return Normalize(new Point2d(-dir.Y, dir.X));
             }
         }
 
@@ -195,26 +178,11 @@ namespace DotNet.Drawing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ContainsPoint(Point2d point, double tolerance = 0.01)
         {
-            double distanceToStart = point.DistanceTo(Start);
-            double distanceToEnd = point.DistanceTo(End);
+            double distanceToStart = Distance(point, Start);
+            double distanceToEnd = Distance(point, End);
             double lineLength = Length;
             return Math.Abs(distanceToStart + distanceToEnd - lineLength) < tolerance;
         }
-
-        /// <summary>
-        /// 判断点是否在线段内（实现 ICvContainable）
-        /// </summary>
-        /// <remarks>
-        /// 使用像素级容差，与 <see cref="IsOnBoundary"/> 的默认档位保持一致。
-        /// 原实现传入 <c>MathHelper.Tolerance</c>(1e-9)，比默认值严格 7 个数量级，
-        /// 对任何实际测量得到的点都恒为 false。
-        /// </remarks>
-        public bool Contains(Point2d point) => ContainsPoint(point, MathHelper.PixelTolerance);
-
-        /// <summary>
-        /// 判断点是否在边界上（实现 ICvContainable）
-        /// </summary>
-        public bool IsOnBoundary(Point2d point, double tolerance = 0.01) => ContainsPoint(point, tolerance);
 
         /// <summary>
         /// 计算点到线段的最短距离
@@ -222,12 +190,12 @@ namespace DotNet.Drawing
         public double DistanceToPoint(Point2d point)
         {
             if (IsDegenerate)
-                return point.DistanceTo(Start);
+                return Distance(point, Start);
 
             var dir = Direction;
-            double t = MathHelper.Clamp01((point - Start).Dot(dir) / dir.Dot(dir));
+            double t = MathHelper.Clamp01(Dot(point - Start, dir) / Dot(dir, dir));
             Point2d closest = Start + dir * t;
-            return point.DistanceTo(closest);
+            return Distance(point, closest);
         }
 
         /// <summary>
@@ -239,7 +207,7 @@ namespace DotNet.Drawing
                 return Start;
 
             var dir = Direction;
-            double t = MathHelper.Clamp01((point - Start).Dot(dir) / dir.Dot(dir));
+            double t = MathHelper.Clamp01(Dot(point - Start, dir) / Dot(dir, dir));
             return Start + dir * t;
         }
 
@@ -252,61 +220,12 @@ namespace DotNet.Drawing
                 return 0;
 
             var dir = Direction;
-            return (point - Start).Dot(dir) / dir.Dot(dir);
+            return Dot(point - Start, dir) / Dot(dir, dir);
         }
 
         #endregion
 
         #region Transform Methods
-
-        /// <summary>
-        /// 平移线段
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvLine Translate(double dx, double dy)
-        {
-            return new CvLine(Start.Translate(dx, dy), End.Translate(dx, dy));
-        }
-
-        /// <summary>
-        /// 平移线段
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvLine Translate(Point2d offset)
-        {
-            return new CvLine(Start + offset, End + offset);
-        }
-
-        /// <summary>
-        /// 缩放线段（以中点为中心）
-        /// </summary>
-        public CvLine Scale(double scale)
-        {
-            var center = MidPoint;
-            var newStart = center + (Start - center) * scale;
-            var newEnd = center + (End - center) * scale;
-            return new CvLine(newStart, newEnd);
-        }
-
-        /// <summary>
-        /// 绕中点旋转
-        /// </summary>
-        public CvLine Rotate(double angle)
-        {
-            var center = MidPoint;
-            return RotateAround(angle, center);
-        }
-
-        /// <summary>
-        /// 绕指定点旋转
-        /// </summary>
-        public CvLine RotateAround(double angle, Point2d pivot)
-        {
-            return new CvLine(
-                Start.RotateAround(angle, pivot),
-                End.RotateAround(angle, pivot)
-            );
-        }
 
         /// <summary>
         /// 反转线段方向
@@ -336,7 +255,7 @@ namespace DotNet.Drawing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Point2d PointAt(double t)
         {
-            return Start.Lerp(End, t);
+            return Start + Direction * t;
         }
 
         #endregion
@@ -351,11 +270,11 @@ namespace DotNet.Drawing
         /// <returns>是否相交</returns>
         public bool TryIntersect(CvLine other, out Point2d intersection)
         {
-            intersection = Point2d.Zero;
+            intersection = default;
 
             var d1 = Direction;
             var d2 = other.Direction;
-            double cross = d1.Cross(d2);
+            double cross = Cross(d1, d2);
 
             // cross = |d1|*|d2|*sin(theta)，量级随线段长度平方增长，
             // 必须以 |d1|*|d2| 为参考做相对判零，否则长线段永远判不出平行。
@@ -363,8 +282,8 @@ namespace DotNet.Drawing
                 return false; // 平行或共线
 
             var diff = other.Start - Start;
-            double t = diff.Cross(d2) / cross;
-            double u = diff.Cross(d1) / cross;
+            double t = Cross(diff, d2) / cross;
+            double u = Cross(diff, d1) / cross;
 
             if (t >= 0 && t <= 1 && u >= 0 && u <= 1)
             {
@@ -380,24 +299,40 @@ namespace DotNet.Drawing
         /// </summary>
         public bool TryIntersectLine(CvLine other, out Point2d intersection, out double t)
         {
-            intersection = Point2d.Zero;
+            intersection = default;
             t = 0;
 
             var d1 = Direction;
             var d2 = other.Direction;
-            double cross = d1.Cross(d2);
+            double cross = Cross(d1, d2);
 
             // 同 TryIntersect：叉积量纲为长度平方，按量级做相对判零。
             if (MathHelper.IsZeroRelative(cross, Length * other.Length))
                 return false; // 平行
 
             var diff = other.Start - Start;
-            t = diff.Cross(d2) / cross;
+            t = Cross(diff, d2) / cross;
             intersection = PointAt(t);
             return true;
         }
 
         #endregion
+
+        private static double Distance(Point2d a, Point2d b)
+        {
+            var delta = a - b;
+            return Math.Sqrt(delta.X * delta.X + delta.Y * delta.Y);
+        }
+
+        private static double Dot(Point2d a, Point2d b) => a.X * b.X + a.Y * b.Y;
+
+        private static double Cross(Point2d a, Point2d b) => a.X * b.Y - a.Y * b.X;
+
+        private static Point2d Normalize(Point2d point)
+        {
+            double length = Math.Sqrt(point.X * point.X + point.Y * point.Y);
+            return MathHelper.AreEqual(length, 0) ? default : point / length;
+        }
 
         #region Equality
 

@@ -16,11 +16,9 @@ namespace DotNet.Drawing.Tests
             Geom.AreClose(25, line.LengthSquared);
             Geom.AreClose(Math.Atan2(4, 3), line.Angle);
             Geom.AreClose(2.5, 3, line.MidPoint);
-            Geom.AreClose(2.5, 3, line.Center);
             Geom.AreClose(3, 4, line.Direction);
             Geom.AreClose(0.6, 0.8, line.UnitDirection);
             Geom.AreClose(-0.8, 0.6, line.Normal);
-            Geom.AreClose(1, 1, 3, 4, line.BoundingBox);
             Geom.AreClose(90, new CvLine(0, 0, 0, 1).AngleDegrees);
         }
 
@@ -46,12 +44,12 @@ namespace DotNet.Drawing.Tests
         [TestMethod]
         public void Containment()
         {
-            Assert.IsTrue(Horizontal.Contains(new Point2d(5, 0)));
-            Assert.IsTrue(Horizontal.Contains(new Point2d(0, 0)));
-            Assert.IsFalse(Horizontal.Contains(new Point2d(5, 1)));
-            Assert.IsFalse(Horizontal.Contains(new Point2d(11, 0)), "延长线上的点不在线段上");
+            Assert.IsTrue(Horizontal.ContainsPoint(new Point2d(5, 0)));
+            Assert.IsTrue(Horizontal.ContainsPoint(new Point2d(0, 0)));
+            Assert.IsFalse(Horizontal.ContainsPoint(new Point2d(5, 1)));
+            Assert.IsFalse(Horizontal.ContainsPoint(new Point2d(11, 0)), "延长线上的点不在线段上");
             Assert.IsTrue(Horizontal.ContainsPoint(new Point2d(5, 0.5), 0.1));
-            Assert.IsTrue(Horizontal.IsOnBoundary(new Point2d(3, 0)));
+            Assert.IsTrue(Horizontal.ContainsPoint(new Point2d(3, 0)));
         }
 
         [TestMethod]
@@ -78,27 +76,6 @@ namespace DotNet.Drawing.Tests
             Geom.AreClose(0.5, Horizontal.ProjectPoint(new Point2d(5, 9)));
             Geom.AreClose(2, Horizontal.ProjectPoint(new Point2d(20, 0)));
             Geom.AreClose(-1, Horizontal.ProjectPoint(new Point2d(-10, 3)));
-        }
-
-        [TestMethod]
-        public void Transforms_AreRelativeToMidPoint()
-        {
-            var scaled = Horizontal.Scale(2);
-            Geom.AreClose(-5, 0, scaled.Start);
-            Geom.AreClose(15, 0, scaled.End);
-
-            var rotated = Horizontal.Rotate(Math.PI / 2);
-            Geom.AreClose(5, -5, rotated.Start);
-            Geom.AreClose(5, 5, rotated.End);
-
-            var around = Horizontal.RotateAround(Math.PI, Point2d.Zero);
-            Geom.AreClose(0, 0, around.Start);
-            Geom.AreClose(-10, 0, around.End);
-
-            var moved = Horizontal.Translate(1, 2);
-            Geom.AreClose(1, 2, moved.Start);
-            Geom.AreClose(11, 2, moved.End);
-            Geom.AreClose(11, 2, Horizontal.Translate(new Point2d(1, 2)).End);
         }
 
         [TestMethod]

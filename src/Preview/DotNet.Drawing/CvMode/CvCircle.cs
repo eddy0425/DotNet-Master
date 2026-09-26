@@ -13,7 +13,7 @@ namespace DotNet.Drawing
     /// - 自动支持 with 表达式进行函数式更新
     /// - 支持完整圆和圆弧
     /// </remarks>
-    public sealed record CvCircle : ICvShape, ICvTransformable<CvCircle>, ICvContainable
+    public sealed record CvCircle
     {
         #region Properties
 
@@ -116,53 +116,6 @@ namespace DotNet.Drawing
         }
 
         /// <summary>
-        /// 边界框
-        /// </summary>
-        public Rect2d BoundingBox
-        {
-            get
-            {
-                if (IsFullCircle)
-                {
-                    return new Rect2d(
-                        Center.X - Radius,
-                        Center.Y - Radius,
-                        Diameter,
-                        Diameter
-                    );
-                }
-
-                // 对于圆弧，包围盒只由弧上的点决定：起点、终点，以及落在弧内的轴向极值点。
-                // 原实现以圆心为初值，把圆心也算进了包围盒，小于半圆的弧会因此偏大。
-                var startPoint = PointAtAngle(StartPhi);
-                var endPoint = PointAtAngle(EndPhi);
-                double minX = Math.Min(startPoint.X, endPoint.X);
-                double maxX = Math.Max(startPoint.X, endPoint.X);
-                double minY = Math.Min(startPoint.Y, endPoint.Y);
-                double maxY = Math.Max(startPoint.Y, endPoint.Y);
-
-                // 检查是否跨越四个极值点
-                double normalizedStart = MathHelper.NormalizeAnglePositive(StartPhi);
-                double normalizedEnd = MathHelper.NormalizeAnglePositive(EndPhi);
-                double[] extremeAngles = { 0, Math.PI / 2, Math.PI, 3 * Math.PI / 2 };
-
-                foreach (double angle in extremeAngles)
-                {
-                    if (IsAngleInArc(angle, normalizedStart, normalizedEnd))
-                    {
-                        var point = PointAtAngle(angle);
-                        minX = Math.Min(minX, point.X);
-                        maxX = Math.Max(maxX, point.X);
-                        minY = Math.Min(minY, point.Y);
-                        maxY = Math.Max(maxY, point.Y);
-                    }
-                }
-
-                return new Rect2d(minX, minY, maxX - minX, maxY - minY);
-            }
-        }
-
-        /// <summary>
         /// 圆弧起点
         /// </summary>
         public Point2d StartPoint
@@ -243,7 +196,7 @@ namespace DotNet.Drawing
         public CvCircle(Point2d centerPoint, Point2d edgePoint)
         {
             Center = centerPoint;
-            Radius = centerPoint.DistanceTo(edgePoint);
+            Radius = Distance(centerPoint, edgePoint);
             StartPhi = 0;
             EndPhi = 2 * Math.PI;
         }
@@ -271,7 +224,7 @@ namespace DotNet.Drawing
             double offsetY = (ux * vLengthSquared - vx * uLengthSquared) / denominator;
 
             var center = new Point2d(p1.X + offsetX, p1.Y + offsetY);
-            double radius = center.DistanceTo(p1);
+            double radius = Distance(center, p1);
             return new CvCircle(center, radius);
         }
 
@@ -280,28 +233,11 @@ namespace DotNet.Drawing
         #region Containment Methods
 
         /// <summary>
-        /// 判断点是否在圆/圆弧内
-        /// </summary>
-        public bool Contains(Point2d point)
-        {
-            double distance = Center.DistanceTo(point);
-            if (distance > Radius)
-                return false;
-
-            if (IsFullCircle)
-                return true;
-
-            // 对于圆弧，检查角度是否在范围内
-            double angle = Math.Atan2(point.Y - Center.Y, point.X - Center.X);
-            return IsAngleInArc(angle, StartPhi, EndPhi);
-        }
-
-        /// <summary>
         /// 判断点是否在圆周上（带容差）
         /// </summary>
         public bool IsOnCircumference(Point2d point, double tolerance = 0.01)
         {
-            double distance = Center.DistanceTo(point);
+            double distance = Distance(Center, point);
             if (Math.Abs(distance - Radius) >= tolerance)
                 return false;
 
@@ -313,17 +249,11 @@ namespace DotNet.Drawing
         }
 
         /// <summary>
-        /// 判断点是否在边界上
-        /// </summary>
-        public bool IsOnBoundary(Point2d point, double tolerance = 0.01)
-            => IsOnCircumference(point, tolerance);
-
-        /// <summary>
         /// 计算点到圆/圆弧的最短距离
         /// </summary>
         public double DistanceToPoint(Point2d point)
         {
-            double distToCenter = Center.DistanceTo(point);
+            double distToCenter = Distance(Center, point);
 
             if (IsFullCircle)
             {
@@ -341,65 +271,13 @@ namespace DotNet.Drawing
             else
             {
                 // 点不在圆弧角度范围内，计算到两个端点的最短距离
-                return Math.Min(point.DistanceTo(StartPoint), point.DistanceTo(EndPoint));
+                return Math.Min(Distance(point, StartPoint), Distance(point, EndPoint));
             }
         }
 
         #endregion
 
         #region Transform Methods
-
-        /// <summary>
-        /// 平移圆
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvCircle Translate(double dx, double dy)
-        {
-            return new CvCircle(Center.Translate(dx, dy), Radius, StartPhi, EndPhi);
-        }
-
-        /// <summary>
-        /// 平移圆
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvCircle Translate(Point2d offset)
-        {
-            return new CvCircle(Center + offset, Radius, StartPhi, EndPhi);
-        }
-
-        /// <summary>
-        /// 以圆心为中心缩放（圆心不动，半径 × scale）
-        /// </summary>
-        /// <remarks>
-        /// 与 <see cref="CvLine.Scale"/>（以中点为中心）一致：图元的缩放 / 旋转都相对自身中心，
-        /// 需要相对任意点缩放时先平移。<see cref="Point2d.Scale"/> 是向量运算、相对原点，语义不同，见其注释。
-        /// </remarks>
-        public CvCircle Scale(double scale)
-        {
-            if (scale < 0) throw new ArgumentOutOfRangeException(nameof(scale), "Scale must be non-negative.");
-            return new CvCircle(Center, Radius * scale, StartPhi, EndPhi);
-        }
-
-        /// <summary>
-        /// 绕圆心旋转圆弧
-        /// </summary>
-        public CvCircle Rotate(double angle)
-        {
-            return new CvCircle(Center, Radius, StartPhi + angle, EndPhi + angle);
-        }
-
-        /// <summary>
-        /// 绕指定点旋转
-        /// </summary>
-        public CvCircle RotateAround(double angle, Point2d pivot)
-        {
-            return new CvCircle(
-                Center.RotateAround(angle, pivot),
-                Radius,
-                StartPhi + angle,
-                EndPhi + angle
-            );
-        }
 
         /// <summary>
         /// 反转圆弧方向
@@ -506,6 +384,12 @@ namespace DotNet.Drawing
 
         #endregion
 
+        private static double Distance(Point2d a, Point2d b)
+        {
+            var delta = a - b;
+            return Math.Sqrt(delta.X * delta.X + delta.Y * delta.Y);
+        }
+
         #region Equality
 
         /// <summary>
@@ -545,7 +429,7 @@ namespace DotNet.Drawing
         /// <summary>
         /// 单位圆
         /// </summary>
-        public static readonly CvCircle Unit = new(Point2d.Zero, 1);
+        public static readonly CvCircle Unit = new(default, 1);
 
         #endregion
     }

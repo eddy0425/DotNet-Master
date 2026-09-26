@@ -14,7 +14,7 @@ namespace DotNet.Drawing
     /// - 用于表示物体的位置和朝向（位姿）
     /// - 属性使用 init 访问器，保证不可变语义
     /// </remarks>
-    public readonly struct CvCoord : IEquatable<CvCoord>, ICvTranslatable<CvCoord>, ICvRotatable<CvCoord>
+    public readonly struct CvCoord : IEquatable<CvCoord>
     {
         #region Properties
 
@@ -138,62 +138,6 @@ namespace DotNet.Drawing
         #region Transform Methods
 
         /// <summary>
-        /// 旋转坐标系
-        /// </summary>
-        /// <param name="deltaAngle">旋转量（弧度）</param>
-        /// <remarks>
-        /// 形参保持 <c>double</c> 是 <see cref="ICvRotatable{T}"/> 的统一签名（各图元共用）；
-        /// 需要强类型旋转量时用 <see cref="Rotate(Angle)"/>。
-        /// </remarks>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvCoord Rotate(double deltaAngle) => Rotate(Angle.FromRadians(deltaAngle));
-
-        /// <summary>
-        /// 旋转坐标系（强类型旋转量）
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvCoord Rotate(Angle deltaAngle)
-        {
-            return new CvCoord(X, Y, Angle + deltaAngle);
-        }
-
-        /// <summary>
-        /// 绕指定点旋转
-        /// </summary>
-        /// <param name="deltaAngle">旋转量（弧度）</param>
-        public CvCoord RotateAround(double deltaAngle, Point2d pivot)
-            => RotateAround(Angle.FromRadians(deltaAngle), pivot);
-
-        /// <summary>
-        /// 绕指定点旋转（强类型旋转量）
-        /// </summary>
-        public CvCoord RotateAround(Angle deltaAngle, Point2d pivot)
-        {
-            // 先旋转位置
-            Point2d newCenter = Center.RotateAround(deltaAngle.Radians, pivot);
-            // 再更新角度
-            return new CvCoord(newCenter.X, newCenter.Y, Angle + deltaAngle);
-        }
-
-        /// <summary>
-        /// 平移坐标系
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvCoord Translate(double dx, double dy)
-        {
-            return new CvCoord(X + dx, Y + dy, Angle);
-        }
-
-        /// <summary>
-        /// 平移坐标系
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvCoord Translate(Point2d offset)
-        {
-            return new CvCoord(X + offset.X, Y + offset.Y, Angle);
-        }
-
-        /// <summary>
         /// 沿当前方向平移
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -283,7 +227,9 @@ namespace DotNet.Drawing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public double DistanceTo(CvCoord other)
         {
-            return Center.DistanceTo(other.Center);
+            double dx = X - other.X;
+            double dy = Y - other.Y;
+            return Math.Sqrt(dx * dx + dy * dy);
         }
 
         /// <summary>

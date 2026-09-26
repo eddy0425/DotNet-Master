@@ -78,7 +78,6 @@
     <Compile Include="CvMode\CvLine.cs" />
     <Compile Include="CvMode\CvRegion.cs" />
     <Compile Include="Internal\HashCode.cs" />
-    <Compile Include="CvMode\ICvShape.cs" />
     <Compile Include="CvMode\MathHelper.cs" />
     <Compile Include="CvMode\TransExpV2.cs" />
     <Compile Include="OpenCvSharp\DMatch.cs" />

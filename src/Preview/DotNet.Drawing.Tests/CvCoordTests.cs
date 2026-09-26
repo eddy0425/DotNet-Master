@@ -37,27 +37,9 @@ namespace DotNet.Drawing.Tests
         }
 
         [TestMethod]
-        public void Rotate_KeepsPosition()
-        {
-            var c = CvCoord.FromDegrees(1, 2, 170);
-            AreClose(1, 2, MathHelper.ToRadians(-170), c.Rotate(MathHelper.ToRadians(20)));
-            AreClose(1, 2, MathHelper.ToRadians(-170), c.Rotate(Angle.FromDegrees(20)));
-        }
-
-        [TestMethod]
-        public void RotateAround_MovesPositionAndAngle()
-        {
-            var c = CvCoord.FromDegrees(1, 0, 0);
-            AreClose(0, 1, Math.PI / 2, c.RotateAround(Math.PI / 2, Point2d.Zero));
-            AreClose(0, 1, Math.PI / 2, c.RotateAround(Angle.FromDegrees(90), Point2d.Zero));
-        }
-
-        [TestMethod]
-        public void Translations()
+        public void DirectionalTranslations()
         {
             var c = CvCoord.FromDegrees(1, 1, 90);
-            AreClose(3, 4, Math.PI / 2, c.Translate(2, 3));
-            AreClose(3, 4, Math.PI / 2, c.Translate(new Point2d(2, 3)));
             AreClose(1, 3, Math.PI / 2, c.TranslateForward(2));
             AreClose(-1, 1, Math.PI / 2, c.TranslateSideways(2), 1e-9);   // 侧向 = 朝向 +90°
         }

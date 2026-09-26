@@ -75,6 +75,7 @@ namespace DotNet.Drawing
 
         #region Operators
 
+        /// <summary>按特征点的全部数据分量比较。</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(KeyPoint other)
         {
@@ -114,7 +115,7 @@ namespace DotNet.Drawing
 
         public override string ToString()
         {
-            return $"[Pt:{Pt}, Size:{Size}, Angle:{Angle}, Response:{Response}, Octave:{Octave}, ClassId:{ClassId}]";
+            return $"[Pt:({Pt.X}, {Pt.Y}), Size:{Size}, Angle:{Angle}, Response:{Response}, Octave:{Octave}, ClassId:{ClassId}]";
         }
 
         #endregion

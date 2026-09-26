@@ -39,7 +39,7 @@ namespace DotNet.Drawing
         }
 
         // 已删除 Cal2P / IsNearPoint：两者都是散着 4 个 double 的裸坐标 API（C1 要消除的形态），
-        // 且全工程无调用方，功能分别等价于 Point2d.Lerp(other, 0.5) 与 Point2d.DistanceTo。
+        // 且全工程无调用方；中点与距离可直接由坐标计算。
 
         /// <summary>
         /// 根据点坐标生成 XLD 轮廓 (Point2d: X=Column, Y=Row)
@@ -194,8 +194,7 @@ namespace DotNet.Drawing
         /// 计算经过刚体变换后的坐标
         /// </summary>
         /// <remarks>
-        /// Point2d 只有位置、没有朝向（其 <see cref="Point2d.Angle"/> 是"与原点连线的夹角"，
-        /// 不代表坐标系旋转量），因此本重载与 <see cref="VectorAngleToRigid(Point2d, Point2d, out HTuple)"/>
+        /// Point2d 只有位置、没有朝向，因此本重载与 <see cref="VectorAngleToRigid(Point2d, Point2d, out HTuple)"/>
         /// 保持一致：纯平移，不旋转，target 的角度原样保留。
         /// 需要含旋转的变换请使用 CvCoord 重载。
         /// </remarks>

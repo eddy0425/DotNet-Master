@@ -93,43 +93,41 @@ namespace DotNet.Drawing
         // 以下均为 Bounds 的派生量, 只读转发, 不参与 JSON 序列化
 
         /// <summary> 上边界Y </summary>
-        [JsonIgnore] public double Top => _bounds.Top;
+        [JsonIgnore] public double Top => _bounds.Y;
 
         /// <summary> 下边界Y (Y + Height) </summary>
-        [JsonIgnore] public double Bottom => _bounds.Bottom;
+        [JsonIgnore] public double Bottom => _bounds.Y + _bounds.Height;
 
         /// <summary> 左边界X </summary>
-        [JsonIgnore] public double Left => _bounds.Left;
+        [JsonIgnore] public double Left => _bounds.X;
 
         /// <summary> 右边界X (X + Width) </summary>
-        [JsonIgnore] public double Right => _bounds.Right;
+        [JsonIgnore] public double Right => _bounds.X + _bounds.Width;
 
         /// <summary> 中心X </summary>
-        [JsonIgnore] public double CenterX => _bounds.CenterX;
+        [JsonIgnore] public double CenterX => _bounds.X + _bounds.Width / 2;
 
         /// <summary> 中心Y </summary>
-        [JsonIgnore] public double CenterY => _bounds.CenterY;
+        [JsonIgnore] public double CenterY => _bounds.Y + _bounds.Height / 2;
 
         /// <summary> 左上角点 </summary>
-        [JsonIgnore] public Point2d TopLeft => _bounds.TopLeft;
+        [JsonIgnore] public Point2d TopLeft => new(_bounds.X, _bounds.Y);
 
         /// <summary> 右下角点 </summary>
-        [JsonIgnore] public Point2d BottomRight => _bounds.BottomRight;
-
-        /// <summary> 左上角位置 </summary>
-        [JsonIgnore] public Point2d Location => _bounds.Location;
+        [JsonIgnore] public Point2d BottomRight => new(_bounds.X + _bounds.Width, _bounds.Y + _bounds.Height);
 
         /// <summary> 外接矩形大小 </summary>
-        [JsonIgnore] public Size2d Size => _bounds.Size;
+        [JsonIgnore] public Size2d Size => new(_bounds.Width, _bounds.Height);
 
         /// <summary> 判断坐标是否落在外接矩形内（右开 / 下开区间） </summary>
-        public bool Contains(double x, double y) => _bounds.Contains(x, y);
+        public bool Contains(double x, double y) =>
+            _bounds.X <= x && _bounds.Y <= y && _bounds.X + _bounds.Width > x && _bounds.Y + _bounds.Height > y;
 
         /// <summary> 判断点是否落在外接矩形内（右开 / 下开区间） </summary>
-        public bool Contains(Point2d pt) => _bounds.Contains(pt);
+        public bool Contains(Point2d pt) => Contains(pt.X, pt.Y);
 
         /// <summary> 外接矩形转换为整数矩形 </summary>
-        public Rect ToRect() => _bounds.ToRect();
+        public Rect ToRect() => new((int)_bounds.X, (int)_bounds.Y, (int)_bounds.Width, (int)_bounds.Height);
 
         #endregion
 
@@ -198,7 +196,7 @@ namespace DotNet.Drawing
         [JsonIgnore]
         public Point2d Center
         {
-            get => new Point2d(_bounds.CenterX, _bounds.CenterY);
+            get => new Point2d(CenterX, CenterY);
             set => this.SetCenter(value);
         }
 

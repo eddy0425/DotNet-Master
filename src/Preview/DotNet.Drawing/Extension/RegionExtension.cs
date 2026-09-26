@@ -1,4 +1,5 @@
 ﻿using HalconDotNet;
+using System;
 using System.Collections.Generic;
 
 
@@ -174,7 +175,12 @@ namespace DotNet.Drawing
         /// <param name="bottomRight">右下角</param>
         public static void SetRectByCorners(this CvRegion hRegion, Point2d topLeft, Point2d bottomRight)
         {
-            var rect = Rect2d.FromLTRB(topLeft.X, topLeft.Y, bottomRight.X, bottomRight.Y);
+            if (bottomRight.X < topLeft.X)
+                throw new ArgumentException("right must be >= left", nameof(bottomRight));
+            if (bottomRight.Y < topLeft.Y)
+                throw new ArgumentException("bottom must be >= top", nameof(bottomRight));
+
+            var rect = new Rect2d(topLeft.X, topLeft.Y, bottomRight.X - topLeft.X, bottomRight.Y - topLeft.Y);
             hRegion.Bounds = rect;
         }
 

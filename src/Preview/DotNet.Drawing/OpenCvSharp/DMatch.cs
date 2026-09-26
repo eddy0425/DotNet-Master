@@ -48,23 +48,11 @@ namespace DotNet.Drawing
         public int ImgIdx; 
 
 
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <summary>描述子之间的匹配距离。</summary>
         public float Distance;
 
         /// <summary>
-        ///  Returns an empty DMatch instance with default invalid values.
-        /// </summary>
-        /// <returns></returns>
-        public static DMatch Empty()
-        {
-            return new DMatch(-1, -1, -1, Single.MaxValue);
-        }
-
-        /// <summary>
         /// Initializes a new instance of the DMatch class with specified query and train indices, and distance.
-        /// </summary>
         /// </summary>
         /// <param name="queryIdx"></param>
         /// <param name="trainIdx"></param>
@@ -89,7 +77,7 @@ namespace DotNet.Drawing
         }
 
         /// <summary>
-        /// Compares by distance (less is beter)
+        /// Compares by distance (less is better)
         /// </summary>
         /// <param name="d1"></param>
         /// <param name="d2"></param>
@@ -99,7 +87,7 @@ namespace DotNet.Drawing
             return d1.Distance < d2.Distance;
         }
         /// <summary>
-        /// Compares by distance (less is beter)
+        /// Compares by distance (less is better)
         /// </summary>
         /// <param name="d1"></param>
         /// <param name="d2"></param>
@@ -129,14 +117,11 @@ namespace DotNet.Drawing
 
         #endregion
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
         public override string ToString()
         {
             return $"DMatch (QueryIdx:{QueryIdx}, TrainIdx:{TrainIdx}, ImgIdx:{ImgIdx}, Distance:{Distance})";
         }
+
     }
 
 }
