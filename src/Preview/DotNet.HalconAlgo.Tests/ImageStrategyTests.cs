@@ -118,6 +118,7 @@ namespace DotNet.HalconAlgo.Tests
         [DataTestMethod]
         [DataRow("行镜像", 29, 0)]
         [DataRow("列镜像", 0, 39)]
+        [DataRow("原点镜像", 29, 39)]
         [DataRow("无", 0, 0)]
         public void Mirror(string mode, int brightRow, int brightCol)
         {
@@ -136,16 +137,17 @@ namespace DotNet.HalconAlgo.Tests
         }
 
         [TestMethod]
-        public void Mirror_Diagonal_Transposes()
+        public void Mirror_Origin_KeepsSize_NotTransposed()
         {
+            // 原点镜像是点对称 (旋转 180°), 宽高不变; mirror_image 的 "diagonal" 是转置, 会把 40×30 变成 30×40
             WriteImage("1", 10, 40, 30);
             _strategy.inPara.Mirror = "原点镜像";
 
             Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of()));
 
             ImageSize(_strategy.inPara.Image, out int w, out int h);
-            Assert.AreEqual(30, w);
-            Assert.AreEqual(40, h);
+            Assert.AreEqual(40, w);
+            Assert.AreEqual(30, h);
         }
 
         [TestMethod]

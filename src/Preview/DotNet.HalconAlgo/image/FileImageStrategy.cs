@@ -89,7 +89,12 @@ namespace DotNet.HalconAlgo
                     inPara.Image = imgMirrored2;
                     break;
                 case "原点镜像":
-                    HOperatorSet.MirrorImage(inPara.Image, out HObject imgMirrored3, "diagonal");
+                    // 原点镜像 = 关于图像中心的点对称 (行、列各镜像一次, 等价于旋转 180°)。
+                    // 原先用的 "diagonal" 是沿主对角线 x=y 反射 (即转置), 非方图时连宽高都会对调。
+                    HOperatorSet.MirrorImage(inPara.Image, out HObject imgMirroredRow, "row");
+                    inPara.Image.Dispose();
+                    inPara.Image = imgMirroredRow;
+                    HOperatorSet.MirrorImage(inPara.Image, out HObject imgMirrored3, "column");
                     inPara.Image.Dispose();
                     inPara.Image = imgMirrored3;
                     break;

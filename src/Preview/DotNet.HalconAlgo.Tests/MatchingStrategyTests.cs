@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using DotNet.Drawing;
 using DotNet.Vision.Abstractions;
 using HalconDotNet;
@@ -753,7 +754,98 @@ namespace DotNet.HalconAlgo.Tests
             {
                 ModeRect(other).Dispose();
                 HoRect(other).Dispose();
+                HoContour(other).Dispose();
             }
+        }
+
+        /// <summary>四种参数类型各自独立 (无公共基类), 这里按属性名反射读取, 让公共参数测试只写一份。</summary>
+        private static PropertyInfo ParaProperty(TStrategy s, out object para, string name)
+        {
+            para = typeof(TStrategy).GetProperty("inPara").GetValue(s);
+            var prop = para.GetType().GetProperty(name);
+            Assert.IsNotNull(prop, $"{para.GetType().Name} 缺少属性 {name}");
+            return prop;
+        }
+
+        private static object Para(TStrategy s, string name)
+            => ParaProperty(s, out object para, name).GetValue(para);
+
+        private static void SetPara(TStrategy s, string name, object value)
+            => ParaProperty(s, out object para, name).SetValue(para, value);
+
+        [TestMethod]
+        public void Defaults()
+        {
+            Assert.AreEqual("默认", Para(Strategy, "ImageIn"));
+            Assert.AreEqual("默认", Para(Strategy, "RegionIn"));
+            Assert.AreEqual("默认", Para(Strategy, "CoordIn"));
+            Assert.AreEqual(-90, ((HTuple)Para(Strategy, "AngleStart")).D, 1e-12);
+            Assert.AreEqual(180, ((HTuple)Para(Strategy, "AngleExtent")).D, 1e-12);
+            Assert.AreEqual(0.6, ((HTuple)Para(Strategy, "MinScore")).D, 1e-12);
+            Assert.AreEqual(1, ((HTuple)Para(Strategy, "NumMatches")).I);
+            Assert.AreEqual(0.5, ((HTuple)Para(Strategy, "MaxOverlap")).D, 1e-12);
+            Assert.AreEqual(0, ((HTuple)Para(Strategy, "NumLevels")).I, "0 = 金字塔层数由 HALCON 自动确定");
+            Assert.AreEqual(string.Empty, ModelPath(Strategy), "未建模板时是空串而不是 null");
+            Assert.IsNull(ModelID(Strategy));
+            Assert.AreEqual(0, Results(Strategy).Count);
+            Assert.AreEqual(0, HoContour(Strategy).CountObj(), "轮廓句柄已初始化为空对象");
+        }
+
+        /// <remarks>CoordIn 这里只验证"能存能读回": 匹配策略运行时目前不读它 (查找 ROI 不跟随),
+        /// 将来实现跟随时需另加行为测试 (查找 ROI 随上游坐标系平移 / 旋转)。</remarks>
+        [TestMethod]
+        public void ParaRoundTrip_SearchParams()
+        {
+            var ui = new FakeUiHost();
+            Strategy.DispPara(ui);
+            ui.Set("cmb_CoordIn", "上游/坐标系").Set("cmb_100", "图像源/图像").Set("cmb_101", "区域源/区域")
+              .Set("cmb_103", "90").Set("cmb_104", "0.3").Set("cmb_110", "2").Set("cmb_112", "2");
+
+            var other = new TStrategy();
+            other.SavePara(ui);
+            try
+            {
+                Assert.AreEqual("上游/坐标系", Para(other, "CoordIn"));
+                Assert.AreEqual("图像源/图像", Para(other, "ImageIn"));
+                Assert.AreEqual("区域源/区域", Para(other, "RegionIn"));
+                Assert.AreEqual(90, ((HTuple)Para(other, "AngleExtent")).D, 1e-12);
+                Assert.AreEqual(0.3, ((HTuple)Para(other, "MaxOverlap")).D, 1e-12);
+                Assert.AreEqual(2, NumMatches(other));
+                Assert.AreEqual(2, ((HTuple)Para(other, "NumLevels")).I);
+
+                var back = new FakeUiHost();
+                other.DispPara(back);
+                foreach (var key in new[] { "cmb_CoordIn", "cmb_100", "cmb_101", "cmb_103", "cmb_104", "cmb_110", "cmb_112" })
+                {
+                    Assert.AreEqual(ui.Values[key], back.Values[key], key);
+                }
+            }
+            finally
+            {
+                ModeRect(other).Dispose();
+                HoRect(other).Dispose();
+                HoContour(other).Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void SetTemplate_ExplicitNumLevels_TrainsAndFinds()
+        {
+            // 金字塔层数除默认 0 (自动) 外, 界面另一个选项是 2: 四种模型都必须接受并能据此查找
+            SetPara(Strategy, "NumLevels", new HTuple(2));
+            CreateTemplate();
+            var tmpl = TmplPoint(Strategy);
+            UseFullImageRoi();
+
+            using (var shifted = LImage(dx: 25, dy: 15))
+            {
+                _display.SetImage(shifted);
+                Assert.IsTrue(Strategy.Fun_action(_display, Strategies.Of()));
+            }
+
+            Assert.AreEqual(1, Results(Strategy).Count);
+            Assert.AreEqual(tmpl.X + 25, Coord(Strategy).X, 1.0);
+            Assert.AreEqual(tmpl.Y + 15, Coord(Strategy).Y, 1.0);
         }
 
         protected abstract void SetHoRect(CvRegion region);
@@ -958,6 +1050,23 @@ namespace DotNet.HalconAlgo.Tests
             Assert.AreEqual(0.8, minScore.D, 1e-9);
             Assert.AreEqual("all", numMatches.S, "\"多个\" 映射为 0, 模型内读回为 all（找全部）");
             Assert.AreEqual(0.3, maxOverlap.D, 1e-9);
+        }
+
+        [TestMethod]
+        public void SavePara_WithModel_PushesAngleRangeInRadians()
+        {
+            CreateTemplate();
+            var ui = new FakeUiHost();
+            Strategy.DispPara(ui);
+
+            // 界面是"起始角度 + 增量角度"(度), 模型参数是 angle_start / angle_end (弧度)
+            Strategy.SavePara(ui.Set("cmb_102", "-45").Set("cmb_103", "90"));
+
+            var id = Strategy.inPara.ModelID;
+            HOperatorSet.GetGenericShapeModelParam(id, "angle_start", out HTuple angleStart);
+            HOperatorSet.GetGenericShapeModelParam(id, "angle_end", out HTuple angleEnd);
+            Assert.AreEqual(-Math.PI / 4, angleStart.D, 1e-9);
+            Assert.AreEqual(Math.PI / 4, angleEnd.D, 1e-9);
         }
 
         [TestMethod]
