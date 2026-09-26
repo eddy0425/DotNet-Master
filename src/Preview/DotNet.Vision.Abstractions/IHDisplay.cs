@@ -1,4 +1,4 @@
-using DotNet.Drawing;
+﻿using DotNet.Drawing;
 using HalconDotNet;
 using System;
 using System.Collections.Generic;
@@ -43,7 +43,7 @@ namespace DotNet.Vision.Abstractions
         Point2d HoCentre { get; }
 
         /// <summary> 当前图像 </summary>
-        HObject HoImage { get; }
+        HObject? HoImage { get; }
 
         #endregion
 
@@ -70,10 +70,10 @@ namespace DotNet.Vision.Abstractions
         void SetImage(HObject image);
 
         /// <summary> 显示图片，是否重设显示区域取决于 <see cref="Adaptive"/> </summary>
-        void DispImage(HObject image);
+        void DispImage(HObject? image);
 
         /// <summary> 显示图片 </summary>
-        void DispImage(HObject image, bool isSetPart);
+        void DispImage(HObject? image, bool isSetPart);
 
         /// <summary> 重新显示当前图片 </summary>
         void ReDispImage();
@@ -86,37 +86,37 @@ namespace DotNet.Vision.Abstractions
         #region 图元绘制
 
         /// <summary> 画点（十字标记） </summary>
-        void Disp(Point2d point, DrawStyle style = null);
+        void Disp(Point2d point, DrawStyle? style = null);
 
         /// <summary> 批量画点 </summary>
-        void Disp(IReadOnlyList<Point2d> points, DrawStyle style = null);
+        void Disp(IReadOnlyList<Point2d> points, DrawStyle? style = null);
 
         /// <summary> 画坐标系（带方向的十字） </summary>
-        void Disp(CvCoord coord, DrawStyle style = null);
+        void Disp(CvCoord coord, DrawStyle? style = null);
 
         /// <summary> 画线段 </summary>
-        void Disp(CvLine line, DrawStyle style = null);
+        void Disp(CvLine line, DrawStyle? style = null);
 
         /// <summary> 画箭头 </summary>
-        void Disp(CvArrow arrow, DrawStyle style = null);
+        void Disp(CvArrow arrow, DrawStyle? style = null);
 
         /// <summary> 画圆 </summary>
-        void Disp(CvCircle circle, DrawStyle style = null);
+        void Disp(CvCircle circle, DrawStyle? style = null);
 
         /// <summary> 显示 ROI 已生成的区域对象 </summary>
-        void Disp(CvRegion region, DrawStyle style = null);
+        void Disp(CvRegion region, DrawStyle? style = null);
 
         /// <summary> 显示 HALCON 对象（区域 / 轮廓） </summary>
-        void Disp(HObject region, DrawStyle style = null);
+        void Disp(HObject? region, DrawStyle? style = null);
 
         /// <summary> 显示文本，<paramref name="position"/> 为 (X=列, Y=行)；<see cref="DrawStyle.Size"/> 为字号 </summary>
-        void DispText(string message, Point2d position, DrawStyle style = null);
+        void DispText(string message, Point2d position, DrawStyle? style = null);
 
         /// <summary> 画有向矩形 </summary>
         /// <param name="phi">弧度</param>
         /// <param name="length1">沿 phi 方向的半长</param>
         /// <param name="length2">垂直方向的半长</param>
-        void DispRect2(Point2d center, double phi, double length1, double length2, DrawStyle style = null);
+        void DispRect2(Point2d center, double phi, double length1, double length2, DrawStyle? style = null);
 
         /// <summary>
         /// 按 ROI 的几何参数绘制轮廓。
@@ -127,13 +127,13 @@ namespace DotNet.Vision.Abstractions
         /// 用 <c>disp_*</c> 画轮廓，因此在区域尚未 RebuildRegion 时也能画。
         /// （原来两者分别叫 DispRegion / DispCvRegion，签名相同、命名不体现差异。）
         /// </remarks>
-        void DispRegionOutline(CvRegion region, DrawStyle style = null);
+        void DispRegionOutline(CvRegion region, DrawStyle? style = null);
 
         /// <summary> 线段 + 末端圆标记（圆恒为红色，沿用历史行为） </summary>
-        void DispLineWithEndMarker(CvLine line, double markerRadius, DrawStyle style = null);
+        void DispLineWithEndMarker(CvLine line, double markerRadius, DrawStyle? style = null);
 
         /// <summary> 线段 + 两端十字标记 </summary>
-        void DispSegmentWithCrosses(Point2d start, Point2d end, double armLength, DrawStyle style = null);
+        void DispSegmentWithCrosses(Point2d start, Point2d end, double armLength, DrawStyle? style = null);
 
         #endregion
 

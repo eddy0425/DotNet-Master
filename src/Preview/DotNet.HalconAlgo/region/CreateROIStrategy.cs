@@ -46,7 +46,7 @@ namespace DotNet.HalconAlgo
         }
         public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
         {
-            HObject regionGet = null;   // 两条分支都会赋值; 所有权转交 Result 时置 null
+            HObject? regionGet = null;   // 两条分支都会赋值; 所有权转交 Result 时置 null
 
             try
             {

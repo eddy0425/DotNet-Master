@@ -1,6 +1,7 @@
 ﻿using HalconDotNet;
 using Newtonsoft.Json;
 using System;
+using DotNet.Drawing.Internal;
 
 namespace DotNet.Drawing
 {

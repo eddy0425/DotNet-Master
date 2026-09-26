@@ -12,8 +12,10 @@ namespace DotNet.HalconUI
     /// </summary>
     public class DispRectMouse : IMouseHandler
     {
-        private IHDisplay _display;
-        private CvRegion _shrRegion;
+        // 两段式初始化，见 EraseRectMouse 同名字段的说明：
+        // 事件只在 HDisplayUI.DrawType == DrawEnum.DispRect 时分发，而该赋值与 SetUp 同在 SetRectPara 里。
+        private IHDisplay _display = null!;
+        private CvRegion _shrRegion = null!;
 
         public void SetUp(IHDisplay display, CvRegion shrRegion)
         {

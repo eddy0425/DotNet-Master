@@ -610,7 +610,7 @@ double sinTheta = Math.Sin(0);   // 恒等于 0
 | `HWindowMouse` 用 `DateTime.Now.Ticks` 判双击（受系统时间调整影响），未用 `SystemInformation.DoubleClickTime`；连续三击会被判成两次双击 | `HWindows/HWindowMouse.cs` |
 | `MouseDown`/`MouseDouble` 是公开标志位，本类从不复位，依赖外部清除（隐式协议） | `HWindows/HWindowMouse.cs` |
 | `HWindowImage.Fun_ZoomImage` 实际在做**控件布局**（改 Width/Height/Location），命名误导且会再次触发 `Resize`；`HWindowControl_Resize` 中 `catch { }` 完全空吞 | `HWindows/HWindowImage.cs` |
-| `HDisplay.SetImage` 用 `NullReferenceException` 表达业务错误，应为 `ObjectDisposedException`/`ArgumentNullException` | `HWindows/HDisplay/HDisplay.cs` |
+| ~~`HDisplay.SetImage` 用 `NullReferenceException` 表达业务错误，应为 `ObjectDisposedException`/`ArgumentNullException`~~ **已随 C16 修复** | `HWindows/HDisplay/HDisplay.cs` |
 | `FileImageStrategy` 的 `Index`/`ImagePaths` 是隐式实例状态、非线程安全；`FileImage` 持 public `HObject` 字段却不实现 `IDisposable`；`catch { throw; }` 是无意义噪音 | `image/FileImageStrategy.cs` |
 | `IHDisplay` 中 `DispRegion(CvRegion)` 与 `DispCvRegion(CvRegion)` 签名相同、命名不同、语义不明 | `HWindows/HDisplay/IHDisplay.cs` |
 
@@ -715,8 +715,20 @@ private void PublishRenderData(FitArcMidpointRenderData data)
   - **`MergeRegionStrategy` 不再实现 `IRoiEditable`**（第四轮清理）：它没有自己的配置 ROI，形状完全来自 `RegionSources`。`HoRect` + `DrawROIAsync` 是死代码（绘制按钮 `btn_drawRegion` 在 `tabPage2`，本策略不开该页，根本点不到），而 `DispROI` 还有副作用——选中本工具（`SwitchStrategy` → `DispROI`）就会 `SetRectPara` 把显示切进 `DispRect` 交互模式、绑到一个 `(0,0)` 的空矩形上。三者与 `RegionMerge.HoRect` 一并删除，`Dispose` 也只剩 `Result` 一个运行期句柄。
   - **构建通过（2026-09-18，含四轮审查后修复）**：MSBuild `DotNet.VisionMaster.csproj`（Debug），零错误；仍有可空引用及未使用字段警告。注：整解决方案编译会在 `DotNet.CvTuples` 处失败（NuGet fallback 目录 `C:\Program Files (x86)\Microsoft Visual Studio\Shared\NuGetPackages` 不存在），属本机环境问题，与本改动无关，且该项目不在 `DotNet.VisionMaster` 依赖链上。
   - **待现场回归**：零角/正负旋转下 ROI 与测量矩形一致；创建 ROI → 拟合/匹配/合并的区域传递；多轮执行无累计变换，取消编辑保留配置，失败不残留旧输出。两种拟合将上游区域视为当前图像坐标系的运行结果，直接使用、不重复变换；`CoordIn` 独立控制本地测量中心与 `Phi` 跟随，不能因使用上游区域而设为“默认”。仅 `RegionIn` 为“默认”时，本地配置区域才随测量几何一起变换。区域合并的 `CoordIn` 仍表示对合并结果额外施加变换，合并已跟随的上游区域时应保持“默认”。尚未执行 Halcon 图像流程与资源回归。
-- [ ] C12 圆弧拟合 Stage 1 改用圆拟合稳健权重
-- [ ] C16 统一图像所有权，消除 `HWindowImage.HoImage` 悬挂引用
+- [x] C12 圆弧拟合 Stage 1 改用圆拟合稳健权重
+  - Stage 1 的 `fit_line_contour_xld("gauss")` + 点到直线距离，换成与 Stage 2 同一个 `fit_circle_contour_xld("atukey")` + 径向残差。**根因**：弧相对其弦的凸量（sagitta）随曲率增大而增大（半圆时就等于半径），用直线当基准时「正确的边缘点」自身的残差就能越过门限，只能靠 15px 的经验下限硬撑，而大曲率下撑不住。改用同形模型后凸量不计入残差，问题从根上消失。
+  - **少一次 Halcon 拟合**：原来 Stage 1 直线拟合、Stage 2 圆拟合各来一遍；现在 Stage 1 的圆拟合结果直接就是 Stage 2 的起点，只有粗滤真的剔掉点（`coarseCulled > 0`）时才重拟合一次——Stage 2 的收敛判据建立在「模型对应当前点集」之上，点集没变就不必重算。
+  - **`15.0` 提为可配置参数** `FitArcMidpoint.CoarseGate`（`double`，默认 15，随 job 落盘），参数页借 114 号槽位（`lbl_114` / `cmb_114`，本策略原先只用到 110-113；`ShowTabs(Parameter)` 会先把 tabPage1 上全部控件隐藏，所以 `btn_114` 无需显式 `ShowButton(..., false)`）。实际门限仍是 `Max(MaxErr * 3, CoarseGate)`。
+    - **默认值有意保持 15，但含义变了**：改造前它兜的是弧的凸量，调小会误删有效点；现在凸量不再计入残差，需要更早拦住跳到邻边的点时可以放心调小。保持 15 是为了让本次改动在现场只表现为「不再误删」，不额外改变筛选力度。
+  - **口径统一（C12 附注）**：`FitLineStrategy` 原先用 `display.HoWidth/HoHeight` 构造 `EdgeMeasureSetup`，改为与 `FitArcMidpointStrategy` 一致的 `GetImageSize(ho_Image)`。`ImageIn` 不是「默认」时处理的是上游图像，与窗口里显示的那张可以完全无关，用显示尺寸会让 `gen_measure_rectangle2` 按错误的画布裁剪测量矩形。
+  - **待现场回归**：大曲率弧（接近半圆）的拟合点不再被成片标红剔除；把 `粗滤阈值` 调到 5 时仍能正常拟合；`ImageIn` 指向上游图像且上下游图像尺寸不同时，拟合直线的测量矩形不再被裁。
+- [x] C16 统一图像所有权，消除 `HWindowImage.HoImage` 悬挂引用
+  - 图像句柄从 `HDisplay._hoImage` 整体下沉到 `HWindowImage._hoImage`，`HDisplay` 只转发引用（`HoImage => _hWindowImage?.HoImage`），`SetImage` / `DispImage` 不再自己 `Dispose` + `CopyImage`。
+  - **原来的两个悬挂窗口**：① `HDisplay.SetImage` / `DispImage` 是「先 `Dispose` 旧图 → `CopyImage` 新图 → 回写 `HWindowImage`」，中间两步之间 `HWindowImage.HoImage` 指向已释放对象，而 `Fun_ZoomImage` 改控件尺寸会**同步**触发 `Resize` → `Fun_ReDisplay()`；② 更要命的是控件不可见时（所在 TabPage 未选中、Parent 为 null）`Fun_DispImage` 在 `CanDraw()` 处直接 `return`，回写那一步根本没执行，`HoImage` 会**一直**停在已释放的旧图上——而 `display.HoImage` 正是各策略 `ImageIn == "默认"` 时的图像来源。
+  - 换入换出收敛到 `AdoptImage`：`CopyImage` → 换引用 → 释放旧句柄。三步顺序不能调整（先释放再赋值就又回到窗口①）。`Dispose` 同样是先置空 `_hoImage` 再释放。
+  - `Fun_DispImage` 的**接管动作前置于 `CanDraw()` 判断**：画不了不等于这一帧该被丢弃。拷贝次数没有增加——改造前 `HDisplay` 本来就是无条件 `CopyImage` 之后才调进来的。
+  - 顺带修掉 D10 的一条：`HDisplay.SetImage` 的三处 `NullReferenceException` 改为 `ObjectDisposedException` / `ArgumentException` / `InvalidOperationException`（用「意外的空引用」表达业务错误，现场堆栈与真实原因对不上）。全仓无人 `catch (NullReferenceException)`，无调用方受影响。
+  - **待现场回归**：切到别的工具页再切回来、拖动窗口改变尺寸、连续取像时图像正常显示且不崩；多轮运行后 `CountObj` 不增长。
 
 ### 阶段 5：工程化收尾
 

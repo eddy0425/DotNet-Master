@@ -291,7 +291,7 @@ namespace DotNet.Drawing
 
                 // 从文件路径中提取扩展名作为图像格式
                 // Path.GetExtension 返回带点的扩展名，如 ".png"，TrimStart('.') 去掉点
-                string imageType = Path.GetExtension(filePath)?.TrimStart('.').ToLowerInvariant();
+                string? imageType = Path.GetExtension(filePath)?.TrimStart('.').ToLowerInvariant();
 
                 // 验证图片格式
                 string[] validImageTypes = { "bmp", "tiff", "png", "jpg", "jpeg" };
@@ -610,9 +610,11 @@ namespace DotNet.Drawing
         /// <summary> 由 XLD 轮廓生成"白底黑色填充"的掩膜图像 </summary>
         public static void GetContourImage(HObject hImage, HObject contour, out HObject ho_ResultImage)
         {
-            HObject ho_Region = null;
-            HObject ho_WhiteImage = null;
-            ho_ResultImage = null;
+            HObject? ho_Region = null;
+            HObject? ho_WhiteImage = null;
+            // 赋值只是为了满足 out 的明确赋值规则；正常路径下 PaintRegion 会覆盖它，
+            // 异常路径下异常本身会往上抛，调用方拿不到这个 null。
+            ho_ResultImage = null!;
             try
             {
                 HOperatorSet.GenRegionContourXld(contour, out ho_Region, "filled");

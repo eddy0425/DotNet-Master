@@ -1,6 +1,7 @@
 ﻿using HalconDotNet;
 using Newtonsoft.Json;
 using System;
+using DotNet.Drawing.Internal;
 
 
 namespace DotNet.Drawing
@@ -187,7 +188,7 @@ namespace DotNet.Drawing
         /// <see cref="TransExpV2{TIn,TOut}"/>（只枚举属性）的原因。
         /// </remarks>
         [JsonConverter(typeof(JsonConvertHObject))]
-        public HObject HoRegion;
+        public HObject? HoRegion;
 
         #endregion
 
@@ -239,8 +240,9 @@ namespace DotNet.Drawing
             if (HoRegion.NotNull())
             {
                 // 构造函数已经用 GenEmptyObj 建了一个空句柄，覆盖前必须先释放，否则泄漏。
-                clone.HoRegion.Dispose();
+                var stale = clone.HoRegion;
                 clone.HoRegion = HoRegion.CopyObj(1, -1);
+                stale?.Dispose();
             }
 
             return clone;

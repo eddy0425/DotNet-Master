@@ -12,21 +12,21 @@ namespace DotNet.HalconUI
     /// </summary>
     public class EraseRectMouse : IMouseHandler
     {
-        private enum Phase { Idle, Drawing, Editing }
-
+        // 两段式初始化：字段在 SetUp 里赋值而不是构造函数里。
+        // 用 null! 而不是把字段标成可空，是因为「事件到达时必然已 SetUp」由调用方的结构保证：
+        // 鼠标事件只在 HEditModelUI._drawType == DrawEnum.Erase 时才分发，而该赋值与 SetUp
+        // 写在同一个方法里（but_ApplyRegion_Click）。标可空只会逼出一圈永远不成立的判空。
         private bool _editing;
-        private HObject _erase;    //擦除区域 ShrErase
-        private HObject _findMode; //查找模版区域 ShrFindMode
-        private Phase _phase;
+        private HObject _erase = null!;    //擦除区域 ShrErase
+        private HObject _findMode = null!; //查找模版区域 ShrFindMode
         private HColor _color;
         private int _lineWidth;
-        private IHDisplay _display;
+        private IHDisplay _display = null!;
 
         public void SetUp(IHDisplay display, HObject shrErase, HObject shrFindMode, HColor color, int lineWidth)
         {
             //display.Reset();
             //display.ReDispImage();
-            _phase = Phase.Idle;
             _display = display;
             _erase = shrErase;
             _findMode = shrFindMode;

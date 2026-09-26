@@ -7,6 +7,24 @@ namespace DotNet.Drawing
     public static class RegionExtension
     {
         /// <summary>
+        /// 换入新句柄并释放旧句柄。
+        /// </summary>
+        /// <remarks>
+        /// 三步顺序不能调整：先换引用、后释放旧句柄。反过来（先 Dispose 再赋值）会留下
+        /// 一个 <c>HoRegion</c> 指向已释放对象的窗口 —— 与 C16 在 <c>HWindowImage</c> 修掉的是同一类问题。
+        /// <para>
+        /// 旧句柄用 <c>?.</c>：<see cref="CvRegion.Dispose"/> 之后 <see cref="CvRegion.HoRegion"/> 为 null，
+        /// 原来六处都是裸 <c>Dispose()</c>，对已释放的 <see cref="CvRegion"/> 调用本族方法必然 NRE。
+        /// </para>
+        /// </remarks>
+        private static void ReplaceHandle(CvRegion hRegion, HObject newHandle)
+        {
+            var old = hRegion.HoRegion;
+            hRegion.HoRegion = newHandle;
+            old?.Dispose();
+        }
+
+        /// <summary>
         /// 根据区域类型和几何参数重新生成 Halcon 区域
         /// </summary>
         public static void RebuildRegion(this CvRegion hRegion)
@@ -18,38 +36,40 @@ namespace DotNet.Drawing
                     {
                         HOperatorSet.GenRectangle1(out HObject rectangle, hRegion.TopLeft.Y, hRegion.TopLeft.X,
                                                hRegion.BottomRight.Y, hRegion.BottomRight.X);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = rectangle;
+                        ReplaceHandle(hRegion, rectangle);
                     }
                     break;
                 case RectEnum.AffRect:
                     {
                         HOperatorSet.GenRectangle2(out HObject rectangle, hRegion.CenterY, hRegion.CenterX, hRegion.Phi,
                                                hRegion.Width / 2, hRegion.Height / 2);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = rectangle;
+                        ReplaceHandle(hRegion, rectangle);
                     }
                     break;
                 case RectEnum.Circle:
                     {
                         HOperatorSet.GenCircle(out HObject circle, hRegion.CenterY, hRegion.CenterX, hRegion.Width / 2);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = circle;
+                        ReplaceHandle(hRegion, circle);
                     }
                     break;
                 case RectEnum.Ellipse:
                     {
                         HOperatorSet.GenEllipse(out HObject ellipse, hRegion.CenterY, hRegion.CenterX, hRegion.Phi,
                                                hRegion.Width / 2, hRegion.Height / 2);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = ellipse;
+                        ReplaceHandle(hRegion, ellipse);
                     }
                     break;
                 case RectEnum.Polygon:
                     {
+                        // 点集为空时直接放弃重建：原实现会把 null 交给 gen_region_polygon，
+                        // 抛出的是与真实原因（多边形从未绘制 / 反序列化没带上点集）无关的 HALCON 原生异常。
+                        if (hRegion.PolygonX == null || hRegion.PolygonY == null)
+                        {
+                            Log.Warn(nameof(RegionExtension), "多边形点集为空，跳过区域重建。");
+                            return;
+                        }
                         HOperatorSet.GenRegionPolygon(out HObject region, hRegion.PolygonX, hRegion.PolygonY);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = region;
+                        ReplaceHandle(hRegion, region);
                     }
                     break;
                 case RectEnum.Ring:
@@ -62,8 +82,7 @@ namespace DotNet.Drawing
                             try
                             {
                                 HOperatorSet.Difference(circle1, circle2, out HObject region);
-                                hRegion.HoRegion.Dispose();
-                                hRegion.HoRegion = region;
+                                ReplaceHandle(hRegion, region);
                             }
                             finally
                             {
@@ -86,7 +105,12 @@ namespace DotNet.Drawing
         /// <param name="coords">矩形的中心坐标集合</param>
         public static void GenCoordsRegion(this CvRegion hRegion, List<CvCoord> coords)
         {
-            if (coords == null) return;
+            // hRegion 判空与 coords 同等对待：原实现只判了 coords，
+            // 传 null 区域进来会在 hRegion.Height 处 NRE。
+            if (hRegion == null || coords == null) return;
+            // 已释放（HoRegion 为 null）的区域没法参与 union2，直接放弃而不是在算子里炸。
+            if (hRegion.HoRegion == null) return;
+
             HObject imgReduced; HOperatorSet.GenEmptyObj(out imgReduced);
 
             try
@@ -101,8 +125,7 @@ namespace DotNet.Drawing
                     imgReduced.Dispose();
                     HOperatorSet.GenRectangle1(out imgReduced, row1, column1, row2, column2);
                     HOperatorSet.Union2(hRegion.HoRegion, imgReduced, out HObject regionUnion);
-                    hRegion.HoRegion.Dispose();
-                    hRegion.HoRegion = regionUnion;
+                    ReplaceHandle(hRegion, regionUnion);
                 }
             }
             finally
@@ -198,8 +221,7 @@ namespace DotNet.Drawing
             if (inRegion.HoRegion.NotNull()) cloned = inRegion.HoRegion.Clone();
             else HOperatorSet.GenEmptyObj(out cloned);
 
-            hRegion.HoRegion?.Dispose(); // 与本文件其它方法一致：覆盖前先释放旧句柄
-            hRegion.HoRegion = cloned;
+            ReplaceHandle(hRegion, cloned);
         }
 
     }

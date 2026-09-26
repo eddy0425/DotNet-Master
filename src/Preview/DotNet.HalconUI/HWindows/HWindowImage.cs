@@ -12,12 +12,22 @@ namespace DotNet.HalconUI
         ZoomImage getInfo;
         ZoomImage zoomInfo;
 
+        // 可空: Dispose 会把它置 null(C16 先置空再释放), 窗口释放后 HoImage 读到的就是 null。
+        HObject? _hoImage;
         bool _disposed;
 
         /// <summary>
-        /// 当前显示的图像。所有权由调用方（<see cref="HDisplay"/>）持有，本类只引用，不负责释放。
+        /// 当前显示的图像。所有权在本类：外部传入的句柄一律 <c>copy_image</c> 一份后接管，
+        /// 释放由 <see cref="Dispose"/> 或下一次接管时的换出动作负责，调用方不得释放本属性。
         /// </summary>
-        public HObject HoImage { get; private set; }
+        /// <remarks>
+        /// 审查项 C16：原实现由 <see cref="HDisplay"/> 持有句柄、本类只存引用，
+        /// 而 <see cref="HDisplay"/> 每次显示都是「先 Dispose 旧图、再 CopyImage 新图、最后回写本类」。
+        /// 中间那段窗口里本属性指向的是已释放对象；控件不可见时更糟——回写那一步被
+        /// <see cref="CanDraw"/> 挡掉，本属性会一直停在已释放的旧图上。
+        /// 现在所有权集中到一处，句柄的换入换出与引用更新是同一个动作。
+        /// </remarks>
+        public HObject? HoImage { get { return _hoImage; } }
         public double HoWidth { get { return getInfo.width; } }
         public double HoHeight { get { return getInfo.height; } }
 
@@ -30,6 +40,7 @@ namespace DotNet.HalconUI
 
             getInfo = new ZoomImage();
             zoomInfo = new ZoomImage();
+            HOperatorSet.GenEmptyObj(out _hoImage);
 
             hWindowControl.Resize += HWindowControl_Resize;
         }
@@ -50,7 +61,7 @@ namespace DotNet.HalconUI
             {
                 if (_disposed) return;
 
-                HWindowControl control = sender as HWindowControl;
+                HWindowControl? control = sender as HWindowControl;
                 if (control == null || control.Parent == null) return;
                 if (!control.Visible) return;
 
@@ -71,11 +82,31 @@ namespace DotNet.HalconUI
             }
         }
 
-        /// <summary> 设置图像 </summary>
+        /// <summary>
+        /// 接管一份新图像：复制 → 换引用 → 释放旧句柄，并同步尺寸缓存。
+        /// </summary>
+        /// <remarks>
+        /// 三步的顺序不能调整。若先释放旧句柄再赋值，<see cref="HoImage"/> 在两条语句之间
+        /// 指向已释放对象；而本类的 <c>Resize</c> 回调会同步调用 <see cref="Fun_ReDisplay"/>，
+        /// 正好会撞上这个窗口（审查项 C16 要求的「先置空引用再 Dispose」）。
+        /// </remarks>
+        void AdoptImage(HObject image)
+        {
+            HOperatorSet.CopyImage(image, out HObject copy);
+
+            HObject? old = _hoImage;
+            _hoImage = copy;
+            old?.Dispose();
+
+            HOperatorSet.GetImageSize(copy, out getInfo.width, out getInfo.height);
+        }
+
+        /// <summary> 设置图像：只接管图像与尺寸，不做任何绘制 </summary>
         internal void Fun_SetImage(HObject _image)
         {
-            HoImage = _image;
-            HOperatorSet.GetImageSize(HoImage, out getInfo.width, out getInfo.height);
+            if (_disposed || !_image.NotNull()) return;
+
+            AdoptImage(_image);
         }
 
         /// <summary> 图像显示 </summary>
@@ -85,13 +116,13 @@ namespace DotNet.HalconUI
 
             try
             {
-                if (!HoImage.NotNull())
+                if (!_hoImage.NotNull())
                 {
                     HOperatorSet.ClearWindow(_hWindow);
                     return;
                 }
 
-                HOperatorSet.DispObj(HoImage, _hWindow);
+                HOperatorSet.DispObj(_hoImage, _hWindow);
             }
             catch (Exception ex)
             {
@@ -102,19 +133,26 @@ namespace DotNet.HalconUI
         /// <summary> 图像显示 </summary>
         public void Fun_DispImage(HObject _image, bool isSetPart)
         {
+            if (_disposed) return;
+
+            if (!_image.NotNull())
+            {
+                // 空图像不接管所有权，只把窗口清空（保持原行为）
+                if (!CanDraw()) return;
+                try { HOperatorSet.ClearWindow(_hWindow); }
+                catch (Exception ex) { Log.Error(nameof(HWindowImage), "清空窗口失败.", ex); }
+                return;
+            }
+
+            // 接管所有权先于 CanDraw 判断：控件暂时画不了（例如所在 TabPage 未选中）
+            // 不代表这一帧该被丢弃 —— 原实现在这里直接 return，HoImage 会停在上一张图上，
+            // 而上一张图此时已被释放，对外就是一个悬挂句柄（审查项 C16）。
+            AdoptImage(_image);
+
             if (!CanDraw()) return;
 
             try
             {
-                if (!_image.NotNull())
-                {
-                    HOperatorSet.ClearWindow(_hWindow);
-                    return;
-                }
-                HoImage = _image;
-
-                HOperatorSet.GetImageSize(HoImage, out getInfo.width, out getInfo.height);
-
                 if (getInfo.width.D != zoomInfo.width.D || getInfo.height.D != zoomInfo.height.D)
                 {
                     Fun_ZoomImage(getInfo);
@@ -124,7 +162,7 @@ namespace DotNet.HalconUI
                 {
                     HOperatorSet.SetPart(_hWindow, 0, 0, getInfo.height - 1, getInfo.width - 1);
                 }
-                HOperatorSet.DispObj(HoImage, _hWindow);
+                HOperatorSet.DispObj(_hoImage, _hWindow);
             }
             catch (Exception ex)
             {
@@ -176,13 +214,18 @@ namespace DotNet.HalconUI
             if (_disposed) return;
             _disposed = true;
 
-            // 仅取消事件订阅；HoImage 的所有权不在本类，不在此释放，避免双重释放。
             if (_hWindowControl != null && !_hWindowControl.IsDisposed)
             {
                 _hWindowControl.Resize -= HWindowControl_Resize;
             }
 
-            HoImage = null;
+            // 先置空引用再释放：HoImage 对外暴露，置空后后续读取拿到的是 null，
+            // 而不是一个已释放的句柄。
+            HObject? img = _hoImage;
+            _hoImage = null;
+            try { if (img is object) img.Dispose(); }
+            catch (Exception ex) { Log.Warn(nameof(HWindowImage), "释放图像失败.", ex); }
+
             GC.SuppressFinalize(this);
         }
     }

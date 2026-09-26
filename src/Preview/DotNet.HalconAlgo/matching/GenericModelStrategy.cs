@@ -64,20 +64,29 @@ namespace DotNet.HalconAlgo
             try
             {
                 HObject ho_Image = (inPara.ImageIn == "默认")
-                    ? display.HoImage
+                    ? display.HoImage.RequireImage(Name)
                     : strategys.ResolveFrom<HObject>(inPara.ImageIn);
 
                 bool useLocalRegion = inPara.RegionIn == "默认";
-                HObject ho_Rect = useLocalRegion
-                    ? inPara.HoRect.HoRegion
-                    : strategys.ResolveRegionFrom(inPara.RegionIn);
-
-                // 上游路径的空句柄已由 ResolveRegionFrom 拦下; 本地配置 ROI 不经过它, 需在此补同一层判断,
-                // 否则未绘制 ROI 时 CountObj() 为 0, 下面的循环一次都不进, 静默跑出 0 个结果。
-                if (useLocalRegion && !ho_Rect.IsUsableRegion())
+                HObject ho_Rect;
+                if (useLocalRegion)
                 {
-                    display.DispText($"{Name} : 尚未绘制 ROI，无法执行匹配！", new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Red, inPara.FontSize));
-                    return false;
+                    HObject? localRegion = inPara.HoRect.HoRegion;
+
+                    // 上游路径的空句柄已由 ResolveRegionFrom 拦下; 本地配置 ROI 不经过它, 需在此补同一层判断,
+                    // 否则未绘制 ROI 时 CountObj() 为 0, 下面的循环一次都不进, 静默跑出 0 个结果。
+                    if (!localRegion.IsUsableRegion())
+                    {
+                        display.DispText($"{Name} : 尚未绘制 ROI，无法执行匹配！", new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Red, inPara.FontSize));
+                        return false;
+                    }
+
+                    ho_Rect = localRegion;
+                }
+                else
+                {
+                    // 上游句柄由 ResolveRegionFrom 保证非空且可用（拿不到就抛），无需再判一次。
+                    ho_Rect = strategys.ResolveRegionFrom(inPara.RegionIn);
                 }
 
                 if (inPara.DispRegion) display.Disp(ho_Rect, DrawStyle.Of(HColor.Blue));
@@ -292,7 +301,7 @@ namespace DotNet.HalconAlgo
                 }
 
                 inPara.ModelPath = Path.Combine(AlgoPaths.JobDir, RunIndex.ToString(), "matching.bmp");
-                var hImage = host.Display.HoImage;
+                var hImage = host.Display.HoImage.RequireImage(Name);
 
                 imgReduced.Dispose();
                 HOperatorSet.ReduceDomain(hImage, inPara.ModeRect.HoRegion, out imgReduced);
@@ -424,10 +433,14 @@ namespace DotNet.HalconAlgo
         public bool LockCenter { get; set; } = true;
 
         /// <summary> 模版路径 </summary>
-        public string ModelPath { get; set; }
+        /// <remarks>尚未创建模板时为空串而不是 null：这个值会直接交给 ReadImage / DisplayModel，空串换来一条
+        /// 「文件打不开」的明确报错，null 换来的是调用点的 NRE。</remarks>
+        public string ModelPath { get; set; } = string.Empty;
 
         /// <summary> 模板ID </summary>
-        public HTuple ModelID { get; set; }
+        /// <remarks>可空：模板尚未创建、或参数变更后被主动置 null（见 CreateModel），调用点一律先判
+        /// <c>ModelID == null || ModelID.Length == 0</c> 再用。</remarks>
+        public HTuple? ModelID { get; set; }
 
         /// <summary> 起始角度 </summary>
         public HTuple AngleStart { get; set; } = -90;
@@ -467,7 +480,9 @@ namespace DotNet.HalconAlgo
         /// <summary> 最大缩放 (缩放匹配) </summary>
         public HTuple ScaleMax { get; set; } = 1.2;
 
-        public List<ModelResult> Results { get; set; }
+        /// <summary> 匹配结果 </summary>
+        /// <remarks>初始化为空列表：Run 每轮开头都会整体替换它，但「从未跑过」的参数对象也得能被 UI 安全读取。</remarks>
+        public List<ModelResult> Results { get; set; } = new List<ModelResult>();
 
         /// <summary> 显示区域 </summary>
         public bool DispRegion { set; get; } = true;

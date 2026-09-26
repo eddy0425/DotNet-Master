@@ -1,4 +1,5 @@
 ﻿using System;
+using DotNet.Drawing.Internal;
 
 namespace DotNet.Drawing
 {

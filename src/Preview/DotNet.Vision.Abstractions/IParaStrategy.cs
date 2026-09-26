@@ -1,4 +1,4 @@
-using DotNet.Drawing;
+﻿using DotNet.Drawing;
 using HalconDotNet;
 using System;
 using System.Collections.Generic;
@@ -29,13 +29,14 @@ namespace DotNet.Vision.Abstractions
     /// </summary>
     public interface IOutputProvider
     {
-        object ResolveOutput(string[] path);
+        /// <summary>解析输出; 路径为 null 或不存在时返回 null（不抛异常）.</summary>
+        object? ResolveOutput(string[]? path);
 
         /// <summary>解析输出; 路径不存在或类型不匹配时抛 <see cref="AlgoOutputNotFoundException"/>.</summary>
         T ResolveOutput<T>(string[] path);
 
         /// <summary>解析输出的安全版本: 失败返回 false 并把 value 置为 default, 不抛异常.</summary>
-        bool TryResolveOutput<T>(string[] path, out T value);
+        bool TryResolveOutput<T>(string[]? path, out T value);
     }
 
     /// <summary>
@@ -133,7 +134,12 @@ namespace DotNet.Vision.Abstractions
             return (T)value;
         }
 
-        public bool TryResolveOutput<T>(string[] path, out T value)
+        /// <remarks>
+        /// 返回 false 时 <paramref name="value"/> 的内容未定义, 调用方不得读取 ——
+        /// 与 <c>Dictionary.TryGetValue</c> 同一契约. 目标框架 (net45) 没有
+        /// <c>MaybeNullWhenAttribute</c> 可以把这个契约告诉编译器, 故用 <c>default!</c> 压制。
+        /// </remarks>
+        public bool TryResolveOutput<T>(string[]? path, out T value)
         {
             var raw = path == null ? null : ResolveOutput(path);
             if (raw is T typed)
@@ -141,11 +147,11 @@ namespace DotNet.Vision.Abstractions
                 value = typed;
                 return true;
             }
-            value = default(T);
+            value = default!;
             return false;
         }
 
-        public object ResolveOutput(string[] path)
+        public object? ResolveOutput(string[]? path)
         {
             if (path == null) return null;
             for (int depth = path.Length; depth >= 1; depth--)
@@ -204,12 +210,14 @@ namespace DotNet.Vision.Abstractions
         public static bool TryResolveRegionFrom(this IList<IParaStrategy> strategies, string fullPath, out HObject region)
         {
             var value = strategies.ResolveFrom(fullPath);
-            region = (value as CvRegion)?.HoRegion ?? value as HObject;
-            if (!region.IsUsableRegion())
+            var candidate = (value as CvRegion)?.HoRegion ?? value as HObject;
+            if (!candidate.IsUsableRegion())
             {
-                region = null;
+                // 返回 false 时调用方不得读取 region (Try 契约), 这里只是给 out 参数一个值。
+                region = null!;
                 return false;
             }
+            region = candidate!;
             return true;
         }
 
@@ -224,7 +232,7 @@ namespace DotNet.Vision.Abstractions
             throw new AlgoOutputNotFoundException(fullPath, typeof(CvRegion));
         }
 
-        public static object ResolveFrom(this IList<IParaStrategy> strategies, string fullPath, char separator = '/')
+        public static object? ResolveFrom(this IList<IParaStrategy>? strategies, string fullPath, char separator = '/')
         {
             if (strategies == null) return null;
             if (string.IsNullOrWhiteSpace(fullPath)) return null;
@@ -267,7 +275,8 @@ namespace DotNet.Vision.Abstractions
                 value = typed;
                 return true;
             }
-            value = default(T);
+            // 同 TryResolveOutput: 返回 false 时 value 未定义, 调用方不得读取。
+            value = default!;
             return false;
         }
     }
@@ -279,10 +288,10 @@ namespace DotNet.Vision.Abstractions
     public class AlgoOutputNotFoundException : Exception
     {
         public string Path { get; }
-        public Type ExpectedType { get; }
-        public Type ActualType { get; }
+        public Type? ExpectedType { get; }
+        public Type? ActualType { get; }
 
-        public AlgoOutputNotFoundException(string fullPath, Type expectedType)
+        public AlgoOutputNotFoundException(string fullPath, Type? expectedType)
             : base(string.Format("未能解析策略输出 '{0}' (期望类型 {1}): 路径不存在或上游策略尚未产出结果.",
                                  fullPath, expectedType == null ? "?" : expectedType.Name))
         {
@@ -290,7 +299,7 @@ namespace DotNet.Vision.Abstractions
             ExpectedType = expectedType;
         }
 
-        public AlgoOutputNotFoundException(string fullPath, Type expectedType, Type actualType)
+        public AlgoOutputNotFoundException(string fullPath, Type? expectedType, Type? actualType)
             : base(string.Format("策略输出 '{0}' 的类型不匹配: 期望 {1}, 实际 {2}.",
                                  fullPath, expectedType == null ? "?" : expectedType.Name,
                                  actualType == null ? "?" : actualType.Name))
@@ -300,10 +309,10 @@ namespace DotNet.Vision.Abstractions
             ActualType = actualType;
         }
 
-        public AlgoOutputNotFoundException(string strategyName, string[] path, Type expectedType)
+        public AlgoOutputNotFoundException(string strategyName, string[] path, Type? expectedType)
             : this(Join(strategyName, path), expectedType) { }
 
-        public AlgoOutputNotFoundException(string strategyName, string[] path, Type expectedType, Type actualType)
+        public AlgoOutputNotFoundException(string strategyName, string[] path, Type? expectedType, Type? actualType)
             : this(Join(strategyName, path), expectedType, actualType) { }
 
         private static string Join(string strategyName, string[] path)

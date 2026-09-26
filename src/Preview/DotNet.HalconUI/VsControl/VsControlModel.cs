@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Windows.Forms;
 using System.ComponentModel;
 using System.Collections.Generic;
@@ -23,9 +23,10 @@ namespace DotNet.HalconUI
         private readonly Control _form;
         private bool _disposed;
 
-        private object _value;
+        // 可空: TrackBar 之外的构造路径可能传进 null 文本, 且下面每个 AsXxx 读取器都已按「可能为 null」写过。
+        private object? _value;
         // 控件主属性: TabPage/TextBox/ComboBox -> string, CheckBox/RadioButton -> bool, TrackBar -> int.
-        public object Value { get { return _value; } set { SetField(ref _value, value); } }
+        public object? Value { get { return _value; } set { SetField(ref _value, value); } }
         public string Name { get; }
         public string Type { get; }
 
@@ -62,13 +63,13 @@ namespace DotNet.HalconUI
         internal void AttachControl(Control control) { _boundControl = control; }
 
 
-        public event PropertyChangedEventHandler PropertyChanged;
-        private void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        public event PropertyChangedEventHandler? PropertyChanged;
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             var handler = PropertyChanged;
             if (handler != null) handler(this, new PropertyChangedEventArgs(propertyName));
         }
-        private void SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
+        private void SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
         {
             if (EqualityComparer<T>.Default.Equals(field, value)) return;
             field = value;

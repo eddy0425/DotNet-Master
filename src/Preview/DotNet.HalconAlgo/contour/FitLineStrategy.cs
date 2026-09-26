@@ -58,19 +58,28 @@ namespace DotNet.HalconAlgo
             {
                 HObject ho_Image;
                 if (inPara.ImageIn == "默认")
-                    ho_Image = display.HoImage;
+                    ho_Image = display.HoImage.RequireImage(Name);
                 else
                     ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
 
                 bool useLocalRegion = inPara.RegionIn == "默认";
-                HObject searchRegion = useLocalRegion
-                    ? inPara.HoRect.HoRegion
-                    : strategys.ResolveRegionFrom(inPara.RegionIn);
+                HObject searchRegion;
+                if (useLocalRegion)
+                {
+                    HObject? localRegion = inPara.HoRect.HoRegion;
 
-                // 上游路径的空句柄已由 ResolveRegionFrom 拦下; 本地配置 ROI 不经过它, 需在此补同一层判断,
-                // 否则未绘制 ROI 的 0 长度空元组会一路流进 reduce_domain, 抛出与真实原因无关的 HALCON 原生异常。
-                if (useLocalRegion && !searchRegion.IsUsableRegion())
-                    throw new InvalidOperationException($"{Name} : 尚未绘制 ROI，无法执行拟合！");
+                    // 上游路径的空句柄已由 ResolveRegionFrom 拦下; 本地配置 ROI 不经过它, 需在此补同一层判断,
+                    // 否则未绘制 ROI 的 0 长度空元组会一路流进 reduce_domain, 抛出与真实原因无关的 HALCON 原生异常。
+                    if (!localRegion.IsUsableRegion())
+                        throw new InvalidOperationException($"{Name} : 尚未绘制 ROI，无法执行拟合！");
+
+                    searchRegion = localRegion;
+                }
+                else
+                {
+                    // 上游句柄由 ResolveRegionFrom 保证非空且可用（拿不到就抛），无需再判一次。
+                    searchRegion = strategys.ResolveRegionFrom(inPara.RegionIn);
+                }
 
                 Point2d fixCenter = inPara.HoRect.Center;
                 Angle fixPhi = Angle.FromRadians(inPara.HoRect.Phi.D);
@@ -98,6 +107,12 @@ namespace DotNet.HalconAlgo
                 if (inPara.DispRegion) display.Disp(searchRegion, DrawStyle.Of(HColor.Blue));
 
                 #region 边缘查找
+                // 尺寸取自待测图像本身，而不是 display.HoWidth/HoHeight（审查项 C12 附注）：
+                // ImageIn 不是"默认"时处理的是上游图像，与窗口里显示的那张可以完全无关，
+                // 用显示尺寸去构造 gen_measure_rectangle2 会让测量矩形被按错误的画布裁剪。
+                // 与 FitArcMidpointStrategy 口径一致。
+                HOperatorSet.GetImageSize(ho_Image, out HTuple imgWid, out HTuple imgHei);
+
                 var setup = new EdgeMeasureSetup(
                     fixCenter,
                     fixPhi,
@@ -106,7 +121,7 @@ namespace DotNet.HalconAlgo
                     inPara.StepPace, inPara.StepWidth,
                     inPara.Sigma, inPara.Threshold,
                     inPara.GetTransition, inPara.GetContourType,
-                    (int)display.HoWidth, (int)display.HoHeight);
+                    imgWid.I, imgHei.I);
 
                 EdgeMeasureResult measured = EdgeMeasurePipeline.Run(imgReduced, setup);
                 List<Point2d> points = measured.Points;
@@ -347,7 +362,12 @@ namespace DotNet.HalconAlgo
         public string CoordIn { set; get; } = "默认";
 
         /// <summary> 直线 </summary>
-        public CvLine Line { set; get; }
+        /// <remarks>
+        /// 初始化为零长线段而不是留 null：GenTreeNode 注册的输出解析器（<c>inPara.Line.Start</c> 等）
+        /// 在工具尚未跑过时就可能被下游读取，留 null 得到的是 NRE。退化线段可以用
+        /// <see cref="CvLine.IsDegenerate"/> 判出来，与相邻参数类 <c>Coord = new CvCoord()</c> 的约定一致。
+        /// </remarks>
+        public CvLine Line { set; get; } = new CvLine(0, 0, 0, 0);
 
         /// <summary> 区域 </summary>
         public CvRegion HoRect { set; get; } = new CvRegion();

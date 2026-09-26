@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
+using DotNet.Drawing.Internal;
 
 namespace DotNet.Drawing
 {

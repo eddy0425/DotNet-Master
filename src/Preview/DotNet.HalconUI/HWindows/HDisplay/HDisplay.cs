@@ -14,7 +14,6 @@ namespace DotNet.HalconUI
         // default(HColor).Name 返回空字符串，不存在 null 语义，无需额外初始化
         HColor _color;
 
-        HObject _hoImage;
         readonly HWindow _hWindow;
         readonly IHWindowFont _hWindowFont;
         readonly HWindowImage _hWindowImage;
@@ -23,7 +22,12 @@ namespace DotNet.HalconUI
         public bool Adaptive { get; set; } = true;   //自适应
         public double HoWidth => _hWindowImage?.HoWidth ?? 0;
         public double HoHeight => _hWindowImage?.HoHeight ?? 0;
-        public HObject HoImage => _hWindowImage?.HoImage;  //图像
+
+        /// <summary>
+        /// 当前图像。句柄由 <see cref="HWindowImage"/> 独家持有（审查项 C16），本类只转发引用，
+        /// 调用方拿到的是借用句柄，不得释放。
+        /// </summary>
+        public HObject? HoImage => _hWindowImage?.HoImage;
 
         /// <summary>当前图像尺寸。</summary>
         public Size2d HoSize => new Size2d(HoWidth, HoHeight);
@@ -34,14 +38,13 @@ namespace DotNet.HalconUI
         public HDisplay(HWindowControl hWindowControl)
         {
             if (hWindowControl == null) throw new ArgumentNullException(nameof(hWindowControl));
-            HOperatorSet.GenEmptyObj(out _hoImage);
 
             _hWindow = hWindowControl.HalconWindow;
             _hWindowFont = new HWindowFont2018(_hWindow);
             _hWindowImage = new HWindowImage(hWindowControl);
 
             // 用占位灰图初始化窗口，避免首帧到来前窗口处于未设置 Part 的状态。
-            // DispImage 内部会 CopyImage，所以这里 using 释放是安全的。
+            // HWindowImage 接管时会 CopyImage，所以这里 using 释放是安全的。
             using (HImage hImage = new HImage("byte", 800, 600))
             {
                 DispImage(hImage);
@@ -53,15 +56,10 @@ namespace DotNet.HalconUI
             if (_disposed) return;
             _disposed = true;
 
-            // 释放顺序：先解绑事件订阅，再释放本类持有所有权的图像。
+            // 图像句柄由 _hWindowImage 独家持有（审查项 C16），随它一起释放。
             // 注意：hWindow / _hWindowControl 由宿主 UserControl (HDisplayUI) 通过 Designer 的 Dispose(bool) 负责释放，本类不再主动释放，避免双重释放。
 
             try { _hWindowImage?.Dispose(); } catch { /* swallow: release-time best effort */ }
-
-            // 显式置空便于检查；HObject 的 Dispose 自身已具备幂等性
-            var img = _hoImage;
-            _hoImage = null;
-            try { img?.Dispose(); } catch { /* swallow */ }
 
             GC.SuppressFinalize(this);
         }
@@ -121,33 +119,37 @@ namespace DotNet.HalconUI
 
         #region HWindowImage
 
-        /// <summary> 设置图像：内部复制一份图像，避免持有外部对象的悬挂引用 </summary>
+        /// <summary>
+        /// 设置图像：由 <see cref="HWindowImage"/> 复制一份并接管，避免持有外部对象的悬挂引用。
+        /// </summary>
+        /// <exception cref="ObjectDisposedException">本实例已释放</exception>
+        /// <exception cref="ArgumentException"><paramref name="image"/> 为 null 或未初始化</exception>
         public void SetImage(HObject image)
         {
-            if (_disposed) throw new NullReferenceException("HDisplay已释放！");
-            if (!image.NotNull()) throw new NullReferenceException("图像为空！");
-            if (_hWindowImage == null) throw new NullReferenceException("HWindowImage为空！");
+            // 原来这三处一律抛 NullReferenceException，用「意外的空引用」表达业务错误，
+            // 现场看到的堆栈与真实原因对不上（审查项 D10）。
+            if (_disposed) throw new ObjectDisposedException(nameof(HDisplay), "HDisplay已释放！");
+            if (!image.NotNull()) throw new ArgumentException("图像为空或未初始化！", nameof(image));
+            if (_hWindowImage == null) throw new InvalidOperationException("HWindowImage为空！");
 
-            _hoImage.Dispose();
-            HOperatorSet.CopyImage(image, out _hoImage);
-            _hWindowImage.Fun_SetImage(_hoImage);
+            _hWindowImage.Fun_SetImage(image);
         }
 
         /// <summary>
-        /// 显示图片：内部复制一份图像，避免持有外部对象的悬挂引用。
+        /// 显示图片：由 <see cref="HWindowImage"/> 复制一份并接管，避免持有外部对象的悬挂引用。
         /// </summary>
         /// <remarks>
         /// 是否重设显示区域取决于 <see cref="Adaptive"/>，因此不能写成
         /// <c>DispImage(image, true)</c> 这样的默认参数——那会在用户关掉自适应后仍强制重设 Part。
         /// </remarks>
-        public void DispImage(HObject image)
+        public void DispImage(HObject? image)
         {
             // 原来这里与下面的双参重载逐字重复了 40 行，唯一差别就是 Adaptive / isSetPart。
             DispImage(image, Adaptive);
         }
 
         /// <summary> 显示图片 </summary>
-        public void DispImage(HObject image, bool isSetPart)
+        public void DispImage(HObject? image, bool isSetPart)
         {
             if (_disposed) return;
             if (!image.NotNull()) return;
@@ -155,9 +157,7 @@ namespace DotNet.HalconUI
 
             try
             {
-                _hoImage.Dispose();
-                HOperatorSet.CopyImage(image, out _hoImage);
-                _hWindowImage.Fun_DispImage(_hoImage, isSetPart);
+                _hWindowImage.Fun_DispImage(image, isSetPart);
 
                 if (IsCross && IsWindowUsable())
                 {
@@ -216,7 +216,7 @@ namespace DotNet.HalconUI
         /// （对应原来不带 size 的那个重载），指定时先 set_font_size 再输出。
         /// disp_text 的颜色是调用参数、不改画笔状态，因此这里不走 <see cref="SetColor"/>。
         /// </remarks>
-        public void DispText(string message, Point2d position, DrawStyle style = null)
+        public void DispText(string message, Point2d position, DrawStyle? style = null)
         {
             if (!IsWindowUsable() || _hWindowFont == null) return;
             try
@@ -228,7 +228,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary> 文本颜色：样式未指定则沿用当前画笔颜色，仍为空则回落红色 </summary>
-        HColor ResolveTextColor(DrawStyle style)
+        HColor ResolveTextColor(DrawStyle? style)
         {
             HColor color = style?.Color ?? default(HColor);
             if (color.IsEmpty) color = GetColor();
@@ -336,12 +336,12 @@ namespace DotNet.HalconUI
         // 3) 参数校验一律前置于任何副作用（含 ApplyStyle）；非法入参抛异常而不是静默 return。
 
         /// <summary> 应用样式中「已显式指定」的项；未指定的项保持窗口现状 </summary>
-        void ApplyStyle(DrawStyle style)
+        void ApplyStyle(DrawStyle? style)
         {
             if (style == null) return;
             if (!style.Color.IsEmpty) SetColor(style.Color);
             if (style.LineWidth.HasValue) SetLineWidth(style.LineWidth.Value);
-            if (!string.IsNullOrEmpty(style.DrawMode)) SetDraw(style.DrawMode);
+            if (!string.IsNullOrEmpty(style.DrawMode)) SetDraw(style.DrawMode!);
         }
 
         void SetLineWidth(int width)
@@ -353,7 +353,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary> 画点（十字标记），<see cref="DrawStyle.Size"/> 为十字臂长 </summary>
-        public void Disp(Point2d point, DrawStyle style = null)
+        public void Disp(Point2d point, DrawStyle? style = null)
         {
             ApplyStyle(style);
             if (!IsWindowUsable()) return;
@@ -361,7 +361,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary> 批量画点 </summary>
-        public void Disp(IReadOnlyList<Point2d> points, DrawStyle style = null)
+        public void Disp(IReadOnlyList<Point2d> points, DrawStyle? style = null)
         {
             if (points is null) throw new ArgumentNullException(nameof(points));
 
@@ -376,7 +376,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary> 画坐标系：带方向角的十字。<c>CvCoord.Angle</c> 是强类型角度，取 Radians 交给 Halcon </summary>
-        public void Disp(CvCoord coord, DrawStyle style = null)
+        public void Disp(CvCoord coord, DrawStyle? style = null)
         {
             ApplyStyle(style);
             if (!IsWindowUsable()) return;
@@ -384,7 +384,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary> 画线段 </summary>
-        public void Disp(CvLine line, DrawStyle style = null)
+        public void Disp(CvLine line, DrawStyle? style = null)
         {
             if (line is null) throw new ArgumentNullException(nameof(line));
 
@@ -394,7 +394,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary> 画箭头，<see cref="DrawStyle.Size"/> 覆盖 <c>CvArrow.HeadSize</c> </summary>
-        public void Disp(CvArrow arrow, DrawStyle style = null)
+        public void Disp(CvArrow arrow, DrawStyle? style = null)
         {
             if (arrow is null) throw new ArgumentNullException(nameof(arrow));
 
@@ -405,7 +405,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary> 画圆 </summary>
-        public void Disp(CvCircle circle, DrawStyle style = null)
+        public void Disp(CvCircle circle, DrawStyle? style = null)
         {
             if (circle is null) throw new ArgumentNullException(nameof(circle));
 
@@ -415,7 +415,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary> 线段 + 末端圆标记；圆恒为红色，沿用历史行为 </summary>
-        public void DispLineWithEndMarker(CvLine line, double markerRadius, DrawStyle style = null)
+        public void DispLineWithEndMarker(CvLine line, double markerRadius, DrawStyle? style = null)
         {
             if (line is null) throw new ArgumentNullException(nameof(line));
             if (markerRadius <= 0) throw new ArgumentOutOfRangeException(nameof(markerRadius), markerRadius, "标记半径必须为正数.");
@@ -430,7 +430,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary> 线段 + 两端十字标记 </summary>
-        public void DispSegmentWithCrosses(Point2d start, Point2d end, double armLength, DrawStyle style = null)
+        public void DispSegmentWithCrosses(Point2d start, Point2d end, double armLength, DrawStyle? style = null)
         {
             if (armLength <= 0) throw new ArgumentOutOfRangeException(nameof(armLength), armLength, "十字臂长必须为正数.");
 
@@ -583,7 +583,7 @@ namespace DotNet.HalconUI
         /// 释放旧 HoRegion → 转移所有权 → 把 <paramref name="created"/> 置 null，
         /// 这样调用方的 finally 不会再次释放（即"所有权已转移"语义）。
         /// </summary>
-        static void ReplaceRegion(CvRegion hRegion, ref HObject created)
+        static void ReplaceRegion(CvRegion hRegion, ref HObject? created)
         {
             if (hRegion == null || created == null) return;
             try { hRegion.HoRegion?.Dispose(); } catch { /* swallow */ }
@@ -599,7 +599,7 @@ namespace DotNet.HalconUI
 
         static void ApplyRect1(CvRegion hRegion, double row1, double column1, double row2, double column2)
         {
-            HObject rectangle = null;
+            HObject? rectangle = null;
             try
             {
                 HOperatorSet.GenRectangle1(out rectangle, row1, column1, row2, column2);
@@ -611,7 +611,7 @@ namespace DotNet.HalconUI
 
         static void ApplyRect2(CvRegion hRegion, double row, double column, double phi, double length1, double length2)
         {
-            HObject rectangle = null;
+            HObject? rectangle = null;
             try
             {
                 HOperatorSet.GenRectangle2(out rectangle, row, column, phi, length1, length2);
@@ -624,7 +624,7 @@ namespace DotNet.HalconUI
 
         static void ApplyCircle(CvRegion hRegion, double row, double column, double radius)
         {
-            HObject circle = null;
+            HObject? circle = null;
             try
             {
                 HOperatorSet.GenCircle(out circle, row, column, radius);
@@ -636,7 +636,7 @@ namespace DotNet.HalconUI
 
         static void ApplyEllipse(CvRegion hRegion, double row, double column, double phi, double radius1, double radius2)
         {
-            HObject ellipse = null;
+            HObject? ellipse = null;
             try
             {
                 HOperatorSet.GenEllipse(out ellipse, row, column, phi, radius1, radius2);
@@ -688,8 +688,8 @@ namespace DotNet.HalconUI
             double outer = Math.Max(radiusA, radiusB);
             double inner = Math.Min(radiusA, radiusB);
 
-            HObject outerCircle = null;
-            HObject innerCircle = null;
+            HObject? outerCircle = null;
+            HObject? innerCircle = null;
             try
             {
                 HOperatorSet.GenCircle(out outerCircle, row, column, outer);
@@ -769,7 +769,7 @@ namespace DotNet.HalconUI
 
             DrawHelper.CancelDraw(_hWindow);
 
-            HObject created = null;
+            HObject? created = null;
             try
             {
                 switch (type)
@@ -852,7 +852,7 @@ namespace DotNet.HalconUI
         #region Region
 
         /// <summary> 显示 HALCON 对象（区域 / 轮廓） </summary>
-        public void Disp(HObject region, DrawStyle style = null)
+        public void Disp(HObject? region, DrawStyle? style = null)
         {
             ApplyStyle(style);
             if (!IsWindowUsable()) return;
@@ -862,7 +862,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary> 显示 ROI 已生成的区域对象（<c>CvRegion.HoRegion</c>） </summary>
-        public void Disp(CvRegion region, DrawStyle style = null)
+        public void Disp(CvRegion region, DrawStyle? style = null)
         {
             // 原实现直接解引用 region.HoRegion，region 为 null 时是 NRE 而不是可忽略的空绘制。
             if (region == null) return;
@@ -890,7 +890,7 @@ namespace DotNet.HalconUI
         ///    让调用方拿不到原始几何对象的所有权。现在只显示，差集 region 用完即弃。
         /// </para>
         /// </remarks>
-        public void DispRegionOutline(CvRegion region, DrawStyle style = null)
+        public void DispRegionOutline(CvRegion region, DrawStyle? style = null)
         {
             if (region == null) return;
 
@@ -935,9 +935,9 @@ namespace DotNet.HalconUI
 
         void DispRingInternal(CvRegion hRegion)
         {
-            HObject circle1 = null;
-            HObject circle2 = null;
-            HObject regionDifference = null;
+            HObject? circle1 = null;
+            HObject? circle2 = null;
+            HObject? regionDifference = null;
             try
             {
                 HOperatorSet.GenCircle(out circle1, hRegion.CenterY + DispRowOffset, hRegion.CenterX + DispColOffset, hRegion.MaxRadius);
@@ -954,7 +954,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary> 画有向矩形。<paramref name="phi"/> 为弧度，length1/length2 为两个方向的半长 </summary>
-        public void DispRect2(Point2d center, double phi, double length1, double length2, DrawStyle style = null)
+        public void DispRect2(Point2d center, double phi, double length1, double length2, DrawStyle? style = null)
         {
             ApplyStyle(style);
             if (!IsWindowUsable()) return;

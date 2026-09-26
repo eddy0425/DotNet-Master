@@ -1,4 +1,4 @@
-namespace DotNet.Drawing
+﻿namespace DotNet.Drawing
 {
     /// <summary>
     /// 绘制样式：颜色、尺寸、线宽、填充模式的载体。
@@ -30,7 +30,7 @@ namespace DotNet.Drawing
         public int? LineWidth { get; init; }
 
         /// <summary>填充模式："margin" 只画轮廓，"fill" 填充。<c>null</c> 表示不修改。</summary>
-        public string DrawMode { get; init; }
+        public string? DrawMode { get; init; }
 
         /// <summary>只指定颜色。</summary>
         public static DrawStyle Of(HColor color) => new DrawStyle { Color = color };
@@ -42,7 +42,7 @@ namespace DotNet.Drawing
         public static DrawStyle Sized(double size) => new DrawStyle { Size = size };
 
         /// <summary>取尺寸，未指定时回落到 <paramref name="fallback"/>。</summary>
-        public static double SizeOr(DrawStyle style, double fallback = DefaultSize)
+        public static double SizeOr(DrawStyle? style, double fallback = DefaultSize)
             => style?.Size ?? fallback;
     }
 }

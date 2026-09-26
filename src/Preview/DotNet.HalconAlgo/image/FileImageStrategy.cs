@@ -14,7 +14,8 @@ namespace DotNet.HalconAlgo
         public override int RunIndex { get; set; }
 
         private int Index  = 0;       //图像下标
-        private string[] ImagePaths;   //图像路径
+        // 可空：Init 里目录无效时会主动置 null（见下方 catch），Fun_action 靠判空决定要不要重扫目录。
+        private string[]? ImagePaths;   //图像路径
 
         public override void GenTreeNode(ITreeVisualizer tree)
         {
@@ -147,8 +148,15 @@ namespace DotNet.HalconAlgo
 
     public class FileImage : AlgoFont
     {
+        public FileImage()
+        {
+            HOperatorSet.GenEmptyObj(out Image);
+        }
+
         /// <summary> 图像 </summary>
-        /// <remarks>不加 = new HObject() 初始化器：句柄由 <see cref="FileImageStrategy.Init"/> 创建，否则初始化器创建的句柄会被覆盖且永不释放。</remarks>
+        /// <remarks>不加 = new HObject() 初始化器：句柄统一由构造函数的 GenEmptyObj 创建，否则初始化器创建的句柄会被覆盖且永不释放。
+        /// 原先句柄只由 <see cref="FileImageStrategy.Init"/> 创建，Init 之前（或 Init 抛异常时）字段为 null，
+        /// 与另外四个匹配参数类的约定也不一致；改由构造函数建空句柄，Init 里的 <c>Image?.Dispose()</c> 会正常回收它。</remarks>
         public HObject Image;
 
         /// <summary> 旋转 </summary>
@@ -158,7 +166,8 @@ namespace DotNet.HalconAlgo
         public string Mirror { get; set; } = "无";
 
         /// <summary> 图像文件夹 </summary>
-        public string ImageFolder { get; set; }
+        /// <remarks>未配置时为空串而不是 null：这个值直接交给 Directory.GetFiles，空串得到的是一条明确的路径异常（Init 会记录并继续），null 得到的是 NRE。</remarks>
+        public string ImageFolder { get; set; } = string.Empty;
 
     }
 }

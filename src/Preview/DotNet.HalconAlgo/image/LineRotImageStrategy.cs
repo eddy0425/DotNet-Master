@@ -34,12 +34,9 @@ namespace DotNet.HalconAlgo
             {
                 HObject ho_Image;
                 if (inPara.ImageIn == "默认")
-                    ho_Image = display.HoImage;
+                    ho_Image = display.HoImage.RequireImage(Name);
                 else
                     ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
-
-                if (ho_Image == null || !ho_Image.NotNull())
-                    throw new NullReferenceException("图像来源为空！");
 
                 CvLine line = strategys.ResolveFrom<CvLine>(inPara.LineIn);
                 if (line == null || line.IsDegenerate)

@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Drawing;
+using DotNet.Drawing.Internal;
 
 namespace DotNet.Drawing
 {

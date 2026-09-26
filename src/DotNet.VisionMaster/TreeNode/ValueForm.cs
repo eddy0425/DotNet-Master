@@ -1,4 +1,4 @@
-using Sunny.UI;
+﻿using Sunny.UI;
 using System;
 using DotNet.HalconUI;
 using DotNet.Vision.Abstractions;
@@ -17,7 +17,6 @@ namespace DotNet.VisionMaster
         public OutEnum ValueType;
 
         char varSplit = '/';
-        char valSplit = ';';
 
         IWin32Window _owner;
 

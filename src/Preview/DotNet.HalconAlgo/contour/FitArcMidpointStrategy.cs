@@ -15,22 +15,16 @@ namespace DotNet.HalconAlgo
         public override string Name { get; set; } = "圆弧中点";
         public override int RunIndex { get; set; }
 
-        /// <summary>
-        /// 直线粗滤阈值的下限（像素）。
-        /// </summary>
+        /// <summary> 粗滤阈值相对 MaxErr 的放大倍数 </summary>
         /// <remarks>
-        /// Stage 1 用一条直线去近似待拟合的圆弧，弧本身相对该直线存在凸量（sagitta），
-        /// 因此阈值不能只由 MaxErr 决定，否则弧越长被误删的有效点越多。
-        /// 这里取一个经验下限：常见 ROI 长度与曲率下弧的凸量量级约十几个像素。
-        /// 提为常量是为了让它可被查找、可被解释，而不是散在表达式里的裸数字。
+        /// 粗滤只负责剔除「明显落在别的边上」的点，判据要比 Stage 2 的 MaxErr 宽松，
+        /// 否则等于把精滤提前做了一遍，还少了迭代重拟合的纠偏机会。
         /// </remarks>
-        private const double LineGateMinPixels = 15.0;
+        private const double CoarseGateErrScale = 3.0;
 
-        /// <summary> 直线粗滤阈值相对 MaxErr 的放大倍数 </summary>
-        private const double LineGateErrScale = 3.0;
-
-        // 每次拟合的显示数据槽：仅保留最近一次，未被取走的旧数据在覆盖时释放
-        private FitArcMidpointRenderData _pendingRenderData;
+        // 每次拟合的显示数据槽：仅保留最近一次，未被取走的旧数据在覆盖时释放。
+        // 可空是这个槽的语义本身 —— 「没有待取的数据」就是 null，TakeRenderData 取走后也会置回 null。
+        private FitArcMidpointRenderData? _pendingRenderData;
         private bool _disposed;
 
         public override void GenTreeNode(ITreeVisualizer tree)
@@ -66,7 +60,7 @@ namespace DotNet.HalconAlgo
         {
             HObject hoImage;
             if (inPara.ImageIn == "默认")
-                hoImage = display.HoImage;
+                hoImage = display.HoImage.RequireImage(Name);
             else
                 hoImage = strategys.ResolveFrom<HObject>(inPara.ImageIn);
             try
@@ -129,14 +123,23 @@ namespace DotNet.HalconAlgo
             try
             {
                 bool useLocalRegion = inPara.RegionIn == "默认";
-                HObject searchRegion = useLocalRegion
-                    ? inPara.HoRect.HoRegion
-                    : strategys.ResolveRegionFrom(inPara.RegionIn);
+                HObject searchRegion;
+                if (useLocalRegion)
+                {
+                    HObject? localRegion = inPara.HoRect.HoRegion;
 
-                // 上游路径的空句柄已由 ResolveRegionFrom 拦下; 本地配置 ROI 不经过它, 需在此补同一层判断,
-                // 否则未绘制 ROI 的 0 长度空元组会一路流进 reduce_domain, 抛出与真实原因无关的 HALCON 原生异常。
-                if (useLocalRegion && !searchRegion.IsUsableRegion())
-                    throw new InvalidOperationException($"{Name} : 尚未绘制 ROI，无法执行拟合！");
+                    // 上游路径的空句柄已由 ResolveRegionFrom 拦下; 本地配置 ROI 不经过它, 需在此补同一层判断,
+                    // 否则未绘制 ROI 的 0 长度空元组会一路流进 reduce_domain, 抛出与真实原因无关的 HALCON 原生异常。
+                    if (!localRegion.IsUsableRegion())
+                        throw new InvalidOperationException($"{Name} : 尚未绘制 ROI，无法执行拟合！");
+
+                    searchRegion = localRegion;
+                }
+                else
+                {
+                    // 上游句柄由 ResolveRegionFrom 保证非空且可用（拿不到就抛），无需再判一次。
+                    searchRegion = strategys.ResolveRegionFrom(inPara.RegionIn);
+                }
 
                 Point2d fixCenter = inPara.HoRect.Center;
                 Angle fixPhi = Angle.FromRadians(inPara.HoRect.Phi.D);
@@ -192,31 +195,11 @@ namespace DotNet.HalconAlgo
                 }
 
                 double maxErr = inPara.MaxErr; if (maxErr < 0) maxErr = 0;
-                // 直线粗滤阈值适度放宽以容纳弧的凸量 (sagitta)
-                double lineGate = Math.Max(maxErr * LineGateErrScale, LineGateMinPixels);
+                double coarseFloor = inPara.CoarseGate; if (coarseFloor < 0) coarseFloor = 0;
+                double coarseGate = Math.Max(maxErr * CoarseGateErrScale, coarseFloor);
 
                 var removed = new List<Point2d>();
 
-                #region Stage 1：gauss 鲁棒直线拟合剔除严重跑偏的点
-                RobustFitPipeline.GenContour(ref contourFitting, points);
-
-                HTuple lineRowBegin, lineColBegin, lineRowEnd, lineColEnd, lineNr, lineNc, lineDist;
-                HOperatorSet.FitLineContourXld(contourFitting, "gauss", -1, 0, 5, 1.345,
-                    out lineRowBegin, out lineColBegin, out lineRowEnd, out lineColEnd,
-                    out lineNr, out lineNc, out lineDist);
-
-                // 用 Hesse 形式在 C# 侧直接算点到直线距离，省去循环内的 Halcon 调用
-                double nr = lineNr.D, nc = lineNc.D, nd = lineDist.D;
-                RobustFitPipeline.RemoveOutliers(points, removed, lineGate,
-                    pt => RobustFitPipeline.LineResidual(pt, nr, nc, nd));
-
-                if (points.Count < MinFitPoints)
-                {
-                    throw new InvalidOperationException("直线粗滤后有效点不足，无法拟合圆弧！");
-                }
-                #endregion
-
-                #region Stage 2：atukey 圆拟合 + 径向距离迭代精滤
                 // 拟合结果：由下面的 refit 闭包更新，供残差函数与最终取值共用
                 HTuple circRow = 0, circCol = 0, circRadius = 0;
                 HTuple circStartPhi = 0, circEndPhi = 0, circPointOrder = "positive";
@@ -229,10 +212,32 @@ namespace DotNet.HalconAlgo
                         out circStartPhi, out circEndPhi, out circPointOrder);
                 };
 
+                // 残差一律取「到拟合圆的径向偏差」，Stage 1 / Stage 2 同一把尺子
+                Func<Point2d, double> radialErr =
+                    pt => RobustFitPipeline.CircleResidual(pt, circRow.D, circCol.D, circRadius.D);
+
+                #region Stage 1：atukey 稳健圆拟合 + 径向残差一次性粗滤
+                // 审查项 C12：原实现这一级用 gauss 直线拟合做粗滤。弧相对其弦存在凸量(sagitta)，
+                // 曲率越大凸量越大 —— 半圆的凸量就等于半径，于是「正确的边缘点」自身的直线残差
+                // 就能轻易越过门限被当成离群点剔掉，只能靠 15px 的经验下限硬撑，且撑不住大曲率。
+                // 改成直接用圆拟合后，模型与待测几何同形，凸量问题从根上消失；
+                // atukey 是重降权(redescending)估计，离群点在首次拟合时权重就已趋零，
+                // 不必先用另一种模型粗滤一遍。
                 refit();
 
-                RobustFitPipeline.Refine(points, removed, maxErr, MinFitPoints,
-                    pt => RobustFitPipeline.CircleResidual(pt, circRow.D, circCol.D, circRadius.D), refit);
+                int coarseCulled = RobustFitPipeline.RemoveOutliers(points, removed, coarseGate, radialErr);
+
+                if (points.Count < MinFitPoints)
+                {
+                    throw new InvalidOperationException("粗滤后有效点不足，无法拟合圆弧！");
+                }
+
+                // 点集变了，模型必须跟上：Stage 2 的收敛判据建立在「模型对应当前点集」之上
+                if (coarseCulled > 0) refit();
+                #endregion
+
+                #region Stage 2：径向距离迭代精滤
+                RobustFitPipeline.Refine(points, removed, maxErr, MinFitPoints, radialErr, refit);
 
                 if (points.Count < MinFitPoints)
                 {
@@ -356,6 +361,9 @@ namespace DotNet.HalconAlgo
             ui.ShowComboBoxList("cmb_113", inPara.TrimEnds, new[] { "否", "是" });
             ui.ShowButton("btn_113", false);
 
+            ui.ShowLabel("lbl_114", "粗滤阈值");
+            ui.ShowComboBoxDropDown("cmb_114", inPara.CoarseGate.ToString(), new[] { "5", "10", "15", "30" });
+
             //------------------------------------------
             ui.ShowCheckBox("ckb_disp0", "显示文本", inPara.DispText);
             ui.ShowCheckBox("ckb_disp1", "查找区域", inPara.DispRegion);
@@ -382,6 +390,7 @@ namespace DotNet.HalconAlgo
             inPara.StepWidth = ui.GetInt("cmb_111");
             inPara.MaxErr = ui.GetInt("cmb_112");
             inPara.TrimEnds = ui.GetString("cmb_113");
+            inPara.CoarseGate = ui.GetDouble("cmb_114", 15.0);
 
             //------------------------------------------
             inPara.DispText = ui.GetBool("ckb_disp0");
@@ -514,6 +523,19 @@ namespace DotNet.HalconAlgo
         public string TrimEnds { set; get; } = "是";
 
         internal bool IsTrimEnds => TrimEnds == "是";
+
+        /// <summary> 粗滤阈值下限（像素） </summary>
+        /// <remarks>
+        /// Stage 1 的实际门限取 <c>Max(MaxErr * 3, CoarseGate)</c>：径向偏差超过它的点
+        /// 在首次稳健圆拟合后就整批剔除，不参与后续迭代。
+        /// <para>
+        /// 默认值沿用改造前的硬编码 15（审查项 C12 要求把它提为可配置参数），
+        /// 但含义已经变了：改造前 Stage 1 是直线拟合，这 15px 主要用来兜住弧的凸量，
+        /// 调小会误删有效点；现在 Stage 1 已是圆拟合，凸量不再计入残差，
+        /// 需要更早拦住跳到邻边的点时可以放心调小。
+        /// </para>
+        /// </remarks>
+        public double CoarseGate { set; get; } = 15.0;
 
          /// <summary> 点大小 </summary>
         public int PointSize { set; get; } = 15;

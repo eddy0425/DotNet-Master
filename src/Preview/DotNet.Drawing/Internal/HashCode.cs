@@ -1,12 +1,17 @@
 using System.Runtime.CompilerServices;
 
-namespace System
+namespace DotNet.Drawing.Internal
 {
     /// <summary>
     /// 为 .NET Framework 提供 HashCode 兼容实现
     /// </summary>
     /// <remarks>
-    /// 使用 FNV-1a 算法实现高效的哈希码组合
+    /// 使用 FNV-1a 算法实现高效的哈希码组合。
+    /// <para>
+    /// 刻意**不放在** <c>namespace System</c>：那样会占用 BCL 命名空间，
+    /// 目标框架升级到自带 <c>System.HashCode</c> 的版本（.NET Standard 2.1+ / .NET Core 2.1+）后
+    /// 两者会产生歧义。放在本命名空间后，升级时只需删除本文件并把 using 改回 <c>System</c>。
+    /// </para>
     /// </remarks>
     internal struct HashCode
     {

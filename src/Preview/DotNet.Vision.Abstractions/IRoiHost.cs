@@ -1,4 +1,4 @@
-using DotNet.Drawing;
+﻿using DotNet.Drawing;
 using HalconDotNet;
 using System.Threading.Tasks;
 
@@ -32,9 +32,14 @@ namespace DotNet.Vision.Abstractions
         void SetRectPara(CvRegion shrRegion);
 
         /// <summary> 把模板参数回填到宿主的参数面板 </summary>
-        void SetModelPara(HObject shrFindMode, HObject shrContour, CvCoord shrCoord);
+        /// <remarks>
+        /// 两个句柄可空：调用点传的是 <c>CvRegion.HoRegion</c>，ROI 尚未绘制或已 Dispose 时就是 null。
+        /// 宿主只是把它们转交给 <see cref="IHDisplay.Disp(HObject?, DrawStyle?)"/>，那里本来就按空句柄不画处理。
+        /// </remarks>
+        void SetModelPara(HObject? shrFindMode, HObject? shrContour, CvCoord shrCoord);
 
         /// <summary> 通知宿主：模板创建完成 </summary>
-        void DrawDone(string modelPath, HObject ho_ModeRect, HObject ho_Contour, ModelResult result);
+        /// <remarks>两个句柄可空，理由同 <see cref="SetModelPara"/>。</remarks>
+        void DrawDone(string modelPath, HObject? ho_ModeRect, HObject? ho_Contour, ModelResult result);
     }
 }

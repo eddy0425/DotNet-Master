@@ -30,7 +30,7 @@ namespace DotNet.HalconUI
             hWindowControl.HMouseMove += OnMouseMove;
         }
 
-        public void DisplayModel(string modelPath, HObject ho_ModeRect, HObject ho_Contour, ModelResult result)
+        public void DisplayModel(string modelPath, HObject? ho_ModeRect, HObject? ho_Contour, ModelResult result)
         {
             hWindowControl.Focus();
 

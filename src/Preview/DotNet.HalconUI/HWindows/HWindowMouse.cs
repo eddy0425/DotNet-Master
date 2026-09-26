@@ -35,7 +35,7 @@ namespace DotNet.HalconUI
 
         bool _disposed;
 
-        public event Action<HTuple, HTuple, HTuple> RefreshUI;
+        public event Action<HTuple, HTuple, HTuple>? RefreshUI;
         public bool MouseDown { get; set; }      //鼠标按下
         public bool MouseDouble { get; set; }    //鼠标双击按下
 

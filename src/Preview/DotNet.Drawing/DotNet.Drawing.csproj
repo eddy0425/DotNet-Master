@@ -68,6 +68,7 @@
     <Compile Include="DrawStyle.cs" />
     <Compile Include="HColor.cs" />
     <Compile Include="Extension\IsExternalInit.cs" />
+    <Compile Include="Extension\NullableAttributes.cs" />
     <Compile Include="Extension\RegionExtension.cs" />
     <Compile Include="CvMode\Angle.cs" />
     <Compile Include="CvMode\CvArrow.cs" />
@@ -75,7 +76,7 @@
     <Compile Include="CvMode\CvCoord.cs" />
     <Compile Include="CvMode\CvLine.cs" />
     <Compile Include="CvMode\CvRegion.cs" />
-    <Compile Include="CvMode\HashCode.cs" />
+    <Compile Include="Internal\HashCode.cs" />
     <Compile Include="CvMode\ICvShape.cs" />
     <Compile Include="CvMode\MathHelper.cs" />
     <Compile Include="CvMode\TransExpV2.cs" />
