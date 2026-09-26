@@ -20,7 +20,7 @@ namespace DotNet.Drawing.Tests
         public void RegionSetRectByCorners_RejectsInvertedCorners()
         {
             // 参数校验发生在访问区域前，无需创建依赖 HALCON 原生库的 CvRegion。
-            CvRegion region = null!;
+            CvRegion region = null;
             Assert.ThrowsException<ArgumentException>(() => region.SetRectByCorners(new Point2d(5, 0), new Point2d(4, 1)));
             Assert.ThrowsException<ArgumentException>(() => region.SetRectByCorners(new Point2d(0, 5), new Point2d(1, 4)));
         }
@@ -33,6 +33,8 @@ namespace DotNet.Drawing.Tests
             Geom.AreClose(-2, -3, 2, 2, r - new Point2d(3, 4));
             Geom.AreClose(1, 1, 5, 6, r + new Size2d(3, 4));
             Geom.AreClose(1, 1, 1, 1, r - new Size2d(1, 1));
+            // 越界时截断为零，与 Size2d 相减语义一致
+            Geom.AreClose(1, 1, 0, 1, r - new Size2d(5, 1));
         }
 
         [TestMethod]
@@ -44,7 +46,7 @@ namespace DotNet.Drawing.Tests
             Assert.IsTrue(a.Equals((object)b));
             Assert.AreEqual(a.GetHashCode(), b.GetHashCode());
             Assert.IsTrue(a != new Rect2d(1.0, 2.0, 3.0, 5.0));
-            Rect2d? n1 = null, n2 = null;
+            Rect2d n1 = null, n2 = null;
             Assert.IsTrue(n1 == n2);
             Assert.IsFalse(a == n1);
             Assert.IsFalse(n1 == a);
@@ -55,14 +57,15 @@ namespace DotNet.Drawing.Tests
         public void Json_RoundTrips()
         {
             var r = new Rect2d(1.5, 2.0, 3.0, 4.25);
-            var back = JsonConvert.DeserializeObject<Rect2d>(JsonConvert.SerializeObject(r))!;
+            var back = JsonConvert.DeserializeObject<Rect2d>(JsonConvert.SerializeObject(r));
             Geom.AreClose(1.5, 2, 3, 4.25, back);
         }
 
         [TestMethod]
         public void Json_NegativeSize_IsRejected()
         {
-            // [JsonConstructor] 走构造函数校验，落盘数据也不能造出非法矩形
+            // [JsonConstructor] 走构造函数校验，落盘数据也不能造出非法矩形；
+            // Newtonsoft 不包装构造函数抛出的异常，调用方收到的是原始 ArgumentOutOfRangeException
             Assert.ThrowsException<ArgumentOutOfRangeException>(
                 () => JsonConvert.DeserializeObject<Rect2d>("{\"X\":0,\"Y\":0,\"Width\":-1,\"Height\":1}"));
         }

@@ -30,7 +30,7 @@ namespace DotNet.HalconUI
             hWindowControl.HMouseMove += OnMouseMove;
         }
 
-        public void DisplayModel(string modelPath, HObject? ho_ModeRect, HObject? ho_Contour, ModelResult result)
+        public void DisplayModel(string modelPath, HObject ho_ModeRect, HObject ho_Contour, ModelResult result)
         {
             hWindowControl.Focus();
 
@@ -54,7 +54,7 @@ namespace DotNet.HalconUI
             display.Disp(_coord, DrawStyle.Of(HColor.Red));
         }
 
-        private static void TransObject(Point2d from, Point2d to, HObject? obj, out HObject objTrans)
+        private static void TransObject(Point2d from, Point2d to, HObject obj, out HObject objTrans)
         {
             if (obj == null || !obj.IsInitialized() || obj.CountObj() <= 0)
             {

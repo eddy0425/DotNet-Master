@@ -47,7 +47,7 @@ namespace DotNet.Drawing
         /// <param name="json"></param>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static object? FromJson(this string json, Type type)
+        public static object FromJson(this string json, Type type)
         {
             if (NewtonsoftJsonFirst)
             {
@@ -67,9 +67,9 @@ namespace DotNet.Drawing
         /// <typeparam name="T"></typeparam>
         /// <param name="json"></param>
         /// <returns></returns>
-        public static T? FromJson<T>(this string json)
+        public static T FromJson<T>(this string json)
         {
-            return (T?)FromJson(json, typeof(T));
+            return (T)FromJson(json, typeof(T));
         }
 
         /// <summary>
@@ -130,9 +130,9 @@ namespace DotNet.Drawing
         /// <typeparam name="T">反序列化类型</typeparam>
         /// <param name="datas">数据</param>
         /// <returns></returns>
-        public static T? JsonDeserializeFromBytes<T>(byte[] datas)
+        public static T JsonDeserializeFromBytes<T>(byte[] datas)
         {
-            return (T?)JsonDeserializeFromBytes(datas, typeof(T));
+            return (T)JsonDeserializeFromBytes(datas, typeof(T));
         }
 
         /// <summary>
@@ -141,7 +141,7 @@ namespace DotNet.Drawing
         /// <param name="datas"></param>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static object? JsonDeserializeFromBytes(byte[] datas, Type type)
+        public static object JsonDeserializeFromBytes(byte[] datas, Type type)
         {
             return FromJson(Encoding.UTF8.GetString(datas), type);
         }
@@ -152,7 +152,7 @@ namespace DotNet.Drawing
         /// <typeparam name="T">类型</typeparam>
         /// <param name="json">json字符串</param>
         /// <returns></returns>
-        public static T? JsonDeserializeFromString<T>(string json)
+        public static T JsonDeserializeFromString<T>(string json)
         {
             return FromJson<T>(json);
         }
@@ -163,7 +163,7 @@ namespace DotNet.Drawing
         /// <typeparam name="T">反序列化类型</typeparam>
         /// <param name="path">文件路径</param>
         /// <returns></returns>
-        public static T? JsonDeserializeFromFile<T>(string path)
+        public static T JsonDeserializeFromFile<T>(string path)
         {
             return JsonDeserializeFromString<T>(File.ReadAllText(path));
         }

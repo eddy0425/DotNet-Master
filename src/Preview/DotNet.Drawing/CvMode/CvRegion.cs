@@ -11,9 +11,8 @@ namespace DotNet.Drawing
     /// </summary>
     /// <remarks>
     /// 设计说明：
-    /// - <b>可变 class</b>：调用方依赖按引用语义直接修改 (<c>region.Phi = ...</c>、<c>region.SetRect(...)</c>)，
-    ///   且 <see cref="HoRegion"/> 被作为 <c>out</c> 参数传给 HOperatorSet（C# 不支持 out 属性），
-    ///   因此必须保留 public field + 可变属性形态。
+    /// - <b>可变 class</b>：调用方依赖按引用语义直接修改 (<c>region.Phi = ...</c>、<c>region.SetRectByCenter(...)</c>、
+    ///   <c>region.HoRegion = ...</c>)，因此保留可变属性形态；HoRegion 的赋值会释放旧句柄。
     /// - <b>sealed</b>：派生类若再次扩展状态会破坏本类的 <see cref="Equals(CvRegion)"/> / <see cref="GetHashCode"/> 契约，禁止继承。
     /// - <b>Equals/GetHashCode 契约</b>：本类既然扩展了字段（Phi/Type/Polygon/...），就必须同时重写 <see cref="Equals(object)"/>，
     ///   否则会出现"GetHashCode 不同但 Equals 判等"的契约违反。
@@ -35,9 +34,10 @@ namespace DotNet.Drawing
 
         public CvRegion()
         {
-            // 注意：这里不能改成 HoRegion = new HObject() —— 后续以 out 形式覆盖时旧实例会被丢弃但未释放。
-            // GenEmptyObj 内部会创建并初始化句柄，等价的最简形式即一行调用。
-            HOperatorSet.GenEmptyObj(out HoRegion);
+            // 注意：这里不能改成 HoRegion = new HObject() —— 那只是未初始化的空壳，不是可参与运算的空区域。
+            // 属性不能直接作为 out 实参，先落到局部变量再赋值。
+            HOperatorSet.GenEmptyObj(out HObject empty);
+            HoRegion = empty;
         }
 
         #region Bounds (组合持有的外接矩形)
@@ -119,16 +119,6 @@ namespace DotNet.Drawing
         /// <summary> 外接矩形大小 </summary>
         [JsonIgnore] public Size2d Size => new(_bounds.Width, _bounds.Height);
 
-        /// <summary> 判断坐标是否落在外接矩形内（右开 / 下开区间） </summary>
-        public bool Contains(double x, double y) =>
-            _bounds.X <= x && _bounds.Y <= y && _bounds.X + _bounds.Width > x && _bounds.Y + _bounds.Height > y;
-
-        /// <summary> 判断点是否落在外接矩形内（右开 / 下开区间） </summary>
-        public bool Contains(Point2d pt) => Contains(pt.X, pt.Y);
-
-        /// <summary> 外接矩形转换为整数矩形 </summary>
-        public Rect ToRect() => new((int)_bounds.X, (int)_bounds.Y, (int)_bounds.Width, (int)_bounds.Height);
-
         #endregion
 
         #region Geometry / Shape Parameters
@@ -141,12 +131,12 @@ namespace DotNet.Drawing
         /// <summary>
         /// 多边形点 X 数组（仅对 Polygon 有意义）
         /// </summary>
-        public HTuple? PolygonX { set; get; }
+        public HTuple PolygonX { set; get; }
 
         /// <summary>
         /// 多边形点 Y 数组（仅对 Polygon 有意义）
         /// </summary>
-        public HTuple? PolygonY { set; get; }
+        public HTuple PolygonY { set; get; }
 
         /// <summary>
         /// 是新增区域 (true) 还是减去区域 (false)
@@ -181,12 +171,23 @@ namespace DotNet.Drawing
         /// 区域的 Halcon 句柄。
         /// </summary>
         /// <remarks>
-        /// 必须是<b>字段</b>而非属性：它要作为 <c>out</c> 参数传给 <c>HOperatorSet.*</c>，
-        /// 而 C# 不允许属性用作 <c>out</c> 实参。这也是 <see cref="Clone"/> 不能依赖
-        /// <see cref="TransExpV2{TIn,TOut}"/>（只枚举属性）的原因。
+        /// <b>所有权</b>：赋值即把新句柄的所有权转移给本实例；先换引用、再自动释放旧句柄。
+        /// 赋入相同引用不会释放它。<see cref="Dispose"/> 之后为 null。
         /// </remarks>
+        private HObject _hoRegion;
+
         [JsonConverter(typeof(JsonConvertHObject))]
-        public HObject? HoRegion;
+        public HObject HoRegion
+        {
+            get => _hoRegion;
+            set
+            {
+                if (ReferenceEquals(_hoRegion, value)) return;
+                var old = _hoRegion;
+                _hoRegion = value;
+                old?.Dispose();
+            }
+        }
 
         #endregion
 
@@ -208,9 +209,8 @@ namespace DotNet.Drawing
         /// 深拷贝：几何参数逐项复制，<see cref="HoRegion"/> 通过 <c>CopyObj</c> 生成独立句柄。
         /// </summary>
         /// <remarks>
-        /// <b>不能</b>用 <see cref="TransExpV2{TIn,TOut}"/> 实现：它只枚举可写<b>属性</b>，
-        /// 而 <see cref="HoRegion"/> 是<b>字段</b>（必须是字段才能作为 <c>out</c> 参数传给
-        /// HOperatorSet），会被静默跳过，克隆结果的句柄为 null，后续显示 / 运算直接 NRE。
+        /// <b>不能</b>用 <see cref="TransExpV2{TIn,TOut}"/> 实现：它是浅拷贝，<see cref="HoRegion"/> 会被复制成同一个句柄，
+        /// 原件与克隆任一方 Dispose 都会让另一方持有已释放的对象。
         /// <para>
         /// <b>所有权</b>：返回的实例独立持有一份 Halcon 句柄，由调用方负责 <see cref="Dispose"/>。
         /// </para>
@@ -237,10 +237,8 @@ namespace DotNet.Drawing
 
             if (HoRegion.NotNull())
             {
-                // 构造函数已经用 GenEmptyObj 建了一个空句柄，覆盖前必须先释放，否则泄漏。
-                var stale = clone.HoRegion;
+                // 属性赋值负责释放构造函数创建的空句柄。
                 clone.HoRegion = HoRegion.CopyObj(1, -1);
-                stale?.Dispose();
             }
 
             return clone;
@@ -259,17 +257,17 @@ namespace DotNet.Drawing
         //   2. 判等只覆盖本类型：Equals(object) 显式收窄到 CvRegion。
         //   3. HObject (HoRegion) 不参与判等：句柄非业务身份；几何参数相同即视为相同 ROI 定义。
 
-        public override bool Equals(object? obj) => Equals(obj as CvRegion);
+        public override bool Equals(object obj) => Equals(obj as CvRegion);
 
-        public static bool operator ==(CvRegion? lhs, CvRegion? rhs)
+        public static bool operator ==(CvRegion lhs, CvRegion rhs)
         {
             if (ReferenceEquals(lhs, null)) return ReferenceEquals(rhs, null);
             return lhs.Equals(rhs);
         }
 
-        public static bool operator !=(CvRegion? lhs, CvRegion? rhs) => !(lhs == rhs);
+        public static bool operator !=(CvRegion lhs, CvRegion rhs) => !(lhs == rhs);
 
-        public bool Equals(CvRegion? other)
+        public bool Equals(CvRegion other)
         {
             if (ReferenceEquals(other, null)) return false;
             if (ReferenceEquals(this, other)) return true;
@@ -308,7 +306,7 @@ namespace DotNet.Drawing
         /// <summary>
         /// HTuple 容差比较：同时处理 null、长度、逐元素 double 比较
         /// </summary>
-        private static bool HTupleEquals(HTuple? a, HTuple? b)
+        private static bool HTupleEquals(HTuple a, HTuple b)
         {
             if (ReferenceEquals(a, b)) return true;
             if (a is null || b is null) return false;
@@ -323,7 +321,7 @@ namespace DotNet.Drawing
         /// <summary>
         /// 与 <see cref="HTupleEquals"/> 配套的稳定哈希：用元素数 + 量化值
         /// </summary>
-        private static int HTupleHash(HTuple? tuple)
+        private static int HTupleHash(HTuple tuple)
         {
             if (tuple is null) return 0;
             var hash = new HashCode();
@@ -347,11 +345,7 @@ namespace DotNet.Drawing
 
             // 释放 HObject（HalconDotNet 自身具备 finalizer，但显式 Dispose 能确保 native 句柄即时回收，
             // 避免在 GC 压力大的场景下 native 资源滞留）
-            if (HoRegion != null)
-            {
-                HoRegion.Dispose();
-                HoRegion = null;
-            }
+            HoRegion = null; // setter 先清引用、再释放旧句柄
 
             _disposed = true;
             GC.SuppressFinalize(this);

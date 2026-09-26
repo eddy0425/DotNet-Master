@@ -147,7 +147,7 @@ namespace DotNet.HalconUI
             bool ok = await RunAsync(window, s, edit: false, token);
             if (!ok || s.Rows.Count < 3) return new DrawRegionResult(false, region);
 
-            HObject? contour = null;
+            HObject contour = null;
             try
             {
                 HTuple rows = new HTuple(ToArray(s.Rows));
@@ -295,7 +295,7 @@ namespace DotNet.HalconUI
         public static void CancelDraw() => CancelDraw(null);
 
         /// <summary>取消指定窗口上正在进行的交互绘制；<paramref name="window"/> 为 null 时取消全部。</summary>
-        public static void CancelDraw(HWindow? window)
+        public static void CancelDraw(HWindow window)
         {
             // 兼容仍在使用 HALCON 原生 draw_* 的路径
             DrawSafe.WindowOp("CancelDraw", () => HalconAPI.CancelDraw());
@@ -303,22 +303,22 @@ namespace DotNet.HalconUI
         }
 
         /// <summary>指定窗口上是否有正在进行的交互绘制会话。</summary>
-        public static bool IsDrawing(HWindow? window) => DrawSession.ActiveFor(window) != null;
+        public static bool IsDrawing(HWindow window) => DrawSession.ActiveFor(window) != null;
 
         /// <summary>把鼠标按下事件转发给该窗口当前的绘制会话；没有会话时静默忽略。</summary>
-        public static void ForwardMouseDown(HWindow? window, HMouseEventArgs e)
+        public static void ForwardMouseDown(HWindow window, HMouseEventArgs e)
             => DrawSession.ActiveFor(window)?.OnMouseDown(e);
 
         /// <summary>把鼠标抬起事件转发给该窗口当前的绘制会话；没有会话时静默忽略。</summary>
-        public static void ForwardMouseUp(HWindow? window, HMouseEventArgs e)
+        public static void ForwardMouseUp(HWindow window, HMouseEventArgs e)
             => DrawSession.ActiveFor(window)?.OnMouseUp(e);
 
         /// <summary>把鼠标移动事件转发给该窗口当前的绘制会话；没有会话时静默忽略。</summary>
-        public static void ForwardMouseMove(HWindow? window, HMouseEventArgs e)
+        public static void ForwardMouseMove(HWindow window, HMouseEventArgs e)
             => DrawSession.ActiveFor(window)?.OnMouseMove(e);
 
         /// <summary>把滚轮事件转发给该窗口当前的绘制会话；没有会话时静默忽略。</summary>
-        public static void ForwardMouseWheel(HWindow? window, HMouseEventArgs e)
+        public static void ForwardMouseWheel(HWindow window, HMouseEventArgs e)
             => DrawSession.ActiveFor(window)?.OnMouseWheel(e);
 
         #endregion

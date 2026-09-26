@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace DotNet.Drawing
 {
@@ -21,7 +20,7 @@ namespace DotNet.Drawing
     public interface ILogger
     {
         /// <param name="exception">可为 null: 多数 Debug/Info 日志并不伴随异常.</param>
-        void Log(LogLevel level, string category, string message, Exception? exception);
+        void Log(LogLevel level, string category, string message, Exception exception);
     }
 
     /// <summary>
@@ -30,7 +29,7 @@ namespace DotNet.Drawing
     /// </summary>
     public sealed class TraceLogger : ILogger
     {
-        public void Log(LogLevel level, string category, string message, Exception? exception)
+        public void Log(LogLevel level, string category, string message, Exception exception)
         {
             var text = string.Format("[{0:HH:mm:ss.fff}] [{1}] [{2}] {3}",
                 DateTime.Now, level, category ?? "-", message);
@@ -42,7 +41,7 @@ namespace DotNet.Drawing
     /// <summary>什么都不做. 供单元测试或明确不需要日志的场合替换. </summary>
     public sealed class NullLogger : ILogger
     {
-        public void Log(LogLevel level, string category, string message, Exception? exception) { }
+        public void Log(LogLevel level, string category, string message, Exception exception) { }
     }
 
     /// <summary>
@@ -54,7 +53,6 @@ namespace DotNet.Drawing
         private static ILogger _current = new TraceLogger();
 
         /// <summary>当前日志实现. 赋 null 等价于 <see cref="NullLogger"/>.</summary>
-        [AllowNull]
         public static ILogger Current
         {
             get { return _current; }
@@ -63,10 +61,10 @@ namespace DotNet.Drawing
 
         public static void Debug(string category, string message) { Write(LogLevel.Debug, category, message, null); }
         public static void Info(string category, string message) { Write(LogLevel.Info, category, message, null); }
-        public static void Warn(string category, string message, Exception? ex = null) { Write(LogLevel.Warn, category, message, ex); }
-        public static void Error(string category, string message, Exception? ex = null) { Write(LogLevel.Error, category, message, ex); }
+        public static void Warn(string category, string message, Exception ex = null) { Write(LogLevel.Warn, category, message, ex); }
+        public static void Error(string category, string message, Exception ex = null) { Write(LogLevel.Error, category, message, ex); }
 
-        private static void Write(LogLevel level, string category, string message, Exception? ex)
+        private static void Write(LogLevel level, string category, string message, Exception ex)
         {
             var logger = _current;
             if (logger == null) return;

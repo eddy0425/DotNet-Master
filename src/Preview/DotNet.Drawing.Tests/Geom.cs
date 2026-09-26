@@ -15,7 +15,7 @@ namespace DotNet.Drawing.Tests
     {
         public const double Eps = 1e-9;
 
-        public static void AreClose(double expected, double actual, string? what = null)
+        public static void AreClose(double expected, double actual, string what = null)
             => Assert.AreEqual(expected, actual, Eps, what);
 
         public static void AreClose(Point2d expected, Point2d actual, double eps = Eps)

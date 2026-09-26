@@ -37,7 +37,7 @@ namespace DotNet.HalconUI
 
         bool _disposed;
 
-        public event Action<HTuple, HTuple, HTuple>? RefreshUI;
+        public event Action<HTuple, HTuple, HTuple> RefreshUI;
 
         public HWindowMouse(HWindowControl hWindowControl, IHDisplay display)
         {

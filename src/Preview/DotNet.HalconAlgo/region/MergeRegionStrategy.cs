@@ -47,7 +47,7 @@ namespace DotNet.HalconAlgo
             // 直接装箱 Nullable<T> 即可: 未示教 → null, 下游 ResolveFrom<Point2d> 抛
             // AlgoOutputNotFoundException (响亮失败好过静默算错); 已示教 → 装箱的是 Point2d 本身
             // (而非 Point2d?), 下游 is Point2d 判定成立.
-            RegisterOutput("TmplPoint", () => (object?)inPara.TmplPoint);
+            RegisterOutput("TmplPoint", () => (object)inPara.TmplPoint);
             RegisterOutput("坐标系", () => inPara.Coord);
             RegisterOutput("坐标系/原点", () => inPara.Coord.Center);
             RegisterOutput("坐标系/原点/行", () => inPara.Coord.Y);
@@ -168,9 +168,7 @@ namespace DotNet.HalconAlgo
 
         private void ReplaceResult(HObject replacement)
         {
-            var previous = inPara.Result.HoRegion;
-            inPara.Result.HoRegion = replacement;
-            previous?.Dispose();
+            inPara.Result.HoRegion = replacement; // setter 释放旧句柄
         }
 
         private void ClearResult()

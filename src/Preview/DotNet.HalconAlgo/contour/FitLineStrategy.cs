@@ -66,7 +66,7 @@ namespace DotNet.HalconAlgo
                 HObject searchRegion;
                 if (useLocalRegion)
                 {
-                    HObject? localRegion = inPara.HoRect.HoRegion;
+                    HObject localRegion = inPara.HoRect.HoRegion;
 
                     // 上游路径的空句柄已由 ResolveRegionFrom 拦下; 本地配置 ROI 不经过它, 需在此补同一层判断,
                     // 否则未绘制 ROI 的 0 长度空元组会一路流进 reduce_domain, 抛出与真实原因无关的 HALCON 原生异常。

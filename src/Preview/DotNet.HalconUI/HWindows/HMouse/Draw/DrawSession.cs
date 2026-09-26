@@ -59,7 +59,7 @@ namespace DotNet.HalconUI.Draw
         // 写入在 UI 线程, 释放可能在定时器线程 —— CancellationTokenRegistration 是多字段结构体,
         // 赋值不是原子的, 撕裂读之后 Dispose 会踩到半初始化的句柄。所以一律走 _regGate。
         private readonly object _regGate = new object();
-        private CancellationTokenSource? _timeoutCts;
+        private CancellationTokenSource _timeoutCts;
         private CancellationTokenRegistration _timeoutReg;
         private CancellationTokenRegistration _callerReg;
 
@@ -97,7 +97,7 @@ namespace DotNet.HalconUI.Draw
         }
 
         /// <summary>取该窗口上最新的活动会话；没有则返回 null。</summary>
-        internal static DrawSession? ActiveFor(HWindow? window)
+        internal static DrawSession ActiveFor(HWindow window)
         {
             if (window == null) return null;
             lock (Gate)
@@ -111,7 +111,7 @@ namespace DotNet.HalconUI.Draw
         }
 
         /// <summary>取消指定窗口上的全部会话；<paramref name="window"/> 为 null 时取消所有窗口。</summary>
-        internal static void CancelAll(HWindow? window)
+        internal static void CancelAll(HWindow window)
         {
             List<DrawSession> victims;
             lock (Gate)
@@ -314,7 +314,7 @@ namespace DotNet.HalconUI.Draw
             // 计时器与回调链在这里断开, 避免会话已结束还挂着一个 5 分钟的 Timer。
             // 取出后置空再释放: Dispose 期间不持锁, 免得与就地回调的 Register 互等
             CancellationTokenRegistration timeoutReg, callerReg;
-            CancellationTokenSource? cts;
+            CancellationTokenSource cts;
             lock (_regGate)
             {
                 timeoutReg = _timeoutReg; _timeoutReg = default;

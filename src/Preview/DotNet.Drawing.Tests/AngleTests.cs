@@ -98,10 +98,10 @@ namespace DotNet.Drawing.Tests
         public void Json_RoundTrips()
         {
             var back = JsonConvert.DeserializeObject<Holder>(
-                JsonConvert.SerializeObject(new Holder { A = Angle.FromRadians(1.25), N = Angle.FromRadians(-2) }))!;
+                JsonConvert.SerializeObject(new Holder { A = Angle.FromRadians(1.25), N = Angle.FromRadians(-2) }));
             Geom.AreClose(1.25, back.A.Radians);
             Assert.IsTrue(back.N.HasValue);
-            Geom.AreClose(-2, back.N!.Value.Radians);
+            Geom.AreClose(-2, back.N.Value.Radians);
         }
 
         [DataTestMethod]
@@ -114,13 +114,13 @@ namespace DotNet.Drawing.Tests
         [DataRow("{\"A\":{\"Other\":[1,2],\"Radians\":2}}", 2.0)]
         public void Json_AcceptsLegacyShapes(string json, double expectedRadians)
         {
-            Geom.AreClose(expectedRadians, JsonConvert.DeserializeObject<Holder>(json)!.A.Radians);
+            Geom.AreClose(expectedRadians, JsonConvert.DeserializeObject<Holder>(json).A.Radians);
         }
 
         [TestMethod]
         public void Json_NullableAcceptsNull()
         {
-            Assert.IsNull(JsonConvert.DeserializeObject<Holder>("{\"A\":0,\"N\":null}")!.N);
+            Assert.IsNull(JsonConvert.DeserializeObject<Holder>("{\"A\":0,\"N\":null}").N);
         }
 
         [DataTestMethod]

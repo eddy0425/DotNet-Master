@@ -20,7 +20,7 @@ namespace DotNet.HalconAlgo
 
         private int Index  = 0;       //图像下标
         // 可空：Init 里目录无效时会主动置 null（见下方 catch），Fun_action 靠判空决定要不要重扫目录。
-        private string[]? ImagePaths;   //图像路径
+        private string[] ImagePaths;   //图像路径
 
         public override void GenTreeNode(ITreeVisualizer tree)
         {

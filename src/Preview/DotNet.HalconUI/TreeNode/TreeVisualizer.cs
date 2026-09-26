@@ -51,7 +51,7 @@ namespace DotNet.HalconUI
         /// <summary>
         /// 添加一个子节点
         /// </summary>
-        public ITreeBranch Node(string text, OutEnum type, Action<ITreeBranch>? config = null)
+        public ITreeBranch Node(string text, OutEnum type, Action<ITreeBranch> config = null)
         {
             var child = _node.Nodes.Add(text);
             child.Name = type.ToString();

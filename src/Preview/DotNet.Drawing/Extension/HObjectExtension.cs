@@ -1,6 +1,5 @@
 ﻿using HalconDotNet;
 using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace DotNet.Drawing
 {
@@ -10,17 +9,11 @@ namespace DotNet.Drawing
         /// 句柄非 null 且已初始化。
         /// </summary>
         /// <remarks>
-        /// 参数刻意标成可空: 这两个扩展方法的全部价值就在于"允许传 null 进来问一句"。
-        /// 标成非空会让每个调用点在调用判空方法之前先自己判一次空。
-        /// <para>
-        /// <c>NotNullWhen(true)</c> 把判空结果告诉编译器: 判过之后调用点不必再补 <c>!</c>。
-        /// 该特性在 net45 的 BCL 里不存在, 由本程序集的 NullableAttributes.cs 补齐。
-        /// </para>
+        /// 允许传 null: 这两个扩展方法的全部价值就在于"允许传 null 进来问一句"。
         /// </remarks>
-        public static bool NotNull([NotNullWhen(true)] this HObject? image)
+        public static bool NotNull(this HObject image)
         {
-            // is object 而不是原来的 (object)image != null: 两者都是绕开可能的 == 重载做纯引用判空,
-            // 但前者能让编译器在 true 分支里把 image 收窄成非空, 后者会在转换处报 CS8600。
+            // is object: 绕开可能的 == 重载做纯引用判空。
             if (image is object)
             {
                 return image.IsInitialized();
@@ -37,7 +30,7 @@ namespace DotNet.Drawing
         /// HALCON 原生异常; 在匹配里则因 count_obj 为 0 让循环一次都不进, 静默跑出 0 个结果。
         /// 上游解析路径由 <c>TryResolveRegionFrom</c> 复用本方法, 本地配置 ROI 需各策略自行调用。
         /// </remarks>
-        public static bool IsUsableRegion([NotNullWhen(true)] this HObject? region)
+        public static bool IsUsableRegion(this HObject region)
         {
             return region.NotNull() && region.CountObj() > 0;
         }
@@ -54,7 +47,7 @@ namespace DotNet.Drawing
         /// <see cref="InvalidOperationException"/>，与 ROI 未绘制时的守卫同一口径。
         /// </remarks>
         /// <param name="toolName">出错时写进消息的工具名，通常传策略的 <c>Name</c>。</param>
-        public static HObject RequireImage(this HObject? image, string toolName)
+        public static HObject RequireImage(this HObject image, string toolName)
         {
             if (!image.NotNull())
                 throw new InvalidOperationException($"{toolName} : 图像来源为空，无法执行！");

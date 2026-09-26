@@ -25,7 +25,7 @@ namespace DotNet.Drawing
             return objectType != null && typeof(HObject).IsAssignableFrom(objectType);
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
             HObject hObject = new HObject();
             try
@@ -46,11 +46,11 @@ namespace DotNet.Drawing
             }
         }
 
-        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             try
             {
-                HObject? hObject = value as HObject;
+                HObject hObject = value as HObject;
                 if (hObject != null && hObject.NotNull())
                 {
                     serializer.Serialize(writer, value);

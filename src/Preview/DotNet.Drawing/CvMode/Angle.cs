@@ -140,7 +140,7 @@ namespace DotNet.Drawing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Angle other) => QuantizedRadians().Equals(other.QuantizedRadians());
 
-        public override bool Equals(object? obj) => obj is Angle other && Equals(other);
+        public override bool Equals(object obj) => obj is Angle other && Equals(other);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode() => QuantizedRadians().GetHashCode();
@@ -160,7 +160,7 @@ namespace DotNet.Drawing
         /// </remarks>
         public string ToString(string format) => Radians.ToString(format, CultureInfo.CurrentCulture);
 
-        public string ToString(string? format, IFormatProvider? formatProvider)
+        public string ToString(string format, IFormatProvider formatProvider)
             => Radians.ToString(format, formatProvider);
 
         #endregion
@@ -178,13 +178,13 @@ namespace DotNet.Drawing
         public override bool CanConvert(Type objectType)
             => objectType == typeof(Angle) || Nullable.GetUnderlyingType(objectType) == typeof(Angle);
 
-        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             if (value is Angle angle) writer.WriteValue(angle.Radians);
             else writer.WriteNull();
         }
 
-        public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
             switch (reader.TokenType)
             {
@@ -198,7 +198,7 @@ namespace DotNet.Drawing
 
                 case JsonToken.String:
                     {
-                        string? text = (string?)reader.Value;
+                        string text = (string)reader.Value;
                         if (double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed))
                             return Angle.FromRadians(parsed);
                         throw new JsonSerializationException($"无法把 '{text}' 解析为角度（弧度）。");
@@ -212,7 +212,7 @@ namespace DotNet.Drawing
                         {
                             if (reader.TokenType != JsonToken.PropertyName) continue;
 
-                            string? name = (string?)reader.Value;
+                            string name = (string)reader.Value;
                             if (!reader.Read())
                                 throw new JsonSerializationException("角度对象意外结束。");
 

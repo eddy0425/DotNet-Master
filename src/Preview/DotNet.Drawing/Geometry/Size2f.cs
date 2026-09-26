@@ -26,7 +26,7 @@ namespace DotNet.Drawing
 
         /// <summary>按宽、高精确比较两个尺寸。</summary>
         public bool Equals(Size2f other) => Width.Equals(other.Width) && Height.Equals(other.Height);
-        public override bool Equals(object? obj) => obj is Size2f other && Equals(other);
+        public override bool Equals(object obj) => obj is Size2f other && Equals(other);
         public override int GetHashCode() => unchecked(Width.GetHashCode() * 397 ^ Height.GetHashCode());
         public static bool operator ==(Size2f left, Size2f right) => left.Equals(right);
         public static bool operator !=(Size2f left, Size2f right) => !left.Equals(right);

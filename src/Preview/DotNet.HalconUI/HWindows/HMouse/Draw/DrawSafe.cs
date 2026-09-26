@@ -24,7 +24,7 @@ namespace DotNet.HalconUI.Draw
         /// 调用点全部在 finally / 覆盖旧句柄的位置。此时要么主流程已成功，
         /// 要么已有异常正在向外传播——释放失败再抛一次会把真正的错误覆盖掉。
         /// </remarks>
-        internal static void Dispose(HObject? obj)
+        internal static void Dispose(HObject obj)
         {
             if (obj == null) return;
             try { obj.Dispose(); }

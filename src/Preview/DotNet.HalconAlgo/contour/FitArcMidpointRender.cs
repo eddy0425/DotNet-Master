@@ -15,11 +15,11 @@ namespace DotNet.HalconAlgo
         public HObject Image { get; }
 
         /// <summary> 拟合叠加数据；教导 / 取像流程没有拟合结果，此处为 null </summary>
-        public FitArcMidpointRenderData? Overlay { get; }
+        public FitArcMidpointRenderData Overlay { get; }
 
         private bool _disposed;
 
-        private FitArcMidpointRenderFrame(HObject image, FitArcMidpointRenderData? overlay)
+        private FitArcMidpointRenderFrame(HObject image, FitArcMidpointRenderData overlay)
         {
             Image = image;
             Overlay = overlay;
@@ -28,9 +28,9 @@ namespace DotNet.HalconAlgo
         /// <summary>
         /// 从相机原图复制出显示帧，并接管 overlay 的所有权；复制失败时 overlay 一并释放。
         /// </summary>
-        public static FitArcMidpointRenderFrame Create(HObject sourceImage, FitArcMidpointRenderData? overlay)
+        public static FitArcMidpointRenderFrame Create(HObject sourceImage, FitArcMidpointRenderData overlay)
         {
-            HObject? image = null;
+            HObject image = null;
             try
             {
                 image = sourceImage.CopyObj(1, -1);
@@ -68,10 +68,10 @@ namespace DotNet.HalconAlgo
     public sealed class FitArcMidpointRenderData : IDisposable
     {
         /// <summary> 查找区域（蓝）；尚未生成或已 Dispose 时为 null </summary>
-        public HObject? SearchRegion { get; internal set; }
+        public HObject SearchRegion { get; internal set; }
 
         /// <summary> 拟合出的圆弧轮廓（红）；拟合失败或已 Dispose 时为 null </summary>
-        public HObject? ArcContour { get; internal set; }
+        public HObject ArcContour { get; internal set; }
 
         /// <summary> 逐步测量矩形中心（拟合区域，蓝），姿态与尺寸各步相同 </summary>
         /// <remarks>
@@ -101,7 +101,7 @@ namespace DotNet.HalconAlgo
         public bool HasMidpoint { get; internal set; }
 
         /// <summary> 结果文本（绿），拟合失败时为 null </summary>
-        public string? Message { get; internal set; }
+        public string Message { get; internal set; }
 
         public int PointSize { get; internal set; }
         public int FontX { get; internal set; }
@@ -153,8 +153,7 @@ namespace DotNet.HalconAlgo
 
             if (ShowText && !string.IsNullOrEmpty(Message))
             {
-                // Message! : net45 的 string.IsNullOrEmpty 没有 NotNullWhen 标注, 编译器看不出上一行已经判过。
-                display.DispText(Message!, new Point2d(FontX, FontY), DrawStyle.Of(HColor.Green, FontSize));
+                display.DispText(Message, new Point2d(FontX, FontY), DrawStyle.Of(HColor.Green, FontSize));
             }
         }
 

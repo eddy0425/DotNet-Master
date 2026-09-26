@@ -37,7 +37,7 @@ namespace DotNet.HalconUI.Draw
     /// </remarks>
     internal abstract class DrawShape
     {
-        private DrawRenderer? _renderer;
+        private DrawRenderer _renderer;
 
         /// <summary>绘制目标。由 <see cref="DrawSession"/> 在会话开始时注入。</summary>
         protected DrawRenderer R =>

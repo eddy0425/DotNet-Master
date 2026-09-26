@@ -185,8 +185,8 @@ namespace DotNet.HalconUI
         /// </remarks>
         private async Task DrawROIAsync(bool IsAdd)
         {
-            HObject? drawRegion = null;
-            HObject? regionResult = null;
+            HObject drawRegion = null;
+            HObject regionResult = null;
             try
             {
                 display.Reset();
@@ -252,7 +252,7 @@ namespace DotNet.HalconUI
             _drawType = DrawEnum.Erase;
         }
 
-        public void DisplayModel(string modelPath, HObject? ho_ModeRect, HObject? ho_Contour, ModelResult result)
+        public void DisplayModel(string modelPath, HObject ho_ModeRect, HObject ho_Contour, ModelResult result)
         {
             display.Reset();
 
@@ -284,7 +284,7 @@ namespace DotNet.HalconUI
             display.Display.Disp(_shrCoord, DrawStyle.Of(HColor.Red));
         }
 
-        private static void TransObject(Point2d from, Point2d to, HObject? obj, out HObject objTrans)
+        private static void TransObject(Point2d from, Point2d to, HObject obj, out HObject objTrans)
         {
             if (obj == null || !obj.IsInitialized() || obj.CountObj() <= 0)
             {

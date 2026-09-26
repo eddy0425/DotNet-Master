@@ -13,7 +13,7 @@ namespace DotNet.HalconUI
         ZoomImage zoomInfo;
 
         // 可空: Dispose 会把它置 null(C16 先置空再释放), 窗口释放后 HoImage 读到的就是 null。
-        HObject? _hoImage;
+        HObject _hoImage;
         bool _disposed;
 
         // LayoutControlToImage 改控件 Width/Height 时会同步触发本控件的 Resize，
@@ -31,7 +31,7 @@ namespace DotNet.HalconUI
         /// <see cref="CanDraw"/> 挡掉，本属性会一直停在已释放的旧图上。
         /// 现在所有权集中到一处，句柄的换入换出与引用更新是同一个动作。
         /// </remarks>
-        public HObject? HoImage { get { return _hoImage; } }
+        public HObject HoImage { get { return _hoImage; } }
         public double HoWidth { get { return getInfo.width; } }
         public double HoHeight { get { return getInfo.height; } }
 
@@ -65,7 +65,7 @@ namespace DotNet.HalconUI
             {
                 if (_disposed || _inLayout) return;
 
-                HWindowControl? control = sender as HWindowControl;
+                HWindowControl control = sender as HWindowControl;
                 if (control == null || control.Parent == null) return;
                 if (!control.Visible) return;
 
@@ -98,7 +98,7 @@ namespace DotNet.HalconUI
         {
             HOperatorSet.CopyImage(image, out HObject copy);
 
-            HObject? old = _hoImage;
+            HObject old = _hoImage;
             _hoImage = copy;
             old?.Dispose();
 
@@ -231,7 +231,7 @@ namespace DotNet.HalconUI
 
             // 先置空引用再释放：HoImage 对外暴露，置空后后续读取拿到的是 null，
             // 而不是一个已释放的句柄。
-            HObject? img = _hoImage;
+            HObject img = _hoImage;
             _hoImage = null;
             try { if (img is object) img.Dispose(); }
             catch (Exception ex) { Log.Warn(nameof(HWindowImage), "释放图像失败.", ex); }

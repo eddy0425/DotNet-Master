@@ -24,7 +24,7 @@ namespace DotNet.HalconAlgo
 
         // 每次拟合的显示数据槽：仅保留最近一次，未被取走的旧数据在覆盖时释放。
         // 可空是这个槽的语义本身 —— 「没有待取的数据」就是 null，TakeRenderData 取走后也会置回 null。
-        private FitArcMidpointRenderData? _pendingRenderData;
+        private FitArcMidpointRenderData _pendingRenderData;
         private bool _disposed;
 
         public override void GenTreeNode(ITreeVisualizer tree)
@@ -76,7 +76,7 @@ namespace DotNet.HalconAlgo
         /// <summary>
         /// 取走最近一次拟合的显示数据，所有权随之转移（调用方负责 Dispose）；无数据返回 null。
         /// </summary>
-        public FitArcMidpointRenderData? TakeRenderData()
+        public FitArcMidpointRenderData TakeRenderData()
         {
             return Interlocked.Exchange(ref _pendingRenderData, null);
         }
@@ -126,7 +126,7 @@ namespace DotNet.HalconAlgo
                 HObject searchRegion;
                 if (useLocalRegion)
                 {
-                    HObject? localRegion = inPara.HoRect.HoRegion;
+                    HObject localRegion = inPara.HoRect.HoRegion;
 
                     // 上游路径的空句柄已由 ResolveRegionFrom 拦下; 本地配置 ROI 不经过它, 需在此补同一层判断,
                     // 否则未绘制 ROI 的 0 长度空元组会一路流进 reduce_domain, 抛出与真实原因无关的 HALCON 原生异常。

@@ -13,13 +13,13 @@ namespace DotNet.HalconUI
     {
         // 两段式初始化，见 EraseRectMouse 同名字段的说明：
         // 事件只在 HDisplayUI.DrawType == DrawEnum.DispModel 时分发，而该赋值与 SetUp 同在 SetModelPara 里。
-        private IHDisplay _display = null!;
-        // 这两个只是转交给 Disp(HObject?) 的借用句柄, 空句柄由那边按"不画"处理, 无需 null!。
-        private HObject? _findMode;
-        private HObject? _contour;
+        private IHDisplay _display = null;
+        // 这两个只是转交给 Disp(HObject, DrawStyle) 的借用句柄, 空句柄由那边按"不画"处理。
+        private HObject _findMode;
+        private HObject _contour;
         private CvCoord _coord;
 
-        public void SetUp(IHDisplay display, HObject? shrFindMode, HObject? shrContour, CvCoord shrCoord)
+        public void SetUp(IHDisplay display, HObject shrFindMode, HObject shrContour, CvCoord shrCoord)
         {
             _display = display;
             _findMode = shrFindMode;

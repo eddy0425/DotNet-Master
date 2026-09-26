@@ -17,11 +17,11 @@ namespace DotNet.HalconUI.Draw
     {
         private readonly HTuple _handle;
 
-        private HObject? _bgImage;
-        private HTuple? _partR1, _partC1, _partR2, _partC2;
+        private HObject _bgImage;
+        private HTuple _partR1, _partC1, _partR2, _partC2;
 
-        private HTuple? _savedFlush;
-        private HTuple? _savedAutodraw;
+        private HTuple _savedFlush;
+        private HTuple _savedAutodraw;
         private bool _windowConfigured;
 
         private double _pixelSize = 1;
@@ -81,7 +81,7 @@ namespace DotNet.HalconUI.Draw
         private void CaptureBackground()
         {
             // 使用临时变量, 避免 DumpWindowImage 抛出后 _bgImage 处于不确定状态
-            HObject? img = null;
+            HObject img = null;
             try
             {
                 HOperatorSet.GetPart(_handle, out HTuple r1, out HTuple c1, out HTuple r2, out HTuple c2);
@@ -107,7 +107,7 @@ namespace DotNet.HalconUI.Draw
         {
             if (_bgImage == null) return;
             // 重新捕获时使用临时变量, 防止 DumpWindowImage 异常导致 _bgImage 引用泄漏或悬空
-            HObject? newImg = null;
+            HObject newImg = null;
             bool shouldRestorePart = false;
             try
             {
@@ -157,7 +157,7 @@ namespace DotNet.HalconUI.Draw
                 && IsSameTupleValue(c2, _partC2);
         }
 
-        private static bool IsSameTupleValue(HTuple? current, HTuple? saved)
+        private static bool IsSameTupleValue(HTuple current, HTuple saved)
         {
             return current != null
                 && saved != null

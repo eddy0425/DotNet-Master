@@ -33,13 +33,13 @@ namespace DotNet.Vision.Abstractions
 
         /// <summary> 把模板参数回填到宿主的参数面板 </summary>
         /// <remarks>
-        /// 两个句柄可空：调用点传的是 <c>CvRegion.HoRegion</c>，ROI 尚未绘制或已 Dispose 时就是 null。
-        /// 宿主只是把它们转交给 <see cref="IHDisplay.Disp(HObject?, DrawStyle?)"/>，那里本来就按空句柄不画处理。
+        /// 两个句柄可能为 null：调用点传的是 <c>CvRegion.HoRegion</c>，ROI 尚未绘制或已 Dispose 时就是 null。
+        /// 宿主只是把它们转交给 <see cref="IHDisplay.Disp(HObject, DrawStyle)"/>，那里本来就按空句柄不画处理。
         /// </remarks>
-        void SetModelPara(HObject? shrFindMode, HObject? shrContour, CvCoord shrCoord);
+        void SetModelPara(HObject shrFindMode, HObject shrContour, CvCoord shrCoord);
 
         /// <summary> 通知宿主：模板创建完成 </summary>
         /// <remarks>两个句柄可空，理由同 <see cref="SetModelPara"/>。</remarks>
-        void DrawDone(string modelPath, HObject? ho_ModeRect, HObject? ho_Contour, ModelResult result);
+        void DrawDone(string modelPath, HObject ho_ModeRect, HObject ho_Contour, ModelResult result);
     }
 }

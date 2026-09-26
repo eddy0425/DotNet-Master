@@ -61,7 +61,7 @@ namespace DotNet.Drawing
         public bool Equals(Point2d other) =>
             MathHelper.AreEqualGeometric(X, other.X) && MathHelper.AreEqualGeometric(Y, other.Y);
 
-        public override bool Equals(object? obj) => obj is Point2d other && Equals(other);
+        public override bool Equals(object obj) => obj is Point2d other && Equals(other);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode() => HashCode.Combine(

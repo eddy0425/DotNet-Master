@@ -46,7 +46,7 @@ namespace DotNet.HalconAlgo
         }
         public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
         {
-            HObject? regionGet = null;   // 两条分支都会赋值; 所有权转交 Result 时置 null
+            HObject regionGet = null;   // 两条分支都会赋值; 所有权转交 Result 时置 null
 
             try
             {
@@ -87,10 +87,10 @@ namespace DotNet.HalconAlgo
                 }
 
                 // 配置 ROI 不变；发布与显示共用本轮的区域句柄，下一轮才释放旧结果。
-                var previous = inPara.Result.HoRegion;
-                inPara.Result.HoRegion = regionGet;
-                regionGet = null; // 所有权转交给 Result
-                previous?.Dispose();
+                // 先取走所有权再赋值：即使 setter 释放旧句柄时抛异常，finally 也不会误释放新句柄
+                var handle = regionGet;
+                regionGet = null;
+                inPara.Result.HoRegion = handle; // setter 释放旧句柄
                 if (inPara.DispRegion) display.Disp(inPara.Result.HoRegion, DrawStyle.Of(HColor.Blue));
 
                 if (inPara.DispText)
@@ -115,9 +115,7 @@ namespace DotNet.HalconAlgo
         private void ClearResult()
         {
             HOperatorSet.GenEmptyObj(out HObject empty);
-            var previous = inPara.Result.HoRegion;
-            inPara.Result.HoRegion = empty;
-            previous?.Dispose();
+            inPara.Result.HoRegion = empty; // setter 释放旧句柄
             inPara.Coord = new CvCoord();
         }
 

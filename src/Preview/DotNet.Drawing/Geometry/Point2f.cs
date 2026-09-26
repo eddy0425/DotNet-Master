@@ -36,7 +36,7 @@ namespace DotNet.Drawing
 
         /// <summary>按坐标精确比较两个点。</summary>
         public bool Equals(Point2f other) => X.Equals(other.X) && Y.Equals(other.Y);
-        public override bool Equals(object? obj) => obj is Point2f other && Equals(other);
+        public override bool Equals(object obj) => obj is Point2f other && Equals(other);
         public override int GetHashCode() => unchecked(X.GetHashCode() * 397 ^ Y.GetHashCode());
         public static bool operator ==(Point2f left, Point2f right) => left.Equals(right);
         public static bool operator !=(Point2f left, Point2f right) => !left.Equals(right);

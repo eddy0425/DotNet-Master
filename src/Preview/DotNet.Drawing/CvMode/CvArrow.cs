@@ -31,12 +31,6 @@ namespace DotNet.Drawing
         /// 箭头头部角度（度数）
         /// </summary>
         public double HeadAngle { get; init; } = 30.0;
-
-        /// <summary>
-        /// 箭头样式
-        /// </summary>
-        public ArrowStyle Style { get; init; } = ArrowStyle.Open;
-
         /// <summary>
         /// 起点
         /// </summary>
@@ -61,31 +55,6 @@ namespace DotNet.Drawing
         /// 线段角度（度数）
         /// </summary>
         public double AngleDegrees => Line.AngleDegrees;
-
-        /// <summary>
-        /// 中点
-        /// </summary>
-        public Point2d MidPoint => Line.MidPoint;
-
-        /// <summary>
-        /// 方向向量
-        /// </summary>
-        public Point2d Direction => Line.Direction;
-
-        /// <summary>
-        /// 单位方向向量
-        /// </summary>
-        public Point2d UnitDirection => Line.UnitDirection;
-
-        /// <summary>
-        /// 箭头头部角度（弧度）
-        /// </summary>
-        public double HeadAngleRadians
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => HeadAngle * Math.PI / 180.0;
-        }
-
         #endregion
 
         #region Constructors
@@ -93,12 +62,11 @@ namespace DotNet.Drawing
         /// <summary>
         /// 从线段构造箭头
         /// </summary>
-        public CvArrow(CvLine line, double headSize = 10.0, double headAngle = 30.0, ArrowStyle style = ArrowStyle.Open)
+        public CvArrow(CvLine line, double headSize = 10.0, double headAngle = 30.0)
         {
             Line = line ?? throw new ArgumentNullException(nameof(line));
             HeadSize = headSize;
             HeadAngle = headAngle;
-            Style = style;
         }
 
         /// <summary>
@@ -139,142 +107,23 @@ namespace DotNet.Drawing
 
         #endregion
 
-        #region Head Points
-
-        /// <summary>
-        /// 获取箭头头部的两个端点
-        /// </summary>
-        /// <param name="left">左翼端点</param>
-        /// <param name="right">右翼端点</param>
-        public void GetHeadPoints(out Point2d left, out Point2d right)
-        {
-            double arrowAngle = Line.Angle;
-            double halfHeadAngle = HeadAngleRadians / 2;
-
-            // 计算左右两个箭头翼的端点
-            left = new Point2d(
-                End.X - HeadSize * Math.Cos(arrowAngle - halfHeadAngle),
-                End.Y - HeadSize * Math.Sin(arrowAngle - halfHeadAngle)
-            );
-
-            right = new Point2d(
-                End.X - HeadSize * Math.Cos(arrowAngle + halfHeadAngle),
-                End.Y - HeadSize * Math.Sin(arrowAngle + halfHeadAngle)
-            );
-        }
-
-        /// <summary>
-        /// 获取箭头头部左翼端点
-        /// </summary>
-        public Point2d HeadLeft
-        {
-            get
-            {
-                double arrowAngle = Line.Angle;
-                double halfHeadAngle = HeadAngleRadians / 2;
-                return new Point2d(
-                    End.X - HeadSize * Math.Cos(arrowAngle - halfHeadAngle),
-                    End.Y - HeadSize * Math.Sin(arrowAngle - halfHeadAngle)
-                );
-            }
-        }
-
-        /// <summary>
-        /// 获取箭头头部右翼端点
-        /// </summary>
-        public Point2d HeadRight
-        {
-            get
-            {
-                double arrowAngle = Line.Angle;
-                double halfHeadAngle = HeadAngleRadians / 2;
-                return new Point2d(
-                    End.X - HeadSize * Math.Cos(arrowAngle + halfHeadAngle),
-                    End.Y - HeadSize * Math.Sin(arrowAngle + halfHeadAngle)
-                );
-            }
-        }
-
-        /// <summary>
-        /// 获取箭头的所有关键点
-        /// </summary>
-        public Point2d[] GetAllPoints()
-        {
-            GetHeadPoints(out Point2d left, out Point2d right);
-            switch (Style)
-            {
-                case ArrowStyle.Open:
-                    return new[] { Start, End, left, End, right };
-                case ArrowStyle.Closed:
-                    return new[] { Start, End, left, right, End };
-                case ArrowStyle.Filled:
-                    return new[] { Start, End, left, right };
-                default:
-                    return new[] { Start, End, left, End, right };
-            }
-        }
-
-        #endregion
-
-        #region Containment Methods
-
-        /// <summary>
-        /// 判断点是否在线段上
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool ContainsPoint(Point2d point, double tolerance = 0.01)
-        {
-            return Line.ContainsPoint(point, tolerance);
-        }
-
-        /// <summary>
-        /// 计算点到箭头线段的距离
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public double DistanceToPoint(Point2d point)
-        {
-            return Line.DistanceToPoint(point);
-        }
-
-        #endregion
-
-        #region Transform Methods
-
-        /// <summary>
-        /// 反转箭头方向
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvArrow Reverse() => new(Line.Reverse(), HeadSize, HeadAngle, Style);
-
-        /// <summary>
-        /// 延长箭头
-        /// </summary>
-        public CvArrow Extend(double startExtension, double endExtension)
-        {
-            return new CvArrow(Line.Extend(startExtension, endExtension), HeadSize, HeadAngle, Style);
-        }
-
-        #endregion
-
         #region Equality
 
         /// <summary>
         /// 使用容差的相等性比较
         /// </summary>
-        public bool Equals(CvArrow? other)
+        public bool Equals(CvArrow other)
         {
             if (other is null) return false;
             return Line.Equals(other.Line) &&
                    MathHelper.AreEqualGeometric(HeadSize, other.HeadSize) &&
-                   MathHelper.AreEqual(HeadAngle, other.HeadAngle) &&
-                   Style == other.Style;
+                   MathHelper.AreEqual(HeadAngle, other.HeadAngle);
         }
 
         public override int GetHashCode() => HashCode.Combine(
             Line,
             MathHelper.QuantizeGeometric(HeadSize),
-            MathHelper.QuantizeToTolerance(HeadAngle),
-            Style);
+            MathHelper.QuantizeToTolerance(HeadAngle));
 
         #endregion
 
@@ -282,30 +131,9 @@ namespace DotNet.Drawing
 
         public override string ToString()
         {
-            return $"Arrow[{Start} → {End}, Length={Length:G6}, Head={HeadSize:G4}@{HeadAngle}°, Style={Style}]";
+            return $"Arrow[{Start} → {End}, Length={Length:G6}, Head={HeadSize:G4}@{HeadAngle}°]";
         }
 
         #endregion
-    }
-
-    /// <summary>
-    /// 箭头样式
-    /// </summary>
-    public enum ArrowStyle
-    {
-        /// <summary>
-        /// 开放式箭头（两条线）
-        /// </summary>
-        Open,
-
-        /// <summary>
-        /// 闭合式箭头（三角形轮廓）
-        /// </summary>
-        Closed,
-
-        /// <summary>
-        /// 实心箭头（填充三角形）
-        /// </summary>
-        Filled
     }
 }

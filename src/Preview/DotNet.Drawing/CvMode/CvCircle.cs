@@ -204,7 +204,7 @@ namespace DotNet.Drawing
         /// <summary>
         /// 从三点构造圆（三点确定一个圆）
         /// </summary>
-        public static CvCircle? FromThreePoints(Point2d p1, Point2d p2, Point2d p3)
+        public static CvCircle FromThreePoints(Point2d p1, Point2d p2, Point2d p3)
         {
             // 以 p1 为局部原点计算，避免判定阈值和中间平方项随整体坐标平移而变化。
             double ux = p2.X - p1.X;
@@ -230,68 +230,6 @@ namespace DotNet.Drawing
 
         #endregion
 
-        #region Containment Methods
-
-        /// <summary>
-        /// 判断点是否在圆周上（带容差）
-        /// </summary>
-        public bool IsOnCircumference(Point2d point, double tolerance = 0.01)
-        {
-            double distance = Distance(Center, point);
-            if (Math.Abs(distance - Radius) >= tolerance)
-                return false;
-
-            if (IsFullCircle)
-                return true;
-
-            double angle = Math.Atan2(point.Y - Center.Y, point.X - Center.X);
-            return IsAngleInArc(angle, StartPhi, EndPhi);
-        }
-
-        /// <summary>
-        /// 计算点到圆/圆弧的最短距离
-        /// </summary>
-        public double DistanceToPoint(Point2d point)
-        {
-            double distToCenter = Distance(Center, point);
-
-            if (IsFullCircle)
-            {
-                return Math.Abs(distToCenter - Radius);
-            }
-
-            // 计算点的角度
-            double angle = Math.Atan2(point.Y - Center.Y, point.X - Center.X);
-
-            if (IsAngleInArc(angle, StartPhi, EndPhi))
-            {
-                // 点在圆弧角度范围内
-                return Math.Abs(distToCenter - Radius);
-            }
-            else
-            {
-                // 点不在圆弧角度范围内，计算到两个端点的最短距离
-                return Math.Min(Distance(point, StartPoint), Distance(point, EndPoint));
-            }
-        }
-
-        #endregion
-
-        #region Transform Methods
-
-        /// <summary>
-        /// 反转圆弧方向
-        /// </summary>
-        public CvCircle ReverseArc() => new(Center, Radius, EndPhi, StartPhi);
-
-        /// <summary>
-        /// 转换为完整圆
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvCircle ToFullCircle() => new(Center, Radius);
-
-        #endregion
-
         #region Point2d Methods
 
         /// <summary>
@@ -306,96 +244,16 @@ namespace DotNet.Drawing
             );
         }
 
-        /// <summary>
-        /// 获取圆弧上指定参数的点
-        /// </summary>
-        /// <param name="t">参数 (0=StartPhi, 1=EndPhi)</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Point2d PointAt(double t)
-        {
-            double phi = StartPhi + t * (EndPhi - StartPhi);
-            return PointAtAngle(phi);
-        }
-
-        /// <summary>
-        /// 获取点在圆周上对应的角度
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public double AngleOfPoint(Point2d point)
-        {
-            return Math.Atan2(point.Y - Center.Y, point.X - Center.X);
-        }
-
-        /// <summary>
-        /// 获取圆周上等距分布的点
-        /// </summary>
-        /// <param name="count">点的数量</param>
-        /// <remarks>
-        /// 整圆：<c>span / count</c> 等分，不重复首尾（终点与起点重合）。
-        /// 圆弧：<c>span / (count - 1)</c> 等分，<b>包含起点和终点</b>；原实现同样用 <c>span / count</c>，
-        /// 圆弧的终点永远采不到。<paramref name="count"/> 为 1 时只返回起点。
-        /// </remarks>
-        public Point2d[] SamplePoints(int count)
-        {
-            if (count <= 0)
-                throw new ArgumentOutOfRangeException(nameof(count), "Count must be positive.");
-
-            var points = new Point2d[count];
-            double step;
-            if (IsFullCircle)
-                step = 2 * Math.PI / count;
-            else
-                step = count == 1 ? 0 : (EndPhi - StartPhi) / (count - 1);
-
-            for (int i = 0; i < count; i++)
-            {
-                double phi = StartPhi + i * step;
-                points[i] = PointAtAngle(phi);
-            }
-            return points;
-        }
-
         #endregion
 
-        #region Utility Methods
-
-        /// <summary>
-        /// 检查角度是否在圆弧范围内
-        /// </summary>
-        /// <remarks>
-        /// 角度范围约定为 [0, 2π)，统一使用 <see cref="MathHelper.NormalizeAnglePositive"/>。
-        /// </remarks>
-        private static bool IsAngleInArc(double angle, double startPhi, double endPhi)
-        {
-            angle = MathHelper.NormalizeAnglePositive(angle);
-            startPhi = MathHelper.NormalizeAnglePositive(startPhi);
-            endPhi = MathHelper.NormalizeAnglePositive(endPhi);
-
-            if (startPhi <= endPhi)
-            {
-                return angle >= startPhi && angle <= endPhi;
-            }
-            else
-            {
-                // 圆弧跨越 0 度
-                return angle >= startPhi || angle <= endPhi;
-            }
-        }
-
-        #endregion
-
-        private static double Distance(Point2d a, Point2d b)
-        {
-            var delta = a - b;
-            return Math.Sqrt(delta.X * delta.X + delta.Y * delta.Y);
-        }
+        private static double Distance(Point2d a, Point2d b) => MathHelper.Distance(a.X, a.Y, b.X, b.Y);
 
         #region Equality
 
         /// <summary>
         /// 使用容差的相等性比较
         /// </summary>
-        public bool Equals(CvCircle? other)
+        public bool Equals(CvCircle other)
         {
             if (other is null) return false;
             return Center.Equals(other.Center) &&

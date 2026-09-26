@@ -7,22 +7,10 @@ namespace DotNet.Drawing
 {
     public static class RegionExtension
     {
-        /// <summary>
-        /// 换入新句柄并释放旧句柄。
-        /// </summary>
-        /// <remarks>
-        /// 三步顺序不能调整：先换引用、后释放旧句柄。反过来（先 Dispose 再赋值）会留下
-        /// 一个 <c>HoRegion</c> 指向已释放对象的窗口 —— 与 C16 在 <c>HWindowImage</c> 修掉的是同一类问题。
-        /// <para>
-        /// 旧句柄用 <c>?.</c>：<see cref="CvRegion.Dispose"/> 之后 <see cref="CvRegion.HoRegion"/> 为 null，
-        /// 原来六处都是裸 <c>Dispose()</c>，对已释放的 <see cref="CvRegion"/> 调用本族方法必然 NRE。
-        /// </para>
-        /// </remarks>
+        /// <summary>换入新句柄；HoRegion 的 setter 负责释放旧句柄。</summary>
         private static void ReplaceHandle(CvRegion hRegion, HObject newHandle)
         {
-            var old = hRegion.HoRegion;
             hRegion.HoRegion = newHandle;
-            old?.Dispose();
         }
 
         /// <summary>
@@ -139,7 +127,7 @@ namespace DotNet.Drawing
         /// 设置区域中心点，并保持当前宽高不变
         /// </summary>
         /// <param name="center">新的中心点</param>
-        public static void SetCenter(this CvRegion hRegion, Point2d center)
+        internal static void SetCenter(this CvRegion hRegion, Point2d center)
         {
             Point2d location = new Point2d(center.X - hRegion.Width / 2, center.Y - hRegion.Height / 2);
             hRegion.Bounds = new Rect2d(location, hRegion.Size);
@@ -158,17 +146,6 @@ namespace DotNet.Drawing
         }
 
         /// <summary>
-        /// 通过左上角和尺寸设置区域矩形
-        /// </summary>
-        /// <param name="topLeft">左上角</param>
-        /// <param name="size">矩形尺寸</param>
-        public static void SetRectByTopLeft(this CvRegion hRegion, Point2d topLeft, Size2d size)
-        {
-            var rect = new Rect2d(topLeft, size);
-            hRegion.Bounds = rect;
-        }
-      
-        /// <summary>
         /// 通过左上角和右下角设置区域矩形
         /// </summary>
         /// <param name="topLeft">左上角</param>
@@ -185,19 +162,6 @@ namespace DotNet.Drawing
         }
 
         /// <summary>
-        /// 通过左上角坐标和宽高设置区域矩形
-        /// </summary>
-        /// <param name="x">左上角 X 坐标</param>
-        /// <param name="y">左上角 Y 坐标</param>
-        /// <param name="width">矩形宽度</param>
-        /// <param name="height">矩形高度</param>
-        public static void SetRect(this CvRegion hRegion, double x, double y, double width, double height)
-        {
-            var rect = new Rect2d(x, y, width, height);
-            hRegion.Bounds = rect;
-        }
-
-        /// <summary>
         /// 通过 Halcon 左上角和右下角的行列坐标设置区域矩形
         /// </summary>
         /// <param name="row1">左上角行坐标</param>
@@ -209,26 +173,5 @@ namespace DotNet.Drawing
             var rect = new Rect2d(row1, column1, row2, column2);
             hRegion.Bounds = rect;
         }
-
-        /// <summary>
-        /// 从指定区域复制位置、尺寸和 Halcon 区域对象
-        /// </summary>
-        /// <param name="hRegion">要更新的目标区域</param>
-        /// <param name="inRegion">提供数据的源区域</param>
-        public static void CopyFrom(this CvRegion hRegion, CvRegion inRegion)
-        {
-            if (hRegion == null || inRegion == null) return;
-            if (ReferenceEquals(hRegion, inRegion)) return; // 自拷贝：无需换句柄
-
-            hRegion.Bounds = inRegion.Bounds;
-
-            // Dispose() 后 HoRegion 会置 null，这里补空并保持"HoRegion 非空"的不变式
-            HObject cloned;
-            if (inRegion.HoRegion.NotNull()) cloned = inRegion.HoRegion.Clone();
-            else HOperatorSet.GenEmptyObj(out cloned);
-
-            ReplaceHandle(hRegion, cloned);
-        }
-
     }
 }

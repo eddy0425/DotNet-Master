@@ -22,8 +22,8 @@ namespace DotNet.Drawing.Tests
         [TestMethod]
         public void ExtractNumber_Null_ReturnsZero()
         {
-            Assert.AreEqual(0, ((string)null!).ExtractNumber());
-            Assert.AreEqual(string.Empty, ((string)null!).ExtractNumberAsString());
+            Assert.AreEqual(0, ((string)null).ExtractNumber());
+            Assert.AreEqual(string.Empty, ((string)null).ExtractNumberAsString());
         }
 
         [DataTestMethod]

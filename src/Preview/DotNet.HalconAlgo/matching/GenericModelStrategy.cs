@@ -71,7 +71,7 @@ namespace DotNet.HalconAlgo
                 HObject ho_Rect;
                 if (useLocalRegion)
                 {
-                    HObject? localRegion = inPara.HoRect.HoRegion;
+                    HObject localRegion = inPara.HoRect.HoRegion;
 
                     // 上游路径的空句柄已由 ResolveRegionFrom 拦下; 本地配置 ROI 不经过它, 需在此补同一层判断,
                     // 否则未绘制 ROI 时 CountObj() 为 0, 下面的循环一次都不进, 静默跑出 0 个结果。
@@ -440,7 +440,7 @@ namespace DotNet.HalconAlgo
         /// <summary> 模板ID </summary>
         /// <remarks>可空：模板尚未创建、或参数变更后被主动置 null（见 CreateModel），调用点一律先判
         /// <c>ModelID == null || ModelID.Length == 0</c> 再用。</remarks>
-        public HTuple? ModelID { get; set; }
+        public HTuple ModelID { get; set; }
 
         /// <summary> 起始角度 </summary>
         public HTuple AngleStart { get; set; } = -90;

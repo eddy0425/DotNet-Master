@@ -75,7 +75,7 @@ namespace DotNet.HalconUI
         /// <summary>
         /// 同上, 额外允许在 Add 之前配置 Binding (例如挂 Format/Parse 做类型转换).
         /// </summary>
-        internal static void AddPropertyBinding(Control con, string controlProperty, VsControlModel vm, string vmProperty, Action<Binding>? configure)
+        internal static void AddPropertyBinding(Control con, string controlProperty, VsControlModel vm, string vmProperty, Action<Binding> configure)
         {
             for (int i = con.DataBindings.Count - 1; i >= 0; i--)
             {
@@ -94,7 +94,7 @@ namespace DotNet.HalconUI
         /// 即使 "new 新 VM (已 Bind) -> Replace 字典 -> Dispose 旧 VM" 的执行顺序下,
         /// 新 VM 刚加上的 Binding 也不会被误删 (旧 Binding 在 AddPropertyBinding 中已被同名移除).
         /// </summary>
-        internal static void RemoveBindingsBySource(Control? con, VsControlModel source)
+        internal static void RemoveBindingsBySource(Control con, VsControlModel source)
         {
             if (con == null) return;
             for (int i = con.DataBindings.Count - 1; i >= 0; i--)

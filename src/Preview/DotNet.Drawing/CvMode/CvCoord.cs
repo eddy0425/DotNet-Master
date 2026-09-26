@@ -135,126 +135,6 @@ namespace DotNet.Drawing
 
         #endregion
 
-        #region Transform Methods
-
-        /// <summary>
-        /// 沿当前方向平移
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvCoord TranslateForward(double distance)
-        {
-            Point2d dir = Angle.Direction;
-            return new CvCoord(X + distance * dir.X, Y + distance * dir.Y, Angle);
-        }
-
-        /// <summary>
-        /// 沿垂直方向平移（正值向左）
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvCoord TranslateSideways(double distance)
-        {
-            Point2d perp = (Angle + Angle.FromRadians(Math.PI / 2)).Direction;
-            return new CvCoord(X + distance * perp.X, Y + distance * perp.Y, Angle);
-        }
-
-        /// <summary>
-        /// 将点从世界坐标转换到局部坐标
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Point2d WorldToLocal(Point2d worldPoint)
-        {
-            double dx = worldPoint.X - X;
-            double dy = worldPoint.Y - Y;
-            double cos = Math.Cos(-Angle.Radians);
-            double sin = Math.Sin(-Angle.Radians);
-            return new Point2d(dx * cos - dy * sin, dx * sin + dy * cos);
-        }
-
-        /// <summary>
-        /// 将点从局部坐标转换到世界坐标
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Point2d LocalToWorld(Point2d localPoint)
-        {
-            double cos = Math.Cos(Angle.Radians);
-            double sin = Math.Sin(Angle.Radians);
-            return new Point2d(
-                X + localPoint.X * cos - localPoint.Y * sin,
-                Y + localPoint.X * sin + localPoint.Y * cos
-            );
-        }
-
-        /// <summary>
-        /// 组合两个坐标系变换
-        /// </summary>
-        public CvCoord Compose(CvCoord other)
-        {
-            Point2d newCenter = LocalToWorld(other.Center);
-            return new CvCoord(newCenter.X, newCenter.Y, Angle + other.Angle);
-        }
-
-        /// <summary>
-        /// 获取逆变换
-        /// </summary>
-        /// <remarks>
-        /// 由 X / Y / Angle 推导, 只读; 必须标 JsonIgnore —— 它本身又是 CvCoord, 序列化会一层层往下钻,
-        /// 逆的逆约等于自身, 只能靠 Newtonsoft 的循环引用检测收住(<c>JsonOptions.IgnoreReferenceLoop</c>
-        /// 默认 true 才不抛). 换成默认设置的 <c>SerializeConvert.ToJson</c> 就会直接报
-        /// "Self referencing loop detected"。
-        /// </remarks>
-        [JsonIgnore]
-        public CvCoord Inverse
-        {
-            get
-            {
-                double cos = Math.Cos(-Angle.Radians);
-                double sin = Math.Sin(-Angle.Radians);
-                return new CvCoord(
-                    -X * cos + Y * sin,
-                    -X * sin - Y * cos,
-                    -Angle
-                );
-            }
-        }
-
-        #endregion
-
-        #region Utility Methods
-
-        /// <summary>
-        /// 计算到另一个坐标系的距离
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public double DistanceTo(CvCoord other)
-        {
-            double dx = X - other.X;
-            double dy = Y - other.Y;
-            return Math.Sqrt(dx * dx + dy * dy);
-        }
-
-        /// <summary>
-        /// 计算与另一个坐标系的角度差
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Angle AngleDifferenceTo(CvCoord other)
-        {
-            return (other.Angle - Angle).Normalized;
-        }
-
-        /// <summary>
-        /// 线性插值
-        /// </summary>
-        public CvCoord Lerp(CvCoord other, double t)
-        {
-            return new CvCoord(
-                X + (other.X - X) * t,
-                Y + (other.Y - Y) * t,
-                Angle + Angle.DifferenceTo(other.Angle) * t
-            );
-        }
-
-        #endregion
-
         #region Equality
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -265,7 +145,7 @@ namespace DotNet.Drawing
                    Angle.Equals(other.Angle);
         }
 
-        public override bool Equals(object? obj) => obj is CvCoord other && Equals(other);
+        public override bool Equals(object obj) => obj is CvCoord other && Equals(other);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode() => HashCode.Combine(

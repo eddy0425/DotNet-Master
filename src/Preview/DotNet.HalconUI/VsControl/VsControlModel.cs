@@ -24,9 +24,9 @@ namespace DotNet.HalconUI
         private bool _disposed;
 
         // 可空: TrackBar 之外的构造路径可能传进 null 文本, 且下面每个 AsXxx 读取器都已按「可能为 null」写过。
-        private object? _value;
+        private object _value;
         // 控件主属性: TabPage/TextBox/ComboBox -> string, CheckBox/RadioButton -> bool, TrackBar -> int.
-        public object? Value { get { return _value; } set { SetField(ref _value, value); } }
+        public object Value { get { return _value; } set { SetField(ref _value, value); } }
         public string Name { get; }
         public string Type { get; }
 
@@ -49,8 +49,8 @@ namespace DotNet.HalconUI
         public bool DropDownStyle { get { return _dropDownStyle; } set { SetField(ref _dropDownStyle, value); } }
 
         // Items 防御性拷贝, 避免外部数组在 VM 生命期内被改写.
-        private string[]? _items;
-        public string[]? Items
+        private string[] _items;
+        public string[] Items
         {
             get { return _items == null ? null : (string[])_items.Clone(); }
             set { _items = value == null ? null : (string[])value.Clone(); }
@@ -58,18 +58,18 @@ namespace DotNet.HalconUI
 
         // 绑定时由策略写入的 Control 引用. 让 Dispose 时直接解绑, 不必再走 Form 反射,
         // 这样即便 Form 已经先一步 Dispose 也能安全解绑.
-        private Control? _boundControl;
-        internal Control? BoundControl { get { return _boundControl; } }
+        private Control _boundControl;
+        internal Control BoundControl { get { return _boundControl; } }
         internal void AttachControl(Control control) { _boundControl = control; }
 
 
-        public event PropertyChangedEventHandler? PropertyChanged;
-        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        public event PropertyChangedEventHandler PropertyChanged;
+        private void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             var handler = PropertyChanged;
             if (handler != null) handler(this, new PropertyChangedEventArgs(propertyName));
         }
-        private void SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+        private void SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
         {
             if (EqualityComparer<T>.Default.Equals(field, value)) return;
             field = value;
@@ -106,7 +106,7 @@ namespace DotNet.HalconUI
         }
 
         /// <summary>ComboBox</summary>
-        public VsControlModel(Control form, string name, string type, string text, bool visible, bool enabled, bool dropDownStyle, string[]? items)
+        public VsControlModel(Control form, string name, string type, string text, bool visible, bool enabled, bool dropDownStyle, string[] items)
             : this(form, name, type)
         {
             _value = text;

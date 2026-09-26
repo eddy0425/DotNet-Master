@@ -132,16 +132,8 @@ namespace DotNet.Drawing.Tests
         {
             Assert.IsTrue(MathHelper.AreEqual(1.0, 1.0 + 1e-12));
             Assert.IsFalse(MathHelper.AreEqual(1.0, 1.0 + 1e-6));
-            Assert.IsTrue(MathHelper.AreEqual(1.0, 1.05, 0.1));
             Assert.IsTrue(MathHelper.IsZero(1e-12));
             Assert.IsFalse(MathHelper.IsZero(1e-3));
-            Assert.IsTrue(MathHelper.IsZero(1e-3, 1e-2));
-            Assert.IsTrue(MathHelper.IsPositive(1e-6));
-            Assert.IsFalse(MathHelper.IsPositive(1e-12));
-            Assert.IsTrue(MathHelper.IsNegative(-1e-6));
-            Assert.AreEqual(0, MathHelper.Sign(1e-12));
-            Assert.AreEqual(-1, MathHelper.Sign(-2));
-            Assert.AreEqual(1, MathHelper.Sign(3));
         }
 
         [TestMethod]
@@ -149,64 +141,18 @@ namespace DotNet.Drawing.Tests
         {
             Assert.IsTrue(double.IsNaN(MathHelper.QuantizeToTolerance(double.NaN)));
             Assert.AreEqual(1.23456, MathHelper.QuantizeToTolerance(1.23456, 0));
-            Assert.AreEqual(MathHelper.TolerantHash(1.0), MathHelper.TolerantHash(1.0 + 1e-12));
+            Assert.AreEqual(MathHelper.QuantizeToTolerance(1.0), MathHelper.QuantizeToTolerance(1.0 + 1e-12));
         }
 
         #endregion
 
-        #region 取整 / 插值 / 几何
+        #region 几何
 
         [TestMethod]
-        public void ClampFamily()
-        {
-            Assert.AreEqual(0.0, MathHelper.Clamp(-1.0, 0.0, 10.0));
-            Assert.AreEqual(10.0, MathHelper.Clamp(11.0, 0.0, 10.0));
-            Assert.AreEqual(5, MathHelper.Clamp(5, 0, 10));
-            Assert.AreEqual(0, MathHelper.Clamp(-5, 0, 10));
-            Assert.AreEqual(1.0, MathHelper.Clamp01(3.0));
-            Assert.AreEqual(0.0, MathHelper.Clamp01(-3.0));
-        }
-
-        [TestMethod]
-        public void RoundingIsAwayFromZero()
-        {
-            Assert.AreEqual(0.13, MathHelper.Round(0.125, 2));
-            Assert.AreEqual(3, MathHelper.RoundToPixel(2.5));
-            Assert.AreEqual(-3, MathHelper.RoundToPixel(-2.5));
-            Assert.AreEqual(3, MathHelper.CeilToPixel(2.1));
-            Assert.AreEqual(2, MathHelper.FloorToPixel(2.9));
-        }
-
-        [TestMethod]
-        public void Interpolation()
-        {
-            Geom.AreClose(2.5, MathHelper.Lerp(0, 10, 0.25));
-            Geom.AreClose(0.25, MathHelper.InverseLerp(0, 10, 2.5));
-            Assert.AreEqual(0.0, MathHelper.InverseLerp(3, 3, 100), "退化区间返回 0 而不是除零");
-            Geom.AreClose(150, MathHelper.Map(5, 0, 10, 100, 200));
-        }
-
-        [TestMethod]
-        public void SmoothStepBetween_ReturnsUnitWeight()
-        {
-            Geom.AreClose(0.5, MathHelper.SmoothStepBetween(0, 1, 0.5));
-            Assert.AreEqual(0.0, MathHelper.SmoothStepBetween(10, 20, 5));
-            Assert.AreEqual(1.0, MathHelper.SmoothStepBetween(10, 20, 25));
-            Assert.AreEqual(0.0, MathHelper.SmoothStepBetween(3, 3, 2));
-            Assert.AreEqual(1.0, MathHelper.SmoothStepBetween(3, 3, 3));
-        }
-
-        [TestMethod]
-        public void VectorHelpers()
+        public void Distance_UsesEuclideanMetric()
         {
             Geom.AreClose(5, MathHelper.Distance(0, 0, 3, 4));
-            Geom.AreClose(25, MathHelper.DistanceSquared(0, 0, 3, 4));
-            Geom.AreClose(5, MathHelper.Magnitude(3, 4));
-            Geom.AreClose(25, MathHelper.MagnitudeSquared(3, 4));
-            Geom.AreClose(11, MathHelper.Dot(1, 2, 3, 4));
-            Geom.AreClose(-2, MathHelper.Cross(1, 2, 3, 4));
-            Assert.AreEqual(3.0, MathHelper.Max(1, 3, 2));
-            Assert.AreEqual(1.0, MathHelper.Min(2, 1, 3));
+            Geom.AreClose(5, MathHelper.Distance(3, 4, 0, 0));
         }
 
         #endregion

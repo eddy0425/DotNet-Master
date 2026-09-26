@@ -38,9 +38,9 @@ namespace DotNet.HalconUI
         /// 原为公开委托字段：外部可以直接整体覆盖（丢掉别人的订阅），也可以替本控件触发。
         /// 改成 event 后外部只能 += / -=，触发权保留在本类内部。
         /// </remarks>
-        public event ShowDelegate? OnShow;
-        public event EventHandler<DrawModelUIArgs>? DrawDoneEvent;
-        public void DrawDone(string modelPath, HObject? ho_ModeRect, HObject? ho_Contour, ModelResult result)
+        public event ShowDelegate OnShow;
+        public event EventHandler<DrawModelUIArgs> DrawDoneEvent;
+        public void DrawDone(string modelPath, HObject ho_ModeRect, HObject ho_Contour, ModelResult result)
         {
             DrawDoneEvent?.Invoke(this, new DrawModelUIArgs(modelPath, ho_ModeRect, ho_Contour, result));
         }
@@ -128,7 +128,7 @@ namespace DotNet.HalconUI
         /// ——后者会把事件转发给本窗口当前的 <c>DrawHelper</c> 绘制会话，属于行为变更。
         /// </para>
         /// </remarks>
-        private IMouseHandler? ResolveMouseHandler()
+        private IMouseHandler ResolveMouseHandler()
         {
             switch (_drawType)
             {
@@ -238,7 +238,7 @@ namespace DotNet.HalconUI
             dispRect.SetUp(Display, shrRegion);
         }
 
-        public void SetModelPara(HObject? shrFindMode, HObject? shrContour, CvCoord shrCoord)
+        public void SetModelPara(HObject shrFindMode, HObject shrContour, CvCoord shrCoord)
         {
             Reset();
             ReDispImage();

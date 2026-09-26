@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using DotNet.Drawing.Internal;
 
 namespace DotNet.Drawing
@@ -8,14 +9,15 @@ namespace DotNet.Drawing
     public readonly struct Size2d : IEquatable<Size2d>
     {
         /// <summary>宽度</summary>
-        public double Width { get; init; }
+        public double Width { get; }
 
         /// <summary>高度</summary>
-        public double Height { get; init; }
+        public double Height { get; }
 
         /// <summary>用宽、高构造尺寸。</summary>
         /// <param name="width">非负宽度</param>
         /// <param name="height">非负高度</param>
+        [JsonConstructor]
         public Size2d(double width, double height)
         {
             if (width < 0) throw new ArgumentOutOfRangeException(nameof(width), "Width must be non-negative.");
@@ -48,7 +50,7 @@ namespace DotNet.Drawing
         /// <summary>使用几何容差比较宽、高。</summary>
         public bool Equals(Size2d other) =>
             MathHelper.AreEqualGeometric(Width, other.Width) && MathHelper.AreEqualGeometric(Height, other.Height);
-        public override bool Equals(object? obj) => obj is Size2d other && Equals(other);
+        public override bool Equals(object obj) => obj is Size2d other && Equals(other);
         public override int GetHashCode() => HashCode.Combine(
             MathHelper.QuantizeGeometric(Width), MathHelper.QuantizeGeometric(Height));
         public static bool operator ==(Size2d left, Size2d right) => left.Equals(right);

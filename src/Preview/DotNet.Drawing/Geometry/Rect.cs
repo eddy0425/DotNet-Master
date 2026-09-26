@@ -47,7 +47,7 @@ namespace DotNet.Drawing
 
         /// <summary>按四个分量精确比较矩形。</summary>
         public bool Equals(Rect other) => X == other.X && Y == other.Y && Width == other.Width && Height == other.Height;
-        public override bool Equals(object? obj) => obj is Rect other && Equals(other);
+        public override bool Equals(object obj) => obj is Rect other && Equals(other);
         public override int GetHashCode() => unchecked(((X * 397 ^ Y) * 397 ^ Width) * 397 ^ Height);
         public static bool operator ==(Rect left, Rect right) => left.Equals(right);
         public static bool operator !=(Rect left, Rect right) => !left.Equals(right);

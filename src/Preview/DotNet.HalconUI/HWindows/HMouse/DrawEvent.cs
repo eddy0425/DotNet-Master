@@ -11,7 +11,7 @@ namespace DotNet.HalconUI
 
     public class DrawModelUIArgs : EventArgs
     {
-        public DrawModelUIArgs(string modelPath, HObject? ho_ModeRect, HObject? ho_Contour, ModelResult result)
+        public DrawModelUIArgs(string modelPath, HObject ho_ModeRect, HObject ho_Contour, ModelResult result)
         {
             ModelPath = modelPath;
             HoModeRect = ho_ModeRect;
@@ -28,11 +28,11 @@ namespace DotNet.HalconUI
         /// 也不应在处理函数返回后继续持有——策略重建模板时会释放它。需要保留请自行复制
         /// （现有订阅方均经 <c>TransObject</c> 生成新对象）。
         /// </remarks>
-        public HObject? HoModeRect { get; }
+        public HObject HoModeRect { get; }
 
         /// <summary> 模版轮廓 </summary>
         /// <remarks> 借用引用，所有权约定同 <see cref="HoModeRect"/>。 </remarks>
-        public HObject? HoContour { get; }
+        public HObject HoContour { get; }
 
         /// <summary> 匹配结果 </summary>
         public ModelResult Result { get; }

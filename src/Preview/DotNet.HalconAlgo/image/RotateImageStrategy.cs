@@ -61,11 +61,9 @@ namespace DotNet.HalconAlgo
 
                     double baseRow = hCoord.Y;
                     double baseCol = hCoord.X;
-                    // CvCoord.Angle 已是弧度，统一以度数做归一化与逻辑处理
-                    double baseAglDeg = hCoord.AngleDegrees;
-
-                    // 统一走 MathHelper 的归一化, 不再手写 %360 三段式 (原写法在 ±180 处的取舍不明确)
-                    baseAglDeg = MathHelper.NormalizeAngleDegrees(baseAglDeg);
+                    // 先用 Angle.Normalized 归一化到 [-π, π)，再换算成度数做逻辑处理,
+                    // 不再手写 %360 三段式 (原写法在 ±180 处的取舍不明确)
+                    double baseAglDeg = hCoord.Angle.Normalized.Degrees;
 
                     switch (inPara.RotateType)
                     {

@@ -26,7 +26,7 @@ namespace DotNet.Vision.Abstractions
     public interface ITreeBranch
     {
         /// <summary> 添加一个子节点 </summary>
-        ITreeBranch Node(string text, OutEnum type, Action<ITreeBranch>? config = null);
+        ITreeBranch Node(string text, OutEnum type, Action<ITreeBranch> config = null);
 
         /// <summary> 添加一个嵌套分支节点 </summary>
         ITreeBranch Branch(string text, Action<ITreeBranch> config);

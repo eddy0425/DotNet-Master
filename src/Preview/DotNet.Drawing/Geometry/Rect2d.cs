@@ -47,14 +47,17 @@ namespace DotNet.Drawing
         /// <param name="column2">右边界列坐标</param>
         public Rect2d(HTuple row1, HTuple column1, HTuple row2, HTuple column2)
         {
-            if (row1 == null || column1 == null || row2 == null || column2 == null)
-                throw new ArgumentNullException("HTuple arguments cannot be null.");
+            if (row1 == null) throw new ArgumentNullException(nameof(row1));
+            if (column1 == null) throw new ArgumentNullException(nameof(column1));
+            if (row2 == null) throw new ArgumentNullException(nameof(row2));
+            if (column2 == null) throw new ArgumentNullException(nameof(column2));
             X = column1.D;
             Y = row1.D;
             Width = column2.D - column1.D;
             Height = row2.D - row1.D;
             if (Width < 0 || Height < 0)
-                throw new ArgumentOutOfRangeException("Width and Height must be non-negative.");
+                throw new ArgumentOutOfRangeException(Width < 0 ? nameof(column2) : nameof(row2),
+                    "Width and Height must be non-negative.");
         }
 
         /// <summary>按点的分量平移矩形。</summary>
@@ -63,20 +66,21 @@ namespace DotNet.Drawing
         public static Rect2d operator -(Rect2d rect, Point2d point) => new(rect.X - point.X, rect.Y - point.Y, rect.Width, rect.Height);
         /// <summary>增加矩形的宽、高，左上角不变。</summary>
         public static Rect2d operator +(Rect2d rect, Size2d size) => new(rect.X, rect.Y, rect.Width + size.Width, rect.Height + size.Height);
-        /// <summary>减少矩形的宽、高，结果为负时由构造函数拒绝。</summary>
-        public static Rect2d operator -(Rect2d rect, Size2d size) => new(rect.X, rect.Y, rect.Width - size.Width, rect.Height - size.Height);
+        /// <summary>减少矩形的宽、高，负的分量截断为零（与 <see cref="Size2d"/> 相减一致）。</summary>
+        public static Rect2d operator -(Rect2d rect, Size2d size) =>
+            new(rect.X, rect.Y, Math.Max(0, rect.Width - size.Width), Math.Max(0, rect.Height - size.Height));
 
         /// <summary>使用几何容差比较四个矩形分量。</summary>
-        public bool Equals(Rect2d? other) =>
+        public bool Equals(Rect2d other) =>
             other is not null && (ReferenceEquals(this, other) ||
             (MathHelper.AreEqualGeometric(X, other.X) && MathHelper.AreEqualGeometric(Y, other.Y) &&
              MathHelper.AreEqualGeometric(Width, other.Width) && MathHelper.AreEqualGeometric(Height, other.Height)));
-        public override bool Equals(object? obj) => obj is Rect2d other && Equals(other);
+        public override bool Equals(object obj) => obj is Rect2d other && Equals(other);
         public override int GetHashCode() => HashCode.Combine(
             MathHelper.QuantizeGeometric(X), MathHelper.QuantizeGeometric(Y),
             MathHelper.QuantizeGeometric(Width), MathHelper.QuantizeGeometric(Height));
-        public static bool operator ==(Rect2d? left, Rect2d? right) =>
+        public static bool operator ==(Rect2d left, Rect2d right) =>
             ReferenceEquals(left, right) || (left is not null && left.Equals(right));
-        public static bool operator !=(Rect2d? left, Rect2d? right) => !(left == right);
+        public static bool operator !=(Rect2d left, Rect2d right) => !(left == right);
     }
 }
