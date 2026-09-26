@@ -217,6 +217,21 @@ namespace DotNet.HalconAlgo.Tests
         }
 
         [TestMethod]
+        public void UnknownTransition_ThrowsClearError_ResetsPreviousLine()
+        {
+            Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of()));
+
+            // job 文件里手改 / 旧版本留下的非法值: 必须报出配置错误, 而不是 HALCON 原生异常
+            _strategy.inPara.Transition = "未知";
+            var ex = Assert.ThrowsException<ArgumentException>(() => _strategy.Fun_action(_display, Strategies.Of()));
+            StringAssert.Contains(ex.Message, "过渡方向");
+            StringAssert.Contains(ex.Message, "未知", "报错要带出写错的原值");
+            StringAssert.Contains(ex.Message, _strategy.Name, "报错要带出工具名");
+
+            Assert.IsTrue(_strategy.inPara.Line.IsDegenerate);
+        }
+
+        [TestMethod]
         public void NoImage_ResetsPreviousLine()
         {
             Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of()));

@@ -34,6 +34,27 @@ namespace DotNet.HalconAlgo.Tests
             Assert.ThrowsException<ArgumentNullException>(() => EdgeMeasurePipeline.Run(null, Setup("positive", "first")));
         }
 
+        [DataTestMethod]
+        [DataRow("")]
+        [DataRow(null)]
+        [DataRow("rising")]
+        public void Setup_UnknownTransition_Throws(string transition)
+        {
+            // 过渡方向只有 positive / negative / all 三个合法值; 非法值原先原样传给 measure_pos,
+            // 报出 HALCON #1302 这种与配置错误无关的原生异常, 现场无从定位
+            var ex = Assert.ThrowsException<ArgumentException>(() => Setup(transition, "first"));
+            StringAssert.Contains(ex.Message, "过渡方向");
+        }
+
+        [DataTestMethod]
+        [DataRow("positive")]
+        [DataRow("negative")]
+        [DataRow("all")]
+        public void Setup_ValidTransition_IsKept(string transition)
+        {
+            Assert.AreEqual(transition, Setup(transition, "first").Transition);
+        }
+
         [TestMethod]
         public void Run_StepCountAndRectCenters()
         {

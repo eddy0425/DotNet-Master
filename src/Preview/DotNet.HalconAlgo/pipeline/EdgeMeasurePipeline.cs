@@ -70,6 +70,10 @@ namespace DotNet.HalconAlgo
             // 界面"滤波"下拉提供 0（本意是"不平滑"），原样传给 measure_pos 会抛 #1302；钳到允许的最小值
             Sigma = Math.Max(sigma, MinSigma);
             Threshold = threshold;
+            // 非法值（job 手改 / 旧版本残留，GetTransition 翻译出 ""）原样传给 measure_pos 会抛 #1302，
+            // 与配置错误的真实原因无关；在此报出明确的配置错误
+            if (transition != "positive" && transition != "negative" && transition != "all")
+                throw new ArgumentException($"过渡方向无效: '{transition}'，应为 positive / negative / all", nameof(transition));
             Transition = transition;
 
             // 一律取全部再按下标挑：measure_pos 忽略定义域，first / last 挑中的可能是域外的边，

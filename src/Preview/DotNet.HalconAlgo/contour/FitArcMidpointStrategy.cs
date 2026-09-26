@@ -180,6 +180,10 @@ namespace DotNet.HalconAlgo
                 #region 边缘查找
                 HOperatorSet.GetImageSize(ho_Image, out HTuple imgWid, out HTuple imgHei);
 
+                // 翻译结果为空说明配置值非法; 在这里带上原值与工具名报错, 管线里的校验只是兜底
+                if (inPara.GetTransition.Length == 0)
+                    throw new ArgumentException($"{Name} : 过渡方向无效: '{inPara.Transition}'，应为 由黑到白 / 由白到黑 / 全部");
+
                 var setup = new EdgeMeasureSetup(
                     fixCenter,
                     fixPhi,

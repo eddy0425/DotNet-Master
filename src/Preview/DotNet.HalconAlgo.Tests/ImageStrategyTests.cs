@@ -115,6 +115,50 @@ namespace DotNet.HalconAlgo.Tests
             Assert.AreEqual(40, h);
         }
 
+        /// <summary>40×30 暗图, 左上角 (0,0) 一个亮像素, 写成 1.bmp。</summary>
+        private void WriteCornerDotImage()
+        {
+            using (var dark = ConstImage(40, 30, 0))
+            using (var dot = Rectangle1(0, 0, 0, 0))
+            using (var img = Paint(dark, dot, 255))
+            {
+                HOperatorSet.WriteImage(img, "bmp", 0, Path.Combine(_dir, "1"));
+            }
+        }
+
+        [DataTestMethod]
+        // rotate_image 按度数逆时针旋转; 90 / 270 宽高互换, 180 不变
+        [DataRow(90, 30, 40, 39, 0)]
+        [DataRow(180, 40, 30, 29, 39)]
+        [DataRow(270, 30, 40, 0, 29)]
+        public void Rotate_CounterClockwise_PixelMapping(int deg, int expW, int expH, int brightRow, int brightCol)
+        {
+            WriteCornerDotImage();
+            _strategy.inPara.Rotate = deg;
+
+            Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of()));
+
+            ImageSize(_strategy.inPara.Image, out int w, out int h);
+            Assert.AreEqual(expW, w);
+            Assert.AreEqual(expH, h);
+            Assert.AreEqual(255, GrayAt(_strategy.inPara.Image, brightRow, brightCol));
+        }
+
+        [TestMethod]
+        public void RotateThenMirror_AppliedInThatOrder()
+        {
+            // 先转 90°: 亮点 (0,0) → (39,0), 图变 30×40; 再行镜像 → (0,0)。
+            // 若先镜像后旋转会落到 (39,29), 以此钉住处理顺序
+            WriteCornerDotImage();
+            _strategy.inPara.Rotate = 90;
+            _strategy.inPara.Mirror = "行镜像";
+
+            Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of()));
+
+            Assert.AreEqual(255, GrayAt(_strategy.inPara.Image, 0, 0));
+            Assert.AreEqual(0, GrayAt(_strategy.inPara.Image, 39, 29));
+        }
+
         [DataTestMethod]
         [DataRow("行镜像", 29, 0)]
         [DataRow("列镜像", 0, 39)]
@@ -123,12 +167,7 @@ namespace DotNet.HalconAlgo.Tests
         public void Mirror(string mode, int brightRow, int brightCol)
         {
             // 左上角单个亮像素，镜像后落到对应角
-            using (var dark = ConstImage(40, 30, 0))
-            using (var dot = Rectangle1(0, 0, 0, 0))
-            using (var img = Paint(dark, dot, 255))
-            {
-                HOperatorSet.WriteImage(img, "bmp", 0, Path.Combine(_dir, "1"));
-            }
+            WriteCornerDotImage();
             _strategy.inPara.Mirror = mode;
 
             Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of()));

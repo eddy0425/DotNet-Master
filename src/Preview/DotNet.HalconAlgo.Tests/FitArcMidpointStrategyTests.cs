@@ -223,6 +223,20 @@ namespace DotNet.HalconAlgo.Tests
         }
 
         [TestMethod]
+        public void UnknownTransition_ThrowsClearError_ResetsPreviousMidpoint()
+        {
+            Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of()));
+
+            _strategy.inPara.Transition = "未知";
+            var ex = Assert.ThrowsException<ArgumentException>(() => _strategy.Fun_action(_display, Strategies.Of()));
+            StringAssert.Contains(ex.Message, "过渡方向");
+            StringAssert.Contains(ex.Message, "未知", "报错要带出写错的原值");
+            StringAssert.Contains(ex.Message, _strategy.Name, "报错要带出工具名");
+
+            Assert.AreEqual(default(Point2d), _strategy.inPara.ArcMidpoint);
+        }
+
+        [TestMethod]
         public void ImageIn_ResolvesUpstreamImage()
         {
             _strategy.inPara.ImageIn = "取像/图像";
