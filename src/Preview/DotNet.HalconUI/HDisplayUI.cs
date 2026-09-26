@@ -130,7 +130,7 @@ namespace DotNet.HalconUI
         /// ——后者会把事件转发给本窗口当前的 <c>DrawHelper</c> 绘制会话，属于行为变更。
         /// </para>
         /// </remarks>
-        private IMouseHandler ResolveMouseHandler()
+        private IMouseHandler? ResolveMouseHandler()
         {
             switch (_drawType)
             {

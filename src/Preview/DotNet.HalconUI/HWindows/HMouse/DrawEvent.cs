@@ -11,7 +11,7 @@ namespace DotNet.HalconUI
 
     public class DrawModelUIArgs : EventArgs
     {
-        public DrawModelUIArgs(string modelPath, HObject ho_ModeRect, HObject ho_Contour, ModelResult result)
+        public DrawModelUIArgs(string modelPath, HObject? ho_ModeRect, HObject? ho_Contour, ModelResult result)
         {
             ModelPath = modelPath;
             HoModeRect = ho_ModeRect;
@@ -23,10 +23,10 @@ namespace DotNet.HalconUI
         public string ModelPath { get; set; }
 
         /// <summary> 模版区域 </summary>
-        public HObject HoModeRect { get; private set; }
+        public HObject? HoModeRect { get; private set; }
 
         /// <summary> 模版轮廓 </summary>
-        public HObject HoContour { get; private set; }
+        public HObject? HoContour { get; private set; }
 
         /// <summary> 匹配结果 </summary>
         public ModelResult Result { get; set; }

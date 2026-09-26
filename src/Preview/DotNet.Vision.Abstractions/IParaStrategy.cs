@@ -111,13 +111,13 @@ namespace DotNet.Vision.Abstractions
     /// </summary>
     public abstract class ParaStrategyBase<TPara> : IParaStrategy, IParaBinding, ITreeNodeProvider where TPara : class, new()
     {
-        private readonly Dictionary<string, Func<object>> _resolvers = new Dictionary<string, Func<object>>();
+        private readonly Dictionary<string, Func<object?>> _resolvers = new Dictionary<string, Func<object?>>();
 
         public abstract AlgoEnum Algorithm { get; }
         public abstract string Name { get; set; }
         public abstract int RunIndex { get; set; }
         public TPara inPara { get; set; } = new TPara();
-        protected void RegisterOutput(string path, Func<object> resolver) => _resolvers[path] = resolver;
+        protected void RegisterOutput(string path, Func<object?> resolver) => _resolvers[path] = resolver;
         protected void ClearResolvers() => _resolvers.Clear();
         /// <summary>
         /// 解析输出并强转. 路径不存在时 <see cref="ResolveOutput(string[])"/> 返回 null,

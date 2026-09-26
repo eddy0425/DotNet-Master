@@ -658,7 +658,7 @@ namespace DotNet.HalconUI
             var result = await DrawHelper.DrawRegionAsync(_hWindow);
 
             // Region 的所有权已交到这里，无论确认与否都由本方法负责释放（未确认时是空区域）
-            HObject region = result.Region;
+            HObject? region = result.Region;
             try
             {
                 if (!result.Completed || !region.NotNull()) return false;
@@ -731,7 +731,7 @@ namespace DotNet.HalconUI
             double outer = Math.Max(outerResult.Radius, innerResult.Radius);
             double inner = Math.Min(outerResult.Radius, innerResult.Radius);
 
-            HObject ring = GenRing(outerResult.Row, outerResult.Column, outer, inner);
+            HObject? ring = GenRing(outerResult.Row, outerResult.Column, outer, inner);
             try
             {
                 // 外接框按外圆直径写入, 保证 Width/Height/BoundingBox 与其它 ROI 类型语义一致.

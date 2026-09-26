@@ -284,7 +284,7 @@ namespace DotNet.HalconUI
             display.Display.Disp(_shrCoord, DrawStyle.Of(HColor.Red));
         }
 
-        private static void TransObject(Point2d from, Point2d to, HObject obj, out HObject objTrans)
+        private static void TransObject(Point2d from, Point2d to, HObject? obj, out HObject objTrans)
         {
             if (obj == null || !obj.IsInitialized() || obj.CountObj() <= 0)
             {

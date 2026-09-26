@@ -732,9 +732,12 @@ private void PublishRenderData(FitArcMidpointRenderData data)
 
 ### 阶段 5：工程化收尾
 
-- [ ] `DotNet.HalconAlgo` 启用 `Nullable`，与另两工程对齐
-- [ ] 开启 `TreatWarningsAsErrors`（至少 CS0219 未使用变量、CS8618 不可空未初始化）
-- [ ] D7 `HashCode` 迁出 `namespace System`（或改用 `Microsoft.Bcl.HashCode`）
+- [x] `DotNet.HalconAlgo` 启用 `Nullable`，与另两工程对齐（此前已随 A1 完成，四个 Preview 工程均为 `<Nullable>enable</Nullable>`）
+- [x] 开启 `TreatWarningsAsErrors`（至少 CS0219 未使用变量、CS8618 不可空未初始化）
+  - 四个 Preview 工程（`Drawing` / `Vision.Abstractions` / `HalconUI` / `HalconAlgo`）**全量**开启，不只限定 CS0219 / CS8618：开启前 Rebuild 只剩 15 条警告且全是可空注解，没有理由只挑几个编号。
+  - 15 条警告全部按「签名如实声明可空」修复，**无一处 `!` 压制、无行为变化**——这些 API 本来就把 null 当合法值处理，只是签名没说：`RegisterOutput` 的解析器改 `Func<object?>`（`ResolveOutput` 本就返回 `object?`，未示教的 `TmplPoint`、未初始化的 `Result.HoRegion` 都会是 null）；`TakeRenderData()` → `FitArcMidpointRenderData?`；`ResolveMouseHandler()` → `IMouseHandler?`（Erase / default 分支返回 null，调用方已用 `?.`）；`DrawModelUIArgs` 的两个 `HObject` 构造参数与属性改可空（上游 `DrawDone` 本就是 `HObject?`）；两处 `TransObject` 的 `obj` 改可空（首行即判 null）；`HDisplay` 中传给 `ReplaceRegion(ref HObject?)` 的 `region` / `ring` 局部变量改可空。
+  - 构建通过（2026-09-26）：MSBuild Rebuild `DotNet.VisionMaster.csproj`（Debug），0 警告 0 错误。`DotNet.VisionMaster` 本身未开启，不在本条范围内。
+- [x] D7 `HashCode` 迁出 `namespace System`（此前已完成，现位于 `DotNet.Drawing/Internal/HashCode.cs`，命名空间 `DotNet.Drawing.Internal`）
 - [ ] D10 逐条清理一致性问题表（注释与代码不符、可空注解不一致、`CanConvert` 抛 `NotImplementedException`、`ConvertToWesternDigit` 的 `FirstOrDefault` 截断、`CvCircle` 圆弧包围盒/采样/缩放语义等）
 - [ ] 补齐几何计算（`MathHelper`/`CvCircle`/`CvLine`/`Rect2d`/`Point2d`/`CvCoord`）的单元测试——这部分无 Halcon 依赖，最容易测
 - [ ] 加入 HObject 计数断言的集成测试，防止泄漏回归

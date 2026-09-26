@@ -76,7 +76,7 @@ namespace DotNet.HalconAlgo
         /// <summary>
         /// 取走最近一次拟合的显示数据，所有权随之转移（调用方负责 Dispose）；无数据返回 null。
         /// </summary>
-        public FitArcMidpointRenderData TakeRenderData()
+        public FitArcMidpointRenderData? TakeRenderData()
         {
             return Interlocked.Exchange(ref _pendingRenderData, null);
         }
