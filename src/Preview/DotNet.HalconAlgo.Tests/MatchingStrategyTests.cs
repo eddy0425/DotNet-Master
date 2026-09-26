@@ -37,17 +37,59 @@ namespace DotNet.HalconAlgo.Tests
         protected abstract string ModelPath(TStrategy s);
         protected abstract void ClearModel(HTuple modelId);
 
-        /// <summary>暗背景上的亮 L 形：竖条行 40..90 × 列 50..60，横条行 80..90 × 列 50..100，整体平移 (dx, dy)。</summary>
-        private static HObject LImage(int dx = 0, int dy = 0)
+        /// <summary>
+        /// 暗背景上的亮 L 形：竖条行 40..90 × 列 50..60，横条行 80..90 × 列 50..100，整体平移 (dx, dy)。
+        /// <paramref name="scale"/> 绕模板中心 (75,65) 缩放, 1 时与原尺寸逐像素一致。
+        /// </summary>
+        private protected static HObject LImage(int dx = 0, int dy = 0, double scale = 1)
         {
+            int R(double r) => (int)Math.Round(TemplateCenter.Y + (r - TemplateCenter.Y) * scale) + dy;
+            int C(double c) => (int)Math.Round(TemplateCenter.X + (c - TemplateCenter.X) * scale) + dx;
+
             using (var dark = ConstImage(W, H, 0))
-            using (var bar1 = Rectangle1(40 + dy, 50 + dx, 90 + dy, 60 + dx))
-            using (var bar2 = Rectangle1(80 + dy, 50 + dx, 90 + dy, 100 + dx))
+            using (var bar1 = Rectangle1(R(40), C(50), R(90), C(60)))
+            using (var bar2 = Rectangle1(R(80), C(50), R(90), C(100)))
             using (var step = Paint(dark, bar1, 255))
             {
                 return Paint(step, bar2, 255);
             }
         }
+
+        /// <summary>
+        /// 宽 2W 的图上左右各一个 L: 一个完整, 另一个横条只剩一半 (得分明显更低)。
+        /// 左半 (列 0..W-1) 与右半 (列 W..2W-1) 各做一个查找 ROI, 用来验证跨 ROI 取全局最佳。
+        /// </summary>
+        private static HObject TwoLImage(bool perfectOnLeft)
+        {
+            int perfectDx = perfectOnLeft ? 0 : W, degradedDx = perfectOnLeft ? W : 0;
+            using (var dark = ConstImage(2 * W, H, 0))
+            using (var a1 = Rectangle1(40, 50 + perfectDx, 90, 60 + perfectDx))
+            using (var a2 = Rectangle1(80, 50 + perfectDx, 90, 100 + perfectDx))
+            using (var b1 = Rectangle1(40, 50 + degradedDx, 90, 60 + degradedDx))
+            using (var b2 = Rectangle1(80, 50 + degradedDx, 90, 75 + degradedDx))
+            using (var s1 = Paint(dark, a1, 255))
+            using (var s2 = Paint(s1, a2, 255))
+            using (var s3 = Paint(s2, b1, 255))
+            {
+                return Paint(s3, b2, 255);
+            }
+        }
+
+        /// <summary>轮廓 / 区域的外接列范围 (XLD 与 region 两种都收: NCC 的"轮廓"是区域)。</summary>
+        private protected static void ColumnRange(HObject obj, out double minCol, out double maxCol)
+        {
+            HOperatorSet.GetObjClass(obj, out HTuple cls);
+            HTuple c1, c2;
+            if (cls[0].S.StartsWith("xld"))
+                HOperatorSet.SmallestRectangle1Xld(obj, out _, out c1, out _, out c2);
+            else
+                HOperatorSet.SmallestRectangle1(obj, out _, out c1, out _, out c2);
+            minCol = c1.TupleMin().D;
+            maxCol = c2.TupleMax().D;
+        }
+
+        private protected FakeDisplay Display => _display;
+        protected abstract HObject HoContour(TStrategy s);
 
         [TestInitialize]
         public void SetUpMatching()
@@ -307,6 +349,142 @@ namespace DotNet.HalconAlgo.Tests
             Assert.AreEqual(new CvCoord(), Coord(Strategy));
         }
 
+        /// <summary>两个查找 ROI (左右半幅, 经上游区域输出给入), 返回本轮的示教原点。</summary>
+        private Point2d RunOnTwoRois(bool perfectOnLeft)
+        {
+            // 残缺 L 的得分约 0.7, 放低门槛保证两个 ROI 都有结果, 这样"取哪一个"才有意义
+            SetSearchRange(-90, 180, 0.5);
+            CreateTemplate();
+            var tmpl = TmplPoint(Strategy);
+
+            using (var image = TwoLImage(perfectOnLeft))
+            using (var left = Rectangle1(0, 0, H - 1, W - 1))
+            using (var right = Rectangle1(0, W, H - 1, 2 * W - 1))
+            {
+                HOperatorSet.ConcatObj(left, right, out HObject rois);
+                try
+                {
+                    SetRegionIn("上游/区域");
+                    _display.SetImage(image);
+                    Assert.IsTrue(Strategy.Fun_action(_display, Strategies.Of(new StubStrategy("上游").Output("区域", rois))));
+                }
+                finally
+                {
+                    rois.Dispose();
+                }
+            }
+            return tmpl;
+        }
+
+        private void AssertBestIsPerfectL(Point2d tmpl, int perfectDx)
+        {
+            var results = Results(Strategy);
+            Assert.AreEqual(2, results.Count, "两个 ROI 各一个结果");
+            Assert.IsTrue(results[0].Score > results[1].Score, "Results[0] 必须是全局最佳");
+
+            var coord = Coord(Strategy);
+            Assert.AreEqual(tmpl.X + perfectDx, coord.X, 1.0, "坐标系取全局最佳, 而不是第一个 ROI 的最佳");
+            Assert.AreEqual(tmpl.Y, coord.Y, 1.0);
+            StringAssert.StartsWith(_display.LastText, $"{ExpectedName} : 数量:2 最佳得分:{results[0].Score:F3}");
+
+            // 轮廓与坐标系是一对(编辑模板窗口配对显示), 必须同是最佳实例的
+            ColumnRange(HoContour(Strategy), out double minCol, out double maxCol);
+            Assert.AreEqual(TemplateCenter.X + perfectDx, (minCol + maxCol) / 2, 10.0, "HoContour 必须是最佳实例的轮廓");
+        }
+
+        [TestMethod]
+        public void Run_MultiRoi_BestInSecondRoi_CoordFollowsGlobalBest()
+        {
+            var tmpl = RunOnTwoRois(perfectOnLeft: false);
+            AssertBestIsPerfectL(tmpl, W);
+        }
+
+        [TestMethod]
+        public void Run_MultiRoi_BestInFirstRoi_ContourIsBestNotLast()
+        {
+            var tmpl = RunOnTwoRois(perfectOnLeft: true);
+            AssertBestIsPerfectL(tmpl, 0);
+        }
+
+        [TestMethod]
+        public void Run_NoMatch_ClearsPreviousContour()
+        {
+            CreateTemplate();
+            Assert.IsTrue(HoContour(Strategy).CountObj() > 0);
+            UseFullImageRoi();
+
+            using (var blank = ConstImage(W, H, 0))
+            {
+                _display.SetImage(blank);
+                Assert.IsTrue(Strategy.Fun_action(_display, Strategies.Of()));
+            }
+
+            Assert.AreEqual(0, HoContour(Strategy).CountObj(), "没有匹配时不能留着上一轮的轮廓配零坐标系");
+        }
+
+        [TestMethod]
+        public void Run_RoiNotDrawn_ClearsPreviousContour()
+        {
+            CreateTemplate();
+            _display.SetImage(_image);
+
+            Assert.IsFalse(Strategy.Fun_action(_display, Strategies.Of()));
+
+            Assert.AreEqual(0, HoContour(Strategy).CountObj());
+        }
+
+        [TestMethod]
+        public void Run_ImageOverload_UsesGivenImage()
+        {
+            CreateTemplate();
+            var tmpl = TmplPoint(Strategy);
+            UseFullImageRoi();
+            var display = new FakeDisplay();
+
+            using (var shifted = LImage(dx: 20, dy: 10))
+            {
+                Assert.IsTrue(Strategy.Fun_action(shifted, display));
+                Assert.AreSame(shifted, display.HoImage);
+            }
+
+            Assert.AreEqual(tmpl.X + 20, Coord(Strategy).X, 1.0);
+            Assert.AreEqual(tmpl.Y + 10, Coord(Strategy).Y, 1.0);
+        }
+
+        [TestMethod]
+        public void Run_ImageIn_ResolvesUpstreamImage()
+        {
+            CreateTemplate();
+            var tmpl = TmplPoint(Strategy);
+            UseFullImageRoi();
+            SetImageIn("取像/图像");
+            _display.SetImage(_image);   // 显示窗口里是未平移的图: 必须用上游那张
+
+            using (var shifted = LImage(dx: 25, dy: 15))
+            {
+                Assert.IsTrue(Strategy.Fun_action(_display, Strategies.Of(new StubStrategy("取像").Output("图像", shifted))));
+            }
+
+            Assert.AreEqual(tmpl.X + 25, Coord(Strategy).X, 1.0);
+            Assert.AreEqual(tmpl.Y + 15, Coord(Strategy).Y, 1.0);
+        }
+
+        [TestMethod]
+        public void Run_DisplayFlagsOff_DrawsNothing()
+        {
+            CreateTemplate();
+            UseFullImageRoi();
+            SetDisplayFlags(false);
+            _display.SetImage(_image);
+
+            Assert.IsTrue(Strategy.Fun_action(_display, Strategies.Of()));
+
+            Assert.AreEqual(1, Results(Strategy).Count, "关显示不影响匹配本身");
+            Assert.AreEqual(0, _display.Texts.Count);
+            Assert.AreEqual(0, _display.Objects.Count);
+            Assert.AreEqual(0, _display.Coords.Count);
+        }
+
         [TestMethod]
         public void SetTemplate_Repeated_ReplacesModel_StillMatches()
         {
@@ -403,6 +581,8 @@ namespace DotNet.HalconAlgo.Tests
         protected abstract void SetHoRect(CvRegion region);
         protected abstract void SetModelID(HTuple modelId);
         protected abstract void SetRegionIn(string path);
+        protected abstract void SetImageIn(string path);
+        protected abstract void SetDisplayFlags(bool on);
         protected abstract void SetSearchRange(double angleStartDeg, double angleExtentDeg, double minScore);
         protected abstract int NumMatches(TStrategy s);
         protected abstract double MinScore(TStrategy s);
@@ -423,6 +603,15 @@ namespace DotNet.HalconAlgo.Tests
         protected override void ClearModel(HTuple modelId) => HOperatorSet.ClearShapeModel(modelId);
         protected override void SetHoRect(CvRegion region) => Strategy.inPara.HoRect = region;
         protected override void SetRegionIn(string path) => Strategy.inPara.RegionIn = path;
+        protected override void SetImageIn(string path) => Strategy.inPara.ImageIn = path;
+        protected override HObject HoContour(ShapeModelStrategy s) => s.inPara.HoContour;
+        protected override void SetDisplayFlags(bool on)
+        {
+            Strategy.inPara.DispText = on;
+            Strategy.inPara.DispRegion = on;
+            Strategy.inPara.DispContour = on;
+            Strategy.inPara.DispPoint = on;
+        }
         protected override void SetSearchRange(double angleStartDeg, double angleExtentDeg, double minScore)
         {
             Strategy.inPara.AngleStart = angleStartDeg;
@@ -449,6 +638,15 @@ namespace DotNet.HalconAlgo.Tests
         protected override void ClearModel(HTuple modelId) => HOperatorSet.ClearNccModel(modelId);
         protected override void SetHoRect(CvRegion region) => Strategy.inPara.HoRect = region;
         protected override void SetRegionIn(string path) => Strategy.inPara.RegionIn = path;
+        protected override void SetImageIn(string path) => Strategy.inPara.ImageIn = path;
+        protected override HObject HoContour(NccModelStrategy s) => s.inPara.HoContour;
+        protected override void SetDisplayFlags(bool on)
+        {
+            Strategy.inPara.DispText = on;
+            Strategy.inPara.DispRegion = on;
+            Strategy.inPara.DispContour = on;
+            Strategy.inPara.DispPoint = on;
+        }
         protected override void SetSearchRange(double angleStartDeg, double angleExtentDeg, double minScore)
         {
             Strategy.inPara.AngleStart = angleStartDeg;
@@ -475,6 +673,15 @@ namespace DotNet.HalconAlgo.Tests
         protected override void ClearModel(HTuple modelId) => HOperatorSet.ClearShapeModel(modelId);
         protected override void SetHoRect(CvRegion region) => Strategy.inPara.HoRect = region;
         protected override void SetRegionIn(string path) => Strategy.inPara.RegionIn = path;
+        protected override void SetImageIn(string path) => Strategy.inPara.ImageIn = path;
+        protected override HObject HoContour(ScaledModelStrategy s) => s.inPara.HoContour;
+        protected override void SetDisplayFlags(bool on)
+        {
+            Strategy.inPara.DispText = on;
+            Strategy.inPara.DispRegion = on;
+            Strategy.inPara.DispContour = on;
+            Strategy.inPara.DispPoint = on;
+        }
         protected override void SetSearchRange(double angleStartDeg, double angleExtentDeg, double minScore)
         {
             Strategy.inPara.AngleStart = angleStartDeg;
@@ -496,6 +703,29 @@ namespace DotNet.HalconAlgo.Tests
             Assert.AreEqual(0.7, Strategy.inPara.ScaleMin.D, 1e-12);
             Assert.AreEqual(1.5, Strategy.inPara.ScaleMax.D, 1e-12);
         }
+
+        [TestMethod]
+        public void Run_ScaledTarget_ContourFollowsFoundScale()
+        {
+            Strategy.inPara.ScaleMax = 1.3;
+            CreateTemplate();
+            var tmpl = Strategy.inPara.TmplPoint;
+            ColumnRange(Strategy.inPara.HoContour, out double tmplMin, out double tmplMax);
+            UseFullImageRoi();
+
+            // 绕模板原点放大 1.2 倍: 原点位置不变, 轮廓应随之变宽
+            using (var bigger = LImage(scale: 1.2))
+            {
+                Display.SetImage(bigger);
+                Assert.IsTrue(Strategy.Fun_action(Display, Strategies.Of()));
+            }
+
+            Assert.AreEqual(1, Strategy.inPara.Results.Count);
+            Assert.AreEqual(tmpl.X, Strategy.inPara.Coord.X, 1.0);
+            Assert.AreEqual(tmpl.Y, Strategy.inPara.Coord.Y, 1.0);
+            ColumnRange(Strategy.inPara.HoContour, out double minCol, out double maxCol);
+            Assert.AreEqual((tmplMax - tmplMin) * 1.2, maxCol - minCol, 2.0, "轮廓必须按找到的缩放系数缩放, 而不是停在模板原尺寸");
+        }
     }
 
     [TestClass]
@@ -514,6 +744,15 @@ namespace DotNet.HalconAlgo.Tests
         protected override void SetHoRect(CvRegion region) => Strategy.inPara.HoRect = region;
         protected override void SetModelID(HTuple modelId) => Strategy.inPara.ModelID = modelId;
         protected override void SetRegionIn(string path) => Strategy.inPara.RegionIn = path;
+        protected override void SetImageIn(string path) => Strategy.inPara.ImageIn = path;
+        protected override HObject HoContour(GenericModelStrategy s) => s.inPara.HoContour;
+        protected override void SetDisplayFlags(bool on)
+        {
+            Strategy.inPara.DispText = on;
+            Strategy.inPara.DispRegion = on;
+            Strategy.inPara.DispContour = on;
+            Strategy.inPara.DispPoint = on;
+        }
         protected override void SetSearchRange(double angleStartDeg, double angleExtentDeg, double minScore)
         {
             Strategy.inPara.AngleStart = angleStartDeg;

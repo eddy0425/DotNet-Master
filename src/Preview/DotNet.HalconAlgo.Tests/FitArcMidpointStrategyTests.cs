@@ -199,6 +199,52 @@ namespace DotNet.HalconAlgo.Tests
         }
 
         [TestMethod]
+        public void Failure_ResetsPreviousMidpoint()
+        {
+            Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of()));
+            Assert.AreNotEqual(default(Point2d), _strategy.inPara.ArcMidpoint);
+
+            _strategy.inPara.Transition = "由黑到白";
+            Assert.ThrowsException<InvalidOperationException>(() => _strategy.Fun_action(_display, Strategies.Of()));
+
+            // 宿主吞掉异常后下游照跑: 不能继续拿到上一轮的中点
+            Assert.AreEqual(default(Point2d), _strategy.inPara.ArcMidpoint);
+        }
+
+        [TestMethod]
+        public void ImageOverload_Failure_ResetsPreviousMidpoint()
+        {
+            Assert.IsTrue(_strategy.Fun_action(_image, new FakeDisplay()));
+
+            _strategy.inPara.Transition = "由黑到白";
+            Assert.ThrowsException<InvalidOperationException>(() => _strategy.Fun_action(_image, new FakeDisplay()));
+
+            Assert.AreEqual(default(Point2d), _strategy.inPara.ArcMidpoint);
+        }
+
+        [TestMethod]
+        public void ImageIn_ResolvesUpstreamImage()
+        {
+            _strategy.inPara.ImageIn = "取像/图像";
+            // 显示窗口里是全黑图, 只有上游那张有圆盘
+            using (var black = ConstImage(Size, Size, 0))
+            {
+                _display.SetImage(black);
+                Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of(new StubStrategy("取像").Output("图像", _image))));
+            }
+
+            Assert.AreEqual(150, _strategy.inPara.ArcMidpoint.X, 1.0);
+            Assert.AreEqual(100, _strategy.inPara.ArcMidpoint.Y, 1.0);
+        }
+
+        [TestMethod]
+        public void RegionIn_Unresolvable_Throws()
+        {
+            _strategy.inPara.RegionIn = "上游/区域";
+            Assert.ThrowsException<AlgoOutputNotFoundException>(() => _strategy.Fun_action(_display, Strategies.Of()));
+        }
+
+        [TestMethod]
         public void CoordIn_TranslatesRoi()
         {
             using (var image = DiskImage(Size + 40, Size, new Point2d(130, 100), Radius))

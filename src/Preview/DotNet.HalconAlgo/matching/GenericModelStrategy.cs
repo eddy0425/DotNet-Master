@@ -4,6 +4,7 @@ using HalconDotNet;
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 
@@ -49,6 +50,9 @@ namespace DotNet.HalconAlgo
             // 读到的就是旧数据, 界面上看不出任何异常。
             inPara.Results = new List<ModelResult>();
             inPara.Coord = new CvCoord();
+            // 轮廓与 Coord 是一对 (DispROI / "编辑模板"一起取用), 同样要清, 否则失败轮次会把旧轮廓配上零坐标系
+            inPara.HoContour?.Dispose();
+            HOperatorSet.GenEmptyObj(out inPara.HoContour);
 
             if (inPara.ModelID == null || inPara.ModelID.Length == 0)
             {
@@ -91,6 +95,7 @@ namespace DotNet.HalconAlgo
 
                 if (inPara.DispRegion) display.Disp(ho_Rect, DrawStyle.Of(HColor.Blue));
 
+                double bestSoFar = -1;
                 int rectCnt = ho_Rect.CountObj();
                 for (int j = 0; j < rectCnt; j++)
                 {
@@ -118,18 +123,34 @@ namespace DotNet.HalconAlgo
                         var result = new ModelResult(row[i], column[i], angle[i], score[i]);
                         inPara.Results.Add(result);
 
-                        // 取该匹配实例对应的轮廓；先释放旧句柄，避免泄漏
-                        inPara.HoContour?.Dispose();
-                        HOperatorSet.GetGenericShapeModelResultObject(out inPara.HoContour, matchResultID, i, "contours");
+                        // 取该匹配实例对应的轮廓
+                        HOperatorSet.GetGenericShapeModelResultObject(out HObject contour, matchResultID, i, "contours");
 
-                        if (inPara.DispContour) display.Disp(inPara.HoContour, DrawStyle.Of(HColor.Green));
-                        if (inPara.DispPoint) display.Disp(result.Coord, DrawStyle.Of(HColor.Red));
+                        // 只留全局最佳实例的轮廓: 原先每个实例都覆盖一次, 留下的是"最后一个"的轮廓,
+                        // 与 Coord / Results[0] 对不上 (编辑模板窗口正是把两者配对显示的)。
+                        bool isBest = result.Score > bestSoFar;
+                        if (isBest)
+                        {
+                            bestSoFar = result.Score;
+                            inPara.HoContour.Dispose();
+                            inPara.HoContour = contour;
+                        }
+
+                        try
+                        {
+                            if (inPara.DispContour) display.Disp(contour, DrawStyle.Of(HColor.Green));
+                            if (inPara.DispPoint) display.Disp(result.Coord, DrawStyle.Of(HColor.Red));
+                        }
+                        finally
+                        {
+                            if (!isBest) contour.Dispose();
+                        }
                     }
                 }
 
-                // 对外发布的坐标系取最佳匹配(FindGenericShapeModel 按得分降序返回), 而不是循环里最后一个
-                // 实例: 多 ROI / 多匹配时"最后一个"是任意的, 下游跟随坐标会在各实例间跳。与下面状态文本里
-                // 的"最佳得分"同取 Results[0], 口径一致。
+                // FindGenericShapeModel 只在单个 ROI 内按得分降序; 多 ROI 时 Results[0] 只是第一个 ROI 的最佳。
+                // 这里跨 ROI 稳定排序, 让 Results[0] 就是全局最佳: 对外坐标系、"最佳得分"与编辑模板都取它。
+                inPara.Results = inPara.Results.OrderByDescending(r => r.Score).ToList();
                 if (inPara.Results.Count > 0) inPara.Coord = inPara.Results[0].Coord;
 
                 if (inPara.DispText)

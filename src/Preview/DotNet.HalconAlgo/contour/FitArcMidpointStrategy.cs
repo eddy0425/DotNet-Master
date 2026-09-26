@@ -45,6 +45,7 @@ namespace DotNet.HalconAlgo
 
         public override bool Fun_action(HObject ho_Image, IHDisplay display)
         {
+            ResetOutput();
             display.SetImage(ho_Image);
             try
             {
@@ -58,6 +59,7 @@ namespace DotNet.HalconAlgo
 
         public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
         {
+            ResetOutput();
             HObject hoImage;
             if (inPara.ImageIn == "默认")
                 hoImage = display.HoImage.RequireImage(Name);
@@ -71,6 +73,15 @@ namespace DotNet.HalconAlgo
             {
                 DrawPendingOverlay(display);
             }
+        }
+
+        /// <summary>
+        /// 每轮开头先把"中点"输出复位, 与匹配类"先清空再校验"同口径: 拟合失败都是抛异常退出,
+        /// 不清的话宿主吞掉异常后, 下游读到的是上一轮的中点, 静默按旧结果继续算。
+        /// </summary>
+        private void ResetOutput()
+        {
+            inPara.ArcMidpoint = default;
         }
 
         /// <summary>

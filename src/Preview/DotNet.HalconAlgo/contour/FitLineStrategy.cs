@@ -44,6 +44,7 @@ namespace DotNet.HalconAlgo
         }
         public override bool Fun_action(HObject ho_Image, IHDisplay display)
         {
+            ResetOutput();
             display.SetImage(ho_Image);
             // 直接处理传入的图像, 不再转到另一重载按 ImageIn 取图: 单图重载没有上游,
             // ImageIn 一旦不是"默认"就必然解析失败 —— 明明给了图却报"找不到图像来源"。
@@ -53,6 +54,7 @@ namespace DotNet.HalconAlgo
         }
         public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
         {
+            ResetOutput();
             HObject ho_Image;
             if (inPara.ImageIn == "默认")
                 ho_Image = display.HoImage.RequireImage(Name);
@@ -60,6 +62,16 @@ namespace DotNet.HalconAlgo
                 ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
 
             return Run(ho_Image, display, strategys);
+        }
+
+        /// <summary>
+        /// 每轮开头先把"直线"输出复位成退化线段, 与匹配类"先清空再校验"同口径:
+        /// 拟合失败(未绘制 ROI / 找不到边 / 点数不足)都是抛异常退出, 不清的话宿主吞掉异常后,
+        /// 下游(如直线图像)读到的是上一轮的直线, 静默按旧结果继续算; 复位后下游会按退化直线明确报错。
+        /// </summary>
+        private void ResetOutput()
+        {
+            inPara.Line = new CvLine(0, 0, 0, 0);
         }
 
         private bool Run(HObject ho_Image, IHDisplay display, List<IParaStrategy> strategys)

@@ -4,6 +4,7 @@ using HalconDotNet;
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 
@@ -49,6 +50,9 @@ namespace DotNet.HalconAlgo
             // 读到的就是旧数据, 界面上看不出任何异常。
             inPara.Results = new List<ModelResult>();
             inPara.Coord = new CvCoord();
+            // 轮廓与 Coord 是一对 (DispROI / "编辑模板"一起取用), 同样要清, 否则失败轮次会把旧轮廓配上零坐标系
+            inPara.HoContour?.Dispose();
+            HOperatorSet.GenEmptyObj(out inPara.HoContour);
 
             // 与通用匹配同口径: 未建模板属于可恢复的配置问题, 红字 + 返回 false。
             // 不拦的话 null 的 ModelID 会一路传进查找算子, 报出与真实原因无关的 HALCON 参数错误。
@@ -93,6 +97,7 @@ namespace DotNet.HalconAlgo
 
                 if (inPara.DispRegion) display.Disp(ho_Rect, DrawStyle.Of(HColor.Blue));
 
+                double bestSoFar = -1;
                 int rectCnt = ho_Rect.CountObj();
                 for (int j = 0; j < rectCnt; j++)
                 {
@@ -113,22 +118,36 @@ namespace DotNet.HalconAlgo
                         var result = new ModelResult(row[i], column[i], angle[i], score[i]);
                         inPara.Results.Add(result);
 
-                        inPara.HoContour.Dispose();
-                        HOperatorSet.GetShapeModelContours(out inPara.HoContour, inPara.ModelID, 1);
+                        HOperatorSet.GetShapeModelContours(out HObject modelContour, inPara.ModelID, 1);
                         HOperatorSet.VectorAngleToRigid(0, 0, 0, result.Row, result.Column, result.Angle, out HTuple hv_HomMat2D);
-                        HOperatorSet.AffineTransContourXld(inPara.HoContour, out HObject contoursAffineTrans, hv_HomMat2D);
-                        inPara.HoContour.Dispose();
-                        inPara.HoContour = contoursAffineTrans;
+                        HOperatorSet.AffineTransContourXld(modelContour, out HObject contour, hv_HomMat2D);
+                        modelContour.Dispose();
 
-                        if(inPara.DispContour) display.Disp(inPara.HoContour, DrawStyle.Of(HColor.Green));
-                        if (inPara.DispPoint) display.Disp(result.Coord, DrawStyle.Of(HColor.Red));
+                        // 只留全局最佳实例的轮廓: 原先每个实例都覆盖一次, 留下的是"最后一个"的轮廓,
+                        // 与 Coord / Results[0] 对不上 (编辑模板窗口正是把两者配对显示的)。
+                        bool isBest = result.Score > bestSoFar;
+                        if (isBest)
+                        {
+                            bestSoFar = result.Score;
+                            inPara.HoContour.Dispose();
+                            inPara.HoContour = contour;
+                        }
 
+                        try
+                        {
+                            if (inPara.DispContour) display.Disp(contour, DrawStyle.Of(HColor.Green));
+                            if (inPara.DispPoint) display.Disp(result.Coord, DrawStyle.Of(HColor.Red));
+                        }
+                        finally
+                        {
+                            if (!isBest) contour.Dispose();
+                        }
                     }
                 }
 
-                // 对外发布的坐标系取最佳匹配(FindShapeModel 按得分降序返回), 而不是循环里最后一个实例:
-                // 多 ROI / 多匹配时"最后一个"是任意的, 下游跟随坐标会在各实例间跳。与下面状态文本里
-                // 的"最佳得分"同取 Results[0], 口径一致。
+                // FindShapeModel 只在单个 ROI 内按得分降序; 多 ROI 时 Results[0] 只是第一个 ROI 的最佳。
+                // 这里跨 ROI 稳定排序, 让 Results[0] 就是全局最佳: 对外坐标系、"最佳得分"与编辑模板都取它。
+                inPara.Results = inPara.Results.OrderByDescending(r => r.Score).ToList();
                 if (inPara.Results.Count > 0) inPara.Coord = inPara.Results[0].Coord;
 
                 if (inPara.DispText)

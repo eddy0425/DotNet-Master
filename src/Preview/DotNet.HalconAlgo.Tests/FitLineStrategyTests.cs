@@ -204,6 +204,29 @@ namespace DotNet.HalconAlgo.Tests
         }
 
         [TestMethod]
+        public void Failure_ResetsPreviousLine()
+        {
+            Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of()));
+            Assert.IsFalse(_strategy.inPara.Line.IsDegenerate);
+
+            _strategy.inPara.Transition = "由白到黑";
+            Assert.ThrowsException<InvalidOperationException>(() => _strategy.Fun_action(_display, Strategies.Of()));
+
+            // 宿主吞掉异常后下游照跑: 此时必须拿到退化直线(下游会明确报错), 而不是上一轮的旧直线
+            Assert.IsTrue(_strategy.inPara.Line.IsDegenerate);
+        }
+
+        [TestMethod]
+        public void NoImage_ResetsPreviousLine()
+        {
+            Assert.IsTrue(_strategy.Fun_action(_display, Strategies.Of()));
+
+            Assert.ThrowsException<InvalidOperationException>(() => _strategy.Fun_action(new FakeDisplay(), Strategies.Of()));
+
+            Assert.IsTrue(_strategy.inPara.Line.IsDegenerate);
+        }
+
+        [TestMethod]
         public void ImageIn_ResolvesUpstreamImage()
         {
             using (var shifted = VerticalStepImage(Size, Size, 110))
