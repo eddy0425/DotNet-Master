@@ -35,7 +35,7 @@ namespace DotNet.Drawing
 
         public CvRegion()
         {
-            // 注意：这里不能改成 InRegion = new HObject() —— 后续以 out 形式覆盖时旧实例会被丢弃但未释放。
+            // 注意：这里不能改成 HoRegion = new HObject() —— 后续以 out 形式覆盖时旧实例会被丢弃但未释放。
             // GenEmptyObj 内部会创建并初始化句柄，等价的最简形式即一行调用。
             HOperatorSet.GenEmptyObj(out HoRegion);
         }

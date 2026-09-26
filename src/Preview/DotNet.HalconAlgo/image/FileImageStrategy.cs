@@ -7,6 +7,11 @@ using System.Collections.Generic;
 
 namespace DotNet.HalconAlgo
 {
+    /// <remarks>
+    /// <see cref="Index"/> / <see cref="ImagePaths"/> 是「轮播到第几张」的运行态游标，随实例保存、不落盘。
+    /// 本类<b>非线程安全</b>：同一实例的 <see cref="Fun_action"/> 只能由流程串行调用（现有宿主即如此），
+    /// 并发调用会让两次取像读到同一张或跳过一张。
+    /// </remarks>
     public class FileImageStrategy : ParaStrategyBase<FileImage>
     {
         public override AlgoEnum Algorithm => AlgoEnum.FileImage;
@@ -29,70 +34,68 @@ namespace DotNet.HalconAlgo
         }
         public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
         {
-            try
+            // 原先整个方法包在 try { ... } catch { throw; } 里，捕获后原样重抛，等于没包，已去掉。
+            if (ImagePaths == null)
             {
-                if (ImagePaths == null)
-                {
-                    ImagePaths = HalconController.GetPaths(inPara.ImageFolder);
-                }
+                ImagePaths = HalconController.GetPaths(inPara.ImageFolder);
+            }
 
-                if (Index >= ImagePaths.Length) Index = 0;
+            // 空目录单独报错：否则落到下面的 ImagePaths[0]，得到的是与真实原因无关的 IndexOutOfRangeException
+            if (ImagePaths.Length == 0)
+            {
+                throw new InvalidOperationException($"图像目录中没有图像文件: {inPara.ImageFolder}");
+            }
+            if (Index >= ImagePaths.Length) Index = 0;
 
+            inPara.Image.Dispose();
+            HOperatorSet.ReadImage(out inPara.Image, ImagePaths[Index]);
+
+            //判断图像是否为空
+            if (!inPara.Image.NotNull())
+            {
+                throw new InvalidOperationException($"加载图像失败，读到的图像为空: {ImagePaths[Index]}");
+            }
+
+            //旋转
+            if (inPara.Rotate != 0)
+            {
+                double pi = Convert.ToDouble(inPara.Rotate);
+                HOperatorSet.RotateImage(inPara.Image, out HObject imgRotated, pi, "constant");
                 inPara.Image.Dispose();
-                HOperatorSet.ReadImage(out inPara.Image, ImagePaths[Index]);
-
-                //判断图像是否为空
-                if (!inPara.Image.NotNull())
-                {
-                    throw new NullReferenceException("图像`imgTemp`变量为空，加载图像异常！");
-                }
-
-                //旋转
-                if (inPara.Rotate != 0)
-                {
-                    double pi = Convert.ToDouble(inPara.Rotate);
-                    HOperatorSet.RotateImage(inPara.Image, out HObject imgRotated, pi, "constant");
-                    inPara.Image.Dispose();
-                    inPara.Image = imgRotated;
-                }
-
-                //镜像
-                switch (inPara.Mirror)
-                {
-                    case "行镜像":
-                        HOperatorSet.MirrorImage(inPara.Image, out HObject imgMirrored1, "row");
-                        inPara.Image.Dispose();
-                        inPara.Image = imgMirrored1;
-                        break;
-                    case "列镜像":
-                        HOperatorSet.MirrorImage(inPara.Image, out HObject imgMirrored2, "column");
-                        inPara.Image.Dispose();
-                        inPara.Image = imgMirrored2;
-                        break;
-                    case "原点镜像":
-                        HOperatorSet.MirrorImage(inPara.Image, out HObject imgMirrored3, "diagonal");
-                        inPara.Image.Dispose();
-                        inPara.Image = imgMirrored3;
-                        break;
-                    default: break;
-                }
-
-                display.DispImage(inPara.Image);
-
-                if (inPara.DispText)
-                {
-                    string message = $"{Name} : W:{display.HoWidth} H:{display.HoHeight} 索引:{Index}/{ImagePaths.Length}";
-                    display.DispText(message, new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Green, inPara.FontSize));
-                }
-
-                Index++;
-                return true;
+                inPara.Image = imgRotated;
             }
-            catch
+
+            //镜像
+            switch (inPara.Mirror)
             {
-                // 捕捉异常并重新抛出
-                throw;
+                case "行镜像":
+                    HOperatorSet.MirrorImage(inPara.Image, out HObject imgMirrored1, "row");
+                    inPara.Image.Dispose();
+                    inPara.Image = imgMirrored1;
+                    break;
+                case "列镜像":
+                    HOperatorSet.MirrorImage(inPara.Image, out HObject imgMirrored2, "column");
+                    inPara.Image.Dispose();
+                    inPara.Image = imgMirrored2;
+                    break;
+                case "原点镜像":
+                    HOperatorSet.MirrorImage(inPara.Image, out HObject imgMirrored3, "diagonal");
+                    inPara.Image.Dispose();
+                    inPara.Image = imgMirrored3;
+                    break;
+                default: break;
             }
+
+            display.DispImage(inPara.Image);
+
+            if (inPara.DispText)
+            {
+                string message = $"{Name} : W:{display.HoWidth} H:{display.HoHeight} 索引:{Index}/{ImagePaths.Length}";
+                display.DispText(message, new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Green, inPara.FontSize));
+            }
+
+            Index++;
+            return true;
         }
         public override void DispPara(IParaUiHost ui)
         {
@@ -146,11 +149,17 @@ namespace DotNet.HalconAlgo
 
     }
 
-    public class FileImage : AlgoFont
+    public class FileImage : AlgoFont, IDisposable
     {
         public FileImage()
         {
             HOperatorSet.GenEmptyObj(out Image);
+        }
+
+        /// <summary> 释放 <see cref="Image"/>。幂等：HObject.Dispose 本身可重复调用。 </summary>
+        public void Dispose()
+        {
+            Image?.Dispose();
         }
 
         /// <summary> 图像 </summary>

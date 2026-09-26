@@ -1,4 +1,4 @@
-namespace DotNet.Drawing
+﻿namespace DotNet.Drawing
 {
     /// <summary>
     /// CV 形状基础接口 - 定义所有几何形状的通用行为
@@ -50,7 +50,7 @@ namespace DotNet.Drawing
     public interface ICvScalable<T> where T : ICvScalable<T>
     {
         /// <summary>
-        /// 统一缩放（返回新实例）
+        /// 以自身中心为基准统一缩放（返回新实例）
         /// </summary>
         /// <param name="scale">缩放因子</param>
         /// <returns>缩放后的新实例</returns>

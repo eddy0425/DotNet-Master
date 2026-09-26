@@ -20,16 +20,22 @@ namespace DotNet.HalconUI
         }
 
         /// <summary> 模版路径 </summary>
-        public string ModelPath { get; set; }
+        public string ModelPath { get; }
 
         /// <summary> 模版区域 </summary>
-        public HObject? HoModeRect { get; private set; }
+        /// <remarks>
+        /// 借用引用：句柄归触发方（策略的 inPara）所有，订阅方<b>不得 Dispose</b>，
+        /// 也不应在处理函数返回后继续持有——策略重建模板时会释放它。需要保留请自行复制
+        /// （现有订阅方均经 <c>TransObject</c> 生成新对象）。
+        /// </remarks>
+        public HObject? HoModeRect { get; }
 
         /// <summary> 模版轮廓 </summary>
-        public HObject? HoContour { get; private set; }
+        /// <remarks> 借用引用，所有权约定同 <see cref="HoModeRect"/>。 </remarks>
+        public HObject? HoContour { get; }
 
         /// <summary> 匹配结果 </summary>
-        public ModelResult Result { get; set; }
+        public ModelResult Result { get; }
 
     }
 

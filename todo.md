@@ -592,27 +592,27 @@ double sinTheta = Math.Sin(0);   // 恒等于 0
 
 | 问题 | 位置 |
 |---|---|
-| `DotNet.HalconAlgo` 未启用 `Nullable`（另两个工程已启用） | `DotNet.HalconAlgo.csproj` |
-| `HalconHelper.GetPolygons` 返回 `List<Point2d>`，`HalconController` 同名方法返回 `List<Point2d>?` | 可空注解不一致 |
-| `CvRegion` 的 XML 文档通篇写 `InRegion`，实际字段名为 `HoRegion` | `CvMode/CvRegion.cs` |
-| `DrawModelUIArgs` 注释称「全部只读属性」，实际 `ModelPath`/`Result` 有 setter；两个 `HObject` 属性所有权不明 | `HWindows/HMouse/DrawEvent.cs` |
-| `FitArcMidpointRenderData` 注释称「发布后视为只读」，实际全是 public 可变字段；`Dispose()` 不幂等 | `contour/FitArcMidpointRender.cs` |
-| `Point2d` 有 `Rotate`/`RotateAround` 却未实现 `ICvRotatable<Point2d>` | `OpenCvSharp/Point2d.cs` |
-| `JsonConvertHObject.CanConvert` 直接 `throw new NotImplementedException()` | `Serialize/JsonConvertHObject.cs` |
-| `HTupleExtension.NotNull` 语义可疑（EMPTY 时返回 `Length > 0`），且未处理 `null` | `Extension/HTupleExtension.cs` |
-| `StringExtension.ConvertToWesternDigit` 对 `char.GetNumericValue` 结果取 `FirstOrDefault()`，大于 9 的 Unicode 数字（如「十」= 10）只取到首字符 `'1'` | `Extension/StringExtension.cs` |
-| `CvCircle.BoundingBox` 对圆弧把圆心一并纳入 → 包围盒偏大 | `CvMode/CvCircle.cs` |
-| `CvCircle.SamplePoints(count)` 对圆弧用 `span / count`，不含终点 | `CvMode/CvCircle.cs` |
-| `CvCircle.Scale` 只缩放半径不动圆心，与 `Point2d.Scale`（相对原点）语义不一致 | `CvMode/CvCircle.cs` |
-| `record` 的 `with` 表达式可绕过构造函数的 `radius < 0` 校验 | `CvMode/CvCircle.cs` |
-| `FitLineStrategy.Line` 是引用类型 `record`，默认 `null`；`RegisterOutput("直线/起点", () => inPara.Line.Start)` 在未执行时 NRE | `contour/FitLineStrategy.cs` |
-| `RegionExtension.RebuildRegion` 中 `hRegion.HoRegion.Dispose()` 未判 null；Polygon 分支 `PolygonX/PolygonY` 为 null 会抛；`GenCoordsRegion` 未对 `hRegion` 判空 | `Extension/RegionExtension.cs` |
-| `HWindowMouse` 用 `DateTime.Now.Ticks` 判双击（受系统时间调整影响），未用 `SystemInformation.DoubleClickTime`；连续三击会被判成两次双击 | `HWindows/HWindowMouse.cs` |
-| `MouseDown`/`MouseDouble` 是公开标志位，本类从不复位，依赖外部清除（隐式协议） | `HWindows/HWindowMouse.cs` |
-| `HWindowImage.Fun_ZoomImage` 实际在做**控件布局**（改 Width/Height/Location），命名误导且会再次触发 `Resize`；`HWindowControl_Resize` 中 `catch { }` 完全空吞 | `HWindows/HWindowImage.cs` |
+| ~~`DotNet.HalconAlgo` 未启用 `Nullable`（另两个工程已启用）~~ **已随 A1 完成** | `DotNet.HalconAlgo.csproj` |
+| ~~`HalconHelper.GetPolygons` 返回 `List<Point2d>`，`HalconController` 同名方法返回 `List<Point2d>?`~~ **`HalconHelper` 已随 B1 后续删除** | 可空注解不一致 |
+| ~~`CvRegion` 的 XML 文档通篇写 `InRegion`，实际字段名为 `HoRegion`~~ **已修复，仅剩的一处注释已改为 `HoRegion`** | `CvMode/CvRegion.cs` |
+| ~~`DrawModelUIArgs` 注释称「全部只读属性」，实际 `ModelPath`/`Result` 有 setter；两个 `HObject` 属性所有权不明~~ **已修复：四个属性全部只读；两个 `HObject` 标明为借用引用（归策略所有，订阅方不得释放、不得跨调用持有）** | `HWindows/HMouse/DrawEvent.cs` |
+| ~~`FitArcMidpointRenderData` 注释称「发布后视为只读」，实际全是 public 可变字段；`Dispose()` 不幂等~~ **已修复：字段改为 `{ get; internal set; }` 属性，点集以 `IReadOnlyList<Point2d>` 暴露；`Dispose` 置空后可重复调用** | `contour/FitArcMidpointRender.cs` |
+| ~~`Point2d` 有 `Rotate`/`RotateAround` 却未实现 `ICvRotatable<Point2d>`~~ **已修复（按设计不实现）：`Point2d` 的缩放/旋转相对原点，与接口「相对自身中心」的约定不符，一并去掉 `ICvScalable<Point2d>`，并在类注释中说明** | `OpenCvSharp/Point2d.cs` |
+| ~~`JsonConvertHObject.CanConvert` 直接 `throw new NotImplementedException()`~~ **此前已修复** | `Serialize/JsonConvertHObject.cs` |
+| ~~`HTupleExtension.NotNull` 语义可疑（EMPTY 时返回 `Length > 0`），且未处理 `null`~~ **已修复：改为 `hTuple is object && Length > 0`，参数可空并标 `NotNullWhen(true)`** | `Extension/HTupleExtension.cs` |
+| ~~`StringExtension.ConvertToWesternDigit` 对 `char.GetNumericValue` 结果取 `FirstOrDefault()`，大于 9 的 Unicode 数字（如「十」= 10）只取到首字符 `'1'`~~ **已修复：追加完整整数值；非整数/无数值字符跳过（仍是逐字拼接，不做中文数词进位解析，已注明）** | `Extension/StringExtension.cs` |
+| ~~`CvCircle.BoundingBox` 对圆弧把圆心一并纳入 → 包围盒偏大~~ **已修复：以起点/终点为初值，不再纳入圆心** | `CvMode/CvCircle.cs` |
+| ~~`CvCircle.SamplePoints(count)` 对圆弧用 `span / count`，不含终点~~ **已修复：圆弧按 `span / (count - 1)` 含首尾；整圆不变** | `CvMode/CvCircle.cs` |
+| ~~`CvCircle.Scale` 只缩放半径不动圆心，与 `Point2d.Scale`（相对原点）语义不一致~~ **已修复（按设计保留）：图元统一相对自身中心（与 `CvLine.Scale` 一致），`Point2d` 为向量语义另作说明；`ICvScalable` 注释写明约定** | `CvMode/CvCircle.cs` |
+| ~~`record` 的 `with` 表达式可绕过构造函数的 `radius < 0` 校验~~ **已修复：校验移入 `Radius` 的 `init` 访问器** | `CvMode/CvCircle.cs` |
+| ~~`FitLineStrategy.Line` 是引用类型 `record`，默认 `null`；`RegisterOutput("直线/起点", () => inPara.Line.Start)` 在未执行时 NRE~~ **此前已修复（初始化为零长线段）** | `contour/FitLineStrategy.cs` |
+| ~~`RegionExtension.RebuildRegion` 中 `hRegion.HoRegion.Dispose()` 未判 null；Polygon 分支 `PolygonX/PolygonY` 为 null 会抛；`GenCoordsRegion` 未对 `hRegion` 判空~~ **此前已修复** | `Extension/RegionExtension.cs` |
+| ~~`HWindowMouse` 用 `DateTime.Now.Ticks` 判双击（受系统时间调整影响），未用 `SystemInformation.DoubleClickTime`；连续三击会被判成两次双击~~ **已修复：改用 `Environment.TickCount` + `SystemInformation.DoubleClickTime`，判出双击后清空配对，三击不再算两次双击** | `HWindows/HWindowMouse.cs` |
+| ~~`MouseDown`/`MouseDouble` 是公开标志位，本类从不复位，依赖外部清除（隐式协议）~~ **已修复：两标志位全仓无人读取，连同 `HDisplayUI.HoMouseDown/HoMouseDouble` 与设计器赋值一并删除** | `HWindows/HWindowMouse.cs` |
+| ~~`HWindowImage.Fun_ZoomImage` 实际在做**控件布局**（改 Width/Height/Location），命名误导且会再次触发 `Resize`；`HWindowControl_Resize` 中 `catch { }` 完全空吞~~ **已修复：更名 `LayoutControlToImage`，加 `_inLayout` 防重入；`catch { }` 此前已改为记日志** | `HWindows/HWindowImage.cs` |
 | ~~`HDisplay.SetImage` 用 `NullReferenceException` 表达业务错误，应为 `ObjectDisposedException`/`ArgumentNullException`~~ **已随 C16 修复** | `HWindows/HDisplay/HDisplay.cs` |
-| `FileImageStrategy` 的 `Index`/`ImagePaths` 是隐式实例状态、非线程安全；`FileImage` 持 public `HObject` 字段却不实现 `IDisposable`；`catch { throw; }` 是无意义噪音 | `image/FileImageStrategy.cs` |
-| `IHDisplay` 中 `DispRegion(CvRegion)` 与 `DispCvRegion(CvRegion)` 签名相同、命名不同、语义不明 | `HWindows/HDisplay/IHDisplay.cs` |
+| ~~`FileImageStrategy` 的 `Index`/`ImagePaths` 是隐式实例状态、非线程安全；`FileImage` 持 public `HObject` 字段却不实现 `IDisposable`；`catch { throw; }` 是无意义噪音~~ **已修复：去掉 `catch { throw; }`；空目录与空图改抛 `InvalidOperationException`；`FileImage` 实现 `IDisposable`；类注释写明非线程安全** | `image/FileImageStrategy.cs` |
+| ~~`IHDisplay` 中 `DispRegion(CvRegion)` 与 `DispCvRegion(CvRegion)` 签名相同、命名不同、语义不明~~ **此前已修复（更名以区分语义）** | `HWindows/HDisplay/IHDisplay.cs` |
 
 ---
 
@@ -738,7 +738,10 @@ private void PublishRenderData(FitArcMidpointRenderData data)
   - 15 条警告全部按「签名如实声明可空」修复，**无一处 `!` 压制、无行为变化**——这些 API 本来就把 null 当合法值处理，只是签名没说：`RegisterOutput` 的解析器改 `Func<object?>`（`ResolveOutput` 本就返回 `object?`，未示教的 `TmplPoint`、未初始化的 `Result.HoRegion` 都会是 null）；`TakeRenderData()` → `FitArcMidpointRenderData?`；`ResolveMouseHandler()` → `IMouseHandler?`（Erase / default 分支返回 null，调用方已用 `?.`）；`DrawModelUIArgs` 的两个 `HObject` 构造参数与属性改可空（上游 `DrawDone` 本就是 `HObject?`）；两处 `TransObject` 的 `obj` 改可空（首行即判 null）；`HDisplay` 中传给 `ReplaceRegion(ref HObject?)` 的 `region` / `ring` 局部变量改可空。
   - 构建通过（2026-09-26）：MSBuild Rebuild `DotNet.VisionMaster.csproj`（Debug），0 警告 0 错误。`DotNet.VisionMaster` 本身未开启，不在本条范围内。
 - [x] D7 `HashCode` 迁出 `namespace System`（此前已完成，现位于 `DotNet.Drawing/Internal/HashCode.cs`，命名空间 `DotNet.Drawing.Internal`）
-- [ ] D10 逐条清理一致性问题表（注释与代码不符、可空注解不一致、`CanConvert` 抛 `NotImplementedException`、`ConvertToWesternDigit` 的 `FirstOrDefault` 截断、`CvCircle` 圆弧包围盒/采样/缩放语义等）
+- [x] D10 逐条清理一致性问题表（注释与代码不符、可空注解不一致、`CanConvert` 抛 `NotImplementedException`、`ConvertToWesternDigit` 的 `FirstOrDefault` 截断、`CvCircle` 圆弧包围盒/采样/缩放语义等）
+  - 21 行中 7 行已随此前各项修掉，其余 14 行本轮处理，逐行结论见 D10 表格。
+  - **行为变更**（需现场回归）：双击阈值由硬编码 200ms 改为系统设置（Windows 默认 500ms）；`CvCircle` 圆弧的 `BoundingBox` 变小、`SamplePoints` 含终点（两者全仓暂无调用方）；`ExtractNumber` 遇「十」等大于 9 的数字时结果变化（唯一调用方是线宽下拉框，常规输入为阿拉伯数字，不受影响）。
+  - 构建通过（2026-09-26）：MSBuild Rebuild `DotNet.VisionMaster.csproj`（Debug），0 警告 0 错误。
 - [ ] 补齐几何计算（`MathHelper`/`CvCircle`/`CvLine`/`Rect2d`/`Point2d`/`CvCoord`）的单元测试——这部分无 Halcon 依赖，最容易测
 - [ ] 加入 HObject 计数断言的集成测试，防止泄漏回归
 

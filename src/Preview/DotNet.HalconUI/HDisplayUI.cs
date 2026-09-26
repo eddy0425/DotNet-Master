@@ -49,8 +49,6 @@ namespace DotNet.HalconUI
 
         // 宽/高/尺寸/中心/图像/颜色/字号等一律经 Display 访问，本控件不再镜像一份。
         public HWindow HoWindow => hWindowControl.HalconWindow;  //窗体句柄
-        public bool HoMouseDown { get { return mouse.MouseDown; } set { mouse.MouseDown = value; } } //鼠标按下
-        public bool HoMouseDouble { get { return mouse.MouseDouble; } set { mouse.MouseDouble = value; } }  //鼠标双击按下
 
         #endregion
 

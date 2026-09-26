@@ -56,17 +56,22 @@ namespace DotNet.HalconAlgo
     }
 
     /// <summary>
-    /// 圆弧中点拟合的一帧显示数据：拟合线程构建并发布，发布后视为只读。
+    /// 圆弧中点拟合的一帧显示数据：拟合线程构建并发布，发布后只读。
     /// 样式与可见性开关在拟合时从 inPara 捕获，因此可在任意线程独立于策略实例绘制。
-    /// 其中的 HObject 归本对象所有，随 Dispose 释放。
+    /// 其中的 HObject 归本对象所有，随 Dispose 释放（可重复调用）。
     /// </summary>
+    /// <remarks>
+    /// 拟合过程按阶段逐项填充（中途失败时保留已生成的部分便于排查），无法一次性构造，
+    /// 因此属性的 setter 限定为 <c>internal</c>：只有本程序集内的拟合策略能写，
+    /// 发布给外部（显示线程）后对方只能读。点集以 <see cref="IReadOnlyList{T}"/> 暴露。
+    /// </remarks>
     public sealed class FitArcMidpointRenderData : IDisposable
     {
         /// <summary> 查找区域（蓝）；尚未生成或已 Dispose 时为 null </summary>
-        public HObject? SearchRegion;
+        public HObject? SearchRegion { get; internal set; }
 
         /// <summary> 拟合出的圆弧轮廓（红）；拟合失败或已 Dispose 时为 null </summary>
-        public HObject? ArcContour;
+        public HObject? ArcContour { get; internal set; }
 
         /// <summary> 逐步测量矩形中心（拟合区域，蓝），姿态与尺寸各步相同 </summary>
         /// <remarks>
@@ -74,40 +79,40 @@ namespace DotNet.HalconAlgo
         /// 不再是并行的 rows / cols 两条 <c>List&lt;double&gt;</c>（审查项 C1）：
         /// 两条并行列表既无法保证等长，也让「哪个是行哪个是列」只能靠变量名约定。
         /// </remarks>
-        public List<Point2d> MeasurePoints = new List<Point2d>();
+        public IReadOnlyList<Point2d> MeasurePoints { get; internal set; } = new List<Point2d>();
 
         /// <summary> 测量矩形姿态 </summary>
-        public Angle MeasurePhi;
+        public Angle MeasurePhi { get; internal set; }
 
         /// <summary> 测量矩形半长（Halcon Length1） </summary>
-        public double MeasureLen1;
+        public double MeasureLen1 { get; internal set; }
 
         /// <summary> 测量矩形半宽（Halcon Length2） </summary>
-        public double MeasureLen2;
+        public double MeasureLen2 { get; internal set; }
 
         /// <summary> 参与拟合的点（绿） </summary>
-        public List<Point2d> UsedPoints = new List<Point2d>();
+        public IReadOnlyList<Point2d> UsedPoints { get; internal set; } = new List<Point2d>();
 
         /// <summary> 被剔除的点（红） </summary>
-        public List<Point2d> RemovedPoints = new List<Point2d>();
+        public IReadOnlyList<Point2d> RemovedPoints { get; internal set; } = new List<Point2d>();
 
         /// <summary> 圆弧中点（橙红），HasMidpoint 为 true 时有效 </summary>
-        public Point2d Midpoint;
-        public bool HasMidpoint;
+        public Point2d Midpoint { get; internal set; }
+        public bool HasMidpoint { get; internal set; }
 
         /// <summary> 结果文本（绿），拟合失败时为 null </summary>
-        public string? Message;
+        public string? Message { get; internal set; }
 
-        public int PointSize;
-        public int FontX;
-        public int FontY;
-        public int FontSize;
+        public int PointSize { get; internal set; }
+        public int FontX { get; internal set; }
+        public int FontY { get; internal set; }
+        public int FontSize { get; internal set; }
 
-        public bool ShowRegion;
-        public bool ShowFixRegion;
-        public bool ShowPoints;
-        public bool ShowResult;
-        public bool ShowText;
+        public bool ShowRegion { get; internal set; }
+        public bool ShowFixRegion { get; internal set; }
+        public bool ShowPoints { get; internal set; }
+        public bool ShowResult { get; internal set; }
+        public bool ShowText { get; internal set; }
 
         /// <summary>
         /// 唯一的叠加层绘制入口：编辑器同步显示与机台异步刷新共用。

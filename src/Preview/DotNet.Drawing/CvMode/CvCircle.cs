@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
 using DotNet.Drawing.Internal;
 
@@ -22,10 +22,24 @@ namespace DotNet.Drawing
         /// </summary>
         public Point2d Center { get; init; }
 
+        private readonly double _radius;
+
         /// <summary>
         /// 半径
         /// </summary>
-        public double Radius { get; init; }
+        /// <remarks>
+        /// 校验放在 init 访问器里而不是只放在构造函数里：
+        /// <c>circle with { Radius = -1 }</c> 不经过任何构造函数，只会走到这里。
+        /// </remarks>
+        public double Radius
+        {
+            get => _radius;
+            init
+            {
+                if (value < 0) throw new ArgumentOutOfRangeException(nameof(Radius), "Radius must be non-negative.");
+                _radius = value;
+            }
+        }
 
         /// <summary>
         /// 开始角度（弧度）
@@ -118,17 +132,14 @@ namespace DotNet.Drawing
                     );
                 }
 
-                // 对于圆弧，需要计算实际的边界框
-                double minX = Center.X, maxX = Center.X;
-                double minY = Center.Y, maxY = Center.Y;
-
-                // 检查起点和终点
+                // 对于圆弧，包围盒只由弧上的点决定：起点、终点，以及落在弧内的轴向极值点。
+                // 原实现以圆心为初值，把圆心也算进了包围盒，小于半圆的弧会因此偏大。
                 var startPoint = PointAtAngle(StartPhi);
                 var endPoint = PointAtAngle(EndPhi);
-                minX = Math.Min(minX, Math.Min(startPoint.X, endPoint.X));
-                maxX = Math.Max(maxX, Math.Max(startPoint.X, endPoint.X));
-                minY = Math.Min(minY, Math.Min(startPoint.Y, endPoint.Y));
-                maxY = Math.Max(maxY, Math.Max(startPoint.Y, endPoint.Y));
+                double minX = Math.Min(startPoint.X, endPoint.X);
+                double maxX = Math.Max(startPoint.X, endPoint.X);
+                double minY = Math.Min(startPoint.Y, endPoint.Y);
+                double maxY = Math.Max(startPoint.Y, endPoint.Y);
 
                 // 检查是否跨越四个极值点
                 double normalizedStart = MathHelper.NormalizeAnglePositive(StartPhi);
@@ -187,7 +198,6 @@ namespace DotNet.Drawing
         /// </summary>
         public CvCircle(double x, double y, double radius)
         {
-            if (radius < 0) throw new ArgumentOutOfRangeException(nameof(radius), "Radius must be non-negative.");
             Center = new Point2d(x, y);
             Radius = radius;
             StartPhi = 0;
@@ -199,7 +209,6 @@ namespace DotNet.Drawing
         /// </summary>
         public CvCircle(Point2d center, double radius)
         {
-            if (radius < 0) throw new ArgumentOutOfRangeException(nameof(radius), "Radius must be non-negative.");
             Center = center;
             Radius = radius;
             StartPhi = 0;
@@ -211,7 +220,6 @@ namespace DotNet.Drawing
         /// </summary>
         public CvCircle(double x, double y, double radius, double startPhi, double endPhi)
         {
-            if (radius < 0) throw new ArgumentOutOfRangeException(nameof(radius), "Radius must be non-negative.");
             Center = new Point2d(x, y);
             Radius = radius;
             StartPhi = startPhi;
@@ -223,7 +231,6 @@ namespace DotNet.Drawing
         /// </summary>
         public CvCircle(Point2d center, double radius, double startPhi, double endPhi)
         {
-            if (radius < 0) throw new ArgumentOutOfRangeException(nameof(radius), "Radius must be non-negative.");
             Center = center;
             Radius = radius;
             StartPhi = startPhi;
@@ -361,8 +368,12 @@ namespace DotNet.Drawing
         }
 
         /// <summary>
-        /// 缩放圆
+        /// 以圆心为中心缩放（圆心不动，半径 × scale）
         /// </summary>
+        /// <remarks>
+        /// 与 <see cref="CvLine.Scale"/>（以中点为中心）一致：图元的缩放 / 旋转都相对自身中心，
+        /// 需要相对任意点缩放时先平移。<see cref="Point2d.Scale"/> 是向量运算、相对原点，语义不同，见其注释。
+        /// </remarks>
         public CvCircle Scale(double scale)
         {
             if (scale < 0) throw new ArgumentOutOfRangeException(nameof(scale), "Scale must be non-negative.");
@@ -441,14 +452,22 @@ namespace DotNet.Drawing
         /// 获取圆周上等距分布的点
         /// </summary>
         /// <param name="count">点的数量</param>
+        /// <remarks>
+        /// 整圆：<c>span / count</c> 等分，不重复首尾（终点与起点重合）。
+        /// 圆弧：<c>span / (count - 1)</c> 等分，<b>包含起点和终点</b>；原实现同样用 <c>span / count</c>，
+        /// 圆弧的终点永远采不到。<paramref name="count"/> 为 1 时只返回起点。
+        /// </remarks>
         public Point2d[] SamplePoints(int count)
         {
             if (count <= 0)
                 throw new ArgumentOutOfRangeException(nameof(count), "Count must be positive.");
 
             var points = new Point2d[count];
-            double span = IsFullCircle ? 2 * Math.PI : (EndPhi - StartPhi);
-            double step = span / count;
+            double step;
+            if (IsFullCircle)
+                step = 2 * Math.PI / count;
+            else
+                step = count == 1 ? 0 : (EndPhi - StartPhi) / (count - 1);
 
             for (int i = 0; i < count; i++)
             {

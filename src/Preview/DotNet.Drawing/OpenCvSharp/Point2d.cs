@@ -16,8 +16,12 @@ namespace DotNet.Drawing
     /// - readonly struct: 不可变值类型，天生线程安全，零GC分配
     /// - 属性使用 init 访问器，保证不可变语义
     /// - 实现 IEquatable&lt;T&gt; 提供高效相等性比较
+    /// - 刻意<b>不</b>实现 <see cref="ICvScalable{T}"/> / <see cref="ICvRotatable{T}"/>：那两个接口约定
+    ///   「相对自身中心」变换（<see cref="CvLine"/> 绕中点、<see cref="CvCircle"/> 绕圆心），
+    ///   而点把自己当向量用，<see cref="Scale"/> / <see cref="Rotate"/> 相对<b>原点</b>——
+    ///   按接口语义绕自身中心的点缩放 / 旋转恒等于自身，没有意义。需要绕任意点旋转用 <see cref="RotateAround"/>。
     /// </remarks>
-    public readonly struct Point2d : IEquatable<Point2d>, ICvTranslatable<Point2d>, ICvScalable<Point2d>
+    public readonly struct Point2d : IEquatable<Point2d>, ICvTranslatable<Point2d>
     {
         #region Properties
 

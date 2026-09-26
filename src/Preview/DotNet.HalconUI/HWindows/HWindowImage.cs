@@ -16,6 +16,10 @@ namespace DotNet.HalconUI
         HObject? _hoImage;
         bool _disposed;
 
+        // LayoutControlToImage 改控件 Width/Height 时会同步触发本控件的 Resize，
+        // 用此标志让那次回调直接返回，避免布局过程中重入再布局、再重绘一遍。
+        bool _inLayout;
+
         /// <summary>
         /// 当前显示的图像。所有权在本类：外部传入的句柄一律 <c>copy_image</c> 一份后接管，
         /// 释放由 <see cref="Dispose"/> 或下一次接管时的换出动作负责，调用方不得释放本属性。
@@ -59,7 +63,7 @@ namespace DotNet.HalconUI
         {
             try
             {
-                if (_disposed) return;
+                if (_disposed || _inLayout) return;
 
                 HWindowControl? control = sender as HWindowControl;
                 if (control == null || control.Parent == null) return;
@@ -70,7 +74,7 @@ namespace DotNet.HalconUI
                     getInfo.parent.Width = control.Parent.Width;
                     getInfo.parent.Height = control.Parent.Height;
 
-                    Fun_ZoomImage(getInfo);
+                    LayoutControlToImage(getInfo);
                     Fun_ReDisplay();
                 }
             }
@@ -155,7 +159,7 @@ namespace DotNet.HalconUI
             {
                 if (getInfo.width.D != zoomInfo.width.D || getInfo.height.D != zoomInfo.height.D)
                 {
-                    Fun_ZoomImage(getInfo);
+                    LayoutControlToImage(getInfo);
                 }
 
                 if (isSetPart)
@@ -170,8 +174,9 @@ namespace DotNet.HalconUI
             }
         }
 
-        /// <summary> 按父容器尺寸缩放/居中 HWindowControl </summary>
-        private void Fun_ZoomImage(ZoomImage info)
+        /// <summary> 按图像宽高比把 HWindowControl 缩放并居中到父容器内（改的是控件布局，不是图像） </summary>
+        /// <remarks> 原名 <c>Fun_ZoomImage</c>，名字像是在缩放图像，实际只动控件的 Width/Height/Location。 </remarks>
+        private void LayoutControlToImage(ZoomImage info)
         {
             if (_disposed || _hWindowControl == null || _hWindowControl.IsDisposed) return;
             if (_hWindowControl.Parent == null) return;
@@ -184,6 +189,7 @@ namespace DotNet.HalconUI
             double imgH = info.height.D;
             if (parentW <= 0 || parentH <= 0 || imgW <= 0 || imgH <= 0) return;
 
+            _inLayout = true;
             try
             {
                 if ((imgW / parentW) < (imgH / parentH))
@@ -206,6 +212,10 @@ namespace DotNet.HalconUI
             catch (Exception ex)
             {
                 Log.Error(nameof(HWindowImage), "缩放图像失败.", ex);
+            }
+            finally
+            {
+                _inLayout = false;
             }
         }
 

@@ -15,16 +15,18 @@ namespace DotNet.HalconUI
     /// - 对外部传入的 <see cref="HObject"/> 一律使用 <see cref="HObjectExtension.NotNull"/> 检查，
     ///   而不是 <c>!= null</c>—— HObject 是 HalconDotNet 的 wrapper，可能"非 null 但未 Initialized"。
     /// - 不在鼠标事件里弹 <see cref="MessageBox"/>——会随着拖拽频率反复弹窗、阻塞 UI。
-    /// - 双击阈值原本是硬编码 2_000_000 ticks（200ms）；改成 <see cref="TimeSpan.TicksPerMillisecond"/>
-    ///   计算的命名常量更清晰。
+    /// - 双击判定用单调时钟 <see cref="Environment.TickCount"/> + 系统设置 <see cref="SystemInformation.DoubleClickTime"/>：
+    ///   原实现用 <c>DateTime.Now.Ticks</c>（校时 / 夏令时会让差值跳变）配硬编码 200ms（与系统设置不一致）；
+    ///   且判出双击后不复位，连续三击会被判成两次双击。
+    /// - 原先公开的 <c>MouseDown</c> / <c>MouseDouble</c> 标志位本类只置位不复位、全仓也无人读取，已删除。
     /// </remarks>
     public class HWindowMouse : IDisposable
     {
-        const int DoubleClickThresholdMs = 200;
         // 普通版 Halcon 能处理的图像最大尺寸 32K*32K，避免缩小过头导致 SetPart 崩溃
         const double MaxHalconViewArea = 32000d * 32000d;
 
-        long clickTicks = 0;
+        // 上一次（未被双击消耗的）按下时刻，Environment.TickCount 毫秒；null 表示没有可配对的单击
+        int? _lastClickMs;
         bool Mouse_hand = false;
         double RowDown;
         double ColDown;
@@ -36,8 +38,6 @@ namespace DotNet.HalconUI
         bool _disposed;
 
         public event Action<HTuple, HTuple, HTuple>? RefreshUI;
-        public bool MouseDown { get; set; }      //鼠标按下
-        public bool MouseDouble { get; set; }    //鼠标双击按下
 
         public HWindowMouse(HWindowControl hWindowControl, IHDisplay display)
         {
@@ -71,26 +71,24 @@ namespace DotNet.HalconUI
                 RowDown = Row;
                 ColDown = Column;
 
-                long nowTicks = DateTime.Now.Ticks;
-                bool doubleClick = (nowTicks - clickTicks) < DoubleClickThresholdMs * TimeSpan.TicksPerMillisecond;
+                // TickCount 约 24.9 天回绕一次，int 减法在回绕处仍得到正确的差值
+                int nowMs = Environment.TickCount;
+                bool doubleClick = _lastClickMs.HasValue
+                                   && unchecked(nowMs - _lastClickMs.Value) <= SystemInformation.DoubleClickTime;
+                // 双击消耗掉这次配对：第三击重新作为单击起点，而不是与第二击再凑成一次双击
+                _lastClickMs = doubleClick ? (int?)null : nowMs;
+
                 if (doubleClick && _display.HoImage.NotNull())
                 {
-                    //_display.DispImage(_display.HoImage, true);
                     HOperatorSet.SetPart(_hWindow, 0, 0, _display.HoHeight - 1, _display.HoWidth - 1);
                     HOperatorSet.ClearWindow(_hWindow);
                     HOperatorSet.DispObj(_display.HoImage, _hWindow);
                     Mouse_hand = false;
-                    MouseDouble = true;
                 }
-                clickTicks = nowTicks;
 
                 if (e.Button == MouseButtons.Middle)
                 {
                     Mouse_hand = true;
-                }
-                else if (e.Button == MouseButtons.Right)
-                {
-                    MouseDown = true;
                 }
             }
             catch (Exception ex) { Log.Error(nameof(HWindowMouse), "处理鼠标按下失败.", ex); }
