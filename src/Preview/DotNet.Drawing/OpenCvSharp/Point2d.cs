@@ -185,6 +185,9 @@ namespace DotNet.Drawing
         /// <summary>
         /// 获取单位向量
         /// </summary>
+        /// <remarks>由 X / Y 推导, 只读; 落盘会写出却无法读回, 标 JsonIgnore 免得污染 job 文件。
+        /// 单位向量的 Normalized 还是它自己, 默认序列化设置下会直接抛"Self referencing loop"。</remarks>
+        [JsonIgnore]
         public Point2d Normalized
         {
             get

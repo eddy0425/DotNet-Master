@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
 
 namespace DotNet.Drawing
@@ -236,8 +236,10 @@ namespace DotNet.Drawing
         public static double NormalizeAngle(double angle)
         {
             if (double.IsNaN(angle) || double.IsInfinity(angle)) return angle;
-            double result = angle - TwoPi * Math.Floor((angle + Math.PI) / TwoPi);
-            // 浮点舍入可能让结果恰好落在开区间端点 π 上，强制回落到 -π。
+            // IEEERemainder 是精确取余，结果在 [-π, π]；原先的 angle - 2π·Floor(...) 在 |angle| 很大时
+            // 乘积与 angle 同量级、相减丢光有效位（1e18 得到 121.7，落在区间外）。
+            double result = Math.IEEERemainder(angle, TwoPi);
+            // 恰好落在开区间端点 π 上时回落到 -π。
             return result >= Math.PI ? result - TwoPi : result;
         }
 
@@ -248,8 +250,11 @@ namespace DotNet.Drawing
         public static double NormalizeAnglePositive(double angle)
         {
             if (double.IsNaN(angle) || double.IsInfinity(angle)) return angle;
-            double result = angle - TwoPi * Math.Floor(angle / TwoPi);
-            return result >= TwoPi ? 0 : (result < 0 ? 0 : result);
+            // % 是精确取余（符号随被除数），理由同 NormalizeAngle。
+            double result = angle % TwoPi;
+            if (result < 0) result += TwoPi;
+            // 极小的负余数加 2π 后可能舍入成 2π
+            return result >= TwoPi ? 0 : result;
         }
 
         /// <summary>
@@ -259,7 +264,7 @@ namespace DotNet.Drawing
         public static double NormalizeAngleDegrees(double degrees)
         {
             if (double.IsNaN(degrees) || double.IsInfinity(degrees)) return degrees;
-            double result = degrees - 360.0 * Math.Floor((degrees + 180.0) / 360.0);
+            double result = Math.IEEERemainder(degrees, 360.0);
             return result >= 180.0 ? result - 360.0 : result;
         }
 
@@ -270,8 +275,9 @@ namespace DotNet.Drawing
         public static double NormalizeAngleDegreesPositive(double degrees)
         {
             if (double.IsNaN(degrees) || double.IsInfinity(degrees)) return degrees;
-            double result = degrees - 360.0 * Math.Floor(degrees / 360.0);
-            return result >= 360.0 ? 0 : (result < 0 ? 0 : result);
+            double result = degrees % 360.0;
+            if (result < 0) result += 360.0;
+            return result >= 360.0 ? 0 : result;
         }
 
         /// <summary>

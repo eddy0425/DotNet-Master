@@ -742,7 +742,16 @@ private void PublishRenderData(FitArcMidpointRenderData data)
   - 21 行中 7 行已随此前各项修掉，其余 14 行本轮处理，逐行结论见 D10 表格。
   - **行为变更**（需现场回归）：双击阈值由硬编码 200ms 改为系统设置（Windows 默认 500ms）；`CvCircle` 圆弧的 `BoundingBox` 变小、`SamplePoints` 含终点（两者全仓暂无调用方）；`ExtractNumber` 遇「十」等大于 9 的数字时结果变化（唯一调用方是线宽下拉框，常规输入为阿拉伯数字，不受影响）。
   - 构建通过（2026-09-26）：MSBuild Rebuild `DotNet.VisionMaster.csproj`（Debug），0 警告 0 错误。
-- [ ] 补齐几何计算（`MathHelper`/`CvCircle`/`CvLine`/`Rect2d`/`Point2d`/`CvCoord`）的单元测试——这部分无 Halcon 依赖，最容易测
+- [x] 补齐几何计算（`MathHelper`/`CvCircle`/`CvLine`/`Rect2d`/`Point2d`/`CvCoord`）的单元测试——这部分无 Halcon 依赖，最容易测
+  - **已完成（2026-09-27）**：新建 `src/Preview/DotNet.Drawing.Tests`（MSTest 2.2.10，x64，已加入 sln 的 Preview 文件夹），136 个用例全部通过；另覆盖 `Angle`（含 JSON 转换器）与 `StringExtension`。
+  - 运行：`vstest.console.exe src/Preview/DotNet.Drawing.Tests/bin/Debug/DotNet.Drawing.Tests.dll /Platform:x64`。VS2019 Professional 不带代码覆盖率工具，70% 覆盖率目标**未实测**，按公开成员逐项覆盖。
+  - 测试发现并已修复：
+    - `Point2d.Normalized` 缺 `[JsonIgnore]`：默认设置下序列化 Point2d 直接抛 "Self referencing loop"（`SerializeConvert` 即默认设置）；忽略循环时则把 `Normalized` 写进 job 文件。
+    - `MathHelper.NormalizeAngle*` 四个函数的 `x - 2π·Floor(...)` 在大输入下丢精度（`NormalizeAngle(1e18)` = 121.7，落在区间外），改为精确取余 `IEEERemainder` / `%`。
+    - `StringExtension` 注释（D10 时写的）不实：汉字数词「十」是 Lo 类、从未被提取；「½」经 NFKC 先分解成 "1⁄2"。已改注释，行为不变。
+  - **发现未修（待定）**：
+    - `CvCircle` 圆弧方向语义不一致：`Contains`/`IsOnCircumference`/`DistanceToPoint`/`BoundingBox` 把圆弧视为从 StartPhi 逆时针到 EndPhi（规范化到 [0,2π) 后判断），而 `ArcSpan`/`ArcLength`/`PointAt`/`SamplePoints` 直接用 `EndPhi - StartPhi`。当 EndPhi < StartPhi（如 `ReverseArc()` 的结果）两套语义给出不同的弧：`(π/2 → 0)` 前者是 3/4 圆、后者是 1/4 圆。需先定约定再改，测试只覆盖了 StartPhi < EndPhi 的情形。
+    - `new Rect2d(0, 0, 10, 10)`（全 int 实参）与 `Rect2d(HTuple×4)` 重载二义（CS0121，HTuple 与 double 双向隐式转换），调用方必须写 double 字面量。
 - [ ] 加入 HObject 计数断言的集成测试，防止泄漏回归
 
 ---
