@@ -246,6 +246,14 @@ namespace DotNet.HalconUI
             dispModel.SetUp(Display, shrFindMode, shrContour, shrCoord);
         }
 
+        /// <summary>
+        /// 模板区域句柄被换掉（旧的已释放）时同步 dispModel 的缓存；与 <see cref="SetModelPara"/> 不同，不重绘也不改 DrawType。
+        /// </summary>
+        internal void UpdateModelFindMode(HObject shrFindMode)
+        {
+            dispModel.UpdateFindMode(shrFindMode);
+        }
+
         #endregion
 
         #region DispImage

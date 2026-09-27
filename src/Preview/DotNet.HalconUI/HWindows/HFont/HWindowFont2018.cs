@@ -85,7 +85,7 @@ namespace DotNet.HalconUI
                 else
                 {
                     hv_Exception = "Wrong value of control parameter Bold";
-                    throw new HalconException(hv_Exception);
+                    throw new HalconException(hv_Exception.S);
                 }
                 if ((int)(new HTuple(hv_Slant_COPY_INP_TMP.TupleEqual("true"))) != 0)
                 {
@@ -98,7 +98,7 @@ namespace DotNet.HalconUI
                 else
                 {
                     hv_Exception = "Wrong value of control parameter Slant";
-                    throw new HalconException(hv_Exception);
+                    throw new HalconException(hv_Exception.S);
                 }
                 try
                 {
@@ -107,6 +107,7 @@ namespace DotNet.HalconUI
                 // catch (Exception) 
                 catch (HalconException HDevExpDefaultException1)
                 {
+                    // 这里的 hv_Exception 是 HDevelop 异常元组（首元素为错误码），必须走 HTuple 重载；取 .S 会抛 HTupleAccessException
                     HDevExpDefaultException1.ToHTuple(out hv_Exception);
                     throw new HalconException(hv_Exception);
                 }
@@ -154,7 +155,7 @@ namespace DotNet.HalconUI
                 else
                 {
                     hv_Exception = "Wrong value of control parameter Bold";
-                    throw new HalconException(hv_Exception);
+                    throw new HalconException(hv_Exception.S);
                 }
                 if ((int)(new HTuple(hv_Slant_COPY_INP_TMP.TupleEqual("true"))) != 0)
                 {
@@ -174,7 +175,7 @@ namespace DotNet.HalconUI
                 else
                 {
                     hv_Exception = "Wrong value of control parameter Slant";
-                    throw new HalconException(hv_Exception);
+                    throw new HalconException(hv_Exception.S);
                 }
                 try
                 {
@@ -183,6 +184,7 @@ namespace DotNet.HalconUI
                 // catch (Exception) 
                 catch (HalconException HDevExpDefaultException1)
                 {
+                    // 这里的 hv_Exception 是 HDevelop 异常元组（首元素为错误码），必须走 HTuple 重载；取 .S 会抛 HTupleAccessException
                     HDevExpDefaultException1.ToHTuple(out hv_Exception);
                     throw new HalconException(hv_Exception);
                 }
@@ -193,6 +195,10 @@ namespace DotNet.HalconUI
 
         public void DispText(string message, HTuple hv_Row, HTuple hv_Column, string color, string coordSystem)
         {
+            // 原窗口颜色与 Part 提到 try 外：中途任一算子抛异常（颜色名非法、窗口已销毁…）时，
+            // 由 finally 还原，否则窗口会停留在"窗口坐标 Part + 文本颜色"，后续图像显示全部错位。
+            HTuple hv_Red = null, hv_Green = null, hv_Blue = null;
+            HTuple hv_Row1Part = null, hv_Column1Part = null, hv_Row2Part = null, hv_Column2Part = null;
             try
             {
                 HTuple hv_String = new HTuple(message);
@@ -202,8 +208,7 @@ namespace DotNet.HalconUI
 
                 // Local control variables 
 
-                HTuple hv_Red, hv_Green, hv_Blue, hv_Row1Part;
-                HTuple hv_Column1Part, hv_Row2Part, hv_Column2Part, hv_RowWin;
+                HTuple hv_RowWin;
                 HTuple hv_ColumnWin, hv_WidthWin, hv_HeightWin, hv_MaxAscent;
                 HTuple hv_MaxDescent, hv_MaxWidth, hv_MaxHeight, hv_R1 = new HTuple();
                 HTuple hv_C1 = new HTuple(), hv_FactorRow = new HTuple(), hv_FactorColumn = new HTuple();
@@ -311,7 +316,7 @@ namespace DotNet.HalconUI
                 else if ((int)(new HTuple(hv_Box.TupleNotEqual("false"))) != 0)
                 {
                     hv_Exception = "Wrong value of control parameter Box";
-                    throw new HalconException(hv_Exception);
+                    throw new HalconException(hv_Exception.S);
                 }
                 //Write text.
                 for (hv_Index = 0; (int)hv_Index <= (int)((new HTuple(hv_String_COPY_INP_TMP.TupleLength()
@@ -333,18 +338,30 @@ namespace DotNet.HalconUI
                     HOperatorSet.WriteString(hWindow, hv_String_COPY_INP_TMP.TupleSelect(
                         hv_Index));
                 }
-                //reset changed window settings
-                HOperatorSet.SetRgb(hWindow, hv_Red, hv_Green, hv_Blue);
-                HOperatorSet.SetPart(hWindow, hv_Row1Part, hv_Column1Part, hv_Row2Part,
-                    hv_Column2Part);
-
-                return;
             }
             catch (Exception ex)
             {
                 // 文本绘制失败不应打断调用方的整条显示流程（通常是窗口已销毁或字体不可用），
                 // 但静默会让"文字不显示"变成无线索问题，因此记一条日志。
                 Log.Warn(nameof(HWindowFont2018), "显示文本失败.", ex);
+            }
+            finally
+            {
+                RestoreWindow(hv_Red, hv_Green, hv_Blue, hv_Row1Part, hv_Column1Part, hv_Row2Part, hv_Column2Part);
+            }
+        }
+
+        /// <summary> 还原 DispText 改动过的窗口设置；对应的 Get 没跑到（参数为 null）就说明没改过，跳过 </summary>
+        private void RestoreWindow(HTuple red, HTuple green, HTuple blue, HTuple row1, HTuple col1, HTuple row2, HTuple col2)
+        {
+            try
+            {
+                if (red != null) HOperatorSet.SetRgb(hWindow, red, green, blue);
+                if (row1 != null) HOperatorSet.SetPart(hWindow, row1, col1, row2, col2);
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(nameof(HWindowFont2018), "还原窗口颜色/Part 失败.", ex);
             }
         }
 

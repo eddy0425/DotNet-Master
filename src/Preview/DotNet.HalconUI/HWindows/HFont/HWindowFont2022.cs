@@ -138,7 +138,7 @@ namespace DotNet.HalconUI
                 {
                     hv_Exception.Dispose();
                     hv_Exception = "Wrong value of control parameter Bold";
-                    throw new HalconException(hv_Exception);
+                    throw new HalconException(hv_Exception.S);
                 }
                 if ((int)(new HTuple(hv_Slant.TupleEqual("true"))) != 0)
                 {
@@ -156,7 +156,7 @@ namespace DotNet.HalconUI
                 {
                     hv_Exception.Dispose();
                     hv_Exception = "Wrong value of control parameter Slant";
-                    throw new HalconException(hv_Exception);
+                    throw new HalconException(hv_Exception.S);
                 }
                 if ((int)(new HTuple(hv_Style.TupleEqual(""))) != 0)
                 {

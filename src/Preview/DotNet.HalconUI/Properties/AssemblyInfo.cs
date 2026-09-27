@@ -31,3 +31,6 @@ using System.Runtime.InteropServices;
 //
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
+
+// 交互绘图的状态机、几何计算与会话注册表均为 internal，由测试项目直接覆盖。
+[assembly: InternalsVisibleTo("DotNet.HalconUI.Tests")]

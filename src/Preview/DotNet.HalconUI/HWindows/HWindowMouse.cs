@@ -151,8 +151,9 @@ namespace DotNet.HalconUI
                 HTuple Ht = Row00 - Row0;
                 HTuple Wt = Column00 - Column0;
 
-                // 仅允许放大；缩小时确保不会超出 Halcon 的视图上限
-                if (zoom == 1.5 || (Ht.D * Wt.D) < MaxHalconViewArea)
+                // 放大总是允许；缩小要按「缩小之后」的视图面积判上限（原先用缩小前的面积判，
+                // 面积刚好低于上限时仍会再缩一次，把 Part 放大到 4 倍、越过 32K*32K）
+                if (zoom == 1.5 || (Ht.D / zoom) * (Wt.D / zoom) < MaxHalconViewArea)
                 {
                     HTuple r1 = Row0 + ((1 - (1.0 / zoom)) * (Row - Row0));
                     HTuple c1 = Column0 + ((1 - (1.0 / zoom)) * (Column - Column0));

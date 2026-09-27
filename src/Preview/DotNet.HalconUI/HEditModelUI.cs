@@ -80,7 +80,7 @@ namespace DotNet.HalconUI
         {
             switch (_drawType)
             {
-                case DrawEnum.Erase: eraseRect.OnMouseDown(e); break;
+                case DrawEnum.Erase: eraseRect.OnMouseDown(e); SyncEraseResult(); break;
             }
         }
 
@@ -108,9 +108,26 @@ namespace DotNet.HalconUI
                     {
                         eraseRect.SetPara(shrColor, shrLineWidth);
                         eraseRect.OnMouseMove(e);
+                        SyncEraseResult();
                     }
                     break;
             }
+        }
+
+        /// <summary>
+        /// 涂抹后把 <see cref="EraseRectMouse"/> 手里的新句柄同步回本窗体。
+        /// </summary>
+        /// <remarks>
+        /// <c>eraseRect</c> 每涂一笔都会生成新的擦除/模板区域并释放旧的——旧的正是 <see cref="but_ApplyRegion_Click"/>
+        /// 交给它的 <c>shrErase</c> / <c>shrFindMode</c>。不同步的话这两个字段从第一笔起就指向已释放的句柄，
+        /// 之后「添加/删除区域」拿它做 <c>Union2</c> / <c>Difference</c>，擦除结果也随之丢失。
+        /// dispModel 里缓存的也是同一个旧句柄，一并同步（与 DrawROIAsync 末尾的 SetModelPara 同理，但这里不能重绘）。
+        /// </remarks>
+        private void SyncEraseResult()
+        {
+            shrErase = eraseRect.Erase;
+            shrFindMode = eraseRect.FindMode;
+            display.UpdateModelFindMode(shrFindMode);
         }
 
         #endregion
@@ -301,6 +318,26 @@ namespace DotNet.HalconUI
             {
                 HalconController.TransRegion(from, to, obj, out objTrans);
             }
+        }
+
+        /// <summary>
+        /// 释放本窗体持有的 HALCON 句柄，由 <see cref="Dispose(bool)"/> 的 disposing 分支调用。
+        /// </summary>
+        /// <remarks>
+        /// 与 <see cref="HModelUI"/> 对齐：这四个字段原先从未释放，<c>ParaForm</c> 每次销毁
+        /// 都会留下一整份模板图像与区域的非托管句柄。<c>eraseRect</c> 手里的是同一批对象
+        /// （见 <see cref="SyncEraseResult"/>），不需要另行释放。
+        /// </remarks>
+        private void ReleaseModelResources()
+        {
+            try
+            {
+                _srcImage?.Dispose();
+                shrErase?.Dispose();
+                shrFindMode?.Dispose();
+                _shrContour?.Dispose();
+            }
+            catch (System.Exception ex) { Log.Error(nameof(HEditModelUI), "释放模板资源失败.", ex); }
         }
 
         /// <summary>

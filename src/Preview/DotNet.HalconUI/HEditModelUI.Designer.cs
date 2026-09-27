@@ -18,6 +18,13 @@
                 components.Dispose();
             }
             base.Dispose(disposing);
+
+            // 放在 base.Dispose 之后：子控件 HDisplayUI 释放时会取消挂起的绘制会话，
+            // 其续体 (DrawROIAsync) 还要读这些字段，先释放它们就成了在已释放句柄上做运算。
+            if (disposing)
+            {
+                ReleaseModelResources();
+            }
         }
 
         #region Windows Form Designer generated code

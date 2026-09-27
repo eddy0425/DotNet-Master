@@ -40,6 +40,9 @@ namespace DotNet.HalconUI
 
         public void OnMouseMove(HMouseEventArgs e)
         {
+            // 未经 SetRectPara 直接切到 DispRect 时还没 SetUp：什么都不画，也不必每次移动都告警
+            // (SetUp 过但传了 null 区域属于调用方错误，仍走下面的告警)
+            if (_display == null) return;
             try
             {
                 Point2d TopLeft = _shrRegion.TopLeft;

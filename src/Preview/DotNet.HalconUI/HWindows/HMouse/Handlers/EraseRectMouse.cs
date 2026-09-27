@@ -23,6 +23,16 @@ namespace DotNet.HalconUI
         private int _lineWidth;
         private IHDisplay _display = null;
 
+        /// <summary> 当前累计的擦除区域 </summary>
+        /// <remarks>
+        /// <see cref="SetUp"/> 传入的句柄所有权随之转给本类：每次涂抹都会生成新对象并释放旧对象，
+        /// 调用方原先持有的引用在第一次涂抹后即失效，必须改读本属性（见 <c>HEditModelUI.SyncEraseResult</c>）。
+        /// </remarks>
+        public HObject Erase => _erase;
+
+        /// <summary> 扣除擦除区域后的模板区域，所有权约定同 <see cref="Erase"/> </summary>
+        public HObject FindMode => _findMode;
+
         public void SetUp(IHDisplay display, HObject shrErase, HObject shrFindMode, HColor color, int lineWidth)
         {
             //display.Reset();
@@ -71,7 +81,8 @@ namespace DotNet.HalconUI
 
         private void DrawCircle(HTuple row, HTuple column)
         {
-            HOperatorSet.GenEmptyObj(out HObject subRegion);
+            // 不预先 GenEmptyObj：紧接着的 GenCircle(out …) 会覆盖掉它，占位句柄随之泄漏。
+            HObject subRegion = null;
             try
             {
                 _display.SetDraw("fill");
@@ -89,9 +100,11 @@ namespace DotNet.HalconUI
                     HOperatorSet.CopyObj(subRegion, out _erase, 1, -1);
                 }
 
+                // 只扣本次笔刷：_erase 是跨多次 SetUp 累计的显示用区域，
+                // 用它做差会把用户之后重新添加回来的部分再扣掉一次。
                 if (_findMode.CountObj() > 0)
                 {
-                    HOperatorSet.Difference(_findMode, _erase, out HObject regionDifference);
+                    HOperatorSet.Difference(_findMode, subRegion, out HObject regionDifference);
                     _findMode.Dispose();
                     _findMode = regionDifference;
                 }
@@ -99,7 +112,7 @@ namespace DotNet.HalconUI
             finally
             {
                 _display.SetDraw("margin");
-                subRegion.Dispose();
+                subRegion?.Dispose();
             }
         }
 
