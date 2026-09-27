@@ -4,9 +4,10 @@ using DotNet.HalconCore;
 using DotNet.HalconAlgo;
 using System.Windows.Forms;
 using System.Collections.Generic;
+using DotNet.VisionMaster;
 
 
-namespace DotNet.VisionMaster
+namespace DotNet.VisionDemo
 {
     public partial class LineRotImageForm : Form
     {

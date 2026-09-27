@@ -65,8 +65,12 @@
     <Compile Include="Infrastructure\Fakes.cs" />
     <Compile Include="Infrastructure\Mouse.cs" />
     <Compile Include="Infrastructure\Sta.cs" />
-    <Compile Include="Infrastructure\ParaPanelForm.cs" />
-    <Compile Include="Infrastructure\WindowHost.cs" />
+    <Compile Include="Infrastructure\ParaPanelForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Infrastructure\WindowHost.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="DrawGeometryTests.cs" />
     <Compile Include="DrawShapeTests.cs" />
     <Compile Include="DrawSessionTests.cs" />

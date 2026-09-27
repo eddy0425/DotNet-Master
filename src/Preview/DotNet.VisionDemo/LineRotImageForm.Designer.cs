@@ -1,6 +1,6 @@
-﻿namespace DotNet.VisionMaster
+﻿namespace DotNet.VisionDemo
 {
-    partial class CreateROIForm
+    partial class LineRotImageForm
     {
         /// <summary>
         /// 必需的设计器变量。
@@ -28,30 +28,31 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.button3 = new System.Windows.Forms.Button();
+            this.button4 = new System.Windows.Forms.Button();
             this.panel2 = new System.Windows.Forms.Panel();
-            this.button2 = new System.Windows.Forms.Button();
+            this.button3 = new System.Windows.Forms.Button();
             this.panel1 = new System.Windows.Forms.Panel();
             this.but_Run = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.panel3 = new System.Windows.Forms.Panel();
-            this.button4 = new System.Windows.Forms.Button();
+            this.button2 = new System.Windows.Forms.Button();
             this.but_Cycle = new System.Windows.Forms.Button();
+            this.button5 = new System.Windows.Forms.Button();
             this.tableLayoutPanel1.SuspendLayout();
             this.panel3.SuspendLayout();
             this.SuspendLayout();
             // 
-            // button3
+            // button4
             // 
-            this.button3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.button3.Location = new System.Drawing.Point(61, 128);
-            this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(80, 23);
-            this.button3.TabIndex = 0;
-            this.button3.Text = "创建ROI";
-            this.button3.UseVisualStyleBackColor = true;
-            this.button3.Click += new System.EventHandler(this.button3_Click);
+            this.button4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.button4.Location = new System.Drawing.Point(61, 168);
+            this.button4.Name = "button4";
+            this.button4.Size = new System.Drawing.Size(80, 23);
+            this.button4.TabIndex = 0;
+            this.button4.Text = "直线图像";
+            this.button4.UseVisualStyleBackColor = true;
+            this.button4.Click += new System.EventHandler(this.button4_Click);
             // 
             // panel2
             // 
@@ -63,16 +64,16 @@
             this.panel2.Size = new System.Drawing.Size(773, 294);
             this.panel2.TabIndex = 1;
             // 
-            // button2
+            // button3
             // 
-            this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.button2.Location = new System.Drawing.Point(61, 76);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(80, 23);
-            this.button2.TabIndex = 2;
-            this.button2.Text = "形状匹配";
-            this.button2.UseVisualStyleBackColor = true;
-            this.button2.Click += new System.EventHandler(this.button2_Click);
+            this.button3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.button3.Location = new System.Drawing.Point(61, 120);
+            this.button3.Name = "button3";
+            this.button3.Size = new System.Drawing.Size(80, 23);
+            this.button3.TabIndex = 2;
+            this.button3.Text = "拟合直线";
+            this.button3.UseVisualStyleBackColor = true;
+            this.button3.Click += new System.EventHandler(this.button3_Click);
             // 
             // panel1
             // 
@@ -125,12 +126,13 @@
             // 
             // panel3
             // 
-            this.panel3.Controls.Add(this.button4);
+            this.panel3.Controls.Add(this.button5);
+            this.panel3.Controls.Add(this.button2);
             this.panel3.Controls.Add(this.but_Cycle);
             this.panel3.Controls.Add(this.button1);
-            this.panel3.Controls.Add(this.button3);
+            this.panel3.Controls.Add(this.button4);
             this.panel3.Controls.Add(this.but_Run);
-            this.panel3.Controls.Add(this.button2);
+            this.panel3.Controls.Add(this.button3);
             this.panel3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel3.Location = new System.Drawing.Point(782, 3);
             this.panel3.Name = "panel3";
@@ -138,15 +140,16 @@
             this.panel3.Size = new System.Drawing.Size(194, 823);
             this.panel3.TabIndex = 2;
             // 
-            // button4
+            // button2
             // 
-            this.button4.Location = new System.Drawing.Point(61, 183);
-            this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(75, 23);
-            this.button4.TabIndex = 7;
-            this.button4.Text = "button4";
-            this.button4.UseVisualStyleBackColor = true;
-            this.button4.Click += new System.EventHandler(this.button4_Click);
+            this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.button2.Location = new System.Drawing.Point(61, 72);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(80, 23);
+            this.button2.TabIndex = 7;
+            this.button2.Text = "形状匹配";
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
             // but_Cycle
             // 
@@ -159,13 +162,24 @@
             this.but_Cycle.UseVisualStyleBackColor = true;
             this.but_Cycle.Click += new System.EventHandler(this.but_Cycle_Click);
             // 
-            // CreateROIForm
+            // button5
+            // 
+            this.button5.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.button5.Location = new System.Drawing.Point(61, 212);
+            this.button5.Name = "button5";
+            this.button5.Size = new System.Drawing.Size(80, 23);
+            this.button5.TabIndex = 8;
+            this.button5.Text = "旋转图像";
+            this.button5.UseVisualStyleBackColor = true;
+            this.button5.Click += new System.EventHandler(this.button5_Click);
+            // 
+            // LineRotImageForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(979, 829);
             this.Controls.Add(this.tableLayoutPanel1);
-            this.Name = "CreateROIForm";
+            this.Name = "LineRotImageForm";
             this.Text = "Form1";
             this.tableLayoutPanel1.ResumeLayout(false);
             this.panel3.ResumeLayout(false);
@@ -175,16 +189,17 @@
 
         #endregion
 
-        private System.Windows.Forms.Button button3;
+        private System.Windows.Forms.Button button4;
         private System.Windows.Forms.Panel panel2;
-        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.Button button3;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Button but_Run;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
         private System.Windows.Forms.Panel panel3;
         private System.Windows.Forms.Button but_Cycle;
-        private System.Windows.Forms.Button button4;
+        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.Button button5;
     }
 }
 
