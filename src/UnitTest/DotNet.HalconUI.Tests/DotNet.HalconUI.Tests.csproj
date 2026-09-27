@@ -92,6 +92,20 @@
     <Compile Include="HWindowMouseTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Using\DotNet.Drawing\DotNet.Drawing.csproj">
+      <Project>{CE09ACC5-0E8D-4D7D-AA2B-D47B837F2CD2}</Project>
+      <Name>DotNet.Drawing</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Using\DotNet.HalconCore\DotNet.HalconCore.csproj">
+      <Project>{7B2E4C10-9D6A-4F31-A5C8-3E0B1D742F96}</Project>
+      <Name>DotNet.HalconCore</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Using\DotNet.HalconUI\DotNet.HalconUI.csproj">
+      <Project>{F64662FA-E352-43AE-9B06-2E1ECFB1F205}</Project>
+      <Name>DotNet.HalconUI</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
     <None Include="packages.config" />
     <None Include="$(HalconNativeDir)halcon.dll" Condition="Exists('$(HalconNativeDir)halcon.dll')">
       <Link>halcon.dll</Link>

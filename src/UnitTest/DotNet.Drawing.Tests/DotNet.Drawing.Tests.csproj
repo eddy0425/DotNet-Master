@@ -79,6 +79,12 @@
     <Compile Include="HalconRuntimeTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Using\DotNet.Drawing\DotNet.Drawing.csproj">
+      <Project>{CE09ACC5-0E8D-4D7D-AA2B-D47B837F2CD2}</Project>
+      <Name>DotNet.Drawing</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
