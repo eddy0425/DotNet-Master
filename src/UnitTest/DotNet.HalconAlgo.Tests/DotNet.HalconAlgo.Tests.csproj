@@ -5,18 +5,17 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{34FE2984-4ED6-4BA7-BBF2-8C45D254E89F}</ProjectGuid>
+    <ProjectGuid>{CDBB7A88-AA92-41B6-96B7-CAA986BA06B4}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>DotNet.VisionMaster.Tests</RootNamespace>
-    <AssemblyName>DotNet.VisionMaster.Tests</AssemblyName>
-    <!-- 被测的 DotNet.VisionMaster 是 v4.5.2，测试程序集不能低于它。 -->
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <RootNamespace>DotNet.HalconAlgo.Tests</RootNamespace>
+    <AssemblyName>DotNet.HalconAlgo.Tests</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
-  <!-- 被测的 DotNet.VisionMaster 引用 halcondotnet（x64），测试程序集与测试宿主必须同为 x64。 -->
+  <!-- 被测的 DotNet.HalconAlgo 引用 halcondotnet（x64），测试程序集与测试宿主必须同为 x64。 -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>x64</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
@@ -39,8 +38,6 @@
   <PropertyGroup>
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <!-- halcondotnet 只是托管包装，原生 halcon.dll 需与测试程序集同目录；本机安装路径不同可在命令行覆盖。 -->
-    <HalconNativeDir Condition=" '$(HalconNativeDir)' == '' ">C:\Program Files\MVTec\HALCON-22.11-Steady\bin\x64-win64\</HalconNativeDir>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.VisualStudio.TestPlatform.TestFramework">
@@ -52,62 +49,29 @@
     <Reference Include="halcondotnet">
       <HintPath>C:\DotNet\.dll\Halcon\halcondotnet.dll</HintPath>
     </Reference>
-    <Reference Include="SunnyUI">
-      <HintPath>C:\DotNet\.dll\SunnyUI\SunnyUI.dll</HintPath>
-    </Reference>
-    <Reference Include="SunnyUI.Common">
-      <HintPath>C:\DotNet\.dll\SunnyUI\SunnyUI.Common.dll</HintPath>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>C:\DotNet\.dll\Newtonsoft.Json\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Infrastructure\HalconTestBase.cs" />
     <Compile Include="Infrastructure\Fakes.cs" />
-    <Compile Include="Infrastructure\Priv.cs" />
-    <Compile Include="Infrastructure\PromptLog.cs" />
-    <Compile Include="Infrastructure\Sta.cs" />
-    <Compile Include="Infrastructure\WindowHost.cs" />
-    <Compile Include="ValueFormTests.cs" />
-    <Compile Include="ParaFormTests.cs" />
-    <Compile Include="MainFormTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\Library\DotNet.Logging\DotNet.Logging.csproj">
-      <Project>{61B8513D-A49F-451E-B525-A7DB5692CD32}</Project>
-      <Name>DotNet.Logging</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\DotNet.Drawing\DotNet.Drawing.csproj">
-      <Project>{CE09ACC5-0E8D-4D7D-AA2B-D47B837F2CD2}</Project>
-      <Name>DotNet.Drawing</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\DotNet.HalconCore\DotNet.HalconCore.csproj">
-      <Project>{7B2E4C10-9D6A-4F31-A5C8-3E0B1D742F96}</Project>
-      <Name>DotNet.HalconCore</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\DotNet.HalconAlgo\DotNet.HalconAlgo.csproj">
-      <Project>{90FFD348-89AE-46AD-995F-780490A7865F}</Project>
-      <Name>DotNet.HalconAlgo</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\DotNet.HalconUI\DotNet.HalconUI.csproj">
-      <Project>{F64662FA-E352-43AE-9B06-2E1ECFB1F205}</Project>
-      <Name>DotNet.HalconUI</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\DotNet.VisionMaster\DotNet.VisionMaster.csproj">
-      <Project>{05DB6968-170A-4786-8DF3-FC401E406EDD}</Project>
-      <Name>DotNet.VisionMaster</Name>
-    </ProjectReference>
+    <Compile Include="AlgoConfigTests.cs" />
+    <Compile Include="RobustFitPipelineTests.cs" />
+    <Compile Include="EdgeMeasurePipelineTests.cs" />
+    <Compile Include="FitLineStrategyTests.cs" />
+    <Compile Include="FitArcMidpointStrategyTests.cs" />
+    <Compile Include="FitArcMidpointRenderTests.cs" />
+    <Compile Include="CreateROIStrategyTests.cs" />
+    <Compile Include="MergeRegionStrategyTests.cs" />
+    <Compile Include="ImageStrategyTests.cs" />
+    <Compile Include="MatchingStrategyTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="$(HalconNativeDir)halcon.dll" Condition="Exists('$(HalconNativeDir)halcon.dll')">
-      <Link>halcon.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>false</Visible>
-    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
