@@ -1,5 +1,6 @@
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
+using DotNet.Drawing.Internal;
 
 namespace DotNet.Drawing
 {
@@ -12,7 +13,7 @@ namespace DotNet.Drawing
     /// - 自动支持 with 表达式进行函数式更新
     /// - 支持完整圆和圆弧
     /// </remarks>
-    public sealed record CvCircle : ICvShape, ICvTransformable<CvCircle>, ICvContainable
+    public sealed record CvCircle
     {
         #region Properties
 
@@ -21,10 +22,24 @@ namespace DotNet.Drawing
         /// </summary>
         public Point2d Center { get; init; }
 
+        private readonly double _radius;
+
         /// <summary>
         /// 半径
         /// </summary>
-        public double Radius { get; init; }
+        /// <remarks>
+        /// 校验放在 init 访问器里而不是只放在构造函数里：
+        /// <c>circle with { Radius = -1 }</c> 不经过任何构造函数，只会走到这里。
+        /// </remarks>
+        public double Radius
+        {
+            get => _radius;
+            init
+            {
+                if (value < 0) throw new ArgumentOutOfRangeException(nameof(Radius), "Radius must be non-negative.");
+                _radius = value;
+            }
+        }
 
         /// <summary>
         /// 开始角度（弧度）
@@ -101,56 +116,6 @@ namespace DotNet.Drawing
         }
 
         /// <summary>
-        /// 边界框
-        /// </summary>
-        public Rect2d BoundingBox
-        {
-            get
-            {
-                if (IsFullCircle)
-                {
-                    return new Rect2d(
-                        Center.X - Radius,
-                        Center.Y - Radius,
-                        Diameter,
-                        Diameter
-                    );
-                }
-
-                // 对于圆弧，需要计算实际的边界框
-                double minX = Center.X, maxX = Center.X;
-                double minY = Center.Y, maxY = Center.Y;
-
-                // 检查起点和终点
-                var startPoint = PointAtAngle(StartPhi);
-                var endPoint = PointAtAngle(EndPhi);
-                minX = Math.Min(minX, Math.Min(startPoint.X, endPoint.X));
-                maxX = Math.Max(maxX, Math.Max(startPoint.X, endPoint.X));
-                minY = Math.Min(minY, Math.Min(startPoint.Y, endPoint.Y));
-                maxY = Math.Max(maxY, Math.Max(startPoint.Y, endPoint.Y));
-
-                // 检查是否跨越四个极值点
-                double normalizedStart = MathHelper.NormalizeAnglePositive(StartPhi);
-                double normalizedEnd = MathHelper.NormalizeAnglePositive(EndPhi);
-                double[] extremeAngles = { 0, Math.PI / 2, Math.PI, 3 * Math.PI / 2 };
-
-                foreach (double angle in extremeAngles)
-                {
-                    if (IsAngleInArc(angle, normalizedStart, normalizedEnd))
-                    {
-                        var point = PointAtAngle(angle);
-                        minX = Math.Min(minX, point.X);
-                        maxX = Math.Max(maxX, point.X);
-                        minY = Math.Min(minY, point.Y);
-                        maxY = Math.Max(maxY, point.Y);
-                    }
-                }
-
-                return new Rect2d(minX, minY, maxX - minX, maxY - minY);
-            }
-        }
-
-        /// <summary>
         /// 圆弧起点
         /// </summary>
         public Point2d StartPoint
@@ -174,7 +139,7 @@ namespace DotNet.Drawing
         public bool IsDegenerate
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => MathHelper.AreEqual(Radius, 0);
+            get => MathHelper.IsZeroGeometric(Radius);
         }
 
         #endregion
@@ -186,7 +151,6 @@ namespace DotNet.Drawing
         /// </summary>
         public CvCircle(double x, double y, double radius)
         {
-            if (radius < 0) throw new ArgumentOutOfRangeException(nameof(radius), "Radius must be non-negative.");
             Center = new Point2d(x, y);
             Radius = radius;
             StartPhi = 0;
@@ -198,7 +162,6 @@ namespace DotNet.Drawing
         /// </summary>
         public CvCircle(Point2d center, double radius)
         {
-            if (radius < 0) throw new ArgumentOutOfRangeException(nameof(radius), "Radius must be non-negative.");
             Center = center;
             Radius = radius;
             StartPhi = 0;
@@ -210,7 +173,6 @@ namespace DotNet.Drawing
         /// </summary>
         public CvCircle(double x, double y, double radius, double startPhi, double endPhi)
         {
-            if (radius < 0) throw new ArgumentOutOfRangeException(nameof(radius), "Radius must be non-negative.");
             Center = new Point2d(x, y);
             Radius = radius;
             StartPhi = startPhi;
@@ -222,7 +184,6 @@ namespace DotNet.Drawing
         /// </summary>
         public CvCircle(Point2d center, double radius, double startPhi, double endPhi)
         {
-            if (radius < 0) throw new ArgumentOutOfRangeException(nameof(radius), "Radius must be non-negative.");
             Center = center;
             Radius = radius;
             StartPhi = startPhi;
@@ -235,7 +196,7 @@ namespace DotNet.Drawing
         public CvCircle(Point2d centerPoint, Point2d edgePoint)
         {
             Center = centerPoint;
-            Radius = centerPoint.DistanceTo(edgePoint);
+            Radius = Distance(centerPoint, edgePoint);
             StartPhi = 0;
             EndPhi = 2 * Math.PI;
         }
@@ -243,157 +204,29 @@ namespace DotNet.Drawing
         /// <summary>
         /// 从三点构造圆（三点确定一个圆）
         /// </summary>
-        public static CvCircle? FromThreePoints(Point2d p1, Point2d p2, Point2d p3)
+        public static CvCircle FromThreePoints(Point2d p1, Point2d p2, Point2d p3)
         {
-            // 计算两条垂直平分线的交点
-            double ax = p1.X, ay = p1.Y;
-            double bx = p2.X, by = p2.Y;
-            double cx = p3.X, cy = p3.Y;
+            // 以 p1 为局部原点计算，避免判定阈值和中间平方项随整体坐标平移而变化。
+            double ux = p2.X - p1.X;
+            double uy = p2.Y - p1.Y;
+            double vx = p3.X - p1.X;
+            double vy = p3.Y - p1.Y;
 
-            double d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
-            if (MathHelper.AreEqual(d, 0))
-                return null; // 三点共线
+            double cross = ux * vy - uy * vx;
+            double scale = Math.Sqrt(ux * ux + uy * uy) * Math.Sqrt(vx * vx + vy * vy);
+            if (MathHelper.IsZeroRelative(cross, scale))
+                return null; // 三点共线或近似共线
 
-            double ux = ((ax * ax + ay * ay) * (by - cy) + (bx * bx + by * by) * (cy - ay) + (cx * cx + cy * cy) * (ay - by)) / d;
-            double uy = ((ax * ax + ay * ay) * (cx - bx) + (bx * bx + by * by) * (ax - cx) + (cx * cx + cy * cy) * (bx - ax)) / d;
+            double denominator = 2 * cross;
+            double uLengthSquared = ux * ux + uy * uy;
+            double vLengthSquared = vx * vx + vy * vy;
+            double offsetX = (vy * uLengthSquared - uy * vLengthSquared) / denominator;
+            double offsetY = (ux * vLengthSquared - vx * uLengthSquared) / denominator;
 
-            var center = new Point2d(ux, uy);
-            double radius = center.DistanceTo(p1);
+            var center = new Point2d(p1.X + offsetX, p1.Y + offsetY);
+            double radius = Distance(center, p1);
             return new CvCircle(center, radius);
         }
-
-        #endregion
-
-        #region Containment Methods
-
-        /// <summary>
-        /// 判断点是否在圆/圆弧内
-        /// </summary>
-        public bool Contains(Point2d point)
-        {
-            double distance = Center.DistanceTo(point);
-            if (distance > Radius)
-                return false;
-
-            if (IsFullCircle)
-                return true;
-
-            // 对于圆弧，检查角度是否在范围内
-            double angle = Math.Atan2(point.Y - Center.Y, point.X - Center.X);
-            return IsAngleInArc(angle, StartPhi, EndPhi);
-        }
-
-        /// <summary>
-        /// 判断点是否在圆周上（带容差）
-        /// </summary>
-        public bool IsOnCircumference(Point2d point, double tolerance = 0.01)
-        {
-            double distance = Center.DistanceTo(point);
-            if (Math.Abs(distance - Radius) >= tolerance)
-                return false;
-
-            if (IsFullCircle)
-                return true;
-
-            double angle = Math.Atan2(point.Y - Center.Y, point.X - Center.X);
-            return IsAngleInArc(angle, StartPhi, EndPhi);
-        }
-
-        /// <summary>
-        /// 判断点是否在边界上
-        /// </summary>
-        public bool IsOnBoundary(Point2d point, double tolerance = 0.01)
-            => IsOnCircumference(point, tolerance);
-
-        /// <summary>
-        /// 计算点到圆/圆弧的最短距离
-        /// </summary>
-        public double DistanceToPoint(Point2d point)
-        {
-            double distToCenter = Center.DistanceTo(point);
-
-            if (IsFullCircle)
-            {
-                return Math.Abs(distToCenter - Radius);
-            }
-
-            // 计算点的角度
-            double angle = Math.Atan2(point.Y - Center.Y, point.X - Center.X);
-
-            if (IsAngleInArc(angle, StartPhi, EndPhi))
-            {
-                // 点在圆弧角度范围内
-                return Math.Abs(distToCenter - Radius);
-            }
-            else
-            {
-                // 点不在圆弧角度范围内，计算到两个端点的最短距离
-                return Math.Min(point.DistanceTo(StartPoint), point.DistanceTo(EndPoint));
-            }
-        }
-
-        #endregion
-
-        #region Transform Methods
-
-        /// <summary>
-        /// 平移圆
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvCircle Translate(double dx, double dy)
-        {
-            return new CvCircle(Center.Translate(dx, dy), Radius, StartPhi, EndPhi);
-        }
-
-        /// <summary>
-        /// 平移圆
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvCircle Translate(Point2d offset)
-        {
-            return new CvCircle(Center + offset, Radius, StartPhi, EndPhi);
-        }
-
-        /// <summary>
-        /// 缩放圆
-        /// </summary>
-        public CvCircle Scale(double scale)
-        {
-            if (scale < 0) throw new ArgumentOutOfRangeException(nameof(scale), "Scale must be non-negative.");
-            return new CvCircle(Center, Radius * scale, StartPhi, EndPhi);
-        }
-
-        /// <summary>
-        /// 绕圆心旋转圆弧
-        /// </summary>
-        public CvCircle Rotate(double angle)
-        {
-            return new CvCircle(Center, Radius, StartPhi + angle, EndPhi + angle);
-        }
-
-        /// <summary>
-        /// 绕指定点旋转
-        /// </summary>
-        public CvCircle RotateAround(double angle, Point2d pivot)
-        {
-            return new CvCircle(
-                Center.RotateAround(angle, pivot),
-                Radius,
-                StartPhi + angle,
-                EndPhi + angle
-            );
-        }
-
-        /// <summary>
-        /// 反转圆弧方向
-        /// </summary>
-        public CvCircle ReverseArc() => new(Center, Radius, EndPhi, StartPhi);
-
-        /// <summary>
-        /// 转换为完整圆
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvCircle ToFullCircle() => new(Center, Radius);
 
         #endregion
 
@@ -411,93 +244,27 @@ namespace DotNet.Drawing
             );
         }
 
-        /// <summary>
-        /// 获取圆弧上指定参数的点
-        /// </summary>
-        /// <param name="t">参数 (0=StartPhi, 1=EndPhi)</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Point2d PointAt(double t)
-        {
-            double phi = StartPhi + t * (EndPhi - StartPhi);
-            return PointAtAngle(phi);
-        }
-
-        /// <summary>
-        /// 获取点在圆周上对应的角度
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public double AngleOfPoint(Point2d point)
-        {
-            return Math.Atan2(point.Y - Center.Y, point.X - Center.X);
-        }
-
-        /// <summary>
-        /// 获取圆周上等距分布的点
-        /// </summary>
-        /// <param name="count">点的数量</param>
-        public Point2d[] SamplePoints(int count)
-        {
-            if (count <= 0)
-                throw new ArgumentOutOfRangeException(nameof(count), "Count must be positive.");
-
-            var points = new Point2d[count];
-            double span = IsFullCircle ? 2 * Math.PI : (EndPhi - StartPhi);
-            double step = span / count;
-
-            for (int i = 0; i < count; i++)
-            {
-                double phi = StartPhi + i * step;
-                points[i] = PointAtAngle(phi);
-            }
-            return points;
-        }
-
         #endregion
 
-        #region Utility Methods
-
-        /// <summary>
-        /// 检查角度是否在圆弧范围内
-        /// </summary>
-        /// <remarks>
-        /// 角度范围约定为 [0, 2π)，统一使用 <see cref="MathHelper.NormalizeAnglePositive"/>。
-        /// </remarks>
-        private static bool IsAngleInArc(double angle, double startPhi, double endPhi)
-        {
-            angle = MathHelper.NormalizeAnglePositive(angle);
-            startPhi = MathHelper.NormalizeAnglePositive(startPhi);
-            endPhi = MathHelper.NormalizeAnglePositive(endPhi);
-
-            if (startPhi <= endPhi)
-            {
-                return angle >= startPhi && angle <= endPhi;
-            }
-            else
-            {
-                // 圆弧跨越 0 度
-                return angle >= startPhi || angle <= endPhi;
-            }
-        }
-
-        #endregion
+        private static double Distance(Point2d a, Point2d b) => MathHelper.Distance(a.X, a.Y, b.X, b.Y);
 
         #region Equality
 
         /// <summary>
         /// 使用容差的相等性比较
         /// </summary>
-        public bool Equals(CvCircle? other)
+        public bool Equals(CvCircle other)
         {
             if (other is null) return false;
             return Center.Equals(other.Center) &&
-                   MathHelper.AreEqual(Radius, other.Radius) &&
-                   MathHelper.AreEqual(StartPhi, other.StartPhi) &&
-                   MathHelper.AreEqual(EndPhi, other.EndPhi);
+                   MathHelper.AreEqualGeometric(Radius, other.Radius) &&
+                   MathHelper.AreEqualQuantized(StartPhi, other.StartPhi) &&
+                   MathHelper.AreEqualQuantized(EndPhi, other.EndPhi);
         }
 
         public override int GetHashCode() => HashCode.Combine(
             Center,
-            MathHelper.QuantizeToTolerance(Radius),
+            MathHelper.QuantizeGeometric(Radius),
             MathHelper.QuantizeToTolerance(StartPhi),
             MathHelper.QuantizeToTolerance(EndPhi));
 
@@ -520,7 +287,7 @@ namespace DotNet.Drawing
         /// <summary>
         /// 单位圆
         /// </summary>
-        public static readonly CvCircle Unit = new(Point2d.Zero, 1);
+        public static readonly CvCircle Unit = new(default, 1);
 
         #endregion
     }

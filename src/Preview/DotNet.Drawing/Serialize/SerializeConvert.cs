@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Text;
 
@@ -87,13 +87,40 @@ namespace DotNet.Drawing
         /// </summary>
         /// <param name="obj"></param>
         /// <param name="path"></param>
+        /// <remarks>
+        /// 采用"先写临时文件再替换"的原子写入：避免 FileMode.OpenOrCreate 不截断导致的
+        /// 旧内容残留（新内容比旧文件短时会产出非法 Json），也避免写入中途异常/掉电写坏配置。
+        /// </remarks>
         public static void JsonSerializeToFile(object obj, string path)
         {
-            using (var fileStream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite))
+            var datas = JsonSerializeToBytes(obj);
+            var tempPath = path + ".tmp";
+
+            try
             {
-                var date = JsonSerializeToBytes(obj);
-                fileStream.Write(date, 0, date.Length);
-                fileStream.Close();
+                using (var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
+                {
+                    fileStream.Write(datas, 0, datas.Length);
+                    fileStream.Flush(true);
+                }
+
+                if (File.Exists(path))
+                {
+                    File.Replace(tempPath, path, null);
+                }
+                else
+                {
+                    File.Move(tempPath, path);
+                }
+            }
+            catch
+            {
+                // 替换失败时清理临时文件，避免残留；异常继续向上抛出由调用方处理
+                if (File.Exists(tempPath))
+                {
+                    try { File.Delete(tempPath); } catch { /* 清理失败不掩盖原始异常 */ }
+                }
+                throw;
             }
         }
 

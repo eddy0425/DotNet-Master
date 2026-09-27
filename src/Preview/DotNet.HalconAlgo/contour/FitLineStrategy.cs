@@ -1,20 +1,22 @@
-using HalconDotNet;
+﻿using HalconDotNet;
 using System;
 using DotNet.Drawing;
-using DotNet.HalconUI;
-using System.Windows.Forms;
+using DotNet.HalconCore;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 
 namespace DotNet.HalconAlgo
 {
-    public class FitLineStrategy : ParaStrategyBase<FitLine>
+    public class FitLineStrategy : ParaStrategyBase<FitLine>, IRoiEditable, IDisposable
     {
+        private bool _disposed;
+
         public override AlgoEnum Algorithm => AlgoEnum.FitLine;
         public override string Name { get; set; } = "拟合直线";
         public override int RunIndex { get; set; }
 
-        public override void GenTreeNode(TreeVisualizer tree)
+        public override void GenTreeNode(ITreeVisualizer tree)
         {
             tree.Branch(Name, branch => branch
                        .Node("直线", OutEnum.Line, line => line
@@ -40,346 +42,340 @@ namespace DotNet.HalconAlgo
             RegisterOutput("直线/终点/列", () => inPara.Line.End.X);
 
         }
-        public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
+        public override bool Fun_action(HObject ho_Image, IHDisplay display)
         {
-            HObject regionGet = new HObject(); HOperatorSet.GenEmptyObj(out regionGet);
-            HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
-            HObject contourFitting = new HObject(); HOperatorSet.GenEmptyObj(out contourFitting);
-            HObject arcContour = new HObject(); HOperatorSet.GenEmptyObj(out arcContour);
+            ResetOutput();
+            display.SetImage(ho_Image);
+            // 直接处理传入的图像, 不再转到另一重载按 ImageIn 取图: 单图重载没有上游,
+            // ImageIn 一旦不是"默认"就必然解析失败 —— 明明给了图却报"找不到图像来源"。
+            // 与 FitArcMidpointStrategy 的单图重载同口径。
+            // 传空集合而不是 null: Run 内部会对 strategys 做 ResolveFrom, null 会直接 NRE.
+            return Run(ho_Image, display, StrategyExtensions.EmptyList());
+        }
+        public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
+        {
+            ResetOutput();
+            HObject ho_Image;
+            if (inPara.ImageIn == "默认")
+                ho_Image = display.HoImage.RequireImage(Name);
+            else
+                ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
+
+            return Run(ho_Image, display, strategys);
+        }
+
+        /// <summary>
+        /// 每轮开头先把"直线"输出复位成退化线段, 与匹配类"先清空再校验"同口径:
+        /// 拟合失败(未绘制 ROI / 找不到边 / 点数不足)都是抛异常退出, 不清的话宿主吞掉异常后,
+        /// 下游(如直线图像)读到的是上一轮的直线, 静默按旧结果继续算; 复位后下游会按退化直线明确报错。
+        /// </summary>
+        private void ResetOutput()
+        {
+            inPara.Line = new CvLine(0, 0, 0, 0);
+        }
+
+        private bool Run(HObject ho_Image, IHDisplay display, List<IParaStrategy> strategys)
+        {
+            HObject regionGet; HOperatorSet.GenEmptyObj(out regionGet);
+            HObject imgReduced; HOperatorSet.GenEmptyObj(out imgReduced);
+            HObject contourFitting; HOperatorSet.GenEmptyObj(out contourFitting);
 
             try
             {
-                HObject ho_Image;
-                if (inPara.ImageIn == "默认")
-                    ho_Image = display.HoImage;
-                else
-                    ho_Image = strategys.ResolveFrom<HObject>(inPara.ImageIn);
-
-                HObject ho_Rect;
-                if (inPara.RegionIn == "默认")
-                    ho_Rect = inPara.HoRect.HoRegion;
-                else
-                    ho_Rect = strategys.ResolveFrom<HObject>(inPara.RegionIn);
-
-
-                HTuple fixRow = inPara.HoRect.Center.Y;
-                HTuple fixCol = inPara.HoRect.Center.X;
-                if (inPara.CoordIn == "默认")
+                bool useLocalRegion = inPara.RegionIn == "默认";
+                HObject searchRegion;
+                if (useLocalRegion)
                 {
-                    HOperatorSet.ReduceDomain(ho_Image, ho_Rect, out imgReduced);
-                    if (inPara.DispRegion) display.DispRegion(ho_Rect, HColor.Blue);
+                    HObject localRegion = inPara.HoRect.HoRegion;
+
+                    // 上游路径的空句柄已由 ResolveRegionFrom 拦下; 本地配置 ROI 不经过它, 需在此补同一层判断,
+                    // 否则未绘制 ROI 的 0 长度空元组会一路流进 reduce_domain, 抛出与真实原因无关的 HALCON 原生异常。
+                    if (!localRegion.IsUsableRegion())
+                        throw new InvalidOperationException($"{Name} : 尚未绘制 ROI，无法执行拟合！");
+
+                    searchRegion = localRegion;
                 }
                 else
+                {
+                    // 上游句柄由 ResolveRegionFrom 保证非空且可用（拿不到就抛），无需再判一次。
+                    searchRegion = strategys.ResolveRegionFrom(inPara.RegionIn);
+                }
+
+                Point2d fixCenter = inPara.HoRect.Center;
+                Angle fixPhi = Angle.FromRadians(inPara.HoRect.Phi.D);
+                if (inPara.CoordIn != "默认")
                 {
                     var inCoord = strategys.ResolveFrom<CvCoord>(inPara.CoordIn);
                     var tmplPoint = strategys.ResolveFrom<Point2d>(inPara.CoordIn.ToTmplPoint());
-                    HalconHelper.TransRegion(tmplPoint, inCoord.Center, ho_Rect, out regionGet);
-                    HalconHelper.TransPixel(tmplPoint, inCoord.Center, fixRow, fixCol, out fixRow, out fixCol);
+                    var tmplCoord = new CvCoord(tmplPoint);
 
-                    HOperatorSet.ReduceDomain(ho_Image, regionGet, out imgReduced);
-                    if (inPara.DispRegion) display.DispRegion(regionGet, HColor.Blue);
+                    // 本地测量几何独立跟随，不能因使用上游区域而跳过。
+                    fixCenter = HalconController.TransPoint(tmplCoord, inCoord, fixCenter);
+                    fixPhi = (fixPhi + inCoord.Angle).Normalized;
+
+                    // 上游运行结果已在当前图像坐标系；只变换本地配置区域。
+                    if (useLocalRegion)
+                    {
+                        regionGet.Dispose();
+                        HalconController.TransRegion(tmplCoord, inCoord, searchRegion, out regionGet);
+                        searchRegion = regionGet;
+                    }
                 }
 
-                #region 变量
-                HTuple fixAgl = inPara.HoRect.Phi;
-                HTuple fixLen1 = inPara.HoRect.Width / 2;
-                HTuple fixLen2 = inPara.HoRect.Height / 2;
-                HTuple imgWid = display.HoWidth;
-                HTuple imgHei = display.HoHeight;
-                #endregion
+                imgReduced.Dispose();
+                HOperatorSet.ReduceDomain(ho_Image, searchRegion, out imgReduced);
+                if (inPara.DispRegion) display.Disp(searchRegion, DrawStyle.Of(HColor.Blue));
 
                 #region 边缘查找
-                double stepPace = Convert.ToDouble(inPara.StepPace); if (stepPace < 1) stepPace = 1;
-                double stepWid = Convert.ToDouble(inPara.StepWidth) / 2; if (stepWid < 1) stepWid = 1;
-                string transition = inPara.GetTransition;
-                string select = inPara.GetContourType;
+                // 尺寸取自待测图像本身，而不是 display.HoWidth/HoHeight（审查项 C12 附注）：
+                // ImageIn 不是"默认"时处理的是上游图像，与窗口里显示的那张可以完全无关，
+                // 用显示尺寸去构造 gen_measure_rectangle2 会让测量矩形被按错误的画布裁剪。
+                // 与 FitArcMidpointStrategy 口径一致。
+                HOperatorSet.GetImageSize(ho_Image, out HTuple imgWid, out HTuple imgHei);
 
-                // 预先确定 MeasurePos 的 select 参数与取点下标，避免在循环内反复判断
-                string measureSelect = (select == "second") ? "all" : select;
-                int pickIndex = (select == "second") ? 1 : 0;
+                // 翻译结果为空说明配置值非法; 在这里带上原值与工具名报错, 管线里的校验只是兜底
+                if (inPara.GetTransition.Length == 0)
+                    throw new ArgumentException($"{Name} : 过渡方向无效: '{inPara.Transition}'，应为 由黑到白 / 由白到黑 / 全部");
 
-                int loop_cnt = (int)(fixLen2.D / stepPace + 0.5); if (loop_cnt < 1) loop_cnt = 1;
-                double cosLen2 = fixLen2 * Math.Cos(fixAgl) / loop_cnt;
-                double sinLen2 = fixLen2 * Math.Sin(fixAgl) / loop_cnt;
+                var setup = new EdgeMeasureSetup(
+                    fixCenter,
+                    fixPhi,
+                    inPara.HoRect.Width / 2,
+                    inPara.HoRect.Height / 2,
+                    inPara.StepPace, inPara.StepWidth,
+                    inPara.Sigma, inPara.Threshold,
+                    inPara.GetTransition, inPara.GetContourType,
+                    imgWid.I, imgHei.I);
 
-                List<double> rowList = new List<double>(2 * loop_cnt + 1);
-                List<double> colList = new List<double>(2 * loop_cnt + 1);
+                EdgeMeasureResult measured = EdgeMeasurePipeline.Run(imgReduced, setup);
+                List<Point2d> points = measured.Points;
 
-                for (int s = -loop_cnt; s <= loop_cnt; s++)
+                if (inPara.DispFixRegion)
                 {
-                    HTuple rowNew = fixRow + s * cosLen2;
-                    HTuple colNew = fixCol + s * sinLen2;
-
-                    HTuple hMHandle;
-                    HOperatorSet.GenMeasureRectangle2(rowNew, colNew, fixAgl, fixLen1, stepWid,
-                        imgWid, imgHei, "nearest_neighbor", out hMHandle);
-                    try
+                    foreach (Point2d rectCenter in measured.RectCenters)
                     {
-                        HTuple mRow, mCol, mAmp, mDis;
-                        HOperatorSet.MeasurePos(imgReduced, hMHandle, inPara.Sigma, inPara.Threshold,
-                            transition, measureSelect, out mRow, out mCol, out mAmp, out mDis);
-
-                        if (inPara.DispFixRegion)
-                        {
-                            display.DispRectangle2(rowNew, colNew, fixAgl, fixLen1, stepWid, HColor.Blue);
-                        }
-
-                        if (mRow.Length > pickIndex)
-                        {
-                            rowList.Add(mRow.TupleSelect(pickIndex).D);
-                            colList.Add(mCol.TupleSelect(pickIndex).D);
-                        }
-                    }
-                    finally
-                    {
-                        HOperatorSet.CloseMeasure(hMHandle);
+                        display.DispRect2(rectCenter, setup.Phi.Radians, setup.HalfLength, setup.HalfWidth,
+                            DrawStyle.Of(HColor.Blue));
                     }
                 }
                 #endregion
 
                 #region 拟合直线
-                if (rowList.Count < 2)
+                if (points.Count < MinFitPoints)
                 {
                     throw new InvalidOperationException("未找到足够的轮廓点！");
                 }
 
                 double maxErr = inPara.MaxErr; if (maxErr < 0) maxErr = 0;
+                var removed = new List<Point2d>();
 
-                List<double> rowRemoved = new List<double>();
-                List<double> colRemoved = new List<double>();
+                // 拟合结果：由下面的 refit 闭包更新，供残差函数与最终取值共用
+                HTuple rowBegin = 0, colBegin = 0, rowEnd = 0, colEnd = 0;
+                HTuple nr = 0, nc = 0, lineDist = 0;
 
-                #region Stage 1：gauss 鲁棒直线拟合
-                HTuple rowBegin, colBegin, rowEnd, colEnd, nr, nc, lineDist;
-                FitLineFromPoints(ref contourFitting, rowList, colList,
-                    out rowBegin, out colBegin, out rowEnd, out colEnd,
-                    out nr, out nc, out lineDist);
-                #endregion
-
-                #region Stage 2：依据最大偏差迭代精滤
-                if (maxErr > 0)
+                Action refit = () =>
                 {
-                    int safety = rowList.Count;
-                    for (int iter = 0; iter < safety; iter++)
-                    {
-                        double pn = nr.D, pc = nc.D, pd = lineDist.D;
-                        int worstIdx = -1;
-                        double worstErr = 0;
-                        for (int i = 0; i < rowList.Count; i++)
-                        {
-                            double err = Math.Abs(pn * rowList[i] + pc * colList[i] - pd);
-                            if (err > worstErr) { worstErr = err; worstIdx = i; }
-                        }
+                    RobustFitPipeline.GenContour(ref contourFitting, points);
+                    HOperatorSet.FitLineContourXld(contourFitting, "gauss", -1, 0, 5, 1.345,
+                        out rowBegin, out colBegin, out rowEnd, out colEnd, out nr, out nc, out lineDist);
+                };
 
-                        if (worstIdx < 0 || worstErr <= maxErr) break;
-                        if (rowList.Count <= 2) break;
+                // Stage 1：gauss 鲁棒直线拟合
+                refit();
 
-                        rowRemoved.Add(rowList[worstIdx]);
-                        colRemoved.Add(colList[worstIdx]);
-                        rowList.RemoveAt(worstIdx);
-                        colList.RemoveAt(worstIdx);
+                // Stage 2：依据最大偏差迭代精滤
+                RobustFitPipeline.Refine(points, removed, maxErr, MinFitPoints,
+                    pt => RobustFitPipeline.LineResidual(pt, nr.D, nc.D, lineDist.D), refit);
 
-                        FitLineFromPoints(ref contourFitting, rowList, colList,
-                            out rowBegin, out colBegin, out rowEnd, out colEnd,
-                            out nr, out nc, out lineDist);
-                    }
-                }
-
-                if (rowList.Count < 2)
+                if (points.Count < MinFitPoints)
                 {
                     throw new InvalidOperationException("最大偏差筛选后有效点不足，无法拟合直线！");
                 }
-                #endregion
 
-                #region Stage 3：可选裁剪筛选后首尾点并重新拟合
-                if (inPara.IsTrimEnds && rowList.Count >= 4)
+                // Stage 3：可选裁剪筛选后首尾点并重新拟合
+                if (inPara.IsTrimEnds &&
+                    RobustFitPipeline.TrimEnds(points, removed, MinFitPoints + 2))
                 {
-                    int last = rowList.Count - 1;
-                    rowRemoved.Add(rowList[0]);
-                    colRemoved.Add(colList[0]);
-                    rowRemoved.Add(rowList[last]);
-                    colRemoved.Add(colList[last]);
-
-                    rowList.RemoveAt(last);
-                    colList.RemoveAt(last);
-                    rowList.RemoveAt(0);
-                    colList.RemoveAt(0);
-
-                    FitLineFromPoints(ref contourFitting, rowList, colList,
-                        out rowBegin, out colBegin, out rowEnd, out colEnd,
-                        out nr, out nc, out lineDist);
+                    refit();
                 }
-                #endregion
 
                 inPara.Line = new CvLine(colBegin.D, rowBegin.D, colEnd.D, rowEnd.D);
-
                 #endregion
 
                 #region Display
 
                 if (inPara.DispFixPoint)
                 {
-                    for (int i = 0; i < rowRemoved.Count; i++)
+                    foreach (Point2d pt in removed)
                     {
-                        display.DispPoint(colRemoved[i], rowRemoved[i], HColor.Red, inPara.PointSize);
+                        display.Disp(pt, DrawStyle.Of(HColor.Red, inPara.PointSize));
                     }
-                    for (int i = 0; i < rowList.Count; i++)
+                    foreach (Point2d pt in points)
                     {
-                        display.DispPoint(colList[i], rowList[i], HColor.Green, inPara.PointSize);
+                        display.Disp(pt, DrawStyle.Of(HColor.Green, inPara.PointSize));
                     }
                 }
 
-                if (inPara.DispResult) display.DispArrow(inPara.Line, HColor.Red, 2);
+                if (inPara.DispResult) display.Disp(new CvArrow(inPara.Line, 2), DrawStyle.Of(HColor.Red));
 
                 if (inPara.DispText)
                 {
-                    string message = $"{Name} : 起点:({inPara.Line.Start.X:F2},{inPara.Line.Start.Y:F2}) 终点:({inPara.Line.End.X:F2},{inPara.Line.End.Y:F2}) 角度:{inPara.Line.AngleDegrees:F2}° 用点:{rowList.Count}";
-                    display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
+                    string message = $"{Name} : 起点:({inPara.Line.Start.X:F2},{inPara.Line.Start.Y:F2}) 终点:({inPara.Line.End.X:F2},{inPara.Line.End.Y:F2}) 角度:{inPara.Line.AngleDegrees:F2}° 用点:{points.Count}";
+                    display.DispText(message, new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Green, inPara.FontSize));
                 }
 
                 #endregion
 
                 return true;
             }
-            catch
-            {
-                throw;
-            }
             finally
             {
                 regionGet.Dispose();
                 imgReduced.Dispose();
                 contourFitting.Dispose();
-                arcContour.Dispose();
             }
+        }
+
+        /// <summary> 拟合一条直线所需的最少点数 </summary>
+        private const int MinFitPoints = 2;
+
+        public override void DispPara(IParaUiHost ui)
+        {
+            ui.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Region, TabPageEnum.Display);
+
+            ui.ShowComboBox("cmb_CoordIn", inPara.CoordIn.ToString(), false);
+
+            CvRegion hRegion = inPara.HoRect;
+            ui.ShowComboBox("cmb_Width", hRegion.Width.ToString(), false);
+            ui.ShowComboBox("cmb_Height", hRegion.Height.ToString(), false);
+            ui.ShowComboBox("cmb_TopLeft", $"{hRegion.TopLeft.X};{hRegion.TopLeft.Y}", false);
+            ui.ShowComboBox("cmb_BottomRight", $"{hRegion.BottomRight.X};{hRegion.BottomRight.Y}", false);
+            ui.ShowComboBox("cmb_Center", $"{hRegion.Center.X};{hRegion.Center.Y}", false);
+
+            ui.ShowLabel("lbl_100", "图像来源");
+            ui.ShowComboBox("cmb_100", inPara.ImageIn, false);
+            ui.ShowButton("btn_100", true);
+
+            ui.ShowLabel("lbl_101", "区域来源");
+            ui.ShowComboBox("cmb_101", inPara.RegionIn, false);
+            ui.ShowButton("btn_101", true);
+
+            ui.ShowLabel("lbl_102", "过渡方向");
+            ui.ShowComboBoxList("cmb_102", inPara.Transition, new[] { "由黑到白", "由白到黑", "全部" });
+            ui.ShowButton("btn_102", false);
+
+            ui.ShowLabel("lbl_103", "选择");
+            ui.ShowComboBoxList("cmb_103", inPara.ContourType, new[] { "第一条边", "第二条边", "最后一条", "全部" });
+            ui.ShowButton("btn_103", false);
+
+            ui.ShowLabel("lbl_104", "滤波");
+            ui.ShowComboBoxDropDown("cmb_104", inPara.Sigma.ToString(), new[] { "0", "1" });
+            ui.ShowButton("btn_104", false);
+
+            ui.ShowLabel("lbl_105", "阈值");
+            ui.ShowComboBoxDropDown("cmb_105", inPara.Threshold.ToString(), new[] { "30", "50" });
+            ui.ShowButton("btn_105", false);
+
+            ui.ShowLabel("lbl_110", "步距");
+            ui.ShowComboBoxDropDown("cmb_110", inPara.StepPace.ToString(), new[] { "2", "5", "10" });
+
+            ui.ShowLabel("lbl_111", "步宽");
+            ui.ShowComboBoxDropDown("cmb_111", inPara.StepWidth.ToString(), new[] { "2", "5", "10" });
+
+            ui.ShowLabel("lbl_112", "最大偏差");
+            ui.ShowComboBoxDropDown("cmb_112", inPara.MaxErr.ToString(), new[] { "1", "3", "5", "10" });
+
+            ui.ShowLabel("lbl_113", "裁剪首尾");
+            ui.ShowComboBoxList("cmb_113", inPara.TrimEnds, new[] { "否", "是" });
+            ui.ShowButton("btn_113", false);
+
+            //------------------------------------------
+            ui.ShowCheckBox("ckb_disp0", "显示文本", inPara.DispText);
+            ui.ShowCheckBox("ckb_disp1", "查找区域", inPara.DispRegion);
+            ui.ShowCheckBox("ckb_disp2", "拟合区域", inPara.DispFixRegion);
+            ui.ShowCheckBox("ckb_disp3", "拟合点", inPara.DispFixPoint);
+            ui.ShowCheckBox("ckb_disp4", "显示结果", inPara.DispResult);
+
+            ui.ShowComboBoxDropDown("CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
+            ui.ShowComboBoxDropDown("CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
+            ui.ShowComboBoxDropDown("CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
+        }
+        public override void SavePara(IParaUiHost ui)
+        {
+            inPara.CoordIn = ui.GetString("cmb_CoordIn");
+            inPara.ImageIn = ui.GetString("cmb_100");
+            inPara.RegionIn = ui.GetString("cmb_101");
+            inPara.Transition = ui.GetString("cmb_102");
+            inPara.ContourType = ui.GetString("cmb_103");
+            inPara.Sigma = ui.GetInt("cmb_104");
+            inPara.Threshold = ui.GetInt("cmb_105");
+
+            inPara.StepPace = ui.GetInt("cmb_110");
+            inPara.StepWidth = ui.GetInt("cmb_111");
+            inPara.MaxErr = ui.GetInt("cmb_112");
+            inPara.TrimEnds = ui.GetString("cmb_113");
+
+            //------------------------------------------
+            inPara.DispText = ui.GetBool("ckb_disp0");
+            inPara.DispRegion = ui.GetBool("ckb_disp1");
+            inPara.DispFixRegion = ui.GetBool("ckb_disp2");
+            inPara.DispFixPoint = ui.GetBool("ckb_disp3");
+            inPara.DispResult = ui.GetBool("ckb_disp4");
+
+            inPara.FontX = ui.GetInt("CB_FontX");
+            inPara.FontY = ui.GetInt("CB_FontY");
+            inPara.FontSize = ui.GetInt("CB_FontSize");
+        }
+        public async Task DrawROIAsync(IRoiHost host, RectEnum type, bool newROI)
+        {
+            if (newROI)
+            {
+                // Type 必须在绘制前写入(HDisplay 按它分发图元), 但取消时几何不会被回写,
+                // 所以要连 Type 一起还原, 否则 Type 与 HoRegion / 外接框对不上, 还会存进 job 配置.
+                var prevType = inPara.HoRect.Type;
+                inPara.HoRect.Type = type;
+                if (!await host.DrawRegionAsync(inPara.HoRect))
+                    inPara.HoRect.Type = prevType;
+            }
+            else await host.DrawRegionModAsync(inPara.HoRect);
+
+            // 这里故意不短路: 取消后仍要把原 ROI 重画回去(ParaForm 事先 ReDispImage 已清屏)
+            host.Display.Disp(inPara.HoRect, DrawStyle.Of(HColor.Blue));
+            host.SetRectPara(inPara.HoRect);
+        }
+        public void DispROI(IRoiHost host)
+        {
+            inPara.HoRect.Type = RectEnum.AffRect;
+            host.SetRectPara(inPara.HoRect);
         }
 
         /// <summary>
-        /// 重建轮廓并用 gauss 鲁棒直线拟合，得到端点与 Hesse 法线参数。
+        /// 关闭工具页. 只释放运行期临时对象 —— 本策略的临时 HObject 全部在 Fun_action 的
+        /// finally 里就地释放, 这里无事可做.
+        /// 注意: 不能在这里 Dispose <c>inPara.HoRect</c>. 它是配置态, CvRegion.Dispose 会把
+        /// HoRegion 置 null 并标记 _disposed; 而策略实例在宿主(MainForm)里是长期复用的,
+        /// 关闭工具页后再次打开同一实例, DrawROIAsync / Fun_action 会立刻 NRE.
         /// </summary>
-        private static void FitLineFromPoints(ref HObject contour, List<double> rowList, List<double> colList,
-            out HTuple rowBegin, out HTuple colBegin, out HTuple rowEnd, out HTuple colEnd,
-            out HTuple nr, out HTuple nc, out HTuple dist)
+        public override void Close(IRoiHost host)
         {
-            contour.Dispose();
-            HOperatorSet.GenContourPolygonXld(out contour, rowList.ToArray(), colList.ToArray());
-            HOperatorSet.FitLineContourXld(contour, "gauss", -1, 0, 5, 1.345,
-                out rowBegin, out colBegin, out rowEnd, out colEnd, out nr, out nc, out dist);
-        }
-        public override void DispPara(Form form, Dictionary<string, VsControlModel> VsControls)
-        {
-            form.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Region, TabPageEnum.Display);
-
-            VsControls.ShowComboBox(form, "cmb_CoordIn", inPara.CoordIn.ToString(), false);
-
-            CvRegion hRegion = inPara.HoRect;
-            VsControls.ShowComboBox(form, "cmb_Width", hRegion.Width.ToString(), false);
-            VsControls.ShowComboBox(form, "cmb_Height", hRegion.Height.ToString(), false);
-            VsControls.ShowComboBox(form, "cmb_TopLeft", $"{hRegion.TopLeft.X};{hRegion.TopLeft.Y}", false);
-            VsControls.ShowComboBox(form, "cmb_BottomRight", $"{hRegion.BottomRight.X};{hRegion.BottomRight.Y}", false);
-            VsControls.ShowComboBox(form, "cmb_Center", $"{hRegion.Center.X};{hRegion.Center.Y}", false);
-
-            VsControls.ShowLabel(form, "lbl_100", "图像来源");
-            VsControls.ShowComboBox(form, "cmb_100", inPara.ImageIn, false);
-            VsControls.ShowButton(form, "btn_100", true);
-
-            VsControls.ShowLabel(form, "lbl_101", "区域来源");
-            VsControls.ShowComboBox(form, "cmb_101", inPara.RegionIn, false);
-            VsControls.ShowButton(form, "btn_101", true);
-
-            VsControls.ShowLabel(form, "lbl_102", "过渡方向");
-            VsControls.ShowComboBoxList(form, "cmb_102", inPara.Transition, new[] { "由黑到白", "由白到黑", "全部" });
-            VsControls.ShowButton(form, "btn_102", false);
-
-            VsControls.ShowLabel(form, "lbl_103", "选择");
-            VsControls.ShowComboBoxList(form, "cmb_103", inPara.ContourType, new[] { "第一条边", "第二条边", "最后一条", "全部" });
-            VsControls.ShowButton(form, "btn_103", false);
-
-            VsControls.ShowLabel(form, "lbl_104", "滤波");
-            VsControls.ShowComboBoxDropDown(form, "cmb_104", inPara.Sigma.ToString(), new[] { "0", "1" });
-            VsControls.ShowButton(form, "btn_104", false);
-
-            VsControls.ShowLabel(form, "lbl_105", "阈值");
-            VsControls.ShowComboBoxDropDown(form, "cmb_105", inPara.Threshold.ToString(), new[] { "30", "50" });
-            VsControls.ShowButton(form, "btn_105", false);
-
-            VsControls.ShowLabel(form, "lbl_110", "步距");
-            VsControls.ShowComboBoxDropDown(form, "cmb_110", inPara.StepPace.ToString(), new[] { "2", "5", "10" });
-
-            VsControls.ShowLabel(form, "lbl_111", "步宽");
-            VsControls.ShowComboBoxDropDown(form, "cmb_111", inPara.StepWidth.ToString(), new[] { "2", "5", "10" });
-
-            VsControls.ShowLabel(form, "lbl_112", "最大偏差");
-            VsControls.ShowComboBoxDropDown(form, "cmb_112", inPara.MaxErr.ToString(), new[] { "1", "3", "5", "10" });
-
-            VsControls.ShowLabel(form, "lbl_113", "裁剪首尾");
-            VsControls.ShowComboBoxList(form, "cmb_113", inPara.TrimEnds, new[] { "否", "是" });
-            VsControls.ShowButton(form, "btn_113", false);
-
-            //------------------------------------------
-            VsControls.ShowCheckBox(form, "ckb_disp0", "显示文本", inPara.DispText);
-            VsControls.ShowCheckBox(form, "ckb_disp1", "查找区域", inPara.DispRegion);
-            VsControls.ShowCheckBox(form, "ckb_disp2", "拟合区域", inPara.DispFixRegion);
-            VsControls.ShowCheckBox(form, "ckb_disp3", "拟合点", inPara.DispFixPoint);
-            VsControls.ShowCheckBox(form, "ckb_disp4", "显示结果", inPara.DispResult);
-
-            VsControls.ShowComboBoxDropDown(form, "CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
-            VsControls.ShowComboBoxDropDown(form, "CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
-            VsControls.ShowComboBoxDropDown(form, "CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
-        }
-        public override void SavePara(Form form, Dictionary<string, VsControlModel> VsControls)
-        {
-            inPara.CoordIn = VsControls["cmb_CoordIn"].Text;
-            inPara.ImageIn = VsControls["cmb_100"].Text;
-            inPara.RegionIn = VsControls["cmb_101"].Text;
-            inPara.Transition = VsControls["cmb_102"].Text;
-            inPara.ContourType = VsControls["cmb_103"].Text;
-            inPara.Sigma = Convert.ToInt16(VsControls["cmb_104"].Text);
-            inPara.Threshold = Convert.ToInt16(VsControls["cmb_105"].Text);
-
-            inPara.StepPace = Convert.ToInt16(VsControls["cmb_110"].Text);
-            inPara.StepWidth = Convert.ToInt16(VsControls["cmb_111"].Text);
-            inPara.MaxErr = Convert.ToInt16(VsControls["cmb_112"].Text);
-            inPara.TrimEnds = VsControls["cmb_113"].Text;
-
-            //------------------------------------------
-            inPara.DispText = VsControls["ckb_disp0"].Checked;
-            inPara.DispRegion = VsControls["ckb_disp1"].Checked;
-            inPara.DispFixRegion = VsControls["ckb_disp2"].Checked;
-            inPara.DispFixPoint = VsControls["ckb_disp3"].Checked;
-            inPara.DispResult = VsControls["ckb_disp4"].Checked;
-
-            inPara.FontX = Convert.ToInt16(VsControls["CB_FontX"].Text);
-            inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
-            inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
-        }
-        public override void DispROI(DisplayUI display)
-        {
-            display.SetDrawMode(Name, inPara.HoRect, DrawEnum.DispRect);
-        }
-        public override void Init(DisplayUI display)
-        {
-            display.AffRectEvent += AffRectEvent;
-        }
-        public override void Close(DisplayUI display)
-        {
-            display.AffRectEvent -= AffRectEvent;
-            inPara.HoRect.Dispose();
-        }
-        private void AffRectEvent(object sender, DrawAffRectArgs e)
-        {
-            if (e.Name == Name)
-            {
-                inPara.HoRect.UpdateCenter(e.Center, e.RectSize);
-                inPara.HoRect.Phi = e.Phi;
-                inPara.HoRect.Type = RectEnum.AffRect;
-                inPara.HoRect.GenRegion();
-            }
         }
 
+        /// <summary>策略实例生命周期结束时才释放配置态资源. 幂等.</summary>
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            inPara?.HoRect?.Dispose();
+        }
     }
 
     public class FitLine : AlgoFont
     {
+        public FitLine()
+        {
+            HoRect.Type = RectEnum.AffRect;
+        }
+
         /// <summary> 图像来源 </summary>
         public string ImageIn { set; get; } = "默认";
 
@@ -390,7 +386,12 @@ namespace DotNet.HalconAlgo
         public string CoordIn { set; get; } = "默认";
 
         /// <summary> 直线 </summary>
-        public CvLine Line { set; get; }
+        /// <remarks>
+        /// 初始化为零长线段而不是留 null：GenTreeNode 注册的输出解析器（<c>inPara.Line.Start</c> 等）
+        /// 在工具尚未跑过时就可能被下游读取，留 null 得到的是 NRE。退化线段可以用
+        /// <see cref="CvLine.IsDegenerate"/> 判出来，与相邻参数类 <c>Coord = new CvCoord()</c> 的约定一致。
+        /// </remarks>
+        public CvLine Line { set; get; } = new CvLine(0, 0, 0, 0);
 
         /// <summary> 区域 </summary>
         public CvRegion HoRect { set; get; } = new CvRegion();
@@ -426,11 +427,11 @@ namespace DotNet.HalconAlgo
             }
         }
 
-        /// <summary> 滤波 </summary>
+        /// <summary> 滤波（measure_pos 的 Sigma；小于 0.4 时按 0.4 处理） </summary>
         public int Sigma { set; get; } = 1;
 
         /// <summary>
-        /// 阈值 val = 0: 自动阈值, val > 0: 手动阈值, val = -1: 能量最强, val 小于 -1: 百分比阈值
+        /// 边缘幅值阈值：原样作为 measure_pos 的 Threshold，只接受幅值不低于它的边缘
         /// </summary>
         public int Threshold { set; get; } = 80;
 

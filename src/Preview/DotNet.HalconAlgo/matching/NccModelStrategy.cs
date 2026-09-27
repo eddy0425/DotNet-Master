@@ -1,21 +1,22 @@
 ﻿using DotNet.Drawing;
-using DotNet.HalconUI;
+using DotNet.HalconCore;
 using HalconDotNet;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Windows.Forms;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 
 namespace DotNet.HalconAlgo
 {
-    public class NccModelStrategy : ParaStrategyBase<NccModel>
+    public class NccModelStrategy : ParaStrategyBase<NccModel>, IRoiEditable, ITemplateEditable
     {
         public override AlgoEnum Algorithm => AlgoEnum.NccModel;
         public override string Name { get; set; } = "灰度匹配";
         public override int RunIndex { get; set; }
 
-        public override void GenTreeNode(TreeVisualizer tree)
+        public override void GenTreeNode(ITreeVisualizer tree)
         {
             tree.Branch(Name, branch => branch
                        .Node("坐标系", OutEnum.Coord, line => line
@@ -23,7 +24,7 @@ namespace DotNet.HalconAlgo
                                .Node("行", OutEnum.Number)
                                .Node("列", OutEnum.Number)
                            )
-                           .Node("角度", OutEnum.Array)
+                           .Node("角度", OutEnum.Number)
                        )
                    );
 
@@ -33,28 +34,68 @@ namespace DotNet.HalconAlgo
             RegisterOutput("坐标系/原点", () => inPara.Coord.Center);
             RegisterOutput("坐标系/原点/行", () => inPara.Coord.Y);
             RegisterOutput("坐标系/原点/列", () => inPara.Coord.X);
-            RegisterOutput("坐标系/角度", () => inPara.Coord.Angle);
+            RegisterOutput("坐标系/角度", () => inPara.Coord.Angle.Radians);
         }
-        public override bool Fun_action(DisplayUI display, List<IParaStrategy> strategys)
+        public override bool Fun_action(HObject ho_Image, IHDisplay display)
         {
-            HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
-            HObject ho_SelRect = new HObject(); HOperatorSet.GenEmptyObj(out ho_SelRect);
+            display.SetImage(ho_Image);
+            // 传空集合而不是 null: 另一重载内部会对 strategys 做 ResolveFrom, null 会直接 NRE.
+            return Fun_action(display, StrategyExtensions.EmptyList());
+        }
+        public override bool Fun_action(IHDisplay display, List<IParaStrategy> strategys)
+        {
+            // 清空必须在所有前置校验之前: Fun_action 的 bool 返回值在每个调用方都被丢弃
+            // (各 Form 的 but_Run_Click / but_Cycle_Click 都只调用不判断), 校验失败只是屏幕上多一行红字,
+            // 下游工具照旧继续跑。此时若 Results / Coord 还留着上一轮的值, "编辑模板"与下游"坐标系"
+            // 读到的就是旧数据, 界面上看不出任何异常。
+            ResetOutputs();
+
+            // 与通用匹配同口径: 未建模板属于可恢复的配置问题, 红字 + 返回 false。
+            // 不拦的话 null 的 ModelID 会一路传进查找算子, 报出与真实原因无关的 HALCON 参数错误。
+            if (inPara.ModelID == null || inPara.ModelID.Length == 0)
+            {
+                display.DispText($"{Name} : 未建立模板，无法执行匹配！", new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Red, inPara.FontSize));
+                return false;
+            }
+
+            HObject imgReduced; HOperatorSet.GenEmptyObj(out imgReduced);
+            HObject ho_SelRect; HOperatorSet.GenEmptyObj(out ho_SelRect);
 
             try
             {
                 HObject ho_Image = (inPara.ImageIn == "默认")
-                    ? display.HoImage
+                    ? display.HoImage.RequireImage(Name)
                     : strategys.ResolveFrom<HObject>(inPara.ImageIn);
 
-                HObject ho_Rect = (inPara.RegionIn == "默认")
-                    ? inPara.HoRect.HoRegion
-                    : strategys.ResolveFrom<HObject>(inPara.RegionIn);
+                bool useLocalRegion = inPara.RegionIn == "默认";
+                HObject ho_Rect;
+                if (useLocalRegion)
+                {
+                    HObject localRegion = inPara.HoRect.HoRegion;
 
-                if (inPara.DispRegion) display.DispRegion(ho_Rect, HColor.Blue);
+                    // 上游路径的空句柄已由 ResolveRegionFrom 拦下; 本地配置 ROI 不经过它, 需在此补同一层判断,
+                    // 否则未绘制 ROI 时 CountObj() 为 0, 下面的循环一次都不进, 静默跑出 0 个结果。
+                    if (!localRegion.IsUsableRegion())
+                    {
+                        // 位置/字号跟随"显示"页的配置, 与本策略其它文本同一口径: 硬编码 (10,10) 与默认字号
+                        // 在大分辨率图上几乎看不见, 且与下面那行状态文本错位。
+                        display.DispText($"{Name} : 尚未绘制 ROI，无法执行匹配！", new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(HColor.Red, inPara.FontSize));
+                        return false;
+                    }
 
-                inPara.Results = new List<ModelResult>();
+                    ho_Rect = localRegion;
+                }
+                else
+                {
+                    // 上游句柄由 ResolveRegionFrom 保证非空且可用（拿不到就抛），无需再判一次。
+                    ho_Rect = strategys.ResolveRegionFrom(inPara.RegionIn);
+                }
 
-                for (int j = 0; j < ho_Rect.CountObj(); j++)
+                if (inPara.DispRegion) display.Disp(ho_Rect, DrawStyle.Of(HColor.Blue));
+
+                double bestSoFar = -1;
+                int rectCnt = ho_Rect.CountObj();
+                for (int j = 0; j < rectCnt; j++)
                 {
                     ho_SelRect.Dispose();
                     HOperatorSet.SelectObj(ho_Rect, out ho_SelRect, j + 1);
@@ -71,32 +112,55 @@ namespace DotNet.HalconAlgo
                     {
                         var result = new ModelResult(row[i], column[i], angle[i], score[i]);
                         inPara.Results.Add(result);
-                        inPara.Coord = new CvCoord(result.X, result.Y, result.Angle);
 
-                        inPara.HoContour.Dispose();
-                        HOperatorSet.GetNccModelRegion(out inPara.HoContour, inPara.ModelID);
+                        HOperatorSet.GetNccModelRegion(out HObject modelRegion, inPara.ModelID);
                         HOperatorSet.VectorAngleToRigid(0, 0, 0, result.Row, result.Column, result.Angle, out HTuple hv_HomMat2D);
-                        HOperatorSet.AffineTransRegion(inPara.HoContour, out HObject regionAffineTrans, hv_HomMat2D, "nearest_neighbor");
-                        inPara.HoContour.Dispose();
-                        inPara.HoContour = regionAffineTrans;
+                        HOperatorSet.AffineTransRegion(modelRegion, out HObject contour, hv_HomMat2D, "nearest_neighbor");
+                        modelRegion.Dispose();
 
-                        if (inPara.DispContour) display.DispRegion(inPara.HoContour, HColor.Green);
-                        if (inPara.DispPoint) display.DispCross(result.Coord, HColor.Red);
+                        // 只留全局最佳实例的轮廓: 原先每个实例都覆盖一次, 留下的是"最后一个"的轮廓,
+                        // 与 Coord / Results[0] 对不上 (编辑模板窗口正是把两者配对显示的)。
+                        bool isBest = result.Score > bestSoFar;
+                        if (isBest)
+                        {
+                            bestSoFar = result.Score;
+                            inPara.HoContour.Dispose();
+                            inPara.HoContour = contour;
+                        }
+
+                        try
+                        {
+                            if (inPara.DispContour) display.Disp(contour, DrawStyle.Of(HColor.Green));
+                            if (inPara.DispPoint) display.Disp(result.Coord, DrawStyle.Of(HColor.Red));
+                        }
+                        finally
+                        {
+                            if (!isBest) contour.Dispose();
+                        }
                     }
                 }
+
+                // FindNccModel 只在单个 ROI 内按得分降序; 多 ROI 时 Results[0] 只是第一个 ROI 的最佳。
+                // 这里跨 ROI 稳定排序, 让 Results[0] 就是全局最佳: 对外坐标系、"最佳得分"与编辑模板都取它。
+                inPara.Results = inPara.Results.OrderByDescending(r => r.Score).ToList();
+                if (inPara.Results.Count > 0) inPara.Coord = inPara.Results[0].Coord;
 
                 if (inPara.DispText)
                 {
                     int cnt = inPara.Results.Count;
                     double bestScore = cnt > 0 ? inPara.Results[0].Score : 0;
                     string message = $"{Name} : 数量:{cnt} 最佳得分:{bestScore:F3} 角度范围:[{inPara.AngleStart}°,{(inPara.AngleStart.D + inPara.AngleExtent.D)}°]";
-                    display.DispText(message, inPara.FontX, inPara.FontY, inPara.FontSize, HColor.Green);
+                    // 0 匹配用红字: 绿字在本仓的惯例里是"正常跑完", 一个都没找到不该长得跟成功一样。
+                    display.DispText(message, new Point2d(inPara.FontX, inPara.FontY), DrawStyle.Of(cnt > 0 ? HColor.Green : HColor.Red, inPara.FontSize));
                 }
 
                 return true;
             }
             catch
             {
+                // 循环中途抛异常时, 前面 ROI 的结果已写进 Results / HoContour: 与开头同样复位,
+                // 不把半截结果留给"编辑模板"和下游 (宿主吞掉异常后下游照跑)。
+                ResetOutputs();
                 throw;
             }
             finally
@@ -105,203 +169,226 @@ namespace DotNet.HalconAlgo
                 ho_SelRect.Dispose();
             }
         }
-        public override void DispPara(Form form, Dictionary<string, VsControlModel> VsControls)
+        /// <summary>
+        /// 复位本轮输出: 结果列表、坐标系, 以及与坐标系配对显示的轮廓
+        /// (DispROI / "编辑模板"一起取用, 不清的话失败轮次会把旧轮廓配上零坐标系)。
+        /// </summary>
+        private void ResetOutputs()
         {
-            form.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Region, TabPageEnum.Matching, TabPageEnum.Display);
+            inPara.Results = new List<ModelResult>();
+            inPara.Coord = new CvCoord();
+            inPara.HoContour?.Dispose();
+            HOperatorSet.GenEmptyObj(out inPara.HoContour);
+        }
+
+        public override void DispPara(IParaUiHost ui)
+        {
+            ui.ShowTabs(TabPageEnum.Parameter, TabPageEnum.Region, TabPageEnum.Matching, TabPageEnum.Display);
 
             CvRegion hRegion = inPara.HoRect;
-            VsControls.ShowComboBox(form, "cmb_Width", hRegion.Width.ToString(), false);
-            VsControls.ShowComboBox(form, "cmb_Height", hRegion.Height.ToString(), false);
-            VsControls.ShowComboBox(form, "cmb_TopLeft", $"{hRegion.TopLeft.X};{hRegion.TopLeft.Y}", false);
-            VsControls.ShowComboBox(form, "cmb_BottomRight", $"{hRegion.BottomRight.X};{hRegion.BottomRight.Y}", false);
-            VsControls.ShowComboBox(form, "cmb_Center", $"{hRegion.Center.X};{hRegion.Center.Y}", false);
+            ui.ShowComboBox("cmb_Width", hRegion.Width.ToString(), false);
+            ui.ShowComboBox("cmb_Height", hRegion.Height.ToString(), false);
+            ui.ShowComboBox("cmb_TopLeft", $"{hRegion.TopLeft.X};{hRegion.TopLeft.Y}", false);
+            ui.ShowComboBox("cmb_BottomRight", $"{hRegion.BottomRight.X};{hRegion.BottomRight.Y}", false);
+            ui.ShowComboBox("cmb_Center", $"{hRegion.Center.X};{hRegion.Center.Y}", false);
 
-            VsControls.ShowComboBox(form, "cmb_CoordIn", inPara.CoordIn.ToString(), false);
+            ui.ShowComboBox("cmb_CoordIn", inPara.CoordIn.ToString(), false);
 
             //基本参数
-            VsControls.ShowLabel(form, "lbl_100", "图像来源");
-            VsControls.ShowComboBox(form, "cmb_100", inPara.ImageIn.ToString(), false);
-            VsControls.ShowButton(form, "btn_100", true);
+            ui.ShowLabel("lbl_100", "图像来源");
+            ui.ShowComboBox("cmb_100", inPara.ImageIn.ToString(), false);
+            ui.ShowButton("btn_100", true);
 
-            VsControls.ShowLabel(form, "lbl_101", "区域来源");
-            VsControls.ShowComboBox(form, "cmb_101", inPara.RegionIn, false);
-            VsControls.ShowButton(form, "btn_101", true);
+            ui.ShowLabel("lbl_101", "区域来源");
+            ui.ShowComboBox("cmb_101", inPara.RegionIn, false);
+            ui.ShowButton("btn_101", true);
 
-            VsControls.ShowLabel(form, "lbl_102", "起始角度");
-            VsControls.ShowComboBoxList(form, "cmb_102", inPara.AngleStart.ToString(), new[] { "-90", "-45" });
-            VsControls.ShowButton(form, "btn_102", false);
+            ui.ShowLabel("lbl_102", "起始角度");
+            ui.ShowComboBoxList("cmb_102", inPara.AngleStart.ToString(), new[] { "-90", "-45" });
+            ui.ShowButton("btn_102", false);
 
-            VsControls.ShowLabel(form, "lbl_103", "增量角度");
-            VsControls.ShowComboBoxList(form, "cmb_103", inPara.AngleExtent.ToString(), new[] { "90", "180" });
-            VsControls.ShowButton(form, "btn_103", false);
+            ui.ShowLabel("lbl_103", "增量角度");
+            ui.ShowComboBoxList("cmb_103", inPara.AngleExtent.ToString(), new[] { "90", "180" });
+            ui.ShowButton("btn_103", false);
 
-            VsControls.ShowLabel(form, "lbl_104", "最大重叠率");
-            VsControls.ShowComboBoxList(form, "cmb_104", inPara.MaxOverlap.ToString(), new[] { "0", "0.3", "0.5" });
-            VsControls.ShowButton(form, "btn_104", false);
+            ui.ShowLabel("lbl_104", "最大重叠率");
+            ui.ShowComboBoxList("cmb_104", inPara.MaxOverlap.ToString(), new[] { "0", "0.3", "0.5" });
+            ui.ShowButton("btn_104", false);
 
-            VsControls.ShowLabel(form, "lbl_110", "匹配数量");
-            VsControls.ShowComboBoxList(form, "cmb_110", inPara.NumMatches == 0 ? "多个" : inPara.NumMatches.ToString(), new[] { "1", "2", "3", "多个" });
-            VsControls.ShowButton(form, "btn_110", false);
+            ui.ShowLabel("lbl_110", "匹配数量");
+            ui.ShowComboBoxList("cmb_110", inPara.NumMatches == 0 ? "多个" : inPara.NumMatches.ToString(), new[] { "1", "2", "3", "多个" });
+            ui.ShowButton("btn_110", false);
 
-            VsControls.ShowLabel(form, "lbl_111", "得分");
-            VsControls.ShowComboBoxDropDown(form, "cmb_111", inPara.MinScore.ToString(), new[] { "0.5", "0.7" });
+            ui.ShowLabel("lbl_111", "得分");
+            ui.ShowComboBoxDropDown("cmb_111", inPara.MinScore.ToString(), new[] { "0.5", "0.7" });
 
-            VsControls.ShowLabel(form, "lbl_112", "金字塔");
-            VsControls.ShowComboBoxList(form, "cmb_112", inPara.NumLevels.ToString(), new[] { "0", "2" });
+            ui.ShowLabel("lbl_112", "金字塔");
+            ui.ShowComboBoxList("cmb_112", inPara.NumLevels.ToString(), new[] { "0", "2" });
 
             //------------------------------------------
-            VsControls.ShowCheckBox(form, "ckb_disp0", "显示文本", inPara.DispText);
-            VsControls.ShowCheckBox(form, "ckb_disp1", "查找区域", inPara.DispRegion);
-            VsControls.ShowCheckBox(form, "ckb_disp2", "显示轮廓", inPara.DispContour);
-            VsControls.ShowCheckBox(form, "ckb_disp3", "显示点", inPara.DispPoint);
+            ui.ShowCheckBox("ckb_disp0", "显示文本", inPara.DispText);
+            ui.ShowCheckBox("ckb_disp1", "查找区域", inPara.DispRegion);
+            ui.ShowCheckBox("ckb_disp2", "显示轮廓", inPara.DispContour);
+            ui.ShowCheckBox("ckb_disp3", "显示点", inPara.DispPoint);
 
-            VsControls.ShowComboBoxDropDown(form, "CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
-            VsControls.ShowComboBoxDropDown(form, "CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
-            VsControls.ShowComboBoxDropDown(form, "CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
+            ui.ShowComboBoxDropDown("CB_FontX", inPara.FontX.ToString(), new[] { "20", "50" });
+            ui.ShowComboBoxDropDown("CB_FontY", inPara.FontY.ToString(), new[] { "20", "50" });
+            ui.ShowComboBoxDropDown("CB_FontSize", inPara.FontSize.ToString(), new[] { "15", "30" });
         }
-        public override void SavePara(Form form, Dictionary<string, VsControlModel> VsControls)
+        public override void SavePara(IParaUiHost ui)
         {
             //基本参数
-            inPara.CoordIn = VsControls["cmb_CoordIn"].Text;
-            inPara.ImageIn = VsControls["cmb_100"].Text;
-            inPara.RegionIn = VsControls["cmb_101"].Text;
-            inPara.AngleStart = Convert.ToDouble(VsControls["cmb_102"].Text);
-            inPara.AngleExtent = Convert.ToDouble(VsControls["cmb_103"].Text);
-            inPara.MaxOverlap = Convert.ToDouble(VsControls["cmb_104"].Text);
+            inPara.CoordIn = ui.GetString("cmb_CoordIn");
+            inPara.ImageIn = ui.GetString("cmb_100");
+            inPara.RegionIn = ui.GetString("cmb_101");
+            inPara.AngleStart = ui.GetDouble("cmb_102");
+            inPara.AngleExtent = ui.GetDouble("cmb_103");
+            inPara.MaxOverlap = ui.GetDouble("cmb_104");
 
-            inPara.NumMatches = VsControls["cmb_110"].Text == "多个" ? 0 : Convert.ToInt32(VsControls["cmb_110"].Text);
-            inPara.MinScore = Convert.ToDouble(VsControls["cmb_111"].Text);
-            inPara.NumLevels = Convert.ToInt16(VsControls["cmb_112"].Text);
+            inPara.NumMatches = ui.GetString("cmb_110") == "多个" ? 0 : ui.GetInt("cmb_110");
+            inPara.MinScore = ui.GetDouble("cmb_111");
+            inPara.NumLevels = ui.GetInt("cmb_112");
 
             //------------------------------------------
-            inPara.DispText = VsControls["ckb_disp0"].Checked;
-            inPara.DispRegion = VsControls["ckb_disp1"].Checked;
-            inPara.DispContour = VsControls["ckb_disp2"].Checked;
-            inPara.DispPoint = VsControls["ckb_disp3"].Checked;
+            inPara.DispText = ui.GetBool("ckb_disp0");
+            inPara.DispRegion = ui.GetBool("ckb_disp1");
+            inPara.DispContour = ui.GetBool("ckb_disp2");
+            inPara.DispPoint = ui.GetBool("ckb_disp3");
 
-            inPara.FontX = Convert.ToInt16(VsControls["CB_FontX"].Text);
-            inPara.FontY = Convert.ToInt16(VsControls["CB_FontY"].Text);
-            inPara.FontSize = Convert.ToInt16(VsControls["CB_FontSize"].Text);
+            inPara.FontX = ui.GetInt("CB_FontX");
+            inPara.FontY = ui.GetInt("CB_FontY");
+            inPara.FontSize = ui.GetInt("CB_FontSize");
         }
-        public override void DispROI(DisplayUI display)
+        public async Task DrawROIAsync(IRoiHost host, RectEnum type, bool newROI)
         {
-            display.SetDrawMode(Name, inPara.HoRect, DrawEnum.DispRect);
+            if (newROI)
+            {
+                // Type 必须在绘制前写入(HDisplay 按它分发图元), 但取消时几何不会被回写,
+                // 所以要连 Type 一起还原, 否则 Type 与 HoRegion / 外接框对不上, 还会存进 job 配置.
+                var prevType = inPara.HoRect.Type;
+                inPara.HoRect.Type = type;
+                if (!await host.DrawRegionAsync(inPara.HoRect))
+                    inPara.HoRect.Type = prevType;
+            }
+            else await host.DrawRegionModAsync(inPara.HoRect);
+
+            // 这里故意不短路: 取消后仍要把原 ROI 重画回去(ParaForm 事先 ReDispImage 已清屏)
+            host.Display.Disp(inPara.HoRect, DrawStyle.Of(HColor.Blue));
+            host.SetRectPara(inPara.HoRect);
         }
-        private void SetTemplate(HDisplayForm display)  //模板设置
+        public void DispROI(IRoiHost host)
         {
-            HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
-            HObject ho_Contour = new HObject(); HOperatorSet.GenEmptyObj(out ho_Contour);
+            host.SetModelPara(inPara.HoRect.HoRegion, inPara.HoContour, inPara.Coord);
+        }
+        public async Task SetTemplateAsync(IRoiHost host, RectEnum type, bool newModel)
+        {
+            HObject imgReduced; HOperatorSet.GenEmptyObj(out imgReduced);
+            HObject ho_Contour; HOperatorSet.GenEmptyObj(out ho_Contour);
+            HObject newContour = null;
+            HTuple modelID = null;
+            // 绘制会就地改写 ModeRect (Type / 几何 / 区域)。走不到"提交"这一步 —— 取消、试匹配失败、
+            // 取图 / 训练 / 存图抛异常 —— 都整体换回快照, 模板区域始终与仍在用的模板配套。
+            CvRegion snapshot = inPara.ModeRect.Clone();
 
             try
             {
-                inPara.ModelPath = Path.Combine(AlgoPaths.JobDir, RunIndex.ToString(), "matching.bmp");
-                var hImage = display.HoImage;
+                // Type 必须在绘制前写入(DrawRegionAsync 按它分发图元)
+                inPara.ModeRect.Type = type;
+
+                bool confirmed = newModel
+                    ? await host.DrawRegionAsync(inPara.ModeRect)
+                    : await host.DrawRegionModAsync(inPara.ModeRect);
+
+                // 取消 / 超时: 必须直接返回.
+                // 继续往下会按"旧几何 + 新参数"重建一份用户没有要求的模板,
+                // 原模板就此丢失 —— 这正是"取消不应有副作用"的关键一步.
+                if (!confirmed)
+                {
+                    RestoreModeRect(ref snapshot);
+                    // 绘制会话结束时窗口只剩底图, 把原模板区域重新画回去, 避免画面像是被清空
+                    host.Display.Disp(inPara.ModeRect, DrawStyle.Of(HColor.Orange));
+                    return;
+                }
+
+                var hImage = host.Display.HoImage.RequireImage(Name);
 
                 imgReduced.Dispose();
                 HOperatorSet.ReduceDomain(hImage, inPara.ModeRect.HoRegion, out imgReduced);
 
                 //制作模板
                 HOperatorSet.CreateNccModel(imgReduced, inPara.NumLevels, inPara.AngleStart.TupleRad(), inPara.AngleExtent.TupleRad(),
-                                 "auto", "use_polarity", out HTuple modelID);
+                                 "auto", "use_polarity", out modelID);
 
-                // 立即转移所有权：先释放旧模板，再装入新模板
+                // 先用新模板试匹配, 确认可用后再替换: 若先替换, 试匹配失败时旧模板已被释放,
+                // 新模板却配着旧模板示教出的 TmplPoint, 下游跟随会静默偏移。
+                HOperatorSet.FindNccModel(imgReduced, modelID, inPara.AngleStart.TupleRad(), inPara.AngleExtent.TupleRad(),
+                                            inPara.MinScore, 1, inPara.MaxOverlap, inPara.SubPixel, inPara.NumLevels,
+                                            out HTuple row, out HTuple column, out HTuple angle, out HTuple score);
+
+                // 试匹配一个都没找到时必须在构造 ModelResult 之前返回: 空 HTuple 隐式转 double 会直接抛
+                // HTupleAccessException。新模板在 finally 里丢弃, 旧模板与旧 TmplPoint 仍是一致的一对。
+                if (score.Length == 0)
+                {
+                    RestoreModeRect(ref snapshot);
+                    host.Display.Disp(inPara.ModeRect, DrawStyle.Of(HColor.Orange));
+                    host.Display.DispText("新建模板失败！", new Point2d(10, 10), DrawStyle.Of(HColor.Red));
+                    return;
+                }
+
+                var result = new ModelResult(row, column, angle, score);
+                ho_Contour.Dispose();
+                HOperatorSet.GetNccModelRegion(out ho_Contour, modelID);
+                HOperatorSet.VectorAngleToRigid(0, 0, 0, result.Row, result.Column, result.Angle, out HTuple hv_HomMat2D);
+                HOperatorSet.AffineTransRegion(ho_Contour, out newContour, hv_HomMat2D, "nearest_neighbor");
+
+                // 模板图先落盘再提交: 原先先换模板再存图, 存图一失败, 新模板就配着旧 TmplPoint / 旧 ModelPath,
+                // 下游跟随静默偏移。现在保存失败时新模板在 finally 里丢弃, 旧的一套 (含旧模板图) 原样保留。
+                string modelPath = Path.Combine(AlgoPaths.JobDir, RunIndex.ToString(), "matching.bmp");
+                ModelImage.Save(hImage, imgReduced, modelPath);
+
+                // 提交: 以下只做赋值与释放旧句柄, 模型 / 路径 / 结果 / 示教原点一起换。
                 if (inPara.ModelID != null && inPara.ModelID.Length > 0)
                 {
                     HOperatorSet.ClearNccModel(inPara.ModelID);
                 }
                 inPara.ModelID = modelID;
+                modelID = null;
+                inPara.ModelPath = modelPath;
+                inPara.Results = new List<ModelResult> { result };
+                inPara.HoContour.Dispose();
+                inPara.HoContour = newContour;
+                newContour = null;
+                inPara.Coord = result.Coord;
+                inPara.TmplPoint = new Point2d(result.X, result.Y);      //更改跟随坐标
+                snapshot.Dispose();
+                snapshot = null;
 
-                HOperatorSet.FindNccModel(imgReduced, inPara.ModelID, inPara.AngleStart.TupleRad(), inPara.AngleExtent.TupleRad(),
-                                            inPara.MinScore, 1, inPara.MaxOverlap, inPara.SubPixel, inPara.NumLevels,
-                                            out HTuple row, out HTuple column, out HTuple angle, out HTuple score);
+                host.SetModelPara(inPara.HoRect.HoRegion, inPara.HoContour, inPara.Coord);
+                host.Display.Disp(inPara.ModeRect, DrawStyle.Of(HColor.Orange));
 
-                inPara.Results = new List<ModelResult>();
-                var result = new ModelResult(row, column, angle, score);
-                inPara.Results.Add(result);
-                ho_Contour.Dispose();
-                HOperatorSet.GetNccModelRegion(out ho_Contour, modelID);
-                HOperatorSet.VectorAngleToRigid(0, 0, 0, result.Row, result.Column, result.Angle, out HTuple hv_HomMat2D);
-                HOperatorSet.AffineTransRegion(ho_Contour, out HObject regionAffineTrans, hv_HomMat2D, "nearest_neighbor");
-                ho_Contour.Dispose();
-                ho_Contour = regionAffineTrans;
+                host.DrawDone(inPara.ModelPath, inPara.ModeRect.HoRegion, inPara.HoContour, result);
 
-                HalconHelper.SaveSmallestRectImage(hImage, imgReduced, inPara.ModelPath);
-
-                display.ReDispImage();
-                display.DispRegion(inPara.ModeRect, HColor.Red);
-                display.DispRegion(ho_Contour, HColor.Green);
-                display.DispCross(result.Column, result.Row, result.Angle.ToDegrees(), HColor.Red, 50);
-
-                //m_dispModel.ShowModel(imgReduced, modeRect.HoRect, contourModel, result, type);
-
-                if (score.Length > 0)
-                {
-                    display.DispText("新建模板成功！", 10, 10, HColor.Green);
-                    inPara.TmplPoint = new Point2d(result.X, result.Y);      //更改跟随坐标
-                }
-                else
-                {
-                    display.DispText("新建模板失败！", 10, 10, HColor.Red);
-                }
-            }
-            catch
-            {
-                throw;
+                host.Display.DispText("新建模板成功！", new Point2d(10, 10), DrawStyle.Of(HColor.Green));
             }
             finally
             {
-                imgReduced?.Dispose();
-                ho_Contour?.Dispose();
+                // 未提交: 丢弃新模板; 模板区域换回快照 (取消 / 试匹配失败已提前换回, 这里兜底异常路径)
+                if (modelID != null) HOperatorSet.ClearNccModel(modelID);
+                if (snapshot != null) RestoreModeRect(ref snapshot);
+                newContour?.Dispose();
+                imgReduced.Dispose();
+                ho_Contour.Dispose();
             }
         }
-        public override void Init(DisplayUI display)
-        {
-            display.RectangleEvent += RectEvent;
-            display.SetModelEvent += SetModelEvent;
-            display.DispModelEvent += DispModelEvent;
-        }
-        public override void Close(DisplayUI display)
-        {
-            display.RectangleEvent -= RectEvent;
-            display.SetModelEvent -= SetModelEvent;
-            display.DispModelEvent -= DispModelEvent;
 
-            inPara.HoContour?.Dispose();
-            inPara.HoRect?.Dispose();
-            inPara.ModeRect?.Dispose();
-            if (inPara.ModelID != null && inPara.ModelID.Length > 0)
-            {
-                HOperatorSet.ClearNccModel(inPara.ModelID);
-                inPara.ModelID = null;
-            }
-        }
-        private void RectEvent(object sender, DrawRectangleArgs e)
+        /// <summary>丢弃绘制改写过的 ModeRect, 换回绘制前的快照。</summary>
+        private void RestoreModeRect(ref CvRegion snapshot)
         {
-            if (e.Name == Name)
-            {
-                inPara.HoRect.Update2Point(e.TopLeft, e.BottomRight);
-                inPara.HoRect.GenRegion();
-            }
+            inPara.ModeRect.Dispose();
+            inPara.ModeRect = snapshot;
+            snapshot = null;
         }
-        private void SetModelEvent(object sender, DrawSetModelArgs e)
-        {
-            if (e.Name == Name)
-            {
-                inPara.ModeRect.Update2Point(e.TopLeft, e.BottomRight);
-                inPara.ModeRect.GenRegion();
 
-                SetTemplate(e.Display);
-            }
-        }
-        private void DispModelEvent(object sender, DrawDispModelArgs e)
-        {
-            if (e.Name == Name)
-            {
-                e.Display.DispRegion(inPara.HoRect, HColor.Blue);
-                e.Display.DispRegion(inPara.HoContour, HColor.Green);
-                e.Display.DispCross(inPara.Coord, HColor.OrangeRed);
-            }
-        }
     }
 
     public class NccModel : AlgoFont
@@ -333,15 +420,20 @@ namespace DotNet.HalconAlgo
         public CvRegion ModeRect { set; get; } = new CvRegion();
 
         /// <summary> 模版轮廓 </summary>
-        public HObject HoContour = new HObject();
+        /// <remarks>不加 = new HObject() 初始化器：句柄统一由构造函数的 GenEmptyObj 创建，否则初始化器创建的句柄会被覆盖且永不释放。</remarks>
+        public HObject HoContour;
 
         /// <summary> 锁定中心 </summary>
         public bool LockCenter { get; set; } = true;
 
         /// <summary> 模版路径 </summary>
-        public string ModelPath { get; set; }
+        /// <remarks>尚未创建模板时为空串而不是 null：这个值会直接交给 ReadImage / DisplayModel，空串换来一条
+        /// 「文件打不开」的明确报错，null 换来的是调用点的 NRE。</remarks>
+        public string ModelPath { get; set; } = string.Empty;
 
         /// <summary> 模板ID </summary>
+        /// <remarks>可空：模板尚未创建、或参数变更后被主动置 null（见 CreateModel），调用点一律先判
+        /// <c>ModelID == null || ModelID.Length == 0</c> 再用。</remarks>
         public HTuple ModelID { get; set; }
 
         /// <summary> 起始角度 </summary>
@@ -367,7 +459,9 @@ namespace DotNet.HalconAlgo
         /// <summary> 金字塔层数 </summary>
         public HTuple NumLevels { get; set; } = 0;
 
-        public List<ModelResult> Results { get; set; }
+        /// <summary> 匹配结果 </summary>
+        /// <remarks>初始化为空列表：Run 每轮开头都会整体替换它，但「从未跑过」的参数对象也得能被 UI 安全读取。</remarks>
+        public List<ModelResult> Results { get; set; } = new List<ModelResult>();
 
         /// <summary> 显示区域 </summary>
         public bool DispRegion { set; get; } = true;

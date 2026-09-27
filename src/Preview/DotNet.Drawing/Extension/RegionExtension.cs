@@ -1,4 +1,5 @@
 ﻿using HalconDotNet;
+using System;
 using System.Collections.Generic;
 
 
@@ -6,10 +7,16 @@ namespace DotNet.Drawing
 {
     public static class RegionExtension
     {
+        /// <summary>换入新句柄；HoRegion 的 setter 负责释放旧句柄。</summary>
+        private static void ReplaceHandle(CvRegion hRegion, HObject newHandle)
+        {
+            hRegion.HoRegion = newHandle;
+        }
+
         /// <summary>
-        /// 获取区域
+        /// 根据区域类型和几何参数重新生成 Halcon 区域
         /// </summary>
-        public static void GenRegion(this CvRegion hRegion)
+        public static void RebuildRegion(this CvRegion hRegion)
         {
             if (hRegion == null) return;
             switch (hRegion.Type)
@@ -18,56 +25,63 @@ namespace DotNet.Drawing
                     {
                         HOperatorSet.GenRectangle1(out HObject rectangle, hRegion.TopLeft.Y, hRegion.TopLeft.X,
                                                hRegion.BottomRight.Y, hRegion.BottomRight.X);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = rectangle;
+                        ReplaceHandle(hRegion, rectangle);
                     }
                     break;
                 case RectEnum.AffRect:
                     {
                         HOperatorSet.GenRectangle2(out HObject rectangle, hRegion.CenterY, hRegion.CenterX, hRegion.Phi,
                                                hRegion.Width / 2, hRegion.Height / 2);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = rectangle;
+                        ReplaceHandle(hRegion, rectangle);
                     }
                     break;
                 case RectEnum.Circle:
                     {
                         HOperatorSet.GenCircle(out HObject circle, hRegion.CenterY, hRegion.CenterX, hRegion.Width / 2);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = circle;
+                        ReplaceHandle(hRegion, circle);
                     }
                     break;
                 case RectEnum.Ellipse:
                     {
                         HOperatorSet.GenEllipse(out HObject ellipse, hRegion.CenterY, hRegion.CenterX, hRegion.Phi,
                                                hRegion.Width / 2, hRegion.Height / 2);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = ellipse;
+                        ReplaceHandle(hRegion, ellipse);
                     }
                     break;
                 case RectEnum.Polygon:
                     {
-                        HOperatorSet.GenRegionPolygon(out HObject region, hRegion.PolygonX, hRegion.PolygonY);
-                        hRegion.HoRegion.Dispose();
-                        hRegion.HoRegion = region;
+                        // 点集为空时直接放弃重建：原实现会把 null 交给 gen_region_polygon，
+                        // 抛出的是与真实原因（多边形从未绘制 / 反序列化没带上点集）无关的 HALCON 原生异常。
+                        if (hRegion.PolygonX == null || hRegion.PolygonY == null)
+                        {
+                            Log.Warn(nameof(RegionExtension), "多边形点集为空，跳过区域重建。");
+                            return;
+                        }
+                        // gen_region_polygon(Region, Rows, Columns)：首参为 Row，而 PolygonX/PolygonY 分别存 Column/Row
+                        HOperatorSet.GenRegionPolygon(out HObject region, hRegion.PolygonY, hRegion.PolygonX);
+                        ReplaceHandle(hRegion, region);
                     }
                     break;
                 case RectEnum.Ring:
                     {
-                        HObject circle1 = new HObject(); HOperatorSet.GenEmptyObj(out circle1);
-                        HObject circle2 = new HObject(); HOperatorSet.GenEmptyObj(out circle2);
+                        // 直接以 GenCircle 创建句柄：原实现先 GenEmptyObj 再被 GenCircle 覆盖，空对象句柄永不释放
+                        HOperatorSet.GenCircle(out HObject circle1, hRegion.CenterY, hRegion.CenterX, hRegion.MaxRadius);
                         try
                         {
-                            HOperatorSet.GenCircle(out circle1, hRegion.CenterY, hRegion.CenterX, hRegion.MaxRadius);
-                            HOperatorSet.GenCircle(out circle2, hRegion.CenterY, hRegion.CenterX, hRegion.MinRadius);
-                            HOperatorSet.Difference(circle1, circle2, out HObject region);
-                            hRegion.HoRegion.Dispose();
-                            hRegion.HoRegion = region;
+                            HOperatorSet.GenCircle(out HObject circle2, hRegion.CenterY, hRegion.CenterX, hRegion.MinRadius);
+                            try
+                            {
+                                HOperatorSet.Difference(circle1, circle2, out HObject region);
+                                ReplaceHandle(hRegion, region);
+                            }
+                            finally
+                            {
+                                circle2.Dispose();
+                            }
                         }
                         finally
                         {
                             circle1.Dispose();
-                            circle2.Dispose();
                         }
                     }
                     break;
@@ -75,12 +89,19 @@ namespace DotNet.Drawing
         }
 
         /// <summary>
-        /// 获取坐标区域
+        /// 以各坐标为中心、使用当前区域的宽高生成矩形，并合并到现有 Halcon 区域
         /// </summary>
+        /// <param name="hRegion">要合并矩形的区域</param>
+        /// <param name="coords">矩形的中心坐标集合</param>
         public static void GenCoordsRegion(this CvRegion hRegion, List<CvCoord> coords)
         {
-            if (coords == null) return;
-            HObject imgReduced = new HObject(); HOperatorSet.GenEmptyObj(out imgReduced);
+            // hRegion 判空与 coords 同等对待：原实现只判了 coords，
+            // 传 null 区域进来会在 hRegion.Height 处 NRE。
+            if (hRegion == null || coords == null) return;
+            // 已释放（HoRegion 为 null）的区域没法参与 union2，直接放弃而不是在算子里炸。
+            if (hRegion.HoRegion == null) return;
+
+            HObject imgReduced; HOperatorSet.GenEmptyObj(out imgReduced);
 
             try
             {
@@ -94,8 +115,7 @@ namespace DotNet.Drawing
                     imgReduced.Dispose();
                     HOperatorSet.GenRectangle1(out imgReduced, row1, column1, row2, column2);
                     HOperatorSet.Union2(hRegion.HoRegion, imgReduced, out HObject regionUnion);
-                    hRegion.HoRegion.Dispose();
-                    hRegion.HoRegion = regionUnion;
+                    ReplaceHandle(hRegion, regionUnion);
                 }
             }
             finally
@@ -105,99 +125,54 @@ namespace DotNet.Drawing
         }
 
         /// <summary>
-        /// 通过中心点和宽高修改橡皮筋参数
+        /// 设置区域中心点，并保持当前宽高不变
         /// </summary>
-        /// <param name="center">中心点</param>
-        /// <param name="size">宽高</param>
-        public static void UpdateCenter(this CvRegion hRegion, Point2d center)
+        /// <param name="center">新的中心点</param>
+        internal static void SetCenter(this CvRegion hRegion, Point2d center)
         {
             Point2d location = new Point2d(center.X - hRegion.Width / 2, center.Y - hRegion.Height / 2);
-            hRegion.X = location.X;
-            hRegion.Y = location.Y;
+            hRegion.Bounds = new Rect2d(location, hRegion.Size);
         }
 
         /// <summary>
-        /// 通过中心点和宽高修改橡皮筋参数
+        /// 通过中心点和尺寸设置区域矩形
         /// </summary>
         /// <param name="center">中心点</param>
-        /// <param name="size">宽高</param>
-        public static void UpdateCenter(this CvRegion hRegion, Point2d center, Size2d size)
+        /// <param name="size">矩形尺寸</param>
+        public static void SetRectByCenter(this CvRegion hRegion, Point2d center, Size2d size)
         {
             Point2d TopLeft = new Point2d(center.X - size.Width / 2, center.Y - size.Height / 2);
             var rect = new Rect2d(TopLeft, size);
-            hRegion.X = rect.X;
-            hRegion.Y = rect.Y;
-            hRegion.Width = rect.Width;
-            hRegion.Height = rect.Height;
+            hRegion.Bounds = rect;
         }
 
         /// <summary>
-        /// 通过左上点和宽高修改橡皮筋参数
+        /// 通过左上角和右下角设置区域矩形
         /// </summary>
-        /// <param name="topLeft">左上点</param>
-        /// <param name="size">大小</param>
-        public static void UpdateTopLeft(this CvRegion hRegion, Point2d topLeft, Size2d size)
+        /// <param name="topLeft">左上角</param>
+        /// <param name="bottomRight">右下角</param>
+        public static void SetRectByCorners(this CvRegion hRegion, Point2d topLeft, Point2d bottomRight)
         {
-            var rect = new Rect2d(topLeft, size);
-            hRegion.X = rect.X;
-            hRegion.Y = rect.Y;
-            hRegion.Width = rect.Width;
-            hRegion.Height = rect.Height;
-        }
-      
-        /// <summary>
-        /// 通过左上点和右下点修改橡皮筋参数
-        /// </summary>
-        /// <param name="topLeft">左上点</param>
-        /// <param name="bottomRight">右下点</param>
-        public static void Update2Point(this CvRegion hRegion, Point2d topLeft, Point2d bottomRight)
-        {
-            var rect = Rect2d.FromLTRB(topLeft.X, topLeft.Y, bottomRight.X, bottomRight.Y);
-            hRegion.X = rect.X;
-            hRegion.Y = rect.Y;
-            hRegion.Width = rect.Width;
-            hRegion.Height = rect.Height;
+            if (bottomRight.X < topLeft.X)
+                throw new ArgumentException("right must be >= left", nameof(bottomRight));
+            if (bottomRight.Y < topLeft.Y)
+                throw new ArgumentException("bottom must be >= top", nameof(bottomRight));
+
+            var rect = new Rect2d(topLeft.X, topLeft.Y, bottomRight.X - topLeft.X, bottomRight.Y - topLeft.Y);
+            hRegion.Bounds = rect;
         }
 
         /// <summary>
-        /// 通过左上点和右下点修改橡皮筋参数
+        /// 通过 Halcon 左上角和右下角的行列坐标设置区域矩形
         /// </summary>
-        /// <param name="x">左</param>
-        /// <param name="y">上</param>
-        /// <param name="width">宽</param>
-        /// <param name="height">高</param>
-        public static void Update2Point(this CvRegion hRegion, double x, double y, double width, double height)
-        {
-            var rect = new Rect2d(x, y, width, height);
-            hRegion.X = rect.X;
-            hRegion.Y = rect.Y;
-            hRegion.Width = rect.Width;
-            hRegion.Height = rect.Height;
-        }
-
-        /// <summary>
-        /// 通过左上点和右下点修改橡皮筋参数
-        /// </summary>
-        public static void Update2Point(this CvRegion hRegion, HTuple row1, HTuple column1, HTuple row2, HTuple column2)
+        /// <param name="row1">左上角行坐标</param>
+        /// <param name="column1">左上角列坐标</param>
+        /// <param name="row2">右下角行坐标</param>
+        /// <param name="column2">右下角列坐标</param>
+        public static void SetRectByCorners(this CvRegion hRegion, HTuple row1, HTuple column1, HTuple row2, HTuple column2)
         {
             var rect = new Rect2d(row1, column1, row2, column2);
-            hRegion.X = rect.X;
-            hRegion.Y = rect.Y;
-            hRegion.Width = rect.Width;
-            hRegion.Height = rect.Height;
+            hRegion.Bounds = rect;
         }
-
-        /// <summary>
-        /// 通过左上点和右下点修改橡皮筋参数
-        /// </summary>
-        public static void UpdateDRegion(this CvRegion cvRegion, CvRegion InRegion)
-        {
-            cvRegion.X = InRegion.X;
-            cvRegion.Y = InRegion.Y;
-            cvRegion.Width = InRegion.Width;
-            cvRegion.Height = InRegion.Height;
-            cvRegion.HoRegion = InRegion.HoRegion.Clone();
-        }
-
     }
 }

@@ -1,5 +1,7 @@
+using Newtonsoft.Json;
 using System;
 using System.Runtime.CompilerServices;
+using DotNet.Drawing.Internal;
 
 namespace DotNet.Drawing
 {
@@ -12,7 +14,7 @@ namespace DotNet.Drawing
     /// - 用于表示物体的位置和朝向（位姿）
     /// - 属性使用 init 访问器，保证不可变语义
     /// </remarks>
-    public readonly struct CvCoord : IEquatable<CvCoord>, ICvTranslatable<CvCoord>, ICvRotatable<CvCoord>
+    public readonly struct CvCoord : IEquatable<CvCoord>
     {
         #region Properties
 
@@ -26,23 +28,43 @@ namespace DotNet.Drawing
         /// </summary>
         public double Y { get; init; }
 
+        private readonly Angle _angle;
+
         /// <summary>
-        /// 角度（弧度）
+        /// 朝向角
         /// </summary>
-        public double Angle { get; init; }
+        /// <remarks>
+        /// 类型是 <see cref="DotNet.Drawing.Angle"/> 而非裸 <c>double</c>：历史上这里是弧度，
+        /// 但调用方屡屡再补一次 <c>ToRadians()</c>（审查项 B5），编译器无从发现。
+        /// 现在取值必须显式写 <c>.Radians</c> 或 <c>.Degrees</c>，单位由类型保证。
+        /// JSON 落盘形状不变，仍是一个弧度数字（见 <see cref="AngleJsonConverter"/>）。
+        /// <para>
+        /// 归一化到 [-π, π) 放在 init 访问器里：<c>coord with { Angle = ... }</c> 与 JSON 反序列化
+        /// 都不经过构造函数，否则 2π 与 0 会被判为不同朝向。
+        /// </para>
+        /// </remarks>
+        public Angle Angle
+        {
+            get => _angle;
+            init => _angle = value.Normalized;
+        }
 
         /// <summary>
         /// 角度（度数）
         /// </summary>
+        /// <remarks>由 Angle 推导, 只读; 落盘会写出却无法读回, 标 JsonIgnore 免得污染 job 文件。</remarks>
+        [JsonIgnore]
         public double AngleDegrees
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => Angle * 180.0 / Math.PI;
+            get => Angle.Degrees;
         }
 
         /// <summary>
         /// 中心点
         /// </summary>
+        /// <remarks>由 X / Y 推导, 只读; 落盘会写出却无法读回, 标 JsonIgnore 免得污染 job 文件。</remarks>
+        [JsonIgnore]
         public Point2d Center
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -52,19 +74,24 @@ namespace DotNet.Drawing
         /// <summary>
         /// 单位方向向量
         /// </summary>
+        /// <remarks>由 Angle 推导, 只读; 落盘会写出却无法读回, 标 JsonIgnore 免得污染 job 文件。</remarks>
+        [JsonIgnore]
         public Point2d Direction
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => new(Math.Cos(Angle), Math.Sin(Angle));
+            get => Angle.Direction;
         }
 
         /// <summary>
         /// 是否为单位坐标系（位于原点且无旋转）
         /// </summary>
+        /// <remarks>由 X / Y / Angle 推导, 只读; 落盘会写出却无法读回, 标 JsonIgnore 免得污染 job 文件。</remarks>
+        [JsonIgnore]
         public bool IsIdentity
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => MathHelper.AreEqual(X, 0) && MathHelper.AreEqual(Y, 0) && MathHelper.AreEqual(Angle, 0);
+            // X/Y 是像素量走几何容差；Angle 是弧度，属纯数值恒等判定，保留严格容差。
+            get => MathHelper.IsZeroGeometric(X) && MathHelper.IsZeroGeometric(Y) && MathHelper.IsZero(Angle.Radians);
         }
 
         #endregion
@@ -76,26 +103,35 @@ namespace DotNet.Drawing
         /// </summary>
         /// <param name="x">X坐标</param>
         /// <param name="y">Y坐标</param>
-        /// <param name="angle">角度（弧度）</param>
+        /// <param name="angle">朝向角，缺省为零角</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvCoord(double x, double y, double angle = 0)
+        public CvCoord(double x, double y, Angle angle = default)
         {
             X = x;
             Y = y;
-            Angle = MathHelper.NormalizeAngle(angle);
+            _angle = angle.Normalized;
         }
 
         /// <summary>
         /// 从点和角度构造
         /// </summary>
         /// <param name="center">中心点</param>
-        /// <param name="angle">角度（弧度）</param>
+        /// <param name="angle">朝向角，缺省为零角</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvCoord(Point2d center, double angle = 0)
+        public CvCoord(Point2d center, Angle angle = default)
         {
             X = center.X;
             Y = center.Y;
-            Angle = MathHelper.NormalizeAngle(angle);
+            _angle = angle.Normalized;
+        }
+
+        /// <summary>
+        /// 从弧度角度创建坐标系
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static CvCoord FromRadians(double x, double y, double angleRadians)
+        {
+            return new CvCoord(x, y, Angle.FromRadians(angleRadians));
         }
 
         /// <summary>
@@ -104,175 +140,7 @@ namespace DotNet.Drawing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static CvCoord FromDegrees(double x, double y, double angleDegrees)
         {
-            return new CvCoord(x, y, angleDegrees * Math.PI / 180.0);
-        }
-
-        #endregion
-
-        #region Transform Methods
-
-        /// <summary>
-        /// 旋转坐标系
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvCoord Rotate(double deltaAngle)
-        {
-            return new CvCoord(X, Y, Angle + deltaAngle);
-        }
-
-        /// <summary>
-        /// 绕指定点旋转
-        /// </summary>
-        public CvCoord RotateAround(double deltaAngle, Point2d pivot)
-        {
-            // 先旋转位置
-            Point2d newCenter = Center.RotateAround(deltaAngle, pivot);
-            // 再更新角度
-            return new CvCoord(newCenter.X, newCenter.Y, Angle + deltaAngle);
-        }
-
-        /// <summary>
-        /// 平移坐标系
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvCoord Translate(double dx, double dy)
-        {
-            return new CvCoord(X + dx, Y + dy, Angle);
-        }
-
-        /// <summary>
-        /// 平移坐标系
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvCoord Translate(Point2d offset)
-        {
-            return new CvCoord(X + offset.X, Y + offset.Y, Angle);
-        }
-
-        /// <summary>
-        /// 沿当前方向平移
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvCoord TranslateForward(double distance)
-        {
-            return new CvCoord(
-                X + distance * Math.Cos(Angle),
-                Y + distance * Math.Sin(Angle),
-                Angle
-            );
-        }
-
-        /// <summary>
-        /// 沿垂直方向平移（正值向左）
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CvCoord TranslateSideways(double distance)
-        {
-            double perpAngle = Angle + Math.PI / 2;
-            return new CvCoord(
-                X + distance * Math.Cos(perpAngle),
-                Y + distance * Math.Sin(perpAngle),
-                Angle
-            );
-        }
-
-        /// <summary>
-        /// 将点从世界坐标转换到局部坐标
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Point2d WorldToLocal(Point2d worldPoint)
-        {
-            double dx = worldPoint.X - X;
-            double dy = worldPoint.Y - Y;
-            double cos = Math.Cos(-Angle);
-            double sin = Math.Sin(-Angle);
-            return new Point2d(dx * cos - dy * sin, dx * sin + dy * cos);
-        }
-
-        /// <summary>
-        /// 将点从局部坐标转换到世界坐标
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Point2d LocalToWorld(Point2d localPoint)
-        {
-            double cos = Math.Cos(Angle);
-            double sin = Math.Sin(Angle);
-            return new Point2d(
-                X + localPoint.X * cos - localPoint.Y * sin,
-                Y + localPoint.X * sin + localPoint.Y * cos
-            );
-        }
-
-        /// <summary>
-        /// 组合两个坐标系变换
-        /// </summary>
-        public CvCoord Compose(CvCoord other)
-        {
-            Point2d newCenter = LocalToWorld(other.Center);
-            return new CvCoord(newCenter.X, newCenter.Y, Angle + other.Angle);
-        }
-
-        /// <summary>
-        /// 获取逆变换
-        /// </summary>
-        public CvCoord Inverse
-        {
-            get
-            {
-                double cos = Math.Cos(-Angle);
-                double sin = Math.Sin(-Angle);
-                return new CvCoord(
-                    -X * cos + Y * sin,
-                    -X * sin - Y * cos,
-                    -Angle
-                );
-            }
-        }
-
-        #endregion
-
-        #region Utility Methods
-
-        /// <summary>
-        /// 计算到另一个坐标系的距离
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public double DistanceTo(CvCoord other)
-        {
-            return Center.DistanceTo(other.Center);
-        }
-
-        /// <summary>
-        /// 计算与另一个坐标系的角度差
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public double AngleDifferenceTo(CvCoord other)
-        {
-            return MathHelper.NormalizeAngle(other.Angle - Angle);
-        }
-
-        /// <summary>
-        /// 线性插值
-        /// </summary>
-        public CvCoord Lerp(CvCoord other, double t)
-        {
-            return new CvCoord(
-                X + (other.X - X) * t,
-                Y + (other.Y - Y) * t,
-                Angle + ShortestAngleDifference(Angle, other.Angle) * t
-            );
-        }
-
-        /// <summary>
-        /// 计算两个角度之间的最短差值
-        /// </summary>
-        /// <remarks>
-        /// 复用 <see cref="MathHelper.AngleDifference"/>，保证全工程角度归一化口径一致 ([-π, π))。
-        /// </remarks>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static double ShortestAngleDifference(double from, double to)
-        {
-            return MathHelper.AngleDifference(from, to);
+            return new CvCoord(x, y, Angle.FromDegrees(angleDegrees));
         }
 
         #endregion
@@ -282,18 +150,18 @@ namespace DotNet.Drawing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(CvCoord other)
         {
-            return MathHelper.AreEqual(X, other.X) &&
-                   MathHelper.AreEqual(Y, other.Y) &&
-                   MathHelper.AreEqual(Angle, other.Angle);
+            return MathHelper.AreEqualGeometric(X, other.X) &&
+                   MathHelper.AreEqualGeometric(Y, other.Y) &&
+                   Angle.Equals(other.Angle);
         }
 
-        public override bool Equals(object? obj) => obj is CvCoord other && Equals(other);
+        public override bool Equals(object obj) => obj is CvCoord other && Equals(other);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode() => HashCode.Combine(
-            MathHelper.QuantizeToTolerance(X),
-            MathHelper.QuantizeToTolerance(Y),
-            MathHelper.QuantizeToTolerance(Angle));
+            MathHelper.QuantizeGeometric(X),
+            MathHelper.QuantizeGeometric(Y),
+            MathHelper.QuantizeToTolerance(Angle.Radians));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(CvCoord left, CvCoord right) => left.Equals(right);
@@ -325,7 +193,7 @@ namespace DotNet.Drawing
         /// <summary>
         /// 单位坐标系常量（原点，无旋转）
         /// </summary>
-        public static readonly CvCoord Identity = new(0, 0, 0);
+        public static readonly CvCoord Identity = new(0, 0, Angle.Zero);
 
         /// <summary>
         /// 零坐标系常量（同 Identity）

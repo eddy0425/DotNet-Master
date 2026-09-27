@@ -29,5 +29,7 @@ using System.Runtime.InteropServices;
 //      生成号
 //      修订号
 //
+[assembly: InternalsVisibleTo("DotNet.Drawing.Tests")]
+
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
