@@ -356,10 +356,13 @@ namespace DotNet.HalconUI
             return new DrawRectangle1Result(completed, top, left, bottom, right);
         }
 
-        // HALCON 约定 radius1 为长半轴, 因此长短轴颠倒时要交换并把 phi 旋转 90°
+        // HALCON 约定 radius1 为长半轴, 因此长短轴颠倒时要交换并把 phi 旋转 90°。
+        // 最后统一折回 (-π, π]: 与交互绘制时 Atan2 给出的区间一致 (phiIn 由调用方传入, 本身也可能越界)
         private static DrawEllipseResult NormalizeEllipse(bool completed, EllipseShape s)
         {
             double phi = s.R1 >= s.R2 ? s.Phi : s.Phi + Math.PI / 2;
+            phi = Math.IEEERemainder(phi, 2 * Math.PI);     // → [-π, π]
+            if (phi <= -Math.PI) phi += 2 * Math.PI;         // → (-π, π]
             return new DrawEllipseResult(completed, s.CY, s.CX, phi,
                 Math.Max(s.R1, s.R2), Math.Min(s.R1, s.R2));
         }

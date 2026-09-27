@@ -107,5 +107,30 @@ namespace DotNet.HalconUI.Tests
                 }
             });
         }
+
+        [TestMethod]
+        public void Ctor_NullTree_Throws()
+        {
+            Assert.ThrowsException<System.ArgumentNullException>(() => new TreeVisualizer(null));
+            Assert.ThrowsException<System.ArgumentNullException>(() => new TreeBranch(null));
+        }
+
+        [TestMethod]
+        public void Branch_WithoutConfig_AddsEmptyBranch()
+        {
+            // 与 Node 的 config 可选保持一致：原先 config 为 null 时节点已加上才抛 NullReferenceException
+            Sta.Run(() =>
+            {
+                using (var tree = new TreeView())
+                {
+                    var v = new TreeVisualizer(tree);
+                    Assert.AreSame(v, v.Branch("输出", null));
+                    v.Branch("嵌套", b => Assert.AreSame(b, b.Branch("子", null)));
+
+                    CollectionAssert.AreEqual(new[] { "输出", "嵌套" }, Texts(tree.Nodes));
+                    CollectionAssert.AreEqual(new[] { "子" }, Texts(tree.Nodes[1].Nodes));
+                }
+            });
+        }
     }
 }

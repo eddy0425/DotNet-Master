@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using DotNet.Drawing;
 using HalconDotNet;
@@ -109,6 +109,27 @@ namespace DotNet.HalconUI.Tests
                 StringAssert.Contains(slant.Message, "Slant");
                 var name = Assert.ThrowsException<HalconException>(() => font.SetFontSize(16, "NoSuchFont_7f3a", "false", "false"));
                 StringAssert.Contains(name.Message, "Font");
+            });
+        }
+
+        [TestMethod]
+        public void Font2022_DispTextFailure_IsLoggedNotThrown()
+        {
+            // 这里的 WIN32-Window 上 disp_text 必然报 #5123，正好用来验证失败路径；与 2018 版一致只记日志
+            WindowHost.Run(host =>
+            {
+                var font = new HWindowFont2022(host.Window);
+                host.Window.SetPart(10, 20, 110, 220);
+
+                using (var log = new CapturingLogger())
+                {
+                    font.DispText("abc", 30, 40, "no_such_colour", "image");
+
+                    var warn = log.Entries.Single(e => e.Level == LogLevel.Warn);
+                    Assert.AreEqual(nameof(HWindowFont2022), warn.Category);
+                    Assert.IsInstanceOfType(warn.Exception, typeof(HalconException));
+                }
+                Assert.AreEqual("10,20,110,220", Part(host.Window));
             });
         }
     }

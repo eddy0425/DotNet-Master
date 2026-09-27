@@ -165,6 +165,57 @@ namespace DotNet.HalconUI.Tests
             Assert.IsTrue(Contains(FindMode, 30, 30), "重新添加回来的部分不应被历史擦除再扣一次");
             Assert.IsFalse(Contains(FindMode, 80, 80), "本次笔刷照常扣除");
         }
+
+        [TestMethod]
+        public void WithoutSetUp_MouseEvents_AreSilentNoOps()
+        {
+            // DrawType 是公开可写的：外部可能不经 but_ApplyRegion_Click 直接切到 Erase
+            var mouse = new EraseRectMouse();
+            using (var log = new CapturingLogger())
+            {
+                mouse.OnMouseDown(Mouse.Left(10, 10));
+                mouse.OnMouseMove(Mouse.Move(20, 20));
+                mouse.OnMouseWheel(Mouse.Move(20, 20));
+                mouse.OnMouseUp(Mouse.Left(20, 20));
+
+                Assert.AreEqual(0, log.Entries.Count, "未 SetUp 时不应每次移动都告警");
+            }
+            Assert.IsNull(mouse.Erase);
+        }
+
+        [TestMethod]
+        public void DisplayFailure_IsLoggedNotThrown_AndStrokeIsKept()
+        {
+            _display.ThrowOnDispObject = new InvalidOperationException("窗口已销毁");
+            using (var log = new CapturingLogger())
+            {
+                _mouse.OnMouseDown(Mouse.Left(30, 60));
+                _mouse.OnMouseMove(Mouse.Move(31, 61));
+                _mouse.OnMouseMove(Mouse.Move(32, 62));
+
+                var warn = log.Entries.Single(e => e.Level == LogLevel.Warn); // 失败即结束本次涂抹，拖动不再重复告警
+                Assert.AreEqual(nameof(EraseRectMouse), warn.Category);
+                Assert.IsInstanceOfType(warn.Exception, typeof(InvalidOperationException));
+            }
+            Assert.IsTrue(Contains(Erase, 60, 30), "显示失败不影响已完成的擦除");
+            Assert.AreEqual("margin", _display.DrawModes.Last(), "失败后画笔仍应恢复为 margin");
+        }
+
+        [TestMethod]
+        public void NullHandles_AreLoggedNotThrown()
+        {
+            using (var log = new CapturingLogger())
+            {
+                var mouse = new EraseRectMouse();
+                mouse.SetUp(_display, null, null, HColor.Red, Brush);
+
+                mouse.OnMouseDown(Mouse.Left(30, 60));
+                mouse.OnMouseWheel(Mouse.Move(0, 0));
+
+                Assert.IsTrue(log.Messages(LogLevel.Warn).Any(), "调用方错误应留下日志");
+            }
+            CollectionAssert.AreEqual(new[] { "fill", "margin" }, _display.DrawModes.Take(2).ToArray());
+        }
     }
 
     /// <summary><see cref="DispRectMouse"/> 与 <see cref="DispModelMouse"/>：只在移动时重画叠加层。</summary>
@@ -259,6 +310,66 @@ namespace DotNet.HalconUI.Tests
                 Assert.AreEqual(1, display.Coords.Count);
                 Assert.AreEqual(coord, display.Coords[0].Item);
                 Assert.AreEqual(HColor.OrangeRed.Name, display.Coords[0].ColorName);
+            }
+        }
+
+        [TestMethod]
+        public void DispRect_WithoutSetUp_IsSilentNoOp()
+        {
+            using (var log = new CapturingLogger())
+            {
+                new DispRectMouse().OnMouseMove(Mouse.Move(5, 5));
+                Assert.AreEqual(0, log.Entries.Count);
+            }
+        }
+
+        [TestMethod]
+        public void DispModel_WithoutSetUp_IsSilentNoOp()
+        {
+            using (var log = new CapturingLogger())
+            {
+                var mouse = new DispModelMouse();
+                mouse.OnMouseDown(Mouse.Left(0, 0));
+                mouse.OnMouseMove(Mouse.Move(5, 5));
+                Assert.AreEqual(0, log.Entries.Count);
+            }
+        }
+
+        [TestMethod]
+        public void DispModel_DisplayFailure_IsLoggedNotThrown()
+        {
+            var display = new FakeDisplay { ThrowOnDispObject = new InvalidOperationException("窗口已销毁") };
+            using (var log = new CapturingLogger())
+            using (var findMode = Rectangle1(0, 0, 10, 10))
+            using (var contour = EmptyObj())
+            {
+                var mouse = new DispModelMouse();
+                mouse.SetUp(display, findMode, contour, new CvCoord(3, 4));
+
+                mouse.OnMouseMove(Mouse.Move(1, 1));
+
+                var warn = log.Entries.Single(e => e.Level == LogLevel.Warn);
+                Assert.AreEqual(nameof(DispModelMouse), warn.Category);
+                Assert.IsInstanceOfType(warn.Exception, typeof(InvalidOperationException));
+            }
+        }
+
+        [TestMethod]
+        public void DispModel_UpdateFindMode_ReplacesOnlyTemplateHandle()
+        {
+            var display = new FakeDisplay();
+            using (var first = Rectangle1(0, 0, 10, 10))
+            using (var second = Rectangle1(0, 0, 20, 20))
+            using (var contour = EmptyObj())
+            {
+                var mouse = new DispModelMouse();
+                mouse.SetUp(display, first, contour, new CvCoord(3, 4));
+                mouse.UpdateFindMode(second);
+
+                mouse.OnMouseMove(Mouse.Move(1, 1));
+
+                Assert.AreSame(second, display.Objects[0].Item);
+                Assert.AreSame(contour, display.Objects[1].Item);
             }
         }
     }

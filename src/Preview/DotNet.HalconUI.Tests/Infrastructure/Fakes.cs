@@ -24,6 +24,9 @@ namespace DotNet.HalconUI.Tests
         /// <summary>置为非 null 时，Disp(Point2d) 抛出该异常，模拟窗口已销毁等绘制失败。</summary>
         public Exception ThrowOnDispPoint;
 
+        /// <summary>置为非 null 时，Disp(HObject) 抛出该异常。</summary>
+        public Exception ThrowOnDispObject;
+
         public bool IsCross { get; set; }
         public bool Adaptive { get; set; }
         public double HoWidth => 0;
@@ -59,7 +62,11 @@ namespace DotNet.HalconUI.Tests
         public void Disp(CvArrow arrow, DrawStyle style = null) { }
         public void Disp(CvCircle circle, DrawStyle style = null) { }
         public void Disp(CvRegion region, DrawStyle style = null) => Regions.Add(new Drawn<CvRegion>(region, style));
-        public void Disp(HObject region, DrawStyle style = null) => Objects.Add(new Drawn<HObject>(region, style));
+        public void Disp(HObject region, DrawStyle style = null)
+        {
+            if (ThrowOnDispObject != null) throw ThrowOnDispObject;
+            Objects.Add(new Drawn<HObject>(region, style));
+        }
 
         public void DispText(string message, Point2d position, DrawStyle style = null) { }
         public void DispRect2(Point2d center, double phi, double length1, double length2, DrawStyle style = null) { }

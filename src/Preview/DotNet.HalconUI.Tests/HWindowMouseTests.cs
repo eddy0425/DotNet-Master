@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using DotNet.Drawing;
@@ -62,8 +62,8 @@ namespace DotNet.HalconUI.Tests
             {
                 mouse.OnHMouseWheel(null, Mouse.Wheel(400, 300, 120));
 
-                // 以 (row 300, col 400) 为不动点，Part 缩到 1/1.5
-                AssertPart(host, 100, 133.3, 499.3, 666);
+                // 以 (row 300, col 400) 为不动点，视野 600x800 像素缩到 1/1.5 即 400x533.3
+                AssertPart(host, 100, 133.3, 499, 665.7);
             });
         }
 
@@ -74,7 +74,35 @@ namespace DotNet.HalconUI.Tests
             {
                 mouse.OnHMouseWheel(null, Mouse.Wheel(400, 300, -120));
 
-                AssertPart(host, -300, -400, 898, 1198);
+                // 缩小系数是放大的倒数：视野 600x800 → 900x1200（原先按 0.5 缩成 2 倍，且宽高少算 1）
+                AssertPart(host, -150, -200, 749, 999);
+            });
+        }
+
+        [TestMethod]
+        public void WheelForwardThenBackward_RestoresOriginalPart()
+        {
+            Run((host, mouse) =>
+            {
+                mouse.OnHMouseWheel(null, Mouse.Wheel(400, 300, 120));
+                mouse.OnHMouseWheel(null, Mouse.Wheel(400, 300, -120));
+
+                AssertPart(host, 0, 0, 599, 799, "放大再缩小一格应回到原视野");
+            });
+        }
+
+        [TestMethod]
+        public void Wheel_RepeatedRoundTrips_DoNotDrift()
+        {
+            Run((host, mouse) =>
+            {
+                for (int i = 0; i < 5; i++)
+                {
+                    mouse.OnHMouseWheel(null, Mouse.Wheel(123, 45, 120));
+                    mouse.OnHMouseWheel(null, Mouse.Wheel(123, 45, -120));
+                }
+
+                AssertPart(host, 0, 0, 599, 799, "宽高少算 1 像素时每来回一次视野都会漂移");
             });
         }
 
@@ -83,13 +111,13 @@ namespace DotNet.HalconUI.Tests
         {
             Run((host, mouse) =>
             {
-                // 19999x19999 本身在 32000² 以内，但再缩小一次就是 ~40000²，超出上限。
+                // 25000x25000 本身在 32000² 以内，但再缩小一次就是 37500²，超出上限。
                 // 原实现按缩小「前」的面积判断，会放行这一次。
-                host.Window.SetPart(0, 0, 19999, 19999);
+                host.Window.SetPart(0, 0, 24999, 24999);
 
                 mouse.OnHMouseWheel(null, Mouse.Wheel(0, 0, -120));
 
-                AssertPart(host, 0, 0, 19999, 19999, "超出上限的缩小应被拒绝");
+                AssertPart(host, 0, 0, 24999, 24999, "超出上限的缩小应被拒绝");
             });
         }
 

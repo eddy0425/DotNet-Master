@@ -1,5 +1,6 @@
 ﻿using DotNet.Drawing;
 using HalconDotNet;
+using System;
 using System.Windows.Forms;
 using DotNet.HalconCore;
 
@@ -13,9 +14,8 @@ namespace DotNet.HalconUI
     public class EraseRectMouse : IMouseHandler
     {
         // 两段式初始化：字段在 SetUp 里赋值而不是构造函数里。
-        // 字段不做判空，是因为「事件到达时必然已 SetUp」由调用方的结构保证：
-        // 鼠标事件只在 HEditModelUI._drawType == DrawEnum.Erase 时才分发，而该赋值与 SetUp
-        // 写在同一个方法里（but_ApplyRegion_Click）。
+        // HEditModelUI 只在 but_ApplyRegion_Click 里 SetUp 后才切到 DrawEnum.Erase，
+        // 但 DrawType 是公开可写的，外部可能不经 SetUp 直接切过来：此时 _display 为 null，什么都不做。
         private bool _editing;
         private HObject _erase = null;    //擦除区域 ShrErase
         private HObject _findMode = null; //查找模版区域 ShrFindMode
@@ -65,7 +65,15 @@ namespace DotNet.HalconUI
 
         public void OnMouseWheel(HMouseEventArgs e)
         {
-            DispEraseRegion();
+            if (_display == null) return;
+            try
+            {
+                DispEraseRegion();
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(nameof(EraseRectMouse), "显示擦除区域失败.", ex);
+            }
         }
 
         public void OnMouseMove(HMouseEventArgs e)
@@ -73,10 +81,25 @@ namespace DotNet.HalconUI
             if (_editing) EraseAt(e.Y, e.X);
         }
 
+        /// <remarks>
+        /// 运行在鼠标回调里，异常不能冒到 HWindowControl 的事件总线上（会打断整个涂抹交互），
+        /// 与 DispRectMouse / DispModelMouse 一样只记日志。
+        /// </remarks>
         private void EraseAt(HTuple row, HTuple column)
         {
-            DrawCircle(row, column);
-            DispEraseRegion();
+            if (_display == null) return;
+            try
+            {
+                DrawCircle(row, column);
+                DispEraseRegion();
+            }
+            catch (Exception ex)
+            {
+                // 结束本次涂抹：失败多半是持续性的（窗口已销毁、句柄为空），
+                // 否则拖动中每次移动都会重复失败、刷一条带堆栈的告警
+                _editing = false;
+                Log.Warn(nameof(EraseRectMouse), "擦除区域失败.", ex);
+            }
         }
 
         private void DrawCircle(HTuple row, HTuple column)
@@ -120,9 +143,16 @@ namespace DotNet.HalconUI
         {
             if (!_erase.NotNull()) return;
 
-            // 颜色与填充模式一并由 DrawStyle 描述，省掉一次单独的 SetDraw
-            _display.Disp(_erase, new DrawStyle { Color = _color, DrawMode = "fill" });
-            _display.SetDraw("margin");
+            // 颜色与填充模式一并由 DrawStyle 描述，省掉一次单独的 SetDraw；
+            // 显示失败时同样恢复为 margin，否则之后所有区域都按填充绘制
+            try
+            {
+                _display.Disp(_erase, new DrawStyle { Color = _color, DrawMode = "fill" });
+            }
+            finally
+            {
+                _display.SetDraw("margin");
+            }
         }
 
     }

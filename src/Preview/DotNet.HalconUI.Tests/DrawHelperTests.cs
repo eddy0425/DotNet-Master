@@ -367,6 +367,29 @@ namespace DotNet.HalconUI.Tests
         }
 
         [TestMethod]
+        public void DrawEllipseModAsync_SwappedPhi_IsWrappedIntoMinusPiToPi()
+        {
+            // 交换长短轴后 phi + 90° 可能越过 π；绘制得到的 phi 来自 Atan2，输出应落在同一区间 (-π, π]
+            var task = DrawHelper.DrawEllipseModAsync(_window, 100, 120, 3.0, 10, 40);
+            Confirm();
+
+            var r = task.Result;
+            Assert.AreEqual(40, r.Radius1);
+            Assert.AreEqual(3.0 + Math.PI / 2 - 2 * Math.PI, r.Phi, 1e-9);
+            Assert.IsTrue(r.Phi > -Math.PI && r.Phi <= Math.PI);
+        }
+
+        [TestMethod]
+        public void DrawEllipseModAsync_OutOfRangePhiIn_IsWrapped()
+        {
+            // 不交换长短轴、也不拖动主轴时 phi 直接取自调用方的 phiIn，同样要折回 (-π, π]
+            var task = DrawHelper.DrawEllipseModAsync(_window, 100, 120, 4.0, 40, 10);
+            Confirm();
+
+            Assert.AreEqual(4.0 - 2 * Math.PI, task.Result.Phi, 1e-9);
+        }
+
+        [TestMethod]
         public void DrawEllipseModAsync_KeepsPhiWhenR1IsMajor()
         {
             var task = DrawHelper.DrawEllipseModAsync(_window, 100, 120, 0.2, 40, 10);

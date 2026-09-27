@@ -25,6 +25,9 @@ namespace DotNet.HalconUI
         // 普通版 Halcon 能处理的图像最大尺寸 32K*32K，避免缩小过头导致 SetPart 崩溃
         const double MaxHalconViewArea = 32000d * 32000d;
 
+        /// <summary> 滚轮每格的缩放倍率；缩小用其倒数，保证放大、缩小各一格后视野复原 </summary>
+        const double ZoomStep = 1.5;
+
         // 上一次（未被双击消耗的）按下时刻，Environment.TickCount 毫秒；null 表示没有可配对的单击
         int? _lastClickMs;
         bool Mouse_hand = false;
@@ -152,21 +155,24 @@ namespace DotNet.HalconUI
 
             try
             {
-                double zoom = e.Delta > 0 ? 1.5 : 0.5;
-                HTuple Row = e.Y, Column = e.X;
+                // 缩小系数取放大系数的倒数：原先是 1.5 / 0.5，放大一格再缩小一格视野变成原来的 4/3
+                bool zoomIn = e.Delta > 0;
+                double zoom = zoomIn ? ZoomStep : 1.0 / ZoomStep;
+                double Row = e.Y, Column = e.X;
 
                 HOperatorSet.GetPart(_hWindow, out HTuple Row0, out HTuple Column0, out HTuple Row00, out HTuple Column00);
-                HTuple Ht = Row00 - Row0;
-                HTuple Wt = Column00 - Column0;
+                // Part 两端都是包含的像素坐标，宽高是像素个数要 +1；原先少算 1，每来回缩放一次视野都会漂移
+                double Ht = Row00.D - Row0.D + 1;
+                double Wt = Column00.D - Column0.D + 1;
 
                 // 放大总是允许；缩小要按「缩小之后」的视图面积判上限（原先用缩小前的面积判，
-                // 面积刚好低于上限时仍会再缩一次，把 Part 放大到 4 倍、越过 32K*32K）
-                if (zoom == 1.5 || (Ht.D / zoom) * (Wt.D / zoom) < MaxHalconViewArea)
+                // 面积刚好低于上限时仍会再缩一次，越过 32K*32K）
+                if (zoomIn || (Ht / zoom) * (Wt / zoom) < MaxHalconViewArea)
                 {
-                    HTuple r1 = Row0 + ((1 - (1.0 / zoom)) * (Row - Row0));
-                    HTuple c1 = Column0 + ((1 - (1.0 / zoom)) * (Column - Column0));
-                    HTuple r2 = r1 + (Ht / zoom);
-                    HTuple c2 = c1 + (Wt / zoom);
+                    double r1 = Row0.D + ((1 - (1.0 / zoom)) * (Row - Row0.D));
+                    double c1 = Column0.D + ((1 - (1.0 / zoom)) * (Column - Column0.D));
+                    double r2 = r1 + (Ht / zoom) - 1;
+                    double c2 = c1 + (Wt / zoom) - 1;
 
                     HOperatorSet.SetPart(_hWindow, r1, c1, r2, c2);
                     HOperatorSet.ClearWindow(_hWindow);

@@ -1,4 +1,6 @@
-﻿using HalconDotNet;
+﻿using System;
+using DotNet.Drawing;
+using HalconDotNet;
 
 namespace DotNet.HalconUI
 {
@@ -234,9 +236,21 @@ namespace DotNet.HalconUI
             }
         }
 
+        /// <remarks>
+        /// 与 <see cref="HWindowFont2018.DispText"/> 一致：文本绘制失败（颜色名非法、窗口已销毁、
+        /// 旧图形栈不支持 disp_text 等）不打断调用方的显示流程，只记日志。
+        /// disp_text 本身不改动窗口颜色与 Part，无需还原。
+        /// </remarks>
         public void DispText(string message, HTuple hv_Row, HTuple hv_Column, string color, string coordSystem)
         {
-            HOperatorSet.DispText(hWindow, message, coordSystem, hv_Row, hv_Column, color, "shadow_color", "blue");
+            try
+            {
+                HOperatorSet.DispText(hWindow, message, coordSystem, hv_Row, hv_Column, color, "shadow_color", "blue");
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(nameof(HWindowFont2022), "显示文本失败.", ex);
+            }
         }
 
     }

@@ -16,15 +16,15 @@ namespace DotNet.HalconUI
     {
         private readonly TreeView _tree;
 
-        public TreeVisualizer(TreeView tree) => _tree = tree;
+        public TreeVisualizer(TreeView tree) => _tree = tree ?? throw new ArgumentNullException(nameof(tree));
 
         /// <summary>
-        /// 添加一个分支节点（包含子节点配置）
+        /// 添加一个分支节点（包含子节点配置；config 可为 null，与 <see cref="TreeBranch.Node"/> 一致）
         /// </summary>
         public ITreeVisualizer Branch(string text, Action<ITreeBranch> config)
         {
             var branch = new TreeBranch(_tree.Nodes.Add(text));
-            config(branch);
+            config?.Invoke(branch);
             return this;
         }
 
@@ -46,7 +46,7 @@ namespace DotNet.HalconUI
     {
         private readonly TreeNode _node;
 
-        public TreeBranch(TreeNode node) => _node = node;
+        public TreeBranch(TreeNode node) => _node = node ?? throw new ArgumentNullException(nameof(node));
 
         /// <summary>
         /// 添加一个子节点
@@ -60,12 +60,12 @@ namespace DotNet.HalconUI
         }
 
         /// <summary>
-        /// 添加一个分支节点（用于嵌套结构）
+        /// 添加一个分支节点（用于嵌套结构；config 可为 null）
         /// </summary>
         public ITreeBranch Branch(string text, Action<ITreeBranch> config)
         {
             var branch = new TreeBranch(_node.Nodes.Add(text));
-            config(branch);
+            config?.Invoke(branch);
             return this;
         }
 

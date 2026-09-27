@@ -7,8 +7,8 @@ using DotNet.HalconCore;
 namespace DotNet.HalconUI
 {
     /// <summary>
-    /// 擦除矩形处理器
-    /// 通过左键拖动以圆形画笔擦除区域
+    /// 矩形区域显示处理器
+    /// 鼠标移动时重绘区域中心与区域轮廓
     /// </summary>
     public class DispRectMouse : IMouseHandler
     {
