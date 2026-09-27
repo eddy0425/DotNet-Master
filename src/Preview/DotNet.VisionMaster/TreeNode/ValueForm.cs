@@ -44,9 +44,10 @@ namespace DotNet.VisionMaster
                 TreeNode node = new TreeNode(); string se = treeView1.PathSeparator;
                 if (arrStr.Length >= 1)
                 {
+                    // "默认" 总是第一个根节点, 这里不能遇到它就 return, 否则任何路径都预选不上;
+                    // 上次选的就是 "默认" 时, 下面的文本比较会自然选中它。
                     foreach (TreeNode item in treeView1.Nodes)
                     {
-                        if (item.Text == "默认") return;
                         if (item.Text == arrStr[0])
                         {
                             node = item;
