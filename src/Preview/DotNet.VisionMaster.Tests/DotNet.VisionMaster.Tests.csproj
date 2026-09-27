@@ -68,6 +68,7 @@
     <Compile Include="Infrastructure\HalconTestBase.cs" />
     <Compile Include="Infrastructure\Fakes.cs" />
     <Compile Include="Infrastructure\Priv.cs" />
+    <Compile Include="Infrastructure\PromptLog.cs" />
     <Compile Include="Infrastructure\Sta.cs" />
     <Compile Include="Infrastructure\WindowHost.cs" />
     <Compile Include="LogFileTests.cs" />

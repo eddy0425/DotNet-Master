@@ -25,14 +25,7 @@ namespace DotNet.VisionMaster
         {
             if (this.Visible)
             {
-                Point point = new Point(500, 300);
-                Form ownerForm = this.Owner;
-                if (ownerForm != null && ownerForm.WindowState != FormWindowState.Maximized)
-                {
-                    point = new Point(ownerForm.Location.X + ownerForm.Width, ownerForm.Location.Y);
-                }
-
-                this.Location = point;
+                this.Location = DialogPlacement.Beside(this.Owner, this.Size);
             }
         }
     }

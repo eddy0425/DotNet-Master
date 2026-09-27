@@ -35,63 +35,39 @@ namespace DotNet.VisionMaster
             Fun_setSelectNode(StrReturn);
             this.ShowDialog(_owner);
         }
+        /// <summary>
+        /// 按上次选中的变量路径预选节点。
+        /// </summary>
+        /// <remarks>
+        /// 逐段往下找，找不到的那一段就停在最深的现存祖先上，方便用户就近重选；
+        /// 连根节点(上游工具)都没有时不选任何节点。路径层数不受限 —— 此前只比较前 4 段。
+        /// "默认" 总是第一个根节点，不能遇到它就 return，否则任何路径都预选不上。
+        /// </remarks>
         private void Fun_setSelectNode(string strIn)      //更新程序树选中节点
         {
-            try
+            if (string.IsNullOrWhiteSpace(strIn)) return;
+
+            TreeNode node = null;
+            TreeNodeCollection level = treeView1.Nodes;
+            foreach (string part in strIn.Split(varSplit))
             {
-                if (string.IsNullOrWhiteSpace(strIn)) return;
-                string[] arrStr = strIn.Split(varSplit);
-                TreeNode node = new TreeNode(); string se = treeView1.PathSeparator;
-                if (arrStr.Length >= 1)
+                TreeNode next = null;
+                foreach (TreeNode item in level)
                 {
-                    // "默认" 总是第一个根节点, 这里不能遇到它就 return, 否则任何路径都预选不上;
-                    // 上次选的就是 "默认" 时, 下面的文本比较会自然选中它。
-                    foreach (TreeNode item in treeView1.Nodes)
+                    if (item.Text == part)
                     {
-                        if (item.Text == arrStr[0])
-                        {
-                            node = item;
-                            break;
-                        }
+                        next = item;
+                        break;
                     }
                 }
-                if (arrStr.Length >= 2)
-                {
-                    foreach (TreeNode item in node.Nodes)
-                    {
-                        if (item.Text == arrStr[1])
-                        {
-                            node = item;
-                            break;
-                        }
-                    }
-                }
-                if (arrStr.Length >= 3)
-                {
-                    foreach (TreeNode item in node.Nodes)
-                    {
-                        if (item.Text == arrStr[2])
-                        {
-                            node = item;
-                            break;
-                        }
-                    }
-                }
-                if (arrStr.Length >= 4)
-                {
-                    foreach (TreeNode item in node.Nodes)
-                    {
-                        if (item.Text == arrStr[3])
-                        {
-                            node = item;
-                            break;
-                        }
-                    }
-                }
-                treeView1.SelectedNode = node;
-                treeView1.SelectedNode.EnsureVisible();
+                if (next == null) break;
+                node = next;
+                level = node.Nodes;
             }
-            catch { }
+
+            if (node == null) return;
+            treeView1.SelectedNode = node;
+            node.EnsureVisible();
         }
 
         // 最终调用形式（与YAML结构1:1对应）
@@ -184,9 +160,11 @@ namespace DotNet.VisionMaster
         }
         private void treeView1_MouseDoubleClick(object sender, MouseEventArgs e)  //用鼠标双击控件时发生 //来源 chatgpt
         {
+            // 只认双击落在的那个节点: 左键点空白不会改变 SelectedNode, 若直接取 SelectedNode,
+            // 双击空白会把上一次单击选中的节点当成结果确认掉。没选到东西就不动 StrReturn。
+            TreeNode currentNode = treeView1.GetNodeAt(e.Location);
+            if (currentNode == null || currentNode != treeView1.SelectedNode) return;
             StrReturn = "";
-            TreeNode currentNode = treeView1.SelectedNode;
-            if (currentNode == null) return;
 
             // 检查根节点及类型
             if (currentNode.Level == 0)
@@ -247,14 +225,7 @@ namespace DotNet.VisionMaster
         {
             if (this.Visible)
             {
-                Point point = new Point(500, 300);
-                Form ownerForm = this.Owner;
-                if (ownerForm != null && ownerForm.WindowState != FormWindowState.Maximized)
-                {
-                    point = new Point(ownerForm.Location.X + ownerForm.Width, ownerForm.Location.Y);
-                }
-
-                this.Location = point;
+                this.Location = DialogPlacement.Beside(this.Owner, this.Size);
             }
         }
         private void ValueForm_ExtendBoxClick(object sender, EventArgs e)

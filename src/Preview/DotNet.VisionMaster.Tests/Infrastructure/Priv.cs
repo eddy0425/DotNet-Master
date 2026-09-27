@@ -50,8 +50,8 @@ namespace DotNet.VisionMaster.Tests
         /// 清掉 <see cref="JsonLog.Logged"/> 上的全部订阅。
         /// </summary>
         /// <remarks>
-        /// <see cref="LogFile"/> 只订阅不退订，且没有暴露句柄；不清掉的话每建一次 MainForm 就多一个订阅，
-        /// 会串到后续测试里，只能反射把静态事件的后备字段置空。
+        /// 兜底：<see cref="LogFile"/> 已在 Dispose 时退订，但断言失败或窗体没走到销毁时订阅会残留，
+        /// 串到后续测试里；这里反射把静态事件的后备字段置空。
         /// </remarks>
         public static void ResetJsonLog() =>
             typeof(JsonLog).GetField(nameof(JsonLog.Logged), BindingFlags.Static | BindingFlags.NonPublic).SetValue(null, null);

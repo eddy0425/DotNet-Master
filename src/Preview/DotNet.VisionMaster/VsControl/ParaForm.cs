@@ -4,6 +4,7 @@ using DotNet.HalconCore;
 using DotNet.HalconAlgo;
 using HalconDotNet;
 using System;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using System.Threading.Tasks;
@@ -142,11 +143,24 @@ namespace DotNet.VisionMaster
             _index = index;
             _strategys = strategys;
         }
+
+        /// <summary>
+        /// 取当前工具。宿主还没选过工具(<see cref="SelectPara"/> 之前)或索引越界时返回 false。
+        /// </summary>
+        /// <remarks>
+        /// 宿主启动后并不会自动选中工具，参数页的按钮在此之前就能点；此前各 handler 直接
+        /// <c>_strategys[_index]</c>，一律 NRE 后被 catch 弹成"未将对象引用设置到对象的实例"。
+        /// </remarks>
+        private bool TryGetStrategy(out IParaStrategy strategy)
+        {
+            strategy = _strategys != null && _index >= 0 && _index < _strategys.Count ? _strategys[_index] : null;
+            return strategy != null;
+        }
         private void btn_100_Click(object sender, EventArgs e)
         {
             try
             {
-                var strategy = _strategys[_index];
+                if (!TryGetStrategy(out var strategy)) return;
                 switch (strategy.Algorithm)
                 {
                     case AlgoEnum.ShapeModel:
@@ -177,13 +191,13 @@ namespace DotNet.VisionMaster
                         break;
                 }
             }
-            catch (Exception ex) { MessageBox.Show(ex.Message); }
+            catch (Exception ex) { Prompt.Show(ex.Message); }
         }
         private void btn_101_Click(object sender, EventArgs e)
         {
             try
             {
-                var strategy = _strategys[_index];
+                if (!TryGetStrategy(out var strategy)) return;
                 switch (strategy.Algorithm)
                 {
                     case AlgoEnum.ShapeModel:
@@ -212,7 +226,7 @@ namespace DotNet.VisionMaster
                         break;
                 }
             }
-            catch (Exception ex) { MessageBox.Show(ex.Message); }
+            catch (Exception ex) { Prompt.Show(ex.Message); }
         }
 
         /// <summary>
@@ -228,8 +242,7 @@ namespace DotNet.VisionMaster
         {
             try
             {
-                var strategy = _strategys[_index];
-                if (strategy.Algorithm != AlgoEnum.MergeRegion) return;
+                if (!TryGetStrategy(out var strategy) || strategy.Algorithm != AlgoEnum.MergeRegion) return;
 
                 ComboBox combo = null;
                 if (sender == btn_102) combo = cmb_102;
@@ -244,7 +257,7 @@ namespace DotNet.VisionMaster
                     combo.Text = _form_Value.StrReturn;
                 }
             }
-            catch (Exception ex) { MessageBox.Show(ex.Message); }
+            catch (Exception ex) { Prompt.Show(ex.Message); }
         }
 
         /// <summary>
@@ -260,7 +273,7 @@ namespace DotNet.VisionMaster
         {
             try
             {
-                if (_strategys[_index].Algorithm != AlgoEnum.MergeRegion) return;
+                if (!TryGetStrategy(out var strategy) || strategy.Algorithm != AlgoEnum.MergeRegion) return;
 
                 _form_Value.setValueForm(_index, _strategys, cmb_110.Text, OutEnum.Coord);
                 if (_form_Value.DialogResult == DialogResult.OK)
@@ -268,7 +281,7 @@ namespace DotNet.VisionMaster
                     cmb_110.Text = _form_Value.StrReturn;
                 }
             }
-            catch (Exception ex) { MessageBox.Show(ex.Message); }
+            catch (Exception ex) { Prompt.Show(ex.Message); }
         }
 
         private void btn_setPath_Click(object sender, EventArgs e)
@@ -302,7 +315,7 @@ namespace DotNet.VisionMaster
                 {
                     System.Diagnostics.Process.Start(cmb_ImageFolder.Text);
                 }
-                catch (Exception ex) { MessageBox.Show(ex.Message); }
+                catch (Exception ex) { Prompt.Show(ex.Message); }
             }
             else
             {
@@ -310,14 +323,14 @@ namespace DotNet.VisionMaster
                 {
                     System.Diagnostics.Process.Start(cmb_115.Text);
                 }
-                catch (Exception ex) { MessageBox.Show(ex.Message); }
+                catch (Exception ex) { Prompt.Show(ex.Message); }
             }
         }
         private void btn_setCoordIn_Click(object sender, EventArgs e)
         {
             try
             {
-                var strategy = _strategys[_index];
+                if (!TryGetStrategy(out var strategy)) return;
                 switch (strategy.Algorithm)
                 {
                     case AlgoEnum.CreateROI:
@@ -339,16 +352,15 @@ namespace DotNet.VisionMaster
                         break;
                 }
             }
-            catch (Exception ex) { MessageBox.Show(ex.Message); }
+            catch (Exception ex) { Prompt.Show(ex.Message); }
         }
         private async void btn_drawRegion_Click(object sender, EventArgs e)
         {
-            if (_drawBusy) return;
+            if (_drawBusy || !TryGetStrategy(out var strategy)) return;
             _drawBusy = true;
             int epoch = ++_drawEpoch;
             try
             {
-                var strategy = _strategys[_index];
                 switch (strategy.Algorithm)
                 {
                     case AlgoEnum.FitLine:
@@ -372,19 +384,18 @@ namespace DotNet.VisionMaster
                 // 查 _disPlay.IsReleasing 而不是本控件的 IsDisposed/Disposing —— 那一刻两者都还没置位:
                 // ParaForm 与 HDisplayUI 是兄弟控件, 且 Designer 的 Dispose(bool) 是先调
                 // ReleaseDisplayResources、后调 base.Dispose(disposing)。
-                if (!_disPlay.IsReleasing && !IsDisposed && !Disposing) MessageBox.Show(ex.Message);
+                if (!_disPlay.IsReleasing && !IsDisposed && !Disposing) Prompt.Show(ex.Message);
                 else Log.Warn(nameof(ParaForm), "绘制异常(显示控件正在释放, 不弹框).", ex);
             }
             finally { if (_drawEpoch == epoch) _drawBusy = false; }   // 只清自己那一轮
         }
         private async void but_editRegion_Click(object sender, EventArgs e)
         {
-            if (_drawBusy) return;
+            if (_drawBusy || !TryGetStrategy(out var strategy)) return;
             _drawBusy = true;
             int epoch = ++_drawEpoch;
             try
             {
-                var strategy = _strategys[_index];
                 _disPlay.ReDispImage();
                 var drawType = _rectDrawMap.FirstOrDefault(kv => kv.Key.Checked).Value;
                 if (strategy is IRoiEditable roi)
@@ -398,19 +409,18 @@ namespace DotNet.VisionMaster
                 // 查 _disPlay.IsReleasing 而不是本控件的 IsDisposed/Disposing —— 那一刻两者都还没置位:
                 // ParaForm 与 HDisplayUI 是兄弟控件, 且 Designer 的 Dispose(bool) 是先调
                 // ReleaseDisplayResources、后调 base.Dispose(disposing)。
-                if (!_disPlay.IsReleasing && !IsDisposed && !Disposing) MessageBox.Show(ex.Message);
+                if (!_disPlay.IsReleasing && !IsDisposed && !Disposing) Prompt.Show(ex.Message);
                 else Log.Warn(nameof(ParaForm), "绘制异常(显示控件正在释放, 不弹框).", ex);
             }
             finally { if (_drawEpoch == epoch) _drawBusy = false; }   // 只清自己那一轮
         }
         private async void btn_newModel_Click(object sender, EventArgs e)
         {
-            if (_drawBusy) return;
+            if (_drawBusy || !TryGetStrategy(out var strategy)) return;
             _drawBusy = true;
             int epoch = ++_drawEpoch;
             try
             {
-                var strategy = _strategys[_index];
                 var drawType = _modelDrawMap.FirstOrDefault(kv => kv.Key.Checked).Value;
                 _disPlay.ReDispImage();
                 if (strategy is ITemplateEditable template)
@@ -424,7 +434,7 @@ namespace DotNet.VisionMaster
                 // 查 _disPlay.IsReleasing 而不是本控件的 IsDisposed/Disposing —— 那一刻两者都还没置位:
                 // ParaForm 与 HDisplayUI 是兄弟控件, 且 Designer 的 Dispose(bool) 是先调
                 // ReleaseDisplayResources、后调 base.Dispose(disposing)。
-                if (!_disPlay.IsReleasing && !IsDisposed && !Disposing) MessageBox.Show(ex.Message);
+                if (!_disPlay.IsReleasing && !IsDisposed && !Disposing) Prompt.Show(ex.Message);
                 else Log.Warn(nameof(ParaForm), "绘制异常(显示控件正在释放, 不弹框).", ex);
             }
             finally { if (_drawEpoch == epoch) _drawBusy = false; }   // 只清自己那一轮
@@ -432,12 +442,11 @@ namespace DotNet.VisionMaster
 
         private async void but_modifyModel_Click(object sender, EventArgs e)
         {
-            if (_drawBusy) return;
+            if (_drawBusy || !TryGetStrategy(out var strategy)) return;
             _drawBusy = true;
             int epoch = ++_drawEpoch;
             try
             {
-                var strategy = _strategys[_index];
                 var drawType = _modelDrawMap.FirstOrDefault(kv => kv.Key.Checked).Value;
                 _disPlay.ReDispImage();
                 if (strategy is ITemplateEditable template)
@@ -451,7 +460,7 @@ namespace DotNet.VisionMaster
                 // 查 _disPlay.IsReleasing 而不是本控件的 IsDisposed/Disposing —— 那一刻两者都还没置位:
                 // ParaForm 与 HDisplayUI 是兄弟控件, 且 Designer 的 Dispose(bool) 是先调
                 // ReleaseDisplayResources、后调 base.Dispose(disposing)。
-                if (!_disPlay.IsReleasing && !IsDisposed && !Disposing) MessageBox.Show(ex.Message);
+                if (!_disPlay.IsReleasing && !IsDisposed && !Disposing) Prompt.Show(ex.Message);
                 else Log.Warn(nameof(ParaForm), "绘制异常(显示控件正在释放, 不弹框).", ex);
             }
             finally { if (_drawEpoch == epoch) _drawBusy = false; }   // 只清自己那一轮
@@ -464,7 +473,7 @@ namespace DotNet.VisionMaster
             // 不静默吞掉点击 —— 本窗体 4 个绘制按钮在绘制期间并不禁用, 用户很容易点到这里。
             if (_drawBusy)
             {
-                MessageBox.Show("当前正在绘制 ROI / 模板，请先在图像上右键确认或取消后再打开模板编辑窗。");
+                Prompt.Show("当前正在绘制 ROI / 模板，请先在图像上右键确认或取消后再打开模板编辑窗。");
                 return;
             }
 
@@ -473,68 +482,60 @@ namespace DotNet.VisionMaster
             // 顺带还会 Reset() + Dispose 掉它正在用的 shrFindMode。
             if (_editModel.IsDrawBusy)
             {
-                MessageBox.Show("模板编辑窗正在绘制区域，请先在图像上右键确认或取消后再打开。");
+                Prompt.Show("模板编辑窗正在绘制区域，请先在图像上右键确认或取消后再打开。");
                 return;
             }
 
             try
             {
-                var strategy = _strategys[_index];
-                switch (strategy.Algorithm)
+                if (!TryGetStrategy(out var strategy)) return;
+
+                // 四种匹配的 inPara 各是各的类型, 字段同名但没有公共基类, 只能逐个取出。
+                string modelPath;
+                CvRegion modeRect;
+                HObject contour;
+                List<ModelResult> results;
+                switch (strategy)
                 {
-                    case AlgoEnum.ShapeModel:
-                        {
-                            var inPara = ((ShapeModelStrategy)strategy).inPara;
-                            var modelPath = inPara.ModelPath;
-                            var modeRect = inPara.ModeRect.HoRegion;
-                            var contour = inPara.HoContour;
-                            var result = inPara.Results[0];
-                            _editModel.Show();
-                            _editModel.DisplayModel(modelPath, modeRect, contour, result);
-                        }
+                    case ShapeModelStrategy s:
+                        modelPath = s.inPara.ModelPath; modeRect = s.inPara.ModeRect; contour = s.inPara.HoContour; results = s.inPara.Results;
                         break;
-                    case AlgoEnum.NccModel:
-                        {
-                            var inPara = ((NccModelStrategy)strategy).inPara;
-                            var modelPath = inPara.ModelPath;
-                            var modeRect = inPara.ModeRect.HoRegion;
-                            var contour = inPara.HoContour;
-                            var result = inPara.Results[0];
-                            _editModel.Show();
-                            _editModel.DisplayModel(modelPath, modeRect, contour, result);
-                        }
+                    case NccModelStrategy s:
+                        modelPath = s.inPara.ModelPath; modeRect = s.inPara.ModeRect; contour = s.inPara.HoContour; results = s.inPara.Results;
                         break;
-                    case AlgoEnum.ScaledModel:
-                        {
-                            var inPara = ((ScaledModelStrategy)strategy).inPara;
-                            var modelPath = inPara.ModelPath;
-                            var modeRect = inPara.ModeRect.HoRegion;
-                            var contour = inPara.HoContour;
-                            var result = inPara.Results[0];
-                            _editModel.Show();
-                            _editModel.DisplayModel(modelPath, modeRect, contour, result);
-                        }
+                    case ScaledModelStrategy s:
+                        modelPath = s.inPara.ModelPath; modeRect = s.inPara.ModeRect; contour = s.inPara.HoContour; results = s.inPara.Results;
                         break;
-                    case AlgoEnum.GenericModel:
-                        {
-                            var inPara = ((GenericModelStrategy)strategy).inPara;
-                            var modelPath = inPara.ModelPath;
-                            var modeRect = inPara.ModeRect.HoRegion;
-                            var contour = inPara.HoContour;
-                            var result = inPara.Results[0];
-                            _editModel.Show();
-                            _editModel.DisplayModel(modelPath, modeRect, contour, result);
-                        }
+                    case GenericModelStrategy s:
+                        modelPath = s.inPara.ModelPath; modeRect = s.inPara.ModeRect; contour = s.inPara.HoContour; results = s.inPara.Results;
                         break;
+                    default:
+                        return;
                 }
+
+                // 编辑窗要 ReadImage(modelPath) 读模板图, 再按 Results[0] 的位姿把模板区域摆回模板图上;
+                // 两者缺一个就无从显示。此前直接取 Results[0], 弹出的是"索引超出范围"。
+                if (string.IsNullOrEmpty(modelPath) || !File.Exists(modelPath))
+                {
+                    Prompt.Show("尚未创建模板，请先新建模板。");
+                    return;
+                }
+                if (results == null || results.Count == 0)
+                {
+                    Prompt.Show("最近一次运行没有匹配结果，请先运行并匹配成功后再编辑模板。");
+                    return;
+                }
+
+                _editModel.Show();
+                _editModel.DisplayModel(modelPath, modeRect?.HoRegion, contour, results[0]);
             }
-            catch (Exception ex) { MessageBox.Show(ex.Message); }
+            catch (Exception ex) { Prompt.Show(ex.Message); }
         }
         private void DrawDoneEvent(object sender, DrawModelUIArgs e)
         {
             try
             {
-                var strategy = _strategys[_index];
+                if (!TryGetStrategy(out var strategy)) return;
                 switch (strategy.Algorithm)
                 {
                     case AlgoEnum.ShapeModel:
@@ -563,7 +564,7 @@ namespace DotNet.VisionMaster
                         break;
                 }
             }
-            catch (Exception ex) { MessageBox.Show(ex.Message); }
+            catch (Exception ex) { Prompt.Show(ex.Message); }
 
         }
 

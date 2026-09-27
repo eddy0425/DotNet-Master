@@ -81,6 +81,7 @@ namespace DotNet.VisionMaster
             //this.ExtendSymbol = 61475;
             //this.ExtendSymbolOffset = new System.Drawing.Point(0, 2);
             //this.ExtendSymbolSize = 18;
+            this.KeyPreview = true;
             this.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.MaximizeBox = false;
             this.MinimizeBox = false;

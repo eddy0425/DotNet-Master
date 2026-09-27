@@ -27,7 +27,7 @@ namespace DotNet.VisionMaster.Tests
         public void Cleanup()
         {
             AlgoPaths.UIBlock = _savedUIBlock;
-            // MainForm 会 new 一个 LogFile 挂到 JsonLog 上且不退订，见 LogFileTests
+            // 兜底：MainForm 销毁时会退订 LogFile，但断言中途失败时可能没走到销毁
             Priv.ResetJsonLog();
         }
 
@@ -107,6 +107,134 @@ namespace DotNet.VisionMaster.Tests
 
                 Assert.IsFalse(previous.Any(bindings.ContainsValue), "切换工具前必须清掉上一个工具的控件绑定");
             });
+        }
+
+        /// <summary>
+        /// 绘制进行中切换工具：提示用户，宿主与参数页都停在原工具上。
+        /// </summary>
+        [TestMethod]
+        public void SwitchStrategy_WhileDrawing_PromptsAndStaysOnCurrentTool()
+        {
+            Run(form =>
+            {
+                var para = Priv.Get<ParaForm>(form, "_formPara");
+                Priv.Click(form, "button3_Click");
+
+                using (var prompts = new PromptLog())
+                {
+                    Priv.Set(para, "_drawBusy", true);
+                    try { Priv.Click(form, "button5_Click"); }
+                    finally { Priv.Set(para, "_drawBusy", false); }
+
+                    Assert.AreEqual(1, prompts.Messages.Count);
+                    StringAssert.Contains(prompts.Messages[0], "正在绘制");
+                }
+                Assert.AreEqual(2, Priv.Get<int>(form, "_index"));
+                Assert.AreEqual(2, Priv.Get<int>(para, "_index"));
+            });
+        }
+
+        [TestMethod]
+        public void Run_Failure_PromptsReason()
+        {
+            Run(form =>
+            {
+                Strategies(form)[0] = new FakeStrategy(AlgoEnum.FileImage) { RunError = new InvalidOperationException("运行失败原因") };
+
+                using (var prompts = new PromptLog())
+                {
+                    Priv.Click(form, "but_Run_Click");
+
+                    CollectionAssert.AreEqual(new[] { "运行失败原因" }, prompts.Messages);
+                }
+            });
+        }
+
+        [TestMethod]
+        public void Run_ExecutesCurrentStrategyWithAllStrategies()
+        {
+            Run(form =>
+            {
+                var fake = new FakeStrategy(AlgoEnum.CreateROI);
+                Strategies(form)[1] = fake;
+                Priv.Click(form, "button2_Click");
+
+                using (var prompts = new PromptLog())
+                {
+                    fake.RunError = new InvalidOperationException("被执行了");
+                    Priv.Click(form, "but_Run_Click");
+
+                    CollectionAssert.AreEqual(new[] { "被执行了" }, prompts.Messages, "运行按钮必须执行当前选中的工具");
+                }
+            });
+        }
+
+        /// <summary>
+        /// 主窗体销毁时退订日志转接、释放持有 HALCON 句柄的策略。
+        /// </summary>
+        /// <remarks>回归：此前 LogFile 永不退订，策略的 Dispose 也没有任何调用方（见 CreateROIStrategy.Dispose 的注释）。</remarks>
+        [TestMethod]
+        public void Dispose_UnsubscribesLog_AndDisposesStrategies()
+        {
+            Sta.Run(() =>
+            {
+                List<IParaStrategy> strategies;
+                using (var form = new MainForm())
+                {
+                    WindowHost.ShowOffscreen(form);
+                    strategies = Strategies(form).ToList();
+                    Assert.AreEqual(1, Priv.JsonLogSubscriberCount());
+                }
+
+                Assert.AreEqual(0, Priv.JsonLogSubscriberCount(), "LogFile 没退订");
+                var disposables = strategies.OfType<IDisposable>().ToList();
+                Assert.IsTrue(disposables.Count > 0, "前提：至少有一个策略持有需要释放的资源");
+                foreach (var s in disposables)
+                    Assert.IsTrue(Priv.Get<bool>(s, "_disposed"), s.GetType().Name + " 没被释放");
+            });
+        }
+
+        /// <summary>某个策略释放失败时，其余策略照样释放，窗体销毁不被打断。</summary>
+        [TestMethod]
+        public void Dispose_OneStrategyThrows_OthersStillDisposed()
+        {
+            Sta.Run(() =>
+            {
+                List<IParaStrategy> strategies;
+                using (var form = new MainForm())
+                {
+                    WindowHost.ShowOffscreen(form);
+                    Strategies(form).Insert(0, new ThrowOnDisposeStrategy());
+                    strategies = Strategies(form).ToList();
+                }
+
+                Assert.IsTrue(((ThrowOnDisposeStrategy)strategies[0]).DisposeCalled);
+                foreach (var s in strategies.Skip(1).OfType<IDisposable>())
+                    Assert.IsTrue(Priv.Get<bool>(s, "_disposed"), s.GetType().Name + " 没被释放");
+                Assert.AreEqual(0, Priv.JsonLogSubscriberCount());
+            });
+        }
+
+        private sealed class ThrowOnDisposeStrategy : IParaStrategy, IDisposable
+        {
+            public bool DisposeCalled;
+
+            public void Dispose()
+            {
+                DisposeCalled = true;
+                throw new InvalidOperationException("释放失败");
+            }
+
+            public AlgoEnum Algorithm => AlgoEnum.Undefined;
+            public string Name { get; set; }
+            public int RunIndex { get; set; }
+            public void Init(IRoiHost host) { }
+            public void Close(IRoiHost host) { }
+            public bool Fun_action(IHDisplay display, List<IParaStrategy> strategys) => true;
+            public bool Fun_action(HalconDotNet.HObject ho_Image, IHDisplay display) => true;
+            public object ResolveOutput(string[] path) => null;
+            public T ResolveOutput<T>(string[] path) => default(T);
+            public bool TryResolveOutput<T>(string[] path, out T value) { value = default(T); return false; }
         }
     }
 }

@@ -43,6 +43,42 @@ namespace DotNet.VisionMaster.Tests
             Assert.AreEqual(1, Priv.JsonLogSubscriberCount());
         }
 
+        [TestMethod]
+        public void Dispose_Unsubscribes_AndIsIdempotent()
+        {
+            var logFile = new LogFile();
+
+            logFile.Dispose();
+            logFile.Dispose();
+
+            Assert.AreEqual(0, Priv.JsonLogSubscriberCount());
+        }
+
+        [TestMethod]
+        public void Dispose_OnlyRemovesItsOwnSubscription()
+        {
+            var first = new LogFile();
+            var second = new LogFile();
+
+            first.Dispose();
+
+            Assert.AreEqual(1, Priv.JsonLogSubscriberCount());
+            second.Dispose();
+        }
+
+        [TestMethod]
+        public void AfterDispose_NoLongerForwards()
+        {
+            var sink = new CollectingSink();
+            Log.Initialize(b => b.MinimumLevel(LogLevel.Trace).WriteTo(sink));
+            new LogFile().Dispose();
+
+            JsonLog.Info("tag", "msg");
+            Log.Shutdown();
+
+            Assert.AreEqual(0, sink.Entries.Count);
+        }
+
         /// <summary>
         /// 转接 handler 不得再次触发 <see cref="JsonLog.Logged"/>。
         /// </summary>

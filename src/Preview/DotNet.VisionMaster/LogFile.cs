@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace DotNet.VisionMaster
 {
-    public class LogFile
+    public class LogFile : IDisposable
     {
         public LogFile()
         {
@@ -18,6 +18,13 @@ namespace DotNet.VisionMaster
             JsonLog.Logged += JsonLog_Logged;
             //ExcelLog.Logged += ExcelLog_Logged;
 
+        }
+
+        /// <summary>退订 <see cref="JsonLog.Logged"/>。幂等；只移除本实例自己的订阅。</summary>
+        /// <remarks>静态事件会一直引着订阅者：不退订的话每建一次就多转发一份，且实例永远回收不掉。</remarks>
+        public void Dispose()
+        {
+            JsonLog.Logged -= JsonLog_Logged;
         }
 
         //private void ExcelLog_Logged(ExcelLogArgs args)

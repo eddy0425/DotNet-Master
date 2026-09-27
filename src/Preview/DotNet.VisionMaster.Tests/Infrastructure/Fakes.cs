@@ -39,16 +39,29 @@ namespace DotNet.VisionMaster.Tests
         /// <summary>GenTreeNode 写入输出树的内容；null 时不写。</summary>
         public Action<ITreeVisualizer> Tree;
 
+        /// <summary>非 null 时绘制入口直接以它失败（模拟 HALCON 报错、绘制被取消等）。</summary>
+        public Exception DrawError;
+
+        /// <summary>非 null 时 Fun_action 抛出它。</summary>
+        public Exception RunError;
+
         public Task DrawROIAsync(IRoiHost host, RectEnum type, bool newROI)
         {
             RoiDraws.Add(Tuple.Create(type, newROI));
-            return _pending.Task;
+            return DrawError != null ? Faulted() : _pending.Task;
         }
 
         public Task SetTemplateAsync(IRoiHost host, RectEnum type, bool newModel)
         {
             TemplateDraws.Add(Tuple.Create(type, newModel));
-            return _pending.Task;
+            return DrawError != null ? Faulted() : _pending.Task;
+        }
+
+        private Task Faulted()
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            tcs.SetException(DrawError);
+            return tcs.Task;
         }
 
         public void DispROI(IRoiHost host) { }
@@ -57,7 +70,7 @@ namespace DotNet.VisionMaster.Tests
 
         public void Init(IRoiHost host) { }
         public void Close(IRoiHost host) { }
-        public bool Fun_action(IHDisplay display, List<IParaStrategy> strategys) => true;
+        public bool Fun_action(IHDisplay display, List<IParaStrategy> strategys) => RunError == null ? true : throw RunError;
         public bool Fun_action(HObject ho_Image, IHDisplay display) => true;
 
         public object ResolveOutput(string[] path) => null;

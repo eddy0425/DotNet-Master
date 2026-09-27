@@ -55,6 +55,29 @@ namespace DotNet.VisionMaster.Tests
             Application.DoEvents();
         }
 
+        /// <summary>
+        /// <paramref name="dialog"/> 一显示出来就在 UI 线程上执行 <paramref name="respond"/>。
+        /// </summary>
+        /// <remarks>
+        /// 用来应答被测代码里的 <c>ShowDialog</c>：模态循环照样分发本线程的 WinForms Timer 消息。
+        /// <paramref name="respond"/> 里只做操作和记录、不要断言 —— 它在被测代码的调用栈里抛出的异常
+        /// 会被被测代码自己的 catch 吞掉。应答后对话框若仍开着就强行关掉，免得测试卡死在模态循环里。
+        /// 调用方负责 Dispose 返回值（停掉没等到对话框的 Timer）。
+        /// </remarks>
+        public static IDisposable RespondWhenShown(Form dialog, Action respond)
+        {
+            var timer = new System.Windows.Forms.Timer { Interval = 10 };
+            timer.Tick += (s, e) =>
+            {
+                if (!dialog.Visible) return;
+                timer.Stop();
+                try { respond(); }
+                finally { if (dialog.Visible && dialog.DialogResult == DialogResult.None) dialog.Close(); }
+            };
+            timer.Start();
+            return timer;
+        }
+
         /// <summary>泵几轮消息，让已 Post 的续体跑完。</summary>
         public static void Pump()
         {

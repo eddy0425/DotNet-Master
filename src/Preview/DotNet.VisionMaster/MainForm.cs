@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using DotNet.Drawing;
 using DotNet.HalconUI;
 using DotNet.HalconCore;
 using DotNet.HalconAlgo;
@@ -12,6 +14,7 @@ namespace DotNet.VisionMaster
     {
         HDisplayUI _display;
         ParaForm _formPara;
+        readonly LogFile _logFile;
         private int _index;
         private IParaStrategy _currentStrategy => _strategys[_index];
         private List<IParaStrategy> _strategys = new List<IParaStrategy>();
@@ -42,10 +45,31 @@ namespace DotNet.VisionMaster
                 _strategys[i].Init(_display);
             }
 
-            LogFile logFile = new LogFile();
+            _logFile = new LogFile();
+            // 挂 Disposed 而不是重写 Dispose(bool): 后者已在 Designer 里定义。
+            // 此时子控件(含 _display)都已销毁, 不会再有绘制去碰策略持有的句柄。
+            Disposed += MainForm_Disposed;
 
             var fileImage = ((FileImageStrategy)_strategys[0]).inPara;
             fileImage.ImageFolder = "D:\\testImage\\FitArcMidpoint";
+        }
+
+        /// <summary>
+        /// 退订日志转接、释放持有 HALCON 句柄的策略。
+        /// </summary>
+        /// <remarks>
+        /// <c>LogFile</c> 挂在静态事件 <c>JsonLog.Logged</c> 上，不退订就一直被引着；
+        /// 策略的 <c>Dispose</c> 此前没有任何调用方，句柄只能等 finalizer。逐个 try，一个失败不影响其余。
+        /// </remarks>
+        private void MainForm_Disposed(object sender, EventArgs e)
+        {
+            _logFile.Dispose();
+
+            foreach (var disposable in _strategys.OfType<IDisposable>())
+            {
+                try { disposable.Dispose(); }
+                catch (Exception ex) { Log.Warn(nameof(MainForm), $"释放策略 {disposable.GetType().Name} 失败.", ex); }
+            }
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -97,7 +121,7 @@ namespace DotNet.VisionMaster
             // 所以必须在改动任何状态之前拦下来。
             if (_formPara.IsDrawBusy)
             {
-                MessageBox.Show("当前正在绘制 ROI / 模板，请先在图像上右键确认或取消后再切换工具。");
+                Prompt.Show("当前正在绘制 ROI / 模板，请先在图像上右键确认或取消后再切换工具。");
                 return;
             }
 
@@ -131,7 +155,7 @@ namespace DotNet.VisionMaster
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                Prompt.Show(ex.Message);
             }
         }
 

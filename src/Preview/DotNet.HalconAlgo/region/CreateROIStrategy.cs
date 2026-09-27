@@ -131,11 +131,10 @@ namespace DotNet.HalconAlgo
 
         /// <summary>
         /// 策略实例生命周期结束时释放运行态资源. 幂等.
-        /// 注意: 宿主既未接线 <c>Close</c>, 也未对策略集合做 IDisposable 分发, 本方法目前<b>无调用方</b>,
-        /// 句柄仍依赖 HObject 自身的 finalizer 回收 —— 属预留接口, 待宿主在移除工具 / 关闭 job 时接线.
+        /// 宿主(VisionMaster 的 MainForm)在窗体销毁时对策略集合做 IDisposable 分发; <c>Close</c> 仍未接线.
         /// <para>
         /// 这里<b>只</b>释放 <c>Result</c>: <c>HoRect</c> 是随 job 落盘的配置态 ROI, 一旦在此释放,
-        /// 将来宿主真接上 Dispose 后, 保存配置 / 复制工具就会读到已释放的句柄。
+        /// 宿主在移除工具 / 关闭 job 时调 Dispose 后, 保存配置 / 复制工具就会读到已释放的句柄。
         /// 配置态句柄的归属在 <c>CvRegion</c> 自己身上, 不由策略代管。
         /// </para>
         /// </summary>
