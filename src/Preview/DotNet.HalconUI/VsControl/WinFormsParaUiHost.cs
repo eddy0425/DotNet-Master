@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using DotNet.Drawing;
-using DotNet.Vision.Abstractions;
+using DotNet.HalconCore;
 
 
 namespace DotNet.HalconUI

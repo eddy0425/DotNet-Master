@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Threading.Tasks;
-using DotNet.Vision.Abstractions;
+using DotNet.HalconCore;
 
 
 namespace DotNet.HalconUI

@@ -3,7 +3,7 @@ using HalconDotNet;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using DotNet.Vision.Abstractions;
+using DotNet.HalconCore;
 using DotNet.HalconUI.Draw;
 
 namespace DotNet.HalconUI

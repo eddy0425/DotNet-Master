@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Windows.Forms;
-using DotNet.Vision.Abstractions;
+using DotNet.HalconCore;
 
 
 namespace DotNet.HalconUI
@@ -9,7 +9,7 @@ namespace DotNet.HalconUI
     /// <see cref="ITreeVisualizer"/> 的 WinForms 实现：把树节点声明落到 <see cref="TreeView"/> 上。
     /// </summary>
     /// <remarks>
-    /// 契约（<see cref="ITreeVisualizer"/> / <see cref="ITreeBranch"/>）定义在 DotNet.Vision.Abstractions，
+    /// 契约（<see cref="ITreeVisualizer"/> / <see cref="ITreeBranch"/>）定义在 DotNet.HalconCore，
     /// 算法层的 <c>GenTreeNode</c> 只认接口，因此不再依赖 System.Windows.Forms。
     /// </remarks>
     public class TreeVisualizer : ITreeVisualizer

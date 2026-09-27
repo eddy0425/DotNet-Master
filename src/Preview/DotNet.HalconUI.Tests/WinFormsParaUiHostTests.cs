@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using DotNet.Drawing;
-using DotNet.Vision.Abstractions;
+using DotNet.HalconCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DotNet.HalconUI.Tests

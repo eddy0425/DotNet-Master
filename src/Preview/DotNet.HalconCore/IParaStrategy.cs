@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace DotNet.Vision.Abstractions
+namespace DotNet.HalconCore
 {
     #region 拆分后的职责接口
 

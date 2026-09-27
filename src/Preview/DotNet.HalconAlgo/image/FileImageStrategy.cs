@@ -1,7 +1,7 @@
 ﻿using HalconDotNet;
 using System;
 using DotNet.Drawing;
-using DotNet.Vision.Abstractions;
+using DotNet.HalconCore;
 using System.Collections.Generic;
 
 

@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 using System.Windows.Forms;
-using DotNet.Vision.Abstractions;
+using DotNet.HalconCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DotNet.HalconUI.Tests

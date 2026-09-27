@@ -1,7 +1,7 @@
 ﻿using Sunny.UI;
 using System;
 using DotNet.HalconUI;
-using DotNet.Vision.Abstractions;
+using DotNet.HalconCore;
 using DotNet.HalconAlgo;
 using System.Windows.Forms;
 using System.Collections.Generic;

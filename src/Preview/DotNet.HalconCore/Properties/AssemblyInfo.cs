@@ -1,11 +1,11 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle("DotNet.Vision.Abstractions")]
+[assembly: AssemblyTitle("DotNet.HalconCore")]
 [assembly: AssemblyDescription("视觉算法与 UI 之间的契约层：不依赖 System.Windows.Forms")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("DotNet.Vision.Abstractions")]
+[assembly: AssemblyProduct("DotNet.HalconCore")]
 [assembly: AssemblyCopyright("Copyright ©  2026")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

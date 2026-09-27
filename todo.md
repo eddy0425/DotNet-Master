@@ -27,9 +27,9 @@
 - **现象**：依赖拓扑为 `Drawing ← HalconUI ← HalconAlgo`。算法工程直接 `using DotNet.HalconUI; using System.Windows.Forms;`，`IParaStrategy` 的方法签名里出现 `HDisplayUI`、`TreeVisualizer`、`Control`、`VsControlModel`。
 - **影响**：算法无法脱离 WinForms 单元测试；无法在无界面服务/多线程流水线中复用；UI 改动会连锁编译整个算法层。
 - **方案**：
-  1. 新建 `DotNet.Vision.Abstractions`（无 UI 依赖），下沉 `IHDisplay`（仅保留绘制原语）与 `IParaStrategy` 的**算法部分**；
+  1. 新建 `DotNet.HalconCore`（无 UI 依赖），下沉 `IHDisplay`（仅保留绘制原语）与 `IParaStrategy` 的**算法部分**；
   2. `IParaStrategy` 拆成小接口（见 A2），UI 相关实现移到 HalconUI 侧的适配器；
-  3. 目标依赖方向：`Abstractions ← Drawing ← HalconAlgo`，`Abstractions ← HalconUI`，两者互不依赖。
+  3. 目标依赖方向：`Drawing ← HalconCore ← HalconAlgo`，`HalconCore ← HalconUI`，算法层与 UI 层互不依赖。
 
 ### A2. `IParaStrategy` 是 15 成员的巨型接口（违反 ISP）
 
@@ -681,7 +681,7 @@ private void PublishRenderData(FitArcMidpointRenderData data)
 
 ### 阶段 4：分层与交互重构（2~4 周，需单独排期）
 
-- [x] A1 抽出 `DotNet.Vision.Abstractions`，打断 `HalconAlgo → HalconUI`
+- [x] A1 抽出 `DotNet.HalconCore`，打断 `HalconAlgo → HalconUI`
 - [x] A2 `IParaStrategy` 拆分为 5 个小接口
 - [x] C3 `DrawHelper` 三步走：~~加超时/取消~~ → ~~拆类~~ → ~~`DrawAsync` 消灭 `DoEvents`~~
 - [跳过] C4 `DispPara`/`SavePara` 改为特性驱动的声明式绑定
@@ -734,7 +734,7 @@ private void PublishRenderData(FitArcMidpointRenderData data)
 
 - [x] `DotNet.HalconAlgo` 启用 `Nullable`，与另两工程对齐（此前已随 A1 完成，四个 Preview 工程均为 `<Nullable>enable</Nullable>`）
 - [x] 开启 `TreatWarningsAsErrors`（至少 CS0219 未使用变量、CS8618 不可空未初始化）
-  - 四个 Preview 工程（`Drawing` / `Vision.Abstractions` / `HalconUI` / `HalconAlgo`）**全量**开启，不只限定 CS0219 / CS8618：开启前 Rebuild 只剩 15 条警告且全是可空注解，没有理由只挑几个编号。
+  - 四个 Preview 工程（`Drawing` / `HalconCore` / `HalconUI` / `HalconAlgo`）**全量**开启，不只限定 CS0219 / CS8618：开启前 Rebuild 只剩 15 条警告且全是可空注解，没有理由只挑几个编号。
   - 15 条警告全部按「签名如实声明可空」修复，**无一处 `!` 压制、无行为变化**——这些 API 本来就把 null 当合法值处理，只是签名没说：`RegisterOutput` 的解析器改 `Func<object?>`（`ResolveOutput` 本就返回 `object?`，未示教的 `TmplPoint`、未初始化的 `Result.HoRegion` 都会是 null）；`TakeRenderData()` → `FitArcMidpointRenderData?`；`ResolveMouseHandler()` → `IMouseHandler?`（Erase / default 分支返回 null，调用方已用 `?.`）；`DrawModelUIArgs` 的两个 `HObject` 构造参数与属性改可空（上游 `DrawDone` 本就是 `HObject?`）；两处 `TransObject` 的 `obj` 改可空（首行即判 null）；`HDisplay` 中传给 `ReplaceRegion(ref HObject?)` 的 `region` / `ring` 局部变量改可空。
   - 构建通过（2026-09-26）：MSBuild Rebuild `DotNet.VisionMaster.csproj`（Debug），0 警告 0 错误。`DotNet.VisionMaster` 本身未开启，不在本条范围内。
 - [x] D7 `HashCode` 迁出 `namespace System`（此前已完成，现位于 `DotNet.Drawing/Internal/HashCode.cs`，命名空间 `DotNet.Drawing.Internal`）

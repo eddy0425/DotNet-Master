@@ -2,7 +2,7 @@
 using System.IO;
 using System.Linq;
 using DotNet.Drawing;
-using DotNet.Vision.Abstractions;
+using DotNet.HalconCore;
 using HalconDotNet;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 

@@ -19,7 +19,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNet.Logging", "Library\D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNet.Modbus4", "Library\DotNet.Modbus4\DotNet.Modbus4.csproj", "{EB1364A3-4EB6-45F5-A566-107B8E504788}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNet.Vision.Abstractions", "Preview\DotNet.Vision.Abstractions\DotNet.Vision.Abstractions.csproj", "{7B2E4C10-9D6A-4F31-A5C8-3E0B1D742F96}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNet.HalconCore", "Preview\DotNet.HalconCore\DotNet.HalconCore.csproj", "{7B2E4C10-9D6A-4F31-A5C8-3E0B1D742F96}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNet.Drawing", "Preview\DotNet.Drawing\DotNet.Drawing.csproj", "{CE09ACC5-0E8D-4D7D-AA2B-D47B837F2CD2}"
 EndProject

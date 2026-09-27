@@ -1,4 +1,4 @@
-﻿namespace DotNet.Vision.Abstractions
+﻿namespace DotNet.HalconCore
 {
     public enum AlgoEnum
     {

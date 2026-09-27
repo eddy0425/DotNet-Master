@@ -1,6 +1,6 @@
 using DotNet.HalconAlgo;
 using DotNet.HalconUI;
-using DotNet.Vision.Abstractions;
+using DotNet.HalconCore;
 using DotNet.Json;
 using System;
 using System.Collections.Generic;

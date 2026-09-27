@@ -1,4 +1,4 @@
-﻿namespace DotNet.Vision.Abstractions
+﻿namespace DotNet.HalconCore
 {
     /// <summary> 输出类型 </summary>
     public enum OutEnum

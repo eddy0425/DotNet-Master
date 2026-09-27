@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using DotNet.Drawing;
-using DotNet.Vision.Abstractions;
+using DotNet.HalconCore;
 using HalconDotNet;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 

@@ -1,6 +1,6 @@
 using DotNet.Drawing;
 using DotNet.HalconUI;
-using DotNet.Vision.Abstractions;
+using DotNet.HalconCore;
 using DotNet.HalconAlgo;
 using HalconDotNet;
 using System;

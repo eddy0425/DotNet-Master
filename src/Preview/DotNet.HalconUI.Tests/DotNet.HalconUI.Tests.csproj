@@ -96,9 +96,9 @@
       <Project>{F64662FA-E352-43AE-9B06-2E1ECFB1F205}</Project>
       <Name>DotNet.HalconUI</Name>
     </ProjectReference>
-    <ProjectReference Include="..\DotNet.Vision.Abstractions\DotNet.Vision.Abstractions.csproj">
+    <ProjectReference Include="..\DotNet.HalconCore\DotNet.HalconCore.csproj">
       <Project>{7B2E4C10-9D6A-4F31-A5C8-3E0B1D742F96}</Project>
-      <Name>DotNet.Vision.Abstractions</Name>
+      <Name>DotNet.HalconCore</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

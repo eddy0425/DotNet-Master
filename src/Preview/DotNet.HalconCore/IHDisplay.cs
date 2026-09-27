@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace DotNet.Vision.Abstractions
+namespace DotNet.HalconCore
 {
     /// <summary>
     /// HALCON 显示窗口的绘制契约。

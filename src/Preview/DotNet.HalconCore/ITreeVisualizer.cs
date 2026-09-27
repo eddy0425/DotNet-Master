@@ -1,6 +1,6 @@
 using System;
 
-namespace DotNet.Vision.Abstractions
+namespace DotNet.HalconCore
 {
     /// <summary>
     /// 输出变量树的构建契约。

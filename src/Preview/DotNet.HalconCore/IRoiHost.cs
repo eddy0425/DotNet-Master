@@ -2,7 +2,7 @@
 using HalconDotNet;
 using System.Threading.Tasks;
 
-namespace DotNet.Vision.Abstractions
+namespace DotNet.HalconCore
 {
     /// <summary>
     /// ROI 交互宿主：算法策略在「画 ROI / 设模板」时需要宿主提供的全部能力。

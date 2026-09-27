@@ -1,4 +1,4 @@
-namespace DotNet.Vision.Abstractions
+namespace DotNet.HalconCore
 {
     /// <summary>
     /// 参数面板宿主：策略声明「要显示哪些控件」以及「从控件读回什么值」的唯一入口。
