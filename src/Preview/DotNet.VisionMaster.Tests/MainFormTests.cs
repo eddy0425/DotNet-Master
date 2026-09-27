@@ -27,8 +27,6 @@ namespace DotNet.VisionMaster.Tests
         public void Cleanup()
         {
             AlgoPaths.UIBlock = _savedUIBlock;
-            // 兜底：MainForm 销毁时会退订 LogFile，但断言中途失败时可能没走到销毁
-            Priv.ResetJsonLog();
         }
 
         private static void Run(Action<MainForm> body) =>
@@ -170,11 +168,10 @@ namespace DotNet.VisionMaster.Tests
         }
 
         /// <summary>
-        /// 主窗体销毁时退订日志转接、释放持有 HALCON 句柄的策略。
+        /// 主窗体销毁时释放持有 HALCON 句柄的策略。
         /// </summary>
-        /// <remarks>回归：此前 LogFile 永不退订，策略的 Dispose 也没有任何调用方（见 CreateROIStrategy.Dispose 的注释）。</remarks>
         [TestMethod]
-        public void Dispose_UnsubscribesLog_AndDisposesStrategies()
+        public void Dispose_DisposesStrategies()
         {
             Sta.Run(() =>
             {
@@ -183,10 +180,8 @@ namespace DotNet.VisionMaster.Tests
                 {
                     WindowHost.ShowOffscreen(form);
                     strategies = Strategies(form).ToList();
-                    Assert.AreEqual(1, Priv.JsonLogSubscriberCount());
                 }
 
-                Assert.AreEqual(0, Priv.JsonLogSubscriberCount(), "LogFile 没退订");
                 var disposables = strategies.OfType<IDisposable>().ToList();
                 Assert.IsTrue(disposables.Count > 0, "前提：至少有一个策略持有需要释放的资源");
                 foreach (var s in disposables)
@@ -211,7 +206,6 @@ namespace DotNet.VisionMaster.Tests
                 Assert.IsTrue(((ThrowOnDisposeStrategy)strategies[0]).DisposeCalled);
                 foreach (var s in strategies.Skip(1).OfType<IDisposable>())
                     Assert.IsTrue(Priv.Get<bool>(s, "_disposed"), s.GetType().Name + " 没被释放");
-                Assert.AreEqual(0, Priv.JsonLogSubscriberCount());
             });
         }
 

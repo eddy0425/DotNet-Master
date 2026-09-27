@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
-using DotNet.Json;
 
 namespace DotNet.VisionMaster.Tests
 {
@@ -46,21 +45,6 @@ namespace DotNet.VisionMaster.Tests
         public static void Click(object target, string handler, object sender = null) =>
             Call(target, handler, sender, EventArgs.Empty);
 
-        /// <summary>
-        /// 清掉 <see cref="JsonLog.Logged"/> 上的全部订阅。
-        /// </summary>
-        /// <remarks>
-        /// 兜底：<see cref="LogFile"/> 已在 Dispose 时退订，但断言失败或窗体没走到销毁时订阅会残留，
-        /// 串到后续测试里；这里反射把静态事件的后备字段置空。
-        /// </remarks>
-        public static void ResetJsonLog() =>
-            typeof(JsonLog).GetField(nameof(JsonLog.Logged), BindingFlags.Static | BindingFlags.NonPublic).SetValue(null, null);
-
-        public static int JsonLogSubscriberCount()
-        {
-            var handler = (Delegate)typeof(JsonLog).GetField(nameof(JsonLog.Logged), BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
-            return handler?.GetInvocationList().Length ?? 0;
-        }
 
         private static FieldInfo FindField(Type type, string name)
         {

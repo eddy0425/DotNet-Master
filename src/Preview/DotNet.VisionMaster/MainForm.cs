@@ -14,7 +14,6 @@ namespace DotNet.VisionMaster
     {
         HDisplayUI _display;
         ParaForm _formPara;
-        readonly LogFile _logFile;
         private int _index;
         private IParaStrategy _currentStrategy => _strategys[_index];
         private List<IParaStrategy> _strategys = new List<IParaStrategy>();
@@ -45,7 +44,6 @@ namespace DotNet.VisionMaster
                 _strategys[i].Init(_display);
             }
 
-            _logFile = new LogFile();
             // 挂 Disposed 而不是重写 Dispose(bool): 后者已在 Designer 里定义。
             // 此时子控件(含 _display)都已销毁, 不会再有绘制去碰策略持有的句柄。
             Disposed += MainForm_Disposed;
@@ -55,16 +53,11 @@ namespace DotNet.VisionMaster
         }
 
         /// <summary>
-        /// 退订日志转接、释放持有 HALCON 句柄的策略。
+        /// 释放持有 HALCON 句柄的策略。
         /// </summary>
-        /// <remarks>
-        /// <c>LogFile</c> 挂在静态事件 <c>JsonLog.Logged</c> 上，不退订就一直被引着；
-        /// 策略的 <c>Dispose</c> 此前没有任何调用方，句柄只能等 finalizer。逐个 try，一个失败不影响其余。
-        /// </remarks>
+        /// <remarks>逐个释放，避免一个策略失败影响其余策略。</remarks>
         private void MainForm_Disposed(object sender, EventArgs e)
         {
-            _logFile.Dispose();
-
             foreach (var disposable in _strategys.OfType<IDisposable>())
             {
                 try { disposable.Dispose(); }

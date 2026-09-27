@@ -1,7 +1,6 @@
 using DotNet.HalconAlgo;
 using DotNet.HalconUI;
 using DotNet.HalconCore;
-using DotNet.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -45,8 +44,6 @@ namespace DotNet.VisionDemo
                 _strategys[i].Init(_display);
                 _strategys[i].RunIndex = i;
             }
-
-            LogFile logFile = new LogFile();
 
             var fileImage = ((FileImageStrategy)_strategys[0]).inPara;
             fileImage.ImageFolder = "D:\\testImage\\123";

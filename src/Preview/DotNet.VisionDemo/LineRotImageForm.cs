@@ -42,8 +42,6 @@ namespace DotNet.VisionDemo
                 _strategys[i].RunIndex = i;
             }
 
-            LogFile logFile = new LogFile();
-
             var fileImage = ((FileImageStrategy)_strategys[0]).inPara;
             fileImage.ImageFolder = "D:\\testImage\\Blue ring-9030-B";
         }

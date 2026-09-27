@@ -96,10 +96,6 @@
       <Project>{5c5f27fb-2b8d-4212-a788-ff51177cfb9f}</Project>
       <Name>DotNet.Data</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Library\DotNet.Json\DotNet.Json.csproj">
-      <Project>{5954e440-e34e-49ad-bccd-93284cd8ea2b}</Project>
-      <Name>DotNet.Json</Name>
-    </ProjectReference>
     <ProjectReference Include="..\DotNet.Drawing\DotNet.Drawing.csproj">
       <Project>{ce09acc5-0e8d-4d7d-aa2b-d47b837f2cd2}</Project>
       <Name>DotNet.Drawing</Name>

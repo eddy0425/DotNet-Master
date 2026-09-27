@@ -71,7 +71,6 @@
     <Compile Include="Infrastructure\PromptLog.cs" />
     <Compile Include="Infrastructure\Sta.cs" />
     <Compile Include="Infrastructure\WindowHost.cs" />
-    <Compile Include="LogFileTests.cs" />
     <Compile Include="ValueFormTests.cs" />
     <Compile Include="ParaFormTests.cs" />
     <Compile Include="MainFormTests.cs" />
@@ -80,10 +79,6 @@
     <ProjectReference Include="..\..\Library\DotNet.Logging\DotNet.Logging.csproj">
       <Project>{61B8513D-A49F-451E-B525-A7DB5692CD32}</Project>
       <Name>DotNet.Logging</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Library\DotNet.Json\DotNet.Json.csproj">
-      <Project>{5954E440-E34E-49AD-BCCD-93284CD8EA2B}</Project>
-      <Name>DotNet.Json</Name>
     </ProjectReference>
     <ProjectReference Include="..\DotNet.Drawing\DotNet.Drawing.csproj">
       <Project>{CE09ACC5-0E8D-4D7D-AA2B-D47B837F2CD2}</Project>

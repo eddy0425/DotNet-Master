@@ -10,5 +10,5 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
 
-// JsonLog.Logged、AlgoPaths.UIBlock、绘制会话注册表都是进程级静态状态，不并行执行。
+// AlgoPaths.UIBlock、绘制会话注册表都是进程级静态状态，不并行执行。
 [assembly: DoNotParallelize]

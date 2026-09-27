@@ -13,7 +13,7 @@ namespace DotNet.VisionMaster
         [STAThread]
         static void Main()
         {
-            // LogFile 把 JsonLog 转到 Log; 不初始化的话 Log 内部 Logger 为 null, 日志全部被静默丢弃。
+            // 初始化应用日志，并在退出时排空待写入的日志。
             Log.Initialize(b => b.WriteToFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs"), "VisionMaster"));
             try
             {
