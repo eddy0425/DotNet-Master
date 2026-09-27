@@ -106,6 +106,52 @@ namespace DotNet.HalconUI.Tests
         }
 
         [TestMethod]
+        public void HiddenControl_AppliesLayoutAndPart_OnceShownAgain()
+        {
+            Run((host, target) =>
+            {
+                Show(target, 800, 200);
+                host.Control.Visible = false;
+                Show(target, 100, 400);
+
+                host.Control.Visible = true;
+                System.Windows.Forms.Application.DoEvents();
+
+                Assert.AreEqual(new Size(75, 300), host.Control.Size, "重新可见后应按新图布局");
+                host.Window.GetPart(out int r1, out int c1, out int r2, out int c2);
+                Assert.AreEqual(399, r2, "重新可见后应补上被挂起的 SetPart");
+                Assert.AreEqual(99, c2);
+            });
+        }
+
+        [TestMethod]
+        public void FirstImage_WithDefaultSizeCacheValue_IsStillLaidOut()
+        {
+            // 1248x2200 是 ZoomImage 的默认值，也是本项目相机的实际分辨率
+            Run((host, target) =>
+            {
+                Show(target, 1248, 2200);
+
+                Assert.AreEqual(new Size(170, 300), host.Control.Size);
+                Assert.AreEqual(new Point(115, 0), host.Control.Location);
+            });
+        }
+
+        [TestMethod]
+        public void SizeChange_KeepsCallerDrawMode()
+        {
+            Run((host, target) =>
+            {
+                Show(target, 800, 200);
+                Assert.AreEqual("margin", host.Window.GetDraw(), "首次布局给默认 margin");
+
+                host.Window.SetDraw("fill");
+                Show(target, 100, 400);
+                Assert.AreEqual("fill", host.Window.GetDraw(), "之后换尺寸不应覆盖调用方的画笔模式");
+            });
+        }
+
+        [TestMethod]
         public void DispImage_Replaces_AndReleasesPreviousCopy()
         {
             Run((host, target) =>

@@ -83,13 +83,11 @@ namespace DotNet.HalconUI
                     HOperatorSet.SetPart(_hWindow, 0, 0, _display.HoHeight - 1, _display.HoWidth - 1);
                     HOperatorSet.ClearWindow(_hWindow);
                     HOperatorSet.DispObj(_display.HoImage, _hWindow);
-                    Mouse_hand = false;
                 }
 
-                if (e.Button == MouseButtons.Middle)
-                {
-                    Mouse_hand = true;
-                }
+                // 每次按下都重新判定：原先只在中键按下时置 true，中键若在控件外松开（收不到 Up），
+                // 残留的 true 会让之后一次左键拖拽（如画 ROI）把视图平移走。
+                Mouse_hand = e.Button == MouseButtons.Middle;
             }
             catch (Exception ex) { Log.Error(nameof(HWindowMouse), "处理鼠标按下失败.", ex); }
         }
@@ -121,16 +119,26 @@ namespace DotNet.HalconUI
                 var handler = RefreshUI;
                 if (handler != null && _display.HoImage.NotNull())
                 {
+                    HTuple egray = null;
+                    bool gotGray = false;
                     try
                     {
-                        HOperatorSet.GetGrayval(_display.HoImage, Row, Column, out HTuple egray);
-                        handler.Invoke(Row, Column, egray);
+                        HOperatorSet.GetGrayval(_display.HoImage, Row, Column, out egray);
+                        gotGray = true;
                     }
                     catch (Exception ex)
                     {
                         // 鼠标落在图像范围外 GetGrayval 必然失败，属于正常路径，不升级为错误；
                         // 保留 Debug 级日志，便于排查"取灰度一直没反应"时区分是越界还是别的原因。
                         Log.Debug(nameof(HWindowMouse), $"取灰度失败(通常是鼠标在图像外): {ex.Message}");
+                    }
+
+                    // 订阅方异常单独记 Error：原先与取灰度同在一个 try 里，被当成“鼠标在图像外”吞成 Debug
+                    // 用标志而不是 egray != null 判成功：HALCON 抛错前可能已给 out 参数赋值
+                    if (gotGray)
+                    {
+                        try { handler.Invoke(Row, Column, egray); }
+                        catch (Exception ex) { Log.Error(nameof(HWindowMouse), "RefreshUI 订阅方处理失败.", ex); }
                     }
                 }
             }

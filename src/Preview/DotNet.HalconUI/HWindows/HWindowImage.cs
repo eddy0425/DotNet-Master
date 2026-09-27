@@ -20,6 +20,13 @@ namespace DotNet.HalconUI
         // 用此标志让那次回调直接返回，避免布局过程中重入再布局、再重绘一遍。
         bool _inLayout;
 
+        // 控件画不了时收到的图像，其布局/SetPart 要等到能画时补上（见 Fun_DispImage）
+        bool _pendingLayout;
+        bool _pendingSetPart;
+
+        // 画笔默认 margin 只在首次布局时设一次，之后尊重调用方自己设的模式（见 LayoutControlToImage）
+        bool _drawModeInitialised;
+
         /// <summary>
         /// 当前显示的图像。所有权在本类：外部传入的句柄一律 <c>copy_image</c> 一份后接管，
         /// 释放由 <see cref="Dispose"/> 或下一次接管时的换出动作负责，调用方不得释放本属性。
@@ -43,10 +50,20 @@ namespace DotNet.HalconUI
             _hWindowControl = hWindowControl;
 
             getInfo = new ZoomImage();
-            zoomInfo = new ZoomImage();
+            // zoomInfo 记录的是「控件已按哪个尺寸布局过」，初始必须是未布局(0x0)。
+            // 原先与 getInfo 同为默认 1248x2200，首张图恰好是这个尺寸（本项目相机的实际分辨率）时
+            // 两者相等、跳过布局，控件保持铺满父容器，竖图被拉伸。
+            zoomInfo = new ZoomImage { width = 0, height = 0 };
             HOperatorSet.GenEmptyObj(out _hoImage);
 
             hWindowControl.Resize += HWindowControl_Resize;
+            hWindowControl.VisibleChanged += HWindowControl_VisibleChanged;
+        }
+
+        // 所在 TabPage 被选中等父链变为可见时，子控件同样会收到 VisibleChanged
+        private void HWindowControl_VisibleChanged(object sender, EventArgs e)
+        {
+            if ((_pendingLayout || _pendingSetPart) && CanDraw()) Fun_ReDisplay();
         }
 
         bool CanDraw()
@@ -126,6 +143,7 @@ namespace DotNet.HalconUI
                     return;
                 }
 
+                ApplyPendingFit();
                 HOperatorSet.DispObj(_hoImage, _hWindow);
             }
             catch (Exception ex)
@@ -153,24 +171,39 @@ namespace DotNet.HalconUI
             // 而上一张图此时已被释放，对外就是一个悬挂句柄（审查项 C16）。
             AdoptImage(_image);
 
+            // 画不了时把本帧的布局/SetPart 记下来，等能画时由 Fun_ReDisplay 补上。
+            // 原先直接 return 丢掉，控件重新可见后一直按旧 Part 显示新图，直到下一次 DispImage。
+            _pendingLayout = true;
+            _pendingSetPart |= isSetPart;
             if (!CanDraw()) return;
 
             try
             {
-                if (getInfo.width.D != zoomInfo.width.D || getInfo.height.D != zoomInfo.height.D)
-                {
-                    LayoutControlToImage(getInfo);
-                }
-
-                if (isSetPart)
-                {
-                    HOperatorSet.SetPart(_hWindow, 0, 0, getInfo.height - 1, getInfo.width - 1);
-                }
+                ApplyPendingFit();
                 HOperatorSet.DispObj(_hoImage, _hWindow);
             }
             catch (Exception ex)
             {
                 Log.Error(nameof(HWindowImage), "显示图像失败.", ex);
+            }
+        }
+
+        /// <summary> 执行挂起的布局与 SetPart（图像尺寸变了才重新布局）。调用方负责先确认 <see cref="CanDraw"/>。 </summary>
+        private void ApplyPendingFit()
+        {
+            if (_pendingLayout)
+            {
+                _pendingLayout = false;
+                if (getInfo.width.D != zoomInfo.width.D || getInfo.height.D != zoomInfo.height.D)
+                {
+                    LayoutControlToImage(getInfo);
+                }
+            }
+
+            if (_pendingSetPart)
+            {
+                _pendingSetPart = false;
+                HOperatorSet.SetPart(_hWindow, 0, 0, getInfo.height - 1, getInfo.width - 1);
             }
         }
 
@@ -207,7 +240,13 @@ namespace DotNet.HalconUI
                 zoomInfo.width = info.width;
                 zoomInfo.height = info.height;
                 HOperatorSet.ClearWindow(_hWindow);
-                HOperatorSet.SetDraw(_hWindow, "margin");
+                // 只在首次布局时给默认值：原先每次换尺寸都强设 margin，覆盖调用方 SetDraw("fill")，
+                // 违背 HDisplay「未指定的项沿用窗口当前状态」的约定
+                if (!_drawModeInitialised)
+                {
+                    HOperatorSet.SetDraw(_hWindow, "margin");
+                    _drawModeInitialised = true;
+                }
             }
             catch (Exception ex)
             {
@@ -227,6 +266,7 @@ namespace DotNet.HalconUI
             if (_hWindowControl != null && !_hWindowControl.IsDisposed)
             {
                 _hWindowControl.Resize -= HWindowControl_Resize;
+                _hWindowControl.VisibleChanged -= HWindowControl_VisibleChanged;
             }
 
             // 先置空引用再释放：HoImage 对外暴露，置空后后续读取拿到的是 null，

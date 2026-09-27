@@ -75,12 +75,14 @@
     <Compile Include="MouseHandlerTests.cs" />
     <Compile Include="VsControlModelTests.cs" />
     <Compile Include="VsControlFactoryTests.cs" />
+    <Compile Include="VsControlBindingTests.cs" />
     <Compile Include="WinFormsParaUiHostTests.cs" />
     <Compile Include="TreeVisualizerTests.cs" />
     <Compile Include="MiscTypeTests.cs" />
     <Compile Include="HDisplayTests.cs" />
     <Compile Include="HDisplayUITests.cs" />
     <Compile Include="HEditModelUITests.cs" />
+    <Compile Include="HModelUITests.cs" />
     <Compile Include="HWindowFontTests.cs" />
     <Compile Include="HWindowImageTests.cs" />
     <Compile Include="HWindowMouseTests.cs" />

@@ -80,15 +80,33 @@ namespace DotNet.HalconUI
         public bool GetBool(string name, bool fallback)
             => TryGet(name, out var model) ? model.AsBool() : fallback;
 
-        public int GetInt(string name) => GetRequired(name).AsInt();
+        public int GetInt(string name) => Convert(GetRequired(name), m => m.AsInt(), "整数");
 
         public int GetInt(string name, int fallback)
-            => TryGet(name, out var model) ? model.AsInt() : fallback;
+            => TryGet(name, out var model) ? Convert(model, m => m.AsInt(), "整数") : fallback;
 
-        public double GetDouble(string name) => GetRequired(name).AsDouble();
+        public double GetDouble(string name) => Convert(GetRequired(name), m => m.AsDouble(), "数值");
 
         public double GetDouble(string name, double fallback)
-            => TryGet(name, out var model) ? model.AsDouble() : fallback;
+            => TryGet(name, out var model) ? Convert(model, m => m.AsDouble(), "数值") : fallback;
+
+        /// <remarks>
+        /// 原先直接透出 <see cref="System.Convert"/> 的异常：FormatException 不含控件名与原值，
+        /// 超出范围时更是 OverflowException，算法层无从定位是哪个参数填错。
+        /// fallback 只对「控件不存在」生效，值非法仍须报错，否则会静默覆盖用户输入。
+        /// </remarks>
+        private static T Convert<T>(VsControlModel model, Func<VsControlModel, T> convert, string typeName)
+        {
+            try
+            {
+                return convert(model);
+            }
+            catch (Exception ex) when (ex is FormatException || ex is InvalidCastException || ex is OverflowException)
+            {
+                throw new FormatException(string.Format(
+                    "控件 '{0}' 的值 '{1}' 无法转换为{2}。", model.Name, model.Value, typeName), ex);
+            }
+        }
 
         private VsControlModel GetRequired(string name)
         {

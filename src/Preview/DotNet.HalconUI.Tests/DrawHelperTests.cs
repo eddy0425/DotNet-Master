@@ -78,6 +78,28 @@ namespace DotNet.HalconUI.Tests
         }
 
         [TestMethod]
+        public void NewDraw_StartedFromSupersededContinuation_IsNotOrphaned()
+        {
+            // 顶掉旧会话时其续体内联执行；续体里立即再发起一次绘制（例如“取消后自动重画”）。
+            // 原实现里这次绘制注册在外层新会话之前，被遮住后收不到任何鼠标事件，IsDrawing 一直为 true。
+            Task<DrawLineResult> inner = null;
+            var first = DrawHelper.DrawPointAsync(_window);
+            first.ContinueWith(_ => inner = DrawHelper.DrawLineAsync(_window), TaskContinuationOptions.ExecuteSynchronously);
+
+            var outer = DrawHelper.DrawPointAsync(_window);
+            Assert.IsNotNull(inner, "续体应已内联执行");
+            Assert.IsTrue(inner.IsCompleted, "续体发起的会话应被外层新会话顶掉，而不是悬着");
+            Assert.IsFalse(inner.Result.Completed);
+
+            DrawHelper.ForwardMouseDown(_window, Mouse.Left(30, 40));
+            DrawHelper.ForwardMouseUp(_window, Mouse.Left(30, 40));
+            Confirm();
+
+            Assert.IsTrue(outer.Result.Completed, "鼠标事件应派给外层会话");
+            Assert.IsFalse(DrawHelper.IsDrawing(_window), "不应残留孤儿会话");
+        }
+
+        [TestMethod]
         public void CancelDraw_OnOtherWindow_LeavesThisSessionRunning()
         {
             using (var other = BufferWindow())
@@ -204,6 +226,48 @@ namespace DotNet.HalconUI.Tests
                 Assert.IsTrue(Contains(r.Region, 70, 70), "多边形内部点应在区域内");
                 Assert.IsFalse(Contains(r.Region, 200, 200));
                 Assert.AreEqual(101 * 101, Area(r.Region), 101 * 4, "面积应接近 100x100 的正方形");
+            }
+        }
+
+        [TestMethod]
+        public async Task DrawRegionAsync_NullWindow_FaultsWithArgumentNull()
+        {
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => DrawHelper.DrawRegionAsync(null));
+        }
+
+        [TestMethod]
+        public void DrawRegionAsync_DraggingVertex_DrawsPolygonAtCurrentMousePosition()
+        {
+            // 原实现先画多边形再更新被拖的顶点，画面总落后鼠标一帧
+            using (var window = BufferWindow())
+            {
+                var task = DrawHelper.DrawRegionAsync(window);
+                foreach (var p in new[] { new[] { 20, 20 }, new[] { 120, 20 }, new[] { 120, 120 }, new[] { 20, 120 } })
+                    DrawHelper.ForwardMouseDown(window, Mouse.Left(p[0], p[1]));
+                DrawHelper.ForwardMouseUp(window, Mouse.Right(0, 0)); // 闭合
+
+                DrawHelper.ForwardMouseMove(window, Mouse.Move(120, 120)); // 悬停到第 3 个顶点
+                DrawHelper.ForwardMouseDown(window, Mouse.Left(120, 120));
+                DrawHelper.ForwardMouseMove(window, Mouse.Move(200, 200));
+
+                // 新边 (120,20)→(200,200) 的中点 (x=160, y=110)；旧顶点位置的边在 x=120，不会经过这里
+                HOperatorSet.DumpWindowImage(out HObject dump, window);
+                using (dump)
+                using (var probe = Rectangle1(109, 159, 111, 161))
+                {
+                    HOperatorSet.Rgb1ToGray(dump, out HObject gray);
+                    using (gray)
+                    using (var empty = Rectangle1(220, 290, 230, 310))
+                    {
+                        HOperatorSet.MinMaxGray(empty, gray, 0, out HTuple _, out HTuple bg, out HTuple _);
+                        Assert.AreEqual(0.0, bg.D, "探测前提：空白处应为黑色背景");
+                        HOperatorSet.MinMaxGray(probe, gray, 0, out HTuple _, out HTuple max, out HTuple _);
+                        Assert.IsTrue(max.D > 0, "拖拽中的多边形应画在当前鼠标位置");
+                    }
+                }
+
+                DrawHelper.CancelDraw(window);
+                task.Result.Region.Dispose();
             }
         }
 

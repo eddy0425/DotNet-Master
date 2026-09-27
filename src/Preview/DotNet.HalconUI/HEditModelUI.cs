@@ -269,33 +269,53 @@ namespace DotNet.HalconUI
             _drawType = DrawEnum.Erase;
         }
 
+        /// <remarks>
+        /// <para>
+        /// 平移目标取<b>新读入图像</b>的中心，而不是 <c>display.Display.HoCentre</c>：后者是窗口里
+        /// 当前那张图的尺寸，首次打开时还是 <see cref="ZoomImage"/> 的默认值，换了尺寸不同的模板图时
+        /// 又是上一张图的——两种情况模板都会被平移到错误位置(常常在画面外)。
+        /// </para>
+        /// <para>
+        /// 所有新对象生成成功后才换入字段：读图或变换失败时，当前模板保持原样而不是停在已释放的句柄上。
+        /// 每次打开都从模板重新生成 <see cref="shrFindMode"/>，上一轮的擦除笔迹一并清空，
+        /// 否则再次涂抹时它们会叠画在完好的新模板上。
+        /// </para>
+        /// </remarks>
         public void DisplayModel(string modelPath, HObject ho_ModeRect, HObject ho_Contour, ModelResult result)
         {
             display.Reset();
 
-            _srcImage.Dispose();
-            HOperatorSet.ReadImage(out _srcImage, modelPath);
-            //display.DispImage(_srcImage);
+            HObject srcImage = null, findMode = null, contour = null, erase = null;
+            try
+            {
+                HOperatorSet.ReadImage(out srcImage, modelPath);
 
-            Point2d from = result.Coord.Center;
-            Point2d to = display.Display.HoCentre;
+                Point2d from = result.Coord.Center;
+                Point2d to = HModelUI.ImageCentre(srcImage);
+                TransObject(from, to, ho_ModeRect, out findMode);
+                TransObject(from, to, ho_Contour, out contour);
+                Point2d centerTrans = HalconController.TransPoint(from, to, new Point2d(result.Column, result.Row));
+                HOperatorSet.GenEmptyObj(out erase);
 
-            shrFindMode.Dispose();
-            TransObject(from, to, ho_ModeRect, out shrFindMode);
-            //display.Display.Disp(shrFindMode, DrawStyle.Of(HColor.Blue));
+                HModelUI.Replace(ref _srcImage, ref srcImage);
+                HModelUI.Replace(ref shrFindMode, ref findMode);
+                HModelUI.Replace(ref _shrContour, ref contour);
+                HModelUI.Replace(ref shrErase, ref erase);
+                _shrCoord = new CvCoord(centerTrans, Angle.FromRadians(result.Angle));
+            }
+            finally
+            {
+                srcImage?.Dispose();
+                findMode?.Dispose();
+                contour?.Dispose();
+                erase?.Dispose();
+            }
 
-            _shrContour.Dispose();
-            TransObject(from, to, ho_Contour, out _shrContour);
-            //display.Display.Disp(_shrContour, DrawStyle.Of(HColor.Green));
-
-            Point2d centerTrans = HalconController.TransPoint(from, to, new Point2d(result.Column, result.Row));
-            _shrCoord = new CvCoord(centerTrans, Angle.FromRadians(result.Angle));
-            //display.Display.Disp(_shrCoord, DrawStyle.Of(HColor.Red));
-
+            // 先换图再 SetModelPara：后者内部 ReDispImage 重绘的是窗口里的当前图
+            display.DispImage(_srcImage);
             display.SetModelPara(shrFindMode, _shrContour, _shrCoord);
             _drawType = DrawEnum.DispModel;
 
-            display.DispImage(_srcImage);
             display.Display.Disp(shrFindMode, DrawStyle.Of(HColor.Blue));
             display.Display.Disp(_shrContour, DrawStyle.Of(HColor.Green));
             display.Display.Disp(_shrCoord, DrawStyle.Of(HColor.Red));

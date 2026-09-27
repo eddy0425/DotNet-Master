@@ -30,28 +30,57 @@ namespace DotNet.HalconUI
             hWindowControl.HMouseMove += OnMouseMove;
         }
 
+        /// <remarks>
+        /// 新图像与变换结果全部生成成功后才换入字段：原先先 Dispose 旧字段再 ReadImage，
+        /// 路径失效时字段停在已释放的句柄上，之后每次鼠标移动都拿它重绘。
+        /// </remarks>
         public void DisplayModel(string modelPath, HObject ho_ModeRect, HObject ho_Contour, ModelResult result)
         {
             hWindowControl.Focus();
 
-            _srcImage.Dispose();
-            HOperatorSet.ReadImage(out _srcImage, modelPath);
+            HObject srcImage = null, modeRect = null, contour = null;
+            try
+            {
+                HOperatorSet.ReadImage(out srcImage, modelPath);
+
+                Point2d from = result.Coord.Center;
+                Point2d to = ImageCentre(srcImage);
+                TransObject(from, to, ho_ModeRect, out modeRect);
+                TransObject(from, to, ho_Contour, out contour);
+                Point2d centerTrans = HalconController.TransPoint(from, to, new Point2d(result.Column, result.Row));
+
+                Replace(ref _srcImage, ref srcImage);
+                Replace(ref _modeRect, ref modeRect);
+                Replace(ref _contour, ref contour);
+                _coord = new CvCoord(centerTrans, Angle.FromRadians(result.Angle));
+            }
+            finally
+            {
+                srcImage?.Dispose();
+                modeRect?.Dispose();
+                contour?.Dispose();
+            }
+
             display.DispImage(_srcImage);
-
-            Point2d from = result.Coord.Center;
-            Point2d to = display.HoCentre;
-
-            _modeRect.Dispose();
-            TransObject(from, to, ho_ModeRect, out _modeRect);
             display.Disp(_modeRect, DrawStyle.Of(HColor.Blue));
-
-            _contour.Dispose();
-            TransObject(from, to, ho_Contour, out _contour);
             display.Disp(_contour, DrawStyle.Of(HColor.Green));
-
-            Point2d centerTrans = HalconController.TransPoint(from, to, new Point2d(result.Column, result.Row));
-            _coord = new CvCoord(centerTrans, Angle.FromRadians(result.Angle));
             display.Disp(_coord, DrawStyle.Of(HColor.Red));
+        }
+
+        /// <summary> 图像中心，与 <see cref="HDisplay.HoCentre"/> 同一约定（X = 列）。 </summary>
+        internal static Point2d ImageCentre(HObject image)
+        {
+            HOperatorSet.GetImageSize(image, out HTuple width, out HTuple height);
+            return new Point2d(width.D / 2, height.D / 2);
+        }
+
+        /// <summary> 用 <paramref name="value"/> 换下 <paramref name="field"/> 并释放旧对象；<paramref name="value"/> 置空，所有权转入字段。 </summary>
+        internal static void Replace(ref HObject field, ref HObject value)
+        {
+            HObject old = field;
+            field = value;
+            value = null;
+            old?.Dispose();
         }
 
         private static void TransObject(Point2d from, Point2d to, HObject obj, out HObject objTrans)

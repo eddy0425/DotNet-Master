@@ -77,18 +77,23 @@ namespace DotNet.HalconUI.Draw
             }
         }
 
+        /// <remarks>
+        /// 拖拽时先更新顶点再画：原先先画后改，画出的多边形总落后鼠标一帧，松手那一帧的位置永远不显示。
+        /// </remarks>
         private void Edit(HMouseEventArgs e)
         {
-            DispPolyLines("red");
-            for (int i = 0; i < _cols.Count; i++)
-                R.Cross(_cols[i], _rows[i], "green", 10);
-
-            if (Dragging && _editIdx >= 0 && _editIdx < _cols.Count)
+            bool dragging = Dragging && _editIdx >= 0 && _editIdx < _cols.Count;
+            if (dragging)
             {
                 _cols[_editIdx] = e.X;
                 _rows[_editIdx] = e.Y;
             }
-            else
+
+            DispPolyLines("red");
+            for (int i = 0; i < _cols.Count; i++)
+                R.Cross(_cols[i], _rows[i], "green", 10);
+
+            if (!dragging)
             {
                 Hover = DrawHandle.None;
                 for (int i = 0; i < _cols.Count; i++)

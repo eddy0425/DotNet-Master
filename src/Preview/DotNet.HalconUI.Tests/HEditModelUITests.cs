@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using System.Windows.Forms;
 using DotNet.Drawing;
+using DotNet.Vision.Abstractions;
 using HalconDotNet;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -206,6 +207,102 @@ namespace DotNet.HalconUI.Tests
                 Assert.IsFalse(ui.IsDisposed, "编辑窗是复用的，关窗只隐藏");
                 Assert.IsFalse(ui.Visible);
             });
+        }
+
+        /// <summary>模板图 200 × 160，模板在 (row 40, column 50) 处匹配，应被平移到图像中心 (80, 100)。</summary>
+        private static void DisplayModelAt(HEditModelUI ui, string imagePath)
+        {
+            using (var rect = Rectangle1(30, 40, 50, 60))
+            using (var contour = Rectangle1(35, 45, 45, 55))
+                ui.DisplayModel(imagePath, rect, contour, new ModelResult(40, 50, 0.3, 1));
+        }
+
+        private static void WithImage(int width, int height, Action<string> body)
+        {
+            string path = WriteTempImage(width, height);
+            try { body(path); }
+            finally { System.IO.File.Delete(path); }
+        }
+
+        [TestMethod]
+        public void DisplayModel_FirstOpen_MovesTemplateToImageCentre()
+        {
+            // 第一次打开时窗口里还没有图：若在显示模板图之前就取 HoCentre，
+            // 拿到的是 ZoomImage 的默认尺寸 (1248 × 2200) 的中心，模板被平移到画面外。
+            Run(ui => WithImage(200, 160, path =>
+            {
+                DisplayModelAt(ui, path);
+
+                Centre(Field(ui, "shrFindMode"), out double row, out double col);
+                Assert.AreEqual(80, row, 1);
+                Assert.AreEqual(100, col, 1);
+                Centre(Field(ui, "_shrContour"), out row, out col);
+                Assert.AreEqual(80, row, 1);
+                Assert.AreEqual(100, col, 1);
+
+                var coord = (CvCoord)typeof(HEditModelUI).GetField("_shrCoord", Private).GetValue(ui);
+                Assert.AreEqual(100, coord.X, 1e-6);
+                Assert.AreEqual(80, coord.Y, 1e-6);
+                Assert.AreEqual(0.3, coord.Angle.Radians, 1e-9);
+
+                Assert.AreEqual(DrawEnum.DispModel, ui.GetDisplay().DrawType);
+                Assert.AreEqual(200, ui.GetDisplay().Display.HoWidth);
+            }));
+        }
+
+        [TestMethod]
+        public void DisplayModel_ImageSizeChanged_UsesNewImageCentre()
+        {
+            Run(ui =>
+            {
+                WithImage(200, 160, path => DisplayModelAt(ui, path));
+                WithImage(400, 300, path => DisplayModelAt(ui, path));
+
+                Centre(Field(ui, "shrFindMode"), out double row, out double col);
+                Assert.AreEqual(150, row, 1);
+                Assert.AreEqual(200, col, 1);
+            });
+        }
+
+        [TestMethod]
+        public void DisplayModel_Reopen_DiscardsPreviousEraseStrokes()
+        {
+            // 每次打开都从模板重新生成 shrFindMode，上一轮的擦除笔迹若留着，
+            // 再次涂抹时会把它们当成「已擦除」叠画在完好的模板上。
+            Run(ui => WithImage(200, 160, path =>
+            {
+                DisplayModelAt(ui, path);
+                Click(ui, "but_ApplyRegion_Click");
+                EraseStroke(ui, 80, 100);
+                Assert.IsTrue(Area(Field(ui, "shrErase")) > 0);
+
+                DisplayModelAt(ui, path);
+
+                var erase = Field(ui, "shrErase");
+                Assert.IsTrue(erase.IsInitialized());
+                Assert.AreEqual(0.0, CountObj(erase) == 0 ? 0 : Area(erase), "重新打开后擦除区域应清空");
+                Assert.IsTrue(Contains(Field(ui, "shrFindMode"), 80, 100), "新模板是完整的");
+            }));
+        }
+
+        [TestMethod]
+        public void DisplayModel_MissingImage_KeepsCurrentTemplate()
+        {
+            Run(ui => WithImage(200, 160, path =>
+            {
+                DisplayModelAt(ui, path);
+                var names = new[] { "_srcImage", "shrFindMode", "_shrContour" };
+                var before = Array.ConvertAll(names, n => Field(ui, n));
+
+                Assert.ThrowsException<HOperatorException>(() => DisplayModelAt(ui, path + ".missing.png"));
+
+                for (int i = 0; i < names.Length; i++)
+                {
+                    Assert.AreSame(before[i], Field(ui, names[i]), names[i]);
+                    Assert.IsTrue(before[i].IsInitialized(), names[i] + " 不应被释放");
+                }
+                Assert.AreEqual(DrawEnum.DispModel, ui.GetDisplay().DrawType);
+            }));
         }
 
         [TestMethod]

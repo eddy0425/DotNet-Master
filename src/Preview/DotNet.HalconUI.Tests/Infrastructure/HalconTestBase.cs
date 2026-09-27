@@ -71,6 +71,33 @@ namespace DotNet.HalconUI.Tests
             return area.TupleSum().D;
         }
 
+        /// <summary>
+        /// 把一张 <paramref name="width"/> × <paramref name="height"/> 的纯色图写到临时 PNG，返回完整路径，调用方负责删除。
+        /// </summary>
+        /// <remarks>DisplayModel 之类的入口只接受模板图路径，不接受 HObject。</remarks>
+        protected static string WriteTempImage(int width, int height)
+        {
+            string path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "halconui_" + Guid.NewGuid().ToString("N") + ".png");
+            HOperatorSet.GenImageConst(out HObject image, "byte", width, height);
+            using (image) HOperatorSet.WriteImage(image, "png", 0, path);
+            return path;
+        }
+
+        /// <summary>区域或 XLD 的中心：区域取重心，XLD 取全部轮廓外接框的中心。</summary>
+        protected static void Centre(HObject obj, out double row, out double column)
+        {
+            HOperatorSet.GetObjClass(obj, out HTuple cls);
+            if (cls.S == "region")
+            {
+                HOperatorSet.AreaCenter(obj, out _, out HTuple r, out HTuple c);
+                row = r.D; column = c.D;
+                return;
+            }
+            HOperatorSet.SmallestRectangle1Xld(obj, out HTuple r1, out HTuple c1, out HTuple r2, out HTuple c2);
+            row = (r1.TupleMin().D + r2.TupleMax().D) / 2;
+            column = (c1.TupleMin().D + c2.TupleMax().D) / 2;
+        }
+
         /// <summary>点 (row, column) 是否落在区域内。</summary>
         protected static bool Contains(HObject region, double row, double column)
         {

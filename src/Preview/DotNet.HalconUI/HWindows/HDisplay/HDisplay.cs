@@ -161,10 +161,9 @@ namespace DotNet.HalconUI
 
                 if (IsCross && IsWindowUsable())
                 {
-                    if (GetColor() != HColor.Red)
-                    {
-                        SetColor(HColor.Red);
-                    }
+                    // 不能按 _color 缓存跳过：DrawRenderer 等会直接改窗口颜色（见 SetColor 注释），
+                    // 缓存仍是 Red 时十字会沿用别人留下的颜色
+                    SetColor(HColor.Red);
 
                     double w = HoWidth;
                     double h = HoHeight;
@@ -664,11 +663,13 @@ namespace DotNet.HalconUI
                 if (!result.Completed || !region.NotNull()) return false;
 
                 HOperatorSet.GetRegionPolygon(region, 1, out HTuple rows, out HTuple columns);
-                HOperatorSet.AreaCenter(region, out HTuple _, out HTuple hv_Row, out HTuple hv_Column);
+                HOperatorSet.SmallestRectangle1(region, out HTuple row1, out HTuple column1, out HTuple row2, out HTuple column2);
 
                 hRegion.PolygonX = columns;
                 hRegion.PolygonY = rows;
-                hRegion.Center = new Point2d(hv_Column.D, hv_Row.D);
+                // 与其它 ROI 类型一样写外接框（Center 随之为外接框中心）。原先只设 Center(面积重心)，
+                // 而 Center 的 setter 只平移 X/Y，新建 ROI 的 Width/Height 一直是 0。
+                hRegion.SetRectByCorners(row1.D, column1.D, row2.D, column2.D);
 
                 ReplaceRegion(hRegion, ref region);
                 return true;

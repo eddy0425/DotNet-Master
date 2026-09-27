@@ -187,6 +187,22 @@ namespace DotNet.HalconUI.Tests
         }
 
         [TestMethod]
+        public void DispImage_WithCross_ResetsPenEvenIfWindowColourChangedBehindCache()
+        {
+            Run((host, display) =>
+            {
+                display.SetColor(HColor.Red);
+                display.IsCross = true;
+                host.Window.SetColor("green"); // 例如 DrawRenderer 直接改窗口颜色，本地缓存仍是 Red
+
+                using (var image = Image(300, 200))
+                    display.DispImage(image);
+
+                Assert.AreEqual(Rgb.Red, Rgb.Of(host));
+            });
+        }
+
+        [TestMethod]
         public void ReDispImage_AfterDispose_IsNoOp()
         {
             Run((host, display) =>
@@ -535,6 +551,11 @@ namespace DotNet.HalconUI.Tests
                 Assert.AreEqual(70, region.Center.X, 1);
                 Assert.AreEqual(70, region.Center.Y, 1);
                 Assert.IsTrue(Contains(region.HoRegion, 70, 70));
+                // 与其它 ROI 类型一致写入外接框（原先 Width/Height 停在 0）
+                Assert.AreEqual(20, region.Left, 1);
+                Assert.AreEqual(20, region.Y, 1);
+                Assert.AreEqual(100, region.Width, 1);
+                Assert.AreEqual(100, region.Height, 1);
             });
         }
 

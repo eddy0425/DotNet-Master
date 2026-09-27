@@ -69,20 +69,21 @@ namespace DotNet.HalconUI
         /// </summary>
         internal static void AddPropertyBinding(Control con, string controlProperty, VsControlModel vm, string vmProperty)
         {
-            AddPropertyBinding(con, controlProperty, vm, vmProperty, null);
+            AddPropertyBinding(con, controlProperty, vm, vmProperty, DataSourceUpdateMode.OnPropertyChanged, null);
         }
 
         /// <summary>
-        /// 同上, 额外允许在 Add 之前配置 Binding (例如挂 Format/Parse 做类型转换).
+        /// 同上, 额外指定回写模式, 并允许在 Add 之前配置 Binding (例如挂 Format 做类型转换).
         /// </summary>
-        internal static void AddPropertyBinding(Control con, string controlProperty, VsControlModel vm, string vmProperty, Action<Binding> configure)
+        internal static void AddPropertyBinding(Control con, string controlProperty, VsControlModel vm, string vmProperty,
+            DataSourceUpdateMode updateMode, Action<Binding> configure)
         {
             for (int i = con.DataBindings.Count - 1; i >= 0; i--)
             {
                 if (con.DataBindings[i].PropertyName == controlProperty)
                     con.DataBindings.RemoveAt(i);
             }
-            var binding = new Binding(controlProperty, vm, vmProperty, false, DataSourceUpdateMode.OnPropertyChanged);
+            var binding = new Binding(controlProperty, vm, vmProperty, false, updateMode);
             if (configure != null) configure(binding);
             con.DataBindings.Add(binding);
             vm.AttachControl(con);
@@ -127,14 +128,20 @@ namespace DotNet.HalconUI
         /// </summary>
         protected virtual bool BindsEnabled { get { return false; } }
 
+        /// <remarks>
+        /// Visible / Enabled 只从 VM 推到控件、从不回写(<see cref="DataSourceUpdateMode.Never"/>)：
+        /// 控件侧读到的是含父链的<b>实际</b>状态，父容器被禁用 / 所在页签被切走时读出 false，
+        /// 双向绑定会把这个 false 写进 VM，VM 再推回控件就改掉了控件自身的标志，父容器恢复后控件仍是灰的 / 隐藏的。
+        /// 这两个属性只由参数策略设置，用户在界面上改不了，回写本来也没有意义。
+        /// </remarks>
         public virtual void Bind(Control form, VsControlModel vm)
         {
             var con = (TControl)form.GetControl(vm.Name);
             BindingHelper.AddPropertyBinding(con, ControlPropertyName, vm, nameof(VsControlModel.Value));
             if (BindsVisible)
-                BindingHelper.AddPropertyBinding(con, "Visible", vm, nameof(VsControlModel.Visible));
+                BindingHelper.AddPropertyBinding(con, "Visible", vm, nameof(VsControlModel.Visible), DataSourceUpdateMode.Never, null);
             if (BindsEnabled)
-                BindingHelper.AddPropertyBinding(con, "Enabled", vm, nameof(VsControlModel.Enabled));
+                BindingHelper.AddPropertyBinding(con, "Enabled", vm, nameof(VsControlModel.Enabled), DataSourceUpdateMode.Never, null);
         }
 
         /// <summary>
@@ -179,18 +186,15 @@ namespace DotNet.HalconUI
             base.Bind(form, vm);
 
             // VM 侧用 bool 表达下拉样式 (true = 只读下拉), 控件侧是 ComboBoxStyle 枚举,
-            // 因此这条绑定必须带 Format/Parse 做双向转换, 否则 WinForms 会抛类型转换异常.
+            // 因此这条绑定必须带 Format 做转换, 否则 WinForms 会抛类型转换异常.
+            // 与 Visible / Enabled 同为外观属性, 只从 VM 推到控件 (原先挂的 Parse 回写从未真正生效过).
             var con = (ComboBox)form.GetControl(vm.Name);
-            BindingHelper.AddPropertyBinding(con, "DropDownStyle", vm, nameof(VsControlModel.DropDownStyle),
+            BindingHelper.AddPropertyBinding(con, "DropDownStyle", vm, nameof(VsControlModel.DropDownStyle), DataSourceUpdateMode.Never,
                 b =>
                 {
                     b.Format += (s, e) =>
                     {
                         e.Value = (e.Value is bool flag && flag) ? ComboBoxStyle.DropDownList : ComboBoxStyle.DropDown;
-                    };
-                    b.Parse += (s, e) =>
-                    {
-                        e.Value = (e.Value is ComboBoxStyle style) && style == ComboBoxStyle.DropDownList;
                     };
                 });
         }
@@ -212,6 +216,40 @@ namespace DotNet.HalconUI
     {
         // 控件侧 TrackBar.Value (int) 与 VM 侧 Value (object/装箱 int) 通过 WinForms 反射绑定自动拆装箱.
         protected override string ControlPropertyName { get { return "Value"; } }
+
+        /// <remarks>
+        /// 越界值先夹到 [Minimum, Maximum] 再绑定：TrackBar.Value 越界会在建立绑定时抛
+        /// <see cref="ArgumentOutOfRangeException"/>，而此时控件上旧 VM 的绑定已被摘掉，
+        /// 旧 VM 还留在字典里却再也收不到控件变化，之后读回的一直是旧值。
+        /// 非 int 的数值(如 long)同样先规整成 int，否则越界时绕过夹取照样抛出；无法转换的值按 Minimum 处理。
+        /// 夹取会改写 VM 的值(参数随之保存)，因此记 Warn。
+        /// </remarks>
+        public override void Bind(Control form, VsControlModel vm)
+        {
+            var con = (TrackBar)form.GetControl(vm.Name);
+            if (!(vm.Value is int))
+            {
+                int converted;
+                try { converted = vm.AsInt(); }
+                catch (Exception ex) when (ex is FormatException || ex is InvalidCastException || ex is OverflowException)
+                {
+                    DotNet.Drawing.Log.Warn("VsControl", string.Format(
+                        "滑块 '{0}' 的值 '{1}' 不是整数，参数值已改为 {2}。", vm.Name, vm.Value, con.Minimum));
+                    converted = con.Minimum;
+                }
+                vm.Value = converted;
+            }
+
+            int value = (int)vm.Value;
+            if (value < con.Minimum || value > con.Maximum)
+            {
+                int clamped = Math.Max(con.Minimum, Math.Min(con.Maximum, value));
+                DotNet.Drawing.Log.Warn("VsControl", string.Format(
+                    "滑块 '{0}' 的值 {1} 超出范围 [{2}, {3}]，参数值已改为 {4}。", vm.Name, value, con.Minimum, con.Maximum, clamped));
+                vm.Value = clamped;
+            }
+            base.Bind(form, vm);
+        }
     }
 
 

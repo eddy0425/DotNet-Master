@@ -38,6 +38,9 @@ namespace DotNet.HalconUI
         /// </summary>
         public static TimeSpan Timeout { get; set; } = DrawSession.DefaultTimeout;
 
+        /// <summary> 开新会话前反复取消旧会话的轮数上限（见 <see cref="RunAsync{TShape}"/>）。 </summary>
+        private const int MaxCancelRounds = 8;
+
         #region 调用模板
 
         /// <summary>
@@ -58,7 +61,17 @@ namespace DotNet.HalconUI
         {
             if (window == null) throw new ArgumentNullException(nameof(window));
 
-            CancelDraw(window);
+            // 取消旧会话会内联执行它的续体(见 DrawSession 类注释)；续体里若又发起了一次绘制，
+            // 那个会话会在本次 Begin 之前注册，随即被本会话遮住，再也收不到鼠标事件，
+            // 只能等 5 分钟超时，期间 IsDrawing 一直为 true。所以取消到窗口上确实没有会话为止。
+            // 设上限：续体若每次被取消都重新发起绘制，不设上限会在 UI 线程上死循环。
+            int rounds = 0;
+            do { CancelDraw(window); }
+            while (DrawSession.ActiveFor(window) != null && ++rounds < MaxCancelRounds);
+
+            if (DrawSession.ActiveFor(window) != null)
+                DotNet.Drawing.Log.Warn(nameof(DrawHelper), "取消旧绘制会话后仍不断有新会话注册，已放弃继续取消。");
+
             using (var session = DrawSession.Begin(window, shape))
             {
                 if (edit)
@@ -143,8 +156,18 @@ namespace DotNet.HalconUI
             // 先备好空 region: 无论走哪条失败路径, 调用方拿到的都是可释放对象
             HOperatorSet.GenEmptyRegion(out HObject region);
 
+            // RunAsync 抛出(如 window 为 null)时调用方拿不到结果对象，这里必须自己释放
             var s = new RegionShape();
-            bool ok = await RunAsync(window, s, edit: false, token);
+            bool ok;
+            try
+            {
+                ok = await RunAsync(window, s, edit: false, token);
+            }
+            catch
+            {
+                region.Dispose();
+                throw;
+            }
             if (!ok || s.Rows.Count < 3) return new DrawRegionResult(false, region);
 
             HObject contour = null;

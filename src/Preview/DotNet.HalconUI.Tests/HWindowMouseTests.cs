@@ -150,6 +150,29 @@ namespace DotNet.HalconUI.Tests
         }
 
         [TestMethod]
+        public void LeftDrag_AfterMiddleDownWithoutUp_DoesNotPan()
+        {
+            // 中键在控件外松开时收不到 Up；残留的平移状态不能让之后的左键拖拽（画 ROI）平移视图
+            Run((host, mouse) =>
+            {
+                mouse.OnHMouseDown(null, Mouse.Middle(100, 100));
+                ForgetLastClick(mouse); // 两次按下间隔超过双击时间，免得走双击分支顺带清掉状态
+
+                mouse.OnHMouseDown(null, Mouse.Left(100, 100));
+                mouse.OnHMouseUp(null, Mouse.Left(130, 120));
+
+                AssertPart(host, 0, 0, 599, 799);
+            });
+        }
+
+        private static void ForgetLastClick(HWindowMouse mouse)
+        {
+            var field = typeof(HWindowMouse).GetField("_lastClickMs", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (field == null) Assert.Fail("HWindowMouse._lastClickMs 已改名或移除，请同步更新 ForgetLastClick。");
+            field.SetValue(mouse, null);
+        }
+
+        [TestMethod]
         public void DoubleClick_ResetsPartToWholeImage()
         {
             Run((host, mouse) =>
@@ -196,6 +219,23 @@ namespace DotNet.HalconUI.Tests
                 Assert.AreEqual(20, calls[0][0]);
                 Assert.AreEqual(10, calls[0][1]);
                 Assert.AreEqual(0, calls[0][2]);
+            });
+        }
+
+        [TestMethod]
+        public void MouseUp_SubscriberThrows_IsLoggedAsError()
+        {
+            Run((host, mouse) =>
+            {
+                mouse.RefreshUI += (r, c, g) => throw new InvalidOperationException("boom");
+
+                using (var log = new CapturingLogger())
+                {
+                    mouse.OnHMouseUp(null, Mouse.Left(10, 20));
+
+                    Assert.AreEqual(1, log.Messages(LogLevel.Error).Count(), "订阅方异常不能被当成“鼠标在图像外”吞成 Debug");
+                    Assert.AreEqual(0, log.Messages(LogLevel.Debug).Count());
+                }
             });
         }
 
